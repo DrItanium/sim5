@@ -542,9 +542,9 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
                               dest.setOrdinal(load8(computeMemoryAddress(instruction))); 
                               break;
         case Opcode::bx:
-                ip_.setOrdinal(computeMemoryAddress(instruction));
-                advanceIPBy = 0;
-            break;
+                              ip_.setOrdinal(computeMemoryAddress(instruction));
+                              advanceIPBy = 0;
+                              break;
         case Opcode::balx: {
                                auto address = computeMemoryAddress(instruction);
                                dest.setOrdinal(ip_.getOrdinal() + advanceIPBy);
@@ -730,6 +730,7 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
                                   dest.setOrdinal(0xFFFF'FFFF);
                                   ac_.setConditionCode(0);
                                   Ordinal index = 31;
+                                  // just keep shifting over by one as we go along
                                   for (auto mask : reverseBitPositions) {
                                       if ((src & mask) != 0) {
                                           dest.setOrdinal(index);
@@ -746,6 +747,7 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
                                   dest.setOrdinal(0xFFFF'FFFF);
                                   ac_.setConditionCode(0);
                                   Ordinal index = 31;
+                                  // just keep shifting over by one as we go along
                                   for (auto mask : reverseBitPositions) {
                                       if ((src & mask) == 0) {
                                           dest.setOrdinal(index);
@@ -925,26 +927,24 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
             /// @todo figure out how to support bad access conditions
             ac_.setConditionCode(0b010);
             break;
-        case Opcode::modpc:
-            [this, &instruction]() {
-                auto mask = getSourceRegister(instruction.getSrc1()).getOrdinal();
-                auto& dest = getRegister(instruction.getSrcDest(false));
-                if (mask != 0) {
-                    if (!pc_.inSupervisorMode()) {
-                        generateFault(FaultType::Type_Mismatch); /// @todo TYPE.MISMATCH
-                    } else {
-                        auto src = getSourceRegister(instruction.getSrc2()).getOrdinal();
-                        dest.setOrdinal(pc_.modify(mask, src));
-                        ProcessControls tmp(dest.getOrdinal());
-                        if (tmp.getPriority() > pc_.getPriority()) {
-                            /// @todo check for pending interrupts
-                        }
-                    }
-                } else {
-                    dest.setOrdinal(pc_.getValue());
-                }
-            }( );
-            break;
+        case Opcode::modpc: {
+                                auto mask = src1Ord; 
+                                if (mask != 0) {
+                                    if (!pc_.inSupervisorMode()) {
+                                        generateFault(FaultType::Type_Mismatch); /// @todo TYPE.MISMATCH
+                                    } else {
+                                        auto src = src2Ord;
+                                        dest.setOrdinal(pc_.modify(mask, src));
+                                        ProcessControls tmp(dest.getOrdinal());
+                                        if (tmp.getPriority() > pc_.getPriority()) {
+                                            /// @todo check for pending interrupts
+                                        }
+                                    }
+                                } else {
+                                    dest.setOrdinal(pc_.getValue());
+                                }
+                                break;
+                            }
         case Opcode::modtc: dest.setOrdinal(tc_.modify(src1Ord, src2Ord)); break;
         case Opcode::setbit: dest.setOrdinal(src2Ord | bitpos); break;
         case Opcode::clrbit: dest.setOrdinal(src2Ord & ~bitpos); break;
