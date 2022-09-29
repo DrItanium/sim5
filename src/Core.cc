@@ -35,6 +35,14 @@ namespace {
                 static_assert(reverseBitPositions[0] == Z(31, 0));
 #undef X
 #undef Z
+                constexpr Ordinal bitPositions[32] {
+#define Z(base, offset) static_cast<Ordinal>(1) << static_cast<Ordinal>(base + offset)
+#define X(base) Z(base, 0), Z(base, 1), Z(base, 2), Z(base, 3)
+                    X(0), X(4), X(8), X(12),
+                        X(16), X(20), X(24), X(28)
+#undef X
+#undef Z
+                };
 }
 void
 Core::syncf() noexcept {
@@ -356,14 +364,6 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
     Serial.println(ip_.getOrdinal(), HEX);
 #endif
 #endif
-    static constexpr Ordinal bitPositions[32] {
-#define Z(base, offset) static_cast<Ordinal>(1) << static_cast<Ordinal>(base + offset)
-#define X(base) Z(base, 0), Z(base, 1), Z(base, 2), Z(base, 3)
-            X(0), X(4), X(8), X(12),
-            X(16), X(20), X(24), X(28)
-#undef X
-#undef Z
-    };
     auto condBranch = [this, &instruction](uint8_t mask) {
         if ((ac_.getConditionCode()& mask) != 0) {
             ipRelativeBranch(instruction.getDisplacement()) ;
@@ -377,7 +377,11 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
     auto& src1AsDest = getRegister(instruction.getSrc1(true));
     auto& dest = getRegister(instruction.getSrcDest(false));
     auto& src1 = getSourceRegister(instruction.getSrc1());
+    auto src1Ord = src1.getOrdinal();
+    auto src1Int = src1.getInteger();
     auto& src2 = getSourceRegister(instruction.getSrc2());
+    auto src2Ord = src2.getOrdinal();
+    auto src2Int = src2.getInteger();
     switch (instruction.identifyOpcode()) {
         // CTRL Format opcodes
         case Opcode::b:
@@ -466,8 +470,8 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
             break;
         case Opcode::bbc: {
                               // branch if bit is clear
-                              auto src = src2.getOrdinal();
-                              auto bitpos = bitPositions[src1.getOrdinal() & 0b11111];
+                              auto src = src2Ord;
+                              auto bitpos = bitPositions[src1Ord & 0b11111];
                               if ((bitpos & src) == 0) {
                                   // another lie in the i960Sx manual, when this bit is clear we assign 0b000 otherwise it is 0b010
                                   ac_.setConditionCode(0b000);
@@ -482,8 +486,8 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
                               break;
                           }
         case Opcode::bbs: {
-                              auto src = src2.getOrdinal();
-                              auto bitpos = bitPositions[src1.getOrdinal() & 0b11111];
+                              auto src = src2Ord;
+                              auto bitpos = bitPositions[src1Ord & 0b11111];
                               if ((bitpos & src) != 0) {
                                   ac_.setConditionCode(0b010);
                                   // while the docs show (displacement * 4), I am currently including the bottom two bits being forced to zero in displacement
@@ -496,23 +500,23 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
                               }
                               break;
                           }
-        case Opcode::cmpo: cmpo(src1.getOrdinal(), src2.getOrdinal()); break;
-        case Opcode::cmpi: cmpi(src1.getInteger(), src2.getInteger()); break;
+        case Opcode::cmpo: cmpo(src1Ord, src2Ord); break;
+        case Opcode::cmpi: cmpi(src1Int, src2Int); break;
         case Opcode::cmpdeco:
-                cmpo(src1.getOrdinal(), src2.getOrdinal());
-                dest.setOrdinal(src2.getOrdinal() - 1);
+                cmpo(src1Ord, src2Ord);
+                dest.setOrdinal(src2Ord - 1);
             break;
         case Opcode::cmpdeci:
-                cmpo(src1.getInteger(), src2.getInteger());
-                dest.setInteger(src2.getInteger() - 1);
+                cmpo(src1Int, src2Int);
+                dest.setInteger(src2Int - 1);
             break;
         case Opcode::cmpinco:
-                cmpo(src1.getOrdinal(), src2.getOrdinal());
-                dest.setOrdinal(src2.getOrdinal() + 1);
+                cmpo(src1Ord, src2Ord);
+                dest.setOrdinal(src2Ord + 1);
             break;
         case Opcode::cmpinci:
-                cmpo(src1.getInteger(), src2.getInteger());
-                dest.setInteger(src2.getInteger() + 1);
+                cmpo(src1Int, src2Int);
+                dest.setInteger(src2Int + 1);
             break;
         case Opcode::cmpobg:
             cmpobx(instruction, 0b001);
@@ -627,29 +631,27 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
                               break;
                           }
             // REG format
-#define X(code, op) case Opcode:: code ## i : dest.setInteger(src2.getInteger() op src1.getInteger()); break; \
-                    case Opcode:: code ## o : dest.setOrdinal(src2.getOrdinal() op src1.getOrdinal()); break
+#define X(code, op) case Opcode:: code ## i : dest.setInteger(src2Int op src1Int); break; \
+                    case Opcode:: code ## o : dest.setOrdinal(src2Ord op src1Ord); break
         X(add, +);
         X(sub, -);
         X(mul, *);
 #undef X
         case Opcode::divo:
                 /// @todo check denominator and do proper handling
-                dest.setOrdinal(src2.getOrdinal() / src1.getOrdinal());
+                dest.setOrdinal(src2Ord / src1Ord);
             break;
         case Opcode::divi:
                 /// @todo check denominator and do proper handling
-                dest.setInteger(src2.getInteger() / src1.getInteger());
+                dest.setInteger(src2Int / src1Int);
             break;
-        case Opcode::notbit:
-            [this, &instruction]() {
-                auto bitpos = bitPositions[getSourceRegister(instruction.getSrc1()).getOrdinal() & 0b11111];
-                auto src = getSourceRegister(instruction.getSrc2()).getOrdinal();
-                auto& dest = getRegister(instruction.getSrcDest(false));
-                dest.setOrdinal(src ^ bitpos);
-            }();
-            break;
-#define X(code, op) case Opcode :: code : dest.setOrdinal(src2.getOrdinal() op src1.getOrdinal()); break
+        case Opcode::notbit: {
+                                 auto bitpos = bitPositions[src1Ord & 0b11111];
+                                 auto src = src2Ord;
+                                 dest.setOrdinal(src ^ bitpos);
+                                 break;
+                             }
+#define X(code, op) case Opcode :: code : dest.setOrdinal(src2Ord op src1Ord); break
             X(logicalAnd, &);
             X(logicalOr, |);
             X(logicalXor, ^);
@@ -665,18 +667,18 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
         case Opcode::remi:
                 // taken from the i960Sx manual
                 //dest.setInteger(src2 - ((src2 / src1) * src1));
-                dest.setInteger(src2.getInteger() % src1.getInteger());
+                dest.setInteger(src2Int % src1Int);
             break;
         case Opcode::remo:
                 // taken from the i960Sx manual
                 //dest.setOrdinal(src2 - ((src2 / src1) * src1));
-                dest.setOrdinal(src2.getOrdinal() % src1.getOrdinal());
+                dest.setOrdinal(src2Ord % src1Ord);
             break;
         case Opcode::rotate:
-                dest.setOrdinal(rotateOperation(src2.getOrdinal(), src1.getOrdinal()));
+                dest.setOrdinal(rotateOperation(src2Ord, src1Ord));
             break;
         case Opcode::mov:
-            dest.setOrdinal(src1.getOrdinal());
+            dest.setOrdinal(src1Ord);
             break;
         case Opcode::movl: {
                                auto& dest = getDoubleRegister(instruction.getSrcDest(false));
@@ -733,27 +735,14 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
             }();
             break;
         case Opcode::emul:
-            [this, &instruction]() {
-                auto src2 = static_cast<LongOrdinal>(getSourceRegister(instruction.getSrc2()).getOrdinal());
-                auto src1 = static_cast<LongOrdinal>(getSourceRegister(instruction.getSrc1()).getOrdinal());
-                auto& dest = getDoubleRegister(instruction.getSrcDest(false));
-                // taken from the manual
-                dest.setLongOrdinal(src2 * src1);
-            }();
+            getDoubleRegister(instruction.getSrcDest(false)).setLongOrdinal(
+                    static_cast<LongOrdinal>(src2Ord) * static_cast<LongOrdinal>(src1Ord));
             break;
         case Opcode::extract:
-            [this, &instruction]() {
-                auto& dest = getRegister(instruction.getSrcDest(false));
-                auto bitpos = getSourceRegister(instruction.getSrc1()).getOrdinal();
-                auto len = getSourceRegister(instruction.getSrc2()).getOrdinal();
                 // taken from the Hx manual as it isn't insane
-                auto shiftAmount = bitpos > 32 ? 32 : bitpos;
-                dest.setOrdinal((dest.getOrdinal() >> shiftAmount) & ~(0xFFFF'FFFF << len));
-            }();
+                dest.setOrdinal((dest.getOrdinal() >> (src1Ord > 32 ? 32 : src1Ord)) & ~(0xFFFF'FFFF << src2Ord));
             break;
-        case Opcode::flushreg:
-            flushreg();
-            break;
+        case Opcode::flushreg: flushreg(); break;
         case Opcode::fmark: {
                                 // Generates a breakpoint trace-event. This instruction causes a breakpoint trace-event to be generated, regardless of the
                                 // setting of the breakpoint trace mode flag (to be implemented), providing the trace-enable bit (bit 0) of the process
@@ -778,13 +767,13 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
                                break;
                            }
 
-        case Opcode::modac: dest.setOrdinal(ac_.modify(src1.getOrdinal(), src2.getOrdinal())); break;
+        case Opcode::modac: dest.setOrdinal(ac_.modify(src1Ord, src2Ord)); break;
         case Opcode::modi: {
-                               auto denominator = src1.getInteger();
+                               auto denominator = src1Int;
                                if (denominator == 0) {
                                    generateFault(FaultType::Arithmetic_ArithmeticZeroDivide);
                                } else {
-                                   auto numerator = src2.getInteger();
+                                   auto numerator = src2Int;
                                    auto result = numerator - ((numerator / denominator) * denominator);
                                    if (((numerator * denominator) < 0) && (result != 0)) {
                                        result += denominator;
@@ -795,13 +784,13 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
                            }
         case Opcode::modify:
                 // this is my encode operation but expanded out
-                            dest.setOrdinal((src2.getOrdinal() & src1.getOrdinal()) | (dest.getOrdinal() & ~src1.getOrdinal()));
+                            dest.setOrdinal((src2Ord & src1Ord) | (dest.getOrdinal() & ~src1Ord));
                             break;
         case Opcode::call: call(instruction); break;
         case Opcode::callx: callx(instruction); break;
         case Opcode::shlo: shlo(instruction); break;
         case Opcode::shro: shro(instruction); break;
-        case Opcode::shli: dest.setInteger(src2.getInteger() << src1.getInteger()); break;
+        case Opcode::shli: dest.setInteger(src2Int << src1Int); break;
         case Opcode::scanbyte:
             [this, &instruction]() {
                 auto& src1 = getRegister(instruction.getSrc1());
@@ -812,7 +801,7 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
             break;
         case Opcode::scanbit: {
                                   // perform a sanity check
-                                  auto src = src1.getOrdinal();
+                                  auto src = src1Ord;
                                   dest.setOrdinal(0xFFFF'FFFF);
                                   ac_.setConditionCode(0);
                                   Ordinal index = 31;
@@ -828,7 +817,7 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
                               }
         case Opcode::spanbit: {
                                   // perform a sanity check
-                                  auto src = src1.getOrdinal();
+                                  auto src = src1Ord;
                                   dest.setOrdinal(0xFFFF'FFFF);
                                   ac_.setConditionCode(0);
                                   Ordinal index = 31;
@@ -849,9 +838,9 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
                                 // adds the src (src2 internally) value to the value in memory location specified with the addr (src1 in this case) operand.
                                 // The initial value from memory is stored in dst (internally src/dst).
                                 syncf();
-                                auto addr = src1.getOrdinal() & 0xFFFF'FFFC; // force alignment to word boundary
+                                auto addr = src1Ord & 0xFFFF'FFFC; // force alignment to word boundary
                                 auto temp = atomicLoad(addr);
-                                auto src = src2.getOrdinal();
+                                auto src = src2Ord;
                                 atomicStore(addr, temp + src);
                                 dest.setOrdinal(temp);
                                 break;
@@ -871,118 +860,86 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
             }();
             break;
         case Opcode::chkbit: {
-                                 auto bitpos = bitPositions[src1.getOrdinal() & 0b11111];
-                                 ac_.setConditionCode((src2.getOrdinal() & bitpos) == 0 ? 0b000 : 0b010);
+                                 auto bitpos = bitPositions[src1Ord & 0b11111];
+                                 ac_.setConditionCode((src2Ord & bitpos) == 0 ? 0b000 : 0b010);
                                  break;
                              }
-        case Opcode::addc:
-            [this, &instruction]() {
-                auto& src1 = getSourceRegister(instruction.getSrc1());
-                auto& src2 = getSourceRegister(instruction.getSrc2());
-                union {
-                    LongOrdinal value = 0;
-                    Ordinal halves[2];
-                } result;
-                result.value = static_cast<LongOrdinal>(src2.getOrdinal()) + static_cast<LongOrdinal>(src1.getOrdinal()) + (ac_.getCarryBit() ? 1 : 0);
-                // the result will be larger than 32-bits so we have to keep that in mind
-                auto& dest = getRegister(instruction.getSrcDest(false));
-                dest.setOrdinal(result.halves[0]);
-                // do computation here
-                ac_.setConditionCode(0);
-                if ((src2.getMostSignificantBit() == src1.getMostSignificantBit()) && (src2.getMostSignificantBit() != dest.getMostSignificantBit())) {
-                    // set the overflow bit in ac
-                    ac_.setOverflowBit(1);
-                }
-                ac_.setCarryBit(result.halves[1] != 0);
+        case Opcode::addc: {
+                               union {
+                                   LongOrdinal value = 0;
+                                   Ordinal halves[2];
+                               } result;
+                               result.value = static_cast<LongOrdinal>(src2Ord) + static_cast<LongOrdinal>(src1Ord) + (ac_.getCarryBit() ? 1 : 0);
+                               // the result will be larger than 32-bits so we have to keep that in mind
+                               dest.setOrdinal(result.halves[0]);
+                               // do computation here
+                               ac_.setConditionCode(0);
+                               if ((src2.getMostSignificantBit() == src1.getMostSignificantBit()) && (src2.getMostSignificantBit() != dest.getMostSignificantBit())) {
+                                   // set the overflow bit in ac
+                                   ac_.setOverflowBit(1);
+                               }
+                               ac_.setCarryBit(result.halves[1] != 0);
 
-                // set the carry out bit
-            }();
-            break;
-        case Opcode::subc:
-            [this, &instruction]() {
-                auto& src1 = getSourceRegister(instruction.getSrc1());
-                auto& src2 = getSourceRegister(instruction.getSrc2());
-                union {
-                    LongOrdinal value = 0;
-                    Ordinal halves[2];
-                } result;
-                result.value = static_cast<LongOrdinal>(src2.getOrdinal()) - static_cast<LongOrdinal>(src1.getOrdinal()) - 1 + (ac_.getCarryBit() ? 1 : 0);
-                // the result will be larger than 32-bits so we have to keep that in mind
-                auto& dest = getRegister(instruction.getSrcDest(false));
-                dest.setOrdinal(result.halves[0]);
-                // do computation here
-                ac_.setConditionCode(0);
-                if ((src2.getMostSignificantBit() == src1.getMostSignificantBit()) && (src2.getMostSignificantBit() != dest.getMostSignificantBit())) {
-                    // set the overflow bit in ac
-                    ac_.setOverflowBit(1);
-                }
-                ac_.setCarryBit(result.halves[1] != 0);
-                // set the carry out bit
-            }();
-            break;
-        case Opcode::ldib:
-            [this, &instruction]() {
-                auto& dest = getRegister(instruction.getSrcDest(false));
-                dest.setInteger(loadByte(computeMemoryAddress(instruction)));
-            }();
-            break;
-        case Opcode::ldis:
-            [this, &instruction]() {
-                auto& dest = getRegister(instruction.getSrcDest(false));
-                dest.setInteger(loadShort(computeMemoryAddress(instruction)));
-            }();
-            break;
-        case Opcode::st:
-            [this, &instruction]() {
-                auto addr = computeMemoryAddress(instruction);
-                auto src = getSourceRegister(instruction.getSrcDest(true)).getOrdinal();
-                store(addr, src);
-            }();
-            break;
-        case Opcode::stob:
-            [this, &instruction]() {
-                auto addr = computeMemoryAddress(instruction);
-                auto theIndex = instruction.getSrcDest(true);
-                auto& srcReg = getSourceRegister(theIndex);
-                auto src = srcReg.getByteOrdinal(0);
-                storeByte(addr, src);
-            }();
-            break;
-        case Opcode::stos:
-            [this, &instruction]() {
-                auto src = getSourceRegister(instruction.getSrcDest(true)).getShortOrdinal();
-                auto addr = computeMemoryAddress(instruction);
-                storeShort(addr, src);
-            }();
-            break;
-        case Opcode::stl:
-            [this, &instruction]() {
-                auto src = getDoubleRegister(instruction.getSrcDest(true)).getLongOrdinal();
-                auto address = computeMemoryAddress(instruction);
-                storeLong(address, src);
-            }();
-            break;
-        case Opcode::stt:
-            [this, &instruction]() {
-                auto& src = getTripleRegister(instruction.getSrcDest(true));
-                auto address = computeMemoryAddress(instruction);
-                store(address, src);
-            }();
-            break;
-        case Opcode::stq:
-            [this, &instruction]() {
-                auto& src = getQuadRegister(instruction.getSrcDest(true));
-                auto addr = computeMemoryAddress(instruction);
-                store(addr, src);
-            }();
-            break;
-        case Opcode::stib:
-            [this, &instruction]() {
-                auto src = static_cast<ByteInteger>(getSourceRegister(instruction.getSrcDest(true)).getInteger());
-                auto address = computeMemoryAddress(instruction);
-                storeByteInteger(address, src);
-            }();
-            break;
+                               // set the carry out bit
+                               break;
+                           }
+        case Opcode::subc: {
+                               union {
+                                   LongOrdinal value = 0;
+                                   Ordinal halves[2];
+                               } result;
+                               result.value = static_cast<LongOrdinal>(src2Ord) - static_cast<LongOrdinal>(src1Ord) - 1 + (ac_.getCarryBit() ? 1 : 0);
+                               // the result will be larger than 32-bits so we have to keep that in mind
+                               dest.setOrdinal(result.halves[0]);
+                               // do computation here
+                               ac_.setConditionCode(0);
+                               if ((src2.getMostSignificantBit() == src1.getMostSignificantBit()) && (src2.getMostSignificantBit() != dest.getMostSignificantBit())) {
+                                   // set the overflow bit in ac
+                                   ac_.setOverflowBit(1);
+                               }
+                               ac_.setCarryBit(result.halves[1] != 0);
+                               // set the carry out bit
+                               break;
+                           }
+        case Opcode::ldib: dest.setInteger(loadByte(computeMemoryAddress(instruction))); break;
+        case Opcode::ldis: dest.setInteger(loadShort(computeMemoryAddress(instruction))); break;
+        case Opcode::st: {
+                             auto src = getSourceRegister(instruction.getSrcDest(true)).getOrdinal();
+                             store(computeMemoryAddress(instruction), src);
+                             break;
+                         }
+        case Opcode::stob: {
+                               auto theIndex = instruction.getSrcDest(true);
+                               auto& srcReg = getSourceRegister(theIndex);
+                               auto src = srcReg.getByteOrdinal(0);
+                               storeByte(computeMemoryAddress(instruction), src);
+                               break;
+                           }
+        case Opcode::stos: {
+                               auto src = getSourceRegister(instruction.getSrcDest(true)).getShortOrdinal();
+                               storeShort(computeMemoryAddress(instruction), src);
+                               break;
+                           }
+        case Opcode::stl: {
+                              auto src = getDoubleRegister(instruction.getSrcDest(true)).getLongOrdinal();
+                              storeLong(computeMemoryAddress(instruction), src);
+                              break;
+                          }
+        case Opcode::stt: {
+                              auto& src = getTripleRegister(instruction.getSrcDest(true));
+                              store(computeMemoryAddress(instruction), src);
+                              break;
+                          }
+        case Opcode::stq: {
+                              auto& src = getQuadRegister(instruction.getSrcDest(true));
+                              store(computeMemoryAddress(instruction), src);
+                              break;
+                          }
+        case Opcode::stib: {
+                               auto src = static_cast<ByteInteger>(getSourceRegister(instruction.getSrcDest(true)).getInteger());
+                               storeByteInteger(computeMemoryAddress(instruction), src);
+                               break;
+                           }
         case Opcode::stis:
             [this, &instruction]() {
                 auto src = static_cast<ShortInteger>(getSourceRegister(instruction.getSrcDest(true)).getInteger());
@@ -991,76 +948,47 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
             }();
             break;
         case Opcode::shri:
-            [this, &instruction]() {
-                /*
-                 * if (src >= 0) {
-                 *  if (len < 32) {
-                 *      dest <- src/2^len
-                 *  } else {
-                 *      dest <- 0
-                 *  }
-                 * }else {
-                 *  if (len < 32) {
-                 *      dest <- (src - 2^len + 1)/2^len;
-                 *  } else {
-                 *      dest <- -1;
-                 *   }
-                 * }
-                 *
-                 */
-                auto src = getSourceRegisterValue(instruction.getSrc2(), TreatAsInteger{});
-                auto len = getSourceRegisterValue(instruction.getSrc1(), TreatAsInteger{});
-                /// @todo perhaps implement the extra logic if necessary
-                setDestination(instruction.getSrcDest(false), src >> len, TreatAsInteger{});
-            }();
+            /*
+             * if (src >= 0) {
+             *  if (len < 32) {
+             *      dest <- src/2^len
+             *  } else {
+             *      dest <- 0
+             *  }
+             * }else {
+             *  if (len < 32) {
+             *      dest <- (src - 2^len + 1)/2^len;
+             *  } else {
+             *      dest <- -1;
+             *   }
+             * }
+             *
+             */
+            /// @todo perhaps implement the extra logic if necessary
+            dest.setInteger(src2Int >> src1Int);
             break;
-        case Opcode::shrdi:
-            [this, &instruction]() {
-                static constexpr Integer bitPositions[32] {
-#define Z(base, offset) static_cast<Integer>(1) << static_cast<Integer>(base + offset)
-#define X(base) Z(base, 0), Z(base, 1), Z(base, 2), Z(base, 3)
-                        X(0), X(4), X(8), X(12),
-                        X(16), X(20), X(24), X(28)
-#undef X
-                };
-                // according to the manual, equivalent to divi value, 2 so that is what we're going to do for correctness sake
-                auto& dest = getRegister(instruction.getSrcDest(false));
-                auto src = getSourceRegister(instruction.getSrc2()).getInteger();
-                auto len = getSourceRegister(instruction.getSrc1()).getInteger();
-                if (len < 32) {
-                    dest.setInteger(src / bitPositions[len]);
-                } else {
-                    dest.setInteger(0);
-                }
-            }();
+        case Opcode::shrdi: 
+            // according to the manual, equivalent to divi value, 2 so that is what we're going to do for correctness sake
+            dest.setInteger(src1Int < 32 && src1Int >= 0 ? src2Int/ bitPositions[src1Int] : 0);
             break;
         case Opcode::synld:
-            [this, &instruction]() {
-                // wait until another execution unit sets the condition codes to continue after requesting a load.
-                // In the case of this emulator, it really doesn't mean anything but I can see this being a synld followed by a wait
-                // for synchronization. It also allows access to internal memory mapped items.
-                // So I'm not sure how to implement this yet, however I think at this point I'm just going to treat is as a special kind of load
-                // with condition code assignments and forced alignments
+            // wait until another execution unit sets the condition codes to continue after requesting a load.
+            // In the case of this emulator, it really doesn't mean anything but I can see this being a synld followed by a wait
+            // for synchronization. It also allows access to internal memory mapped items.
+            // So I'm not sure how to implement this yet, however I think at this point I'm just going to treat is as a special kind of load
+            // with condition code assignments and forced alignments
 
-                auto address = getSourceRegister(instruction.getSrc1()).getOrdinal() & 0xFFFF'FFFC; // force word alignment
-                auto& dest = getRegister(instruction.getSrcDest(false));
-                // load basically takes care of accessing different registers and such even memory mapped ones
-                dest.setOrdinal(load(address));
-                // there is a _fail_ condition where a bad access condition will result in 0b000
-                /// @todo implement support for bad access conditions
-                ac_.setConditionCode(0b010);
-            }();
+            // load basically takes care of accessing different registers and such even memory mapped ones
+            dest.setOrdinal(load(src1Ord & 0xFFFF'FFFC)); // force word alignment
+                                                          // there is a _fail_ condition where a bad access condition will result in 0b000
+                                                          /// @todo implement support for bad access conditions
+            ac_.setConditionCode(0b010);
             break;
         case Opcode::synmov:
-            [this, &instruction]() {
-                // load from memory and then store to another address in a synchronous fashion
-                auto src = getSourceRegister(instruction.getSrc2()).getOrdinal(); // source address
-                auto addr = getSourceRegister(instruction.getSrc1()).getOrdinal() & 0xFFFF'FFFC; // align
-                Register temp(load(src));
-                synchronizedStore(addr, temp);
-                /// @todo figure out how to support bad access conditions
-                ac_.setConditionCode(0b010);
-            }();
+            // load from memory and then store to another address in a synchronous fashion
+            synchronizedStore(src1Ord & 0xFFFF'FFFC, Register{load(src2Ord)});
+            /// @todo figure out how to support bad access conditions
+            ac_.setConditionCode(0b010);
             break;
         case Opcode::synmovl:
             [this, &instruction]() {
@@ -1113,22 +1041,8 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
                 }
             }( );
             break;
-        case Opcode::modtc:
-            [this, &instruction]() {
-                auto& dest = getRegister(instruction.getSrcDest(false));
-                auto mask = getSourceRegister(instruction.getSrc1()).getOrdinal();
-                auto src = getSourceRegister(instruction.getSrc2()).getOrdinal();
-                dest.setOrdinal(tc_.modify(mask, src));
-            }( );
-            break;
-        case Opcode::setbit:
-            [this, &instruction]() {
-                auto& dest = getRegister(instruction.getSrcDest(false));
-                auto bitpos = bitPositions[getSourceRegister(instruction.getSrc1()).getOrdinal() & 0b11111];
-                auto src = getSourceRegister(instruction.getSrc2()).getOrdinal();
-                dest.setOrdinal(src | bitpos);
-            }();
-            break;
+        case Opcode::modtc: dest.setOrdinal(tc_.modify(src1Ord, src2Ord)); break;
+        case Opcode::setbit: dest.setOrdinal(src2Ord | bitPositions[src1Ord & 0b11111]); break;
         case Opcode::clrbit:
             [this, &instruction]() {
                 auto& dest = getRegister(instruction.getSrcDest(false));
