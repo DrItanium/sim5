@@ -330,7 +330,8 @@ private:
     Integer getSourceRegisterValue(RegisterIndex index, TreatAsInteger) const;
     Ordinal getSourceRegisterValue(RegisterIndex index, TreatAsOrdinal) const;
     void cmpobx(const Instruction& instruction, uint8_t mask, Ordinal src1, Ordinal src2) noexcept;
-    void bal(const Instruction& instruction) noexcept;
+    void branchGeneric(const Instruction& instruction, bool andLink) noexcept;
+    void condBranch(const Instruction& instruction, uint8_t mask) noexcept;
 private:
     void saveRegisterFrame(const RegisterFrame& theFrame, Address baseAddress) noexcept;
     void restoreRegisterFrame(RegisterFrame& theFrame, Address baseAddress) noexcept;

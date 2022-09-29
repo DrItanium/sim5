@@ -321,9 +321,17 @@ constexpr Ordinal rotateOperation(Ordinal src, Ordinal length) noexcept {
     return (src << length)  | (src >> ((-length) & 31u));
 }
 void 
-Core::bal(const Instruction& instruction) noexcept {
-    setDestination(RegisterIndex::Global14, ip_.getOrdinal() + 4, TreatAsOrdinal{});
+Core::branchGeneric(const Instruction& instruction, bool andLink) noexcept {
+    if (andLink) {
+        setDestination(RegisterIndex::Global14, ip_.getOrdinal() + 4, TreatAsOrdinal{});
+    }
     ipRelativeBranch(instruction.getDisplacement()) ;
+}
+void
+Core::condBranch(const Instruction& instruction, uint8_t mask) noexcept {
+    if ((ac_.getConditionCode()& mask) != 0) {
+        branchGeneric(instruction, false);
+    }
 }
 void
 Core::executeInstruction(const Instruction &instruction) noexcept {
@@ -335,11 +343,6 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
     Serial.println(ip_.getOrdinal(), HEX);
 #endif
 #endif
-    auto condBranch = [this, &instruction](uint8_t mask) {
-        if ((ac_.getConditionCode()& mask) != 0) {
-            ipRelativeBranch(instruction.getDisplacement()) ;
-        }
-    };
     auto condFault = [this](uint8_t mask) {
         if ((ac_.getConditionCode()& mask) != 0) {
             generateFault(FaultType::Constraint_Range);
@@ -357,36 +360,36 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
     switch (instruction.identifyOpcode()) {
         // CTRL Format opcodes
         case Opcode::b:
-            ipRelativeBranch(instruction.getDisplacement()) ;
+            branchGeneric(instruction, false);
             break;
         case Opcode::bal:
-            bal(instruction);
+            branchGeneric(instruction, true);
             break;
         case Opcode::bno:
             if (ac_.getConditionCode() == 0) {
-                ipRelativeBranch(instruction.getDisplacement()) ;
+                branchGeneric(instruction, false);
             }
             break;
         case Opcode::bg:
-            condBranch(0b001);
+            condBranch(instruction, 0b001);
             break;
         case Opcode::be:
-            condBranch(0b010);
+            condBranch(instruction, 0b010);
             break;
         case Opcode::bge:
-            condBranch(0b011);
+            condBranch(instruction, 0b011);
             break;
         case Opcode::bl:
-            condBranch(0b100);
+            condBranch(instruction, 0b100);
             break;
         case Opcode::bne:
-            condBranch(0b101);
+            condBranch(instruction, 0b101);
             break;
         case Opcode::ble:
-            condBranch(0b110);
+            condBranch(instruction, 0b110);
             break;
         case Opcode::bo:
-            condBranch(0b111);
+            condBranch(instruction, 0b111);
             break;
         case Opcode::faultno:
             if (ac_.getConditionCode() == 0) {
