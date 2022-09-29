@@ -320,6 +320,11 @@ Core::cmpobx(const Instruction &instruction, uint8_t mask, Ordinal src1, Ordinal
 constexpr Ordinal rotateOperation(Ordinal src, Ordinal length) noexcept {
     return (src << length)  | (src >> ((-length) & 31u));
 }
+void 
+Core::bal(const Instruction& instruction) noexcept {
+    setDestination(RegisterIndex::Global14, ip_.getOrdinal() + 4, TreatAsOrdinal{});
+    ipRelativeBranch(instruction.getDisplacement()) ;
+}
 void
 Core::executeInstruction(const Instruction &instruction) noexcept {
 #ifdef EMULATOR_TRACE
@@ -355,8 +360,7 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
             ipRelativeBranch(instruction.getDisplacement()) ;
             break;
         case Opcode::bal:
-            setDestination(RegisterIndex::Global14, ip_.getOrdinal() + 4, TreatAsOrdinal{});
-            ipRelativeBranch(instruction.getDisplacement()) ;
+            bal(instruction);
             break;
         case Opcode::bno:
             if (ac_.getConditionCode() == 0) {
@@ -613,26 +617,17 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
             break;
         case Opcode::movl: {
                                auto& dest = getDoubleRegister(instruction.getSrcDest(false));
-                               const auto& src = getSourceDoubleRegister(instruction.getSrc1());
-                               auto srcValue = src.getLongOrdinal();
-                               dest.setLongOrdinal(srcValue);
+                               dest.performMov(getSourceDoubleRegister(instruction.getSrc1()));
                                break;
                            }
         case Opcode::movt: {
                                auto& dest = getTripleRegister(instruction.getSrcDest(false));
-                               const auto& src = getTripleRegister(instruction.getSrc1());
-                               dest.setOrdinal(src.getOrdinal(0), 0);
-                               dest.setOrdinal(src.getOrdinal(1), 1);
-                               dest.setOrdinal(src.getOrdinal(2), 2);
+                               dest.performMov(getTripleRegister(instruction.getSrc1()));
                                break;
                            }
         case Opcode::movq: {
                                auto& dest = getQuadRegister(instruction.getSrcDest(false));
-                               const auto& src = getQuadRegister(instruction.getSrc1());
-                               dest.setOrdinal(src.getOrdinal(0), 0);
-                               dest.setOrdinal(src.getOrdinal(1), 1);
-                               dest.setOrdinal(src.getOrdinal(2), 2);
-                               dest.setOrdinal(src.getOrdinal(3), 3);
+                               dest.performMov(getQuadRegister(instruction.getSrc1()));
                                break;
                            }
         case Opcode::alterbit:

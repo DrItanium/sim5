@@ -299,8 +299,11 @@ public:
 
 #ifdef NUMERICS_ARCHITECTURE
     constexpr auto getLongReal() const noexcept { return lreal_; }
-void setLongReal(LongReal value) noexcept { lreal_ = value; }
+    void setLongReal(LongReal value) noexcept { lreal_ = value; }
 #endif
+    void performMov(const DoubleRegister& other) noexcept {
+        lord_ = other.lord_;
+    }
 private:
     LongOrdinal lord_ = 0;
     LongInteger lint_;
@@ -319,6 +322,11 @@ public:
     constexpr auto getExtendedReal() const noexcept { return lreal_; }
 void setExtendedReal(LongReal value) noexcept { lreal_ = value; }
 #endif
+        void performMov(const TripleRegister& other) noexcept {
+            parts_[0] = other.parts_[0];
+            parts_[1] = other.parts_[1];
+            parts_[2] = other.parts_[2];
+        }
 private:
     Ordinal parts_[4]; // the fourth Ordinal is for alignment purposes, there is no way to modify it through the class
 #ifdef NUMERICS_ARCHITECTURE
@@ -327,17 +335,21 @@ private:
 };
 
 union QuadRegister {
-public:
-    constexpr explicit QuadRegister(Ordinal a = 0, Ordinal b = 0, Ordinal c = 0, Ordinal d = 0) noexcept : parts_{a, b, c, d}{ }
-    constexpr explicit QuadRegister(LongOrdinal lower, LongOrdinal upper) noexcept : halves_{lower, upper} { }
-    constexpr auto getOrdinal(int which = 0) const noexcept { return parts_[which & 0b11]; } // very expensive!
-    void setOrdinal(Ordinal value, int which = 0) noexcept { parts_[which & 0b11] = value; }
-    constexpr auto getHalf(int which = 0) const noexcept { return halves_[which & 0b01];}
-    void setHalf(LongOrdinal value, int which = 0) noexcept { halves_[which & 0b01] = value; }
+    public:
+        constexpr explicit QuadRegister(Ordinal a = 0, Ordinal b = 0, Ordinal c = 0, Ordinal d = 0) noexcept : parts_{a, b, c, d}{ }
+        constexpr explicit QuadRegister(LongOrdinal lower, LongOrdinal upper) noexcept : halves_{lower, upper} { }
+        constexpr auto getOrdinal(int which = 0) const noexcept { return parts_[which & 0b11]; } // very expensive!
+        void setOrdinal(Ordinal value, int which = 0) noexcept { parts_[which & 0b11] = value; }
+        constexpr auto getHalf(int which = 0) const noexcept { return halves_[which & 0b01];}
+        void setHalf(LongOrdinal value, int which = 0) noexcept { halves_[which & 0b01] = value; }
 #ifdef NUMERICS_ARCHITECTURE
-    constexpr auto getExtendedReal() const noexcept { return lreal_; }
-void setExtendedReal(LongReal value) noexcept { lreal_ = value; }
+        constexpr auto getExtendedReal() const noexcept { return lreal_; }
+        void setExtendedReal(LongReal value) noexcept { lreal_ = value; }
 #endif
+        void performMov(const QuadRegister& other) noexcept {
+            halves_[0] = other.halves_[0];
+            halves_[1] = other.halves_[1];
+        }
 private:
     Ordinal parts_[4];
     LongOrdinal halves_[2];
