@@ -58,23 +58,12 @@ public:
     ~SimplifiedSxCore() override = default;
 protected:
     void boot() override;
-    Ordinal getSystemAddressTableBase() const noexcept override;
-    Ordinal getPRCBPtrBase() const noexcept override;
-    bool continueToExecute() const noexcept override;
-    constexpr bool initialized() const noexcept { return initialized_; }
-    void resetExecutionStatus() noexcept override;
-    void haltExecution() noexcept { executing_ = false; }
     void synchronizedStore(Address destination, const DoubleRegister &value) noexcept override;
     void synchronizedStore(Address destination, const QuadRegister &value) noexcept override;
     void synchronizedStore(Address destination, const Register &value) noexcept override;
 protected:
     virtual void processIACMessage(const IACMessage& message) noexcept;
     virtual void boot0(Ordinal sat, Ordinal pcb, Ordinal startIP);
-private:
-    Ordinal systemAddressTableBase_ = 0;
-    Ordinal prcbBase_ = 0;
-    bool executing_ = false;
-    bool initialized_ = false;
 };
 
 #endif //SIM3_SIMPLIFIEDSXCORE_H

@@ -858,38 +858,38 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
                                // set the carry out bit
                                break;
                            }
-        case Opcode::ldib: dest.setInteger(loadByte(computeMemoryAddress(instruction))); break;
-        case Opcode::ldis: dest.setInteger(loadShort(computeMemoryAddress(instruction))); break;
+        case Opcode::ldib: dest.setInteger(load8(computeMemoryAddress(instruction))); break;
+        case Opcode::ldis: dest.setInteger(load16(computeMemoryAddress(instruction))); break;
         case Opcode::st: {
                              auto src = getSourceRegister(instruction.getSrcDest(true)).getOrdinal();
-                             store(computeMemoryAddress(instruction), src);
+                             store32(computeMemoryAddress(instruction), src);
                              break;
                          }
         case Opcode::stob: {
                                auto theIndex = instruction.getSrcDest(true);
                                auto& srcReg = getSourceRegister(theIndex);
                                auto src = srcReg.getByteOrdinal(0);
-                               storeByte(computeMemoryAddress(instruction), src);
+                               store8(computeMemoryAddress(instruction), src);
                                break;
                            }
         case Opcode::stos: {
                                auto src = getSourceRegister(instruction.getSrcDest(true)).getShortOrdinal();
-                               storeShort(computeMemoryAddress(instruction), src);
+                               store16(computeMemoryAddress(instruction), src);
                                break;
                            }
         case Opcode::stl: {
                               auto src = getDoubleRegister(instruction.getSrcDest(true)).getLongOrdinal();
-                              storeLong(computeMemoryAddress(instruction), src);
+                              store64(computeMemoryAddress(instruction), src);
                               break;
                           }
         case Opcode::stt: {
                               auto& src = getTripleRegister(instruction.getSrcDest(true));
-                              store(computeMemoryAddress(instruction), src);
+                              store96(computeMemoryAddress(instruction), src);
                               break;
                           }
         case Opcode::stq: {
                               auto& src = getQuadRegister(instruction.getSrcDest(true));
-                              store(computeMemoryAddress(instruction), src);
+                              store128(computeMemoryAddress(instruction), src);
                               break;
                           }
         case Opcode::stib: {
@@ -934,26 +934,26 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
             // with condition code assignments and forced alignments
 
             // load basically takes care of accessing different registers and such even memory mapped ones
-            dest.setOrdinal(load(src1Ord & 0xFFFF'FFFC)); // force word alignment
+            dest.setOrdinal(load32(src1Ord & 0xFFFF'FFFC)); // force word alignment
                                                           // there is a _fail_ condition where a bad access condition will result in 0b000
                                                           /// @todo implement support for bad access conditions
             ac_.setConditionCode(0b010);
             break;
         case Opcode::synmov:
             // load from memory and then store to another address in a synchronous fashion
-            synchronizedStore(src1Ord & 0xFFFF'FFFC, Register{load(src2Ord)});
+            synchronizedStore(src1Ord & 0xFFFF'FFFC, Register{load32(src2Ord)});
             /// @todo figure out how to support bad access conditions
             ac_.setConditionCode(0b010);
             break;
         case Opcode::synmovl:
             /// @todo put synchronization calls around this
-            synchronizedStore((src1Ord & 0xFFFF'FFF8) /* aligned */, DoubleRegister{loadLong(src2Ord /* source address */)});
+            synchronizedStore((src1Ord & 0xFFFF'FFF8) /* aligned */, DoubleRegister{load64(src2Ord /* source address */)});
             /// @todo figure out how to support bad access conditions
             ac_.setConditionCode(0b010);
             break;
         case Opcode::synmovq:
             /// @todo put synchronization calls around this
-            synchronizedStore(src1Ord & 0xFFFF'FFF0 /* align */, QuadRegister{loadQuad(src2Ord /* source address */)});
+            synchronizedStore(src1Ord & 0xFFFF'FFF0 /* align */, QuadRegister{load128(src2Ord /* source address */)});
             /// @todo figure out how to support bad access conditions
             ac_.setConditionCode(0b010);
             break;
@@ -991,39 +991,31 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
             break;
     }
 }
-void
-Core::run() {
-    resetExecutionStatus();
-    boot();
-    while(continueToExecute()) {
-        cycle();
-    }
-}
 Ordinal
 Core::getSystemProcedureTableBase() {
-    return load(getSystemAddressTableBase() + 120);
+    return load32(getSystemAddressTableBase() + 120);
 }
 Ordinal
 Core::getFaultProcedureTableBase() {
-    return load(getSystemAddressTableBase() + 152);
+    return load32(getSystemAddressTableBase() + 152);
 
 }
 Ordinal
 Core::getTraceTablePointer() {
-    return load(getSystemAddressTableBase() + 168);
+    return load32(getSystemAddressTableBase() + 168);
 }
 Ordinal
 Core::getInterruptTableBase() {
-    return load(getPRCBPtrBase() + 16);
+    return load32(getPRCBPtrBase() + 16);
 }
 Ordinal
 Core::getFaultTableBase() {
-    return load(getPRCBPtrBase() + 40);
+    return load32(getPRCBPtrBase() + 40);
 }
 
 Ordinal
 Core::getInterruptStackPointer() {
-    return load(getPRCBPtrBase() + 20);
+    return load32(getPRCBPtrBase() + 20);
 }
 /*
 void
@@ -1150,7 +1142,7 @@ Core::calls(const Instruction& instruction) noexcept {
         generateFault(FaultType::Protection_Length);
     } else {
         syncf();
-        auto tempPE = load(getSystemProcedureTableBase() + 48 + (4 * targ));
+        auto tempPE = load32(getSystemProcedureTableBase() + 48 + (4 * targ));
         auto type = tempPE & 0b11;
         auto procedureAddress = tempPE & ~0b11;
         // read entry from system-procedure table, where sptbase is address of system-procedure table from IMI
@@ -1195,8 +1187,8 @@ Core::ret() noexcept {
         case 0b001:
             [this, &restoreStandardFrame]() {
                 auto& fp = getFramePointer();
-                auto x = load(fp.getOrdinal() - 16);
-                auto y = load(fp.getOrdinal() - 12);
+                auto x = load32(fp.getOrdinal() - 16);
+                auto y = load32(fp.getOrdinal() - 12);
                 restoreStandardFrame();
                 ac_.setValue(y);
                 if (pc_.inSupervisorMode()) {
@@ -1225,8 +1217,8 @@ Core::ret() noexcept {
         case 0b111: // interrupt return
             [this,&restoreStandardFrame]() {
                 auto& fp = getFramePointer();
-                auto x = load(fp.getOrdinal() - 16);
-                auto y = load(fp.getOrdinal() - 12);
+                auto x = load32(fp.getOrdinal() - 16);
+                auto y = load32(fp.getOrdinal() - 12);
                 restoreStandardFrame();
                 ac_.setValue(y);
                 if (pc_.inSupervisorMode()) {
@@ -1311,5 +1303,16 @@ Core::enterCall(Address newFP) noexcept {
     Serial.println(__PRETTY_FUNCTION__);
 #endif
 #endif
+}
+
+
+void
+Core::lock() {
+
+}
+
+void
+Core::unlock() {
+
 }
 

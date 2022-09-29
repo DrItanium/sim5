@@ -37,7 +37,6 @@ SimplifiedSxCore::boot0(Ordinal sat, Ordinal pcb, Ordinal startIP) {
     prcbBase_ = pcb;
     // skip the check words
     ip_.setOrdinal(startIP);
-    executing_ = true;
     pc_.setPriority(31);
     pc_.setState(true); // needs to be set as interrupted
     auto thePointer = getInterruptStackPointer();
@@ -80,11 +79,8 @@ SimplifiedSxCore::boot() {
     Serial.println(__PRETTY_FUNCTION__ );
 #endif
 #endif
-    if (!initialized_) {
-        initialized_ = true;
-        auto q = loadQuad(0);
-        boot0(q.getOrdinal(0), q.getOrdinal(1), q.getOrdinal(3));
-    }
+    auto q = load128(0);
+    boot0(q.getOrdinal(0), q.getOrdinal(1), q.getOrdinal(3));
 #ifdef EMULATOR_TRACE
 #ifdef ARDUINO
     Serial.print("EXITING ");
@@ -92,26 +88,10 @@ SimplifiedSxCore::boot() {
 #endif
 #endif
 }
-Ordinal
-SimplifiedSxCore::getSystemAddressTableBase() const noexcept {
-    return systemAddressTableBase_;
-}
-Ordinal
-SimplifiedSxCore::getPRCBPtrBase() const noexcept {
-    return prcbBase_;
-}
-bool
-SimplifiedSxCore::continueToExecute() const noexcept {
-    return executing_;
-}
-void
-SimplifiedSxCore::resetExecutionStatus() noexcept {
-    executing_ = true;
-}
 void
 SimplifiedSxCore::synchronizedStore(Address destination, const DoubleRegister &value) noexcept {
     // no special IAC locations when dealing with long versions so cool beans
-    store(destination, value.getLongOrdinal());
+    store64(destination, value.getLongOrdinal());
 }
 void
 SimplifiedSxCore::synchronizedStore(Address destination, const QuadRegister &value) noexcept {
@@ -121,13 +101,13 @@ SimplifiedSxCore::synchronizedStore(Address destination, const QuadRegister &val
         // there are special IAC messages we need to handle here
     } else {
         // synchronized stores are always aligned but still go through the normal mechanisms
-        store(destination, value);
+        store128(destination, value);
     }
 }
 void
 SimplifiedSxCore::synchronizedStore(Address destination, const Register &value) noexcept {
     // there is a lookup for an interrupt control register, in the Sx manual, we are going to ignore that for now
-    store(destination, value.getOrdinal());
+    store32(destination, value.getOrdinal());
 }
 
 void
@@ -162,16 +142,15 @@ SimplifiedSxCore::processIACMessage(const IACMessage &message) noexcept {
         case 0x8F:
             // set breakpoint register
             break;
-        case 0x80:
-            // store system base
-            [this, &message]() {
-                // stores the current locations of the system address table and the prcb in a specified location in memory.
-                // The address of the system address table is stored in the word starting at the byte specified in field 3,
-                // and the address of the PRCB is stored in the next word in memory (field 3 address plus 4)
-                DoubleRegister pack(getSystemAddressTableBase(), getPRCBPtrBase());
-                storeLong(message.getField3(), pack.getLongOrdinal());
-            }();
-            break;
+        case 0x80: {
+                       // store system base
+                       // stores the current locations of the system address table and the prcb in a specified location in memory.
+                       // The address of the system address table is stored in the word starting at the byte specified in field 3,
+                       // and the address of the PRCB is stored in the next word in memory (field 3 address plus 4)
+                       DoubleRegister pack(getSystemAddressTableBase(), getPRCBPtrBase());
+                       store64(message.getField3(), pack.getLongOrdinal());
+                       break;
+                   }
         case 0x40: // interrupt
             // Generates an interrupt request. The interrup vector is given in field 1 of the IAC message. The processor handles the
             // interrupt request just as it does interrupts received from other sources. If the interrupt priority is higher than the prcessor's

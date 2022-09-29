@@ -202,13 +202,13 @@ public:
 public:
     void run();
     void cycle() noexcept;
+    void begin() noexcept;
 protected:
     virtual void boot() = 0;
-    virtual void lock() = 0;
-    virtual void unlock() = 0;
-    virtual Ordinal getSystemAddressTableBase() const noexcept = 0;
-    virtual Ordinal getPRCBPtrBase() const noexcept = 0;
-    virtual bool continueToExecute() const noexcept = 0;
+    virtual void lock();
+    virtual void unlock();
+    constexpr Ordinal getSystemAddressTableBase() const noexcept { return systemAddressTableBase_; }
+    constexpr Ordinal getPRCBPtrBase() const noexcept { return prcbBase_; }
     virtual Ordinal getSystemProcedureTableBase() ;
     virtual Ordinal getFaultProcedureTableBase() ;
     virtual Ordinal getTraceTablePointer() ;
@@ -229,6 +229,11 @@ protected:
     }
     virtual void load96(Address destination, TripleRegister& reg) noexcept;
     virtual void load128(Address destination, QuadRegister& reg) noexcept;
+    QuadRegister load128(Address destination) noexcept {
+        QuadRegister tmp;
+        load128(destination, tmp);
+        return tmp;
+    }
 
     virtual void store8(Address destination, byte value) noexcept;
     virtual void store32(Address destination, Ordinal value) noexcept;
@@ -292,8 +297,7 @@ protected:
         return getRegister(RegisterIndex::RIP);
     }
 protected:
-    inline Ordinal getSupervisorStackPointer() noexcept { return load((getSystemProcedureTableBase() + 12)); }
-    virtual void resetExecutionStatus() noexcept = 0;
+    inline Ordinal getSupervisorStackPointer() noexcept { return load32((getSystemProcedureTableBase() + 12)); }
     LocalRegisterPack& getCurrentPack() noexcept { return frames[currentFrameIndex_]; }
 private:
     void lda(const Instruction& inst) noexcept;
@@ -353,5 +357,7 @@ protected:
     Ordinal c_;
     Ordinal currentFrameIndex_ = 0;
     LocalRegisterPack frames[NumRegisterFrames];
+    Ordinal systemAddressTableBase_ = 0;
+    Ordinal prcbBase_ = 0;
 };
 #endif //SIM3_CORE_H
