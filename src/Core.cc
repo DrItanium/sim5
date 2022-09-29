@@ -895,13 +895,11 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
                                storeByteInteger(computeMemoryAddress(instruction), src);
                                break;
                            }
-        case Opcode::stis:
-            [this, &instruction]() {
-                auto src = static_cast<ShortInteger>(getSourceRegister(instruction.getSrcDest(true)).getInteger());
-                auto address = computeMemoryAddress(instruction);
-                storeShortInteger(address, src);
-            }();
-            break;
+        case Opcode::stis: {
+                               auto src = static_cast<ShortInteger>(getSourceRegister(instruction.getSrcDest(true)).getInteger()); 
+                               storeShortInteger(computeMemoryAddress(instruction), src);
+                               break;
+                           }
         case Opcode::shri:
             /*
              * if (src >= 0) {
@@ -946,35 +944,16 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
             ac_.setConditionCode(0b010);
             break;
         case Opcode::synmovl:
-            [this, &instruction]() {
-                auto src = getSourceRegister(instruction.getSrc2()).getOrdinal(); // source address
-                auto addr = getSourceRegister(instruction.getSrc1()).getOrdinal() & 0xFFFF'FFF8; // align
-                DoubleRegister temp(loadLong(src));
-                synchronizedStore(addr, temp);
-                /// @todo figure out how to support bad access conditions
-                ac_.setConditionCode(0b010);
-            }();
+            /// @todo put synchronization calls around this
+            synchronizedStore((src1Ord & 0xFFFF'FFF8) /* aligned */, DoubleRegister{loadLong(src2Ord /* source address */)});
+            /// @todo figure out how to support bad access conditions
+            ac_.setConditionCode(0b010);
             break;
         case Opcode::synmovq:
-            [this, &instruction]() {
-                auto src  = getSourceRegister(instruction.getSrc2()).getOrdinal(); // source address
-                auto addr = getSourceRegister(instruction.getSrc1()).getOrdinal() & 0xFFFF'FFF0; // align
-                QuadRegister temp = loadQuad(src);
-#ifdef EMULATOR_TRACE
-#ifdef ARDUINO
-                Serial.print("SRC ADDRESS: 0x");
-                Serial.println(src, HEX);
-                Serial.print("QUAD REGISTER CONTENTS: 0x");
-                Serial.print(temp.getOrdinal(3), HEX);
-                Serial.print(temp.getOrdinal(2), HEX);
-                Serial.print(temp.getOrdinal(1), HEX);
-                Serial.println(temp.getOrdinal(0), HEX);
-#endif
-#endif
-                synchronizedStore(addr, temp);
-                /// @todo figure out how to support bad access conditions
-                ac_.setConditionCode(0b010);
-            }();
+            /// @todo put synchronization calls around this
+            synchronizedStore(src1Ord & 0xFFFF'FFF0 /* align */, QuadRegister{loadQuad(src2Ord /* source address */)});
+            /// @todo figure out how to support bad access conditions
+            ac_.setConditionCode(0b010);
             break;
         case Opcode::modpc:
             [this, &instruction]() {
