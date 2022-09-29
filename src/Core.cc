@@ -337,9 +337,7 @@ Core::lda(const Instruction &inst) noexcept {
 #endif
 }
 void
-Core::cmpobx(const Instruction &instruction, uint8_t mask) noexcept {
-    auto src1 = getSourceRegisterValue(instruction.getSrc1(), TreatAsOrdinal{});
-    auto src2 = getSourceRegisterValue(instruction.getSrc2(), TreatAsOrdinal{});
+Core::cmpobx(const Instruction &instruction, uint8_t mask, Ordinal src1, Ordinal src2) noexcept {
     cmpo(src1, src2);
     if ((mask & ac_.getConditionCode()) != 0) {
         // while the docs show (displacement * 4), I am currently including the bottom two bits being forced to zero in displacement
@@ -518,46 +516,46 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
                 dest.setInteger(src2Int + 1);
             break;
         case Opcode::cmpobg:
-            cmpobx(instruction, 0b001);
+            cmpobx(instruction, 0b001, src1Ord, src2Ord);
             break;
         case Opcode::cmpobe:
-            cmpobx(instruction, 0b010);
+            cmpobx(instruction, 0b010, src1Ord, src2Ord);
             break;
         case Opcode::cmpobge:
-            cmpobx(instruction, 0b011);
+            cmpobx(instruction, 0b011, src1Ord, src2Ord);
             break;
         case Opcode::cmpobl:
-            cmpobx(instruction, 0b100);
+            cmpobx(instruction, 0b100, src1Ord, src2Ord);
             break;
         case Opcode::cmpobne:
-            cmpobx(instruction, 0b101);
+            cmpobx(instruction, 0b101, src1Ord, src2Ord);
             break;
         case Opcode::cmpoble:
-            cmpobx(instruction, 0b110);
+            cmpobx(instruction, 0b110, src1Ord, src2Ord);
             break;
         case Opcode::cmpibno:
-            cmpibx(instruction, 0b000);
+            cmpibx(instruction, 0b000, src1Int, src2Int);
             break;
         case Opcode::cmpibg:
-            cmpibx(instruction, 0b001);
+            cmpibx(instruction, 0b001, src1Int, src2Int);
             break;
         case Opcode::cmpibe:
-            cmpibx(instruction, 0b010);
+            cmpibx(instruction, 0b010, src1Int, src2Int);
             break;
         case Opcode::cmpibge:
-            cmpibx(instruction, 0b011);
+            cmpibx(instruction, 0b011, src1Int, src2Int);
             break;
         case Opcode::cmpibl:
-            cmpibx(instruction, 0b100);
+            cmpibx(instruction, 0b100, src1Int, src2Int);
             break;
         case Opcode::cmpibne:
-            cmpibx(instruction, 0b101);
+            cmpibx(instruction, 0b101, src1Int, src2Int);
             break;
         case Opcode::cmpible:
-            cmpibx(instruction, 0b110);
+            cmpibx(instruction, 0b110, src1Int, src2Int);
             break;
         case Opcode::cmpibo:
-            cmpibx(instruction, 0b111);
+            cmpibx(instruction, 0b111, src1Int, src2Int);
             break;
         case Opcode::concmpi: {
                                   if ((ac_.getConditionCode() & 0b100) == 0) {
@@ -1133,9 +1131,7 @@ Core::flushreg() noexcept {
     }
 }
 void
-Core::cmpibx(const Instruction &instruction, uint8_t mask) noexcept {
-    auto src1 = getSourceRegisterValue(instruction.getSrc1(), TreatAsInteger{});
-    auto src2 = getSourceRegisterValue(instruction.getSrc2(), TreatAsInteger{});
+Core::cmpibx(const Instruction &instruction, uint8_t mask, Integer src1, Integer src2) noexcept {
     cmpi(src1, src2);
     if ((mask & ac_.getConditionCode()) != 0) {
         // while the docs show (displacement * 4), I am currently including the bottom two bits being forced to zero in displacement

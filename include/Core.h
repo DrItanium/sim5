@@ -330,7 +330,7 @@ private:
     void shro(Register& dest, Ordinal src, Ordinal len) noexcept;
     void shlo(Register& dest, Ordinal src, Ordinal len) noexcept;
     void flushreg() noexcept;
-    void cmpibx(const Instruction& instruction, uint8_t mask) noexcept;
+    void cmpibx(const Instruction& instruction, uint8_t mask, Integer src1, Integer src2) noexcept;
     void ipRelativeBranch(Integer displacement) noexcept {
         advanceIPBy = 0;
         ip_.setInteger(ip_.getInteger() + displacement);
@@ -345,7 +345,7 @@ private:
     void setDestination(RegisterIndex index, Integer value, TreatAsInteger);
     Integer getSourceRegisterValue(RegisterIndex index, TreatAsInteger) const;
     Ordinal getSourceRegisterValue(RegisterIndex index, TreatAsOrdinal) const;
-    void cmpobx(const Instruction& instruction, uint8_t mask) noexcept;
+    void cmpobx(const Instruction& instruction, uint8_t mask, Ordinal src1, Ordinal src2) noexcept;
 private:
     void saveRegisterFrame(const RegisterFrame& theFrame, Address baseAddress) noexcept;
     void restoreRegisterFrame(RegisterFrame& theFrame, Address baseAddress) noexcept;
