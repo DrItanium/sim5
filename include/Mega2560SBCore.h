@@ -42,16 +42,6 @@
  */
 class MEGA2560SBCore : public SBCoreArduino {
 public:
-    static constexpr auto SDCardPin = 4;
-    static constexpr auto PSRAMPin = 2;
-public:
-    static constexpr Address RamSize = 8_MB;
-    static constexpr Address RamStart = 0x0000'0000;
-    static constexpr Address RamMask = RamSize - 1;
-public:
-    using Parent = SBCoreArduino;
-    using Cache = ::Cache<MemoryCell32, 64, 16>;
-    MEGA2560SBCore();
     ~MEGA2560SBCore() override = default;
     void begin() override;
 protected:
@@ -75,17 +65,6 @@ protected:
     void doRAMStore(Address address, Ordinal value) override;
     bool inRAMArea(Address target) noexcept override;
     Address toRAMOffset(Address target) noexcept override;
-private:
-    auto& getCacheLine(Address target, MemoryThing& thing) noexcept { return theCache_.getCacheLine(target, thing); }
-private:
-#ifndef USE_PSRAM_CHIP
-    using RAM = MemoryMappedFileThing;
-#else
-    using RAM = PSRAMChip<PSRAMPin, 5_MHz>;
-#endif
-private:
-    Cache theCache_;
-    RAM memoryImage_;
 };
 
 using SBCore = MEGA2560SBCore;

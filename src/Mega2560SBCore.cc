@@ -34,6 +34,7 @@ SdFat SD;
 
 void
 MEGA2560SBCore::begin() {
+#if 0
     Serial.println(F("BRINGING UP HITAGI SBCORE EMULATOR!"));
     pinMode(LED_BUILTIN, OUTPUT);
     digitalWrite(LED_BUILTIN, LOW);
@@ -78,6 +79,7 @@ MEGA2560SBCore::begin() {
         // okay also clear out the cache lines since the transfer buffer is shared with the cache
         theCache_.clear();
     }
+#endif
 }
 
 
@@ -175,45 +177,35 @@ MEGA2560SBCore::doIACStore(Address address, Ordinal value) {
 }
 Ordinal
 MEGA2560SBCore::doRAMLoad(Address address, TreatAsOrdinal thingy) {
-    return getCacheLine(address, memoryImage_).get(address, thingy);
+    return 0;
 }
 ShortOrdinal
 MEGA2560SBCore::doRAMLoad(Address address, TreatAsShortOrdinal thingy) {
-    return getCacheLine(address, memoryImage_).get(address, thingy);
+    return 0;
 }
 ByteOrdinal
 MEGA2560SBCore::doRAMLoad(Address address, TreatAsByteOrdinal thingy) {
-    return getCacheLine(address, memoryImage_).get(address, thingy);
+    return 0;
 }
 void
 MEGA2560SBCore::doRAMStore(Address address, ByteOrdinal value) {
-    getCacheLine(address, memoryImage_).set(address, value);
+    
 }
 void
 MEGA2560SBCore::doRAMStore(Address address, ShortOrdinal value) {
-    getCacheLine(address, memoryImage_).set(address, value);
 }
 void
 MEGA2560SBCore::doRAMStore(Address address, Ordinal value) {
-    getCacheLine(address, memoryImage_).set(address, value);
 }
 bool
 MEGA2560SBCore::inRAMArea(Address target) noexcept{
     // since the ram starts at address zero, there is no need to worry about shifting the offset
-    return target >= RamStart && target < RamSize;
+    return target >= 0 && target < 0xFE00'0000;
 }
 Address
 MEGA2560SBCore::toRAMOffset(Address target) noexcept{
-    return target & RamMask;
+    return target;
 }
-MEGA2560SBCore::MEGA2560SBCore() : Parent(),
-memoryImage_(
-#ifndef USE_PSRAM_CHIP
-0,64_MB, 64_MB,"live.bin", FILE_WRITE
-#else
-0
-#endif
-) {}
 
 
 #endif
