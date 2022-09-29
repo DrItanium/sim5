@@ -743,85 +743,54 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
         case Opcode::flushreg:
             flushreg();
             break;
-        case Opcode::fmark:
-            [this]() {
-                // Generates a breakpoint trace-event. This instruction causes a breakpoint trace-event to be generated, regardless of the
-                // setting of the breakpoint trace mode flag (to be implemented), providing the trace-enable bit (bit 0) of the process
-                // controls is set.
+        case Opcode::fmark: {
+                                // Generates a breakpoint trace-event. This instruction causes a breakpoint trace-event to be generated, regardless of the
+                                // setting of the breakpoint trace mode flag (to be implemented), providing the trace-enable bit (bit 0) of the process
+                                // controls is set.
 
-                // if pc.te == 1 then raiseFault(BreakpointTraceFault)
-                /// @todo implement
-                if (pc_.getTraceEnable()) {
-                    generateFault(FaultType::Breakpoint_Trace); /// @todo raise trace breakpoint fault
-                }
-            }();
-            break;
-        case Opcode::mark:
-            [this, &instruction]() {
-                // Generates a breakpoint trace-event if the breakpoint trace mode has been enabled.
-                // The breakpoint trace mode is enabled if the trace-enable bit (bit 0) of the process
-                // controls and the breakpoint-trace mode bit (bit 7) of the trace controls have been zet
-                if (pc_.getTraceEnable() && tc_.getBreakpointTraceMode()) {
-                    generateFault(FaultType::Breakpoint_Trace); /// @todo raise trace breakpoint fault
-                }
-                // if pc.te == 1 && breakpoint_trace_flag then raise trace breakpoint fault
-                /// @todo implement
-            }();
-            break;
+                                // if pc.te == 1 then raiseFault(BreakpointTraceFault)
+                                /// @todo implement
+                                if (pc_.getTraceEnable()) {
+                                    generateFault(FaultType::Breakpoint_Trace); /// @todo raise trace breakpoint fault
+                                }
+                                break;
+                            }
+        case Opcode::mark: {
+                               // Generates a breakpoint trace-event if the breakpoint trace mode has been enabled.
+                               // The breakpoint trace mode is enabled if the trace-enable bit (bit 0) of the process
+                               // controls and the breakpoint-trace mode bit (bit 7) of the trace controls have been zet
+                               if (pc_.getTraceEnable() && tc_.getBreakpointTraceMode()) {
+                                   generateFault(FaultType::Breakpoint_Trace); /// @todo raise trace breakpoint fault
+                               }
+                               // if pc.te == 1 && breakpoint_trace_flag then raise trace breakpoint fault
+                               /// @todo implement
+                               break;
+                           }
 
-        case Opcode::modac:
-            [this, &instruction]() {
-                auto& dest = getRegister(instruction.getSrcDest(false));
-                auto mask = getSourceRegister(instruction.getSrc1()).getOrdinal();
-                auto src = getSourceRegister(instruction.getSrc2()).getOrdinal();
-                dest.setOrdinal(ac_.modify(mask, src));
-            }( );
-            break;
-        case Opcode::modi:
-            [this, &instruction]() {
-                auto denominator = getSourceRegister(instruction.getSrc1()) .getInteger();
-                if (denominator == 0) {
-                    generateFault(FaultType::Arithmetic_ArithmeticZeroDivide);
-                } else {
-                    auto numerator = getSourceRegister(instruction.getSrc2()).getInteger();
-                    auto& dest = getRegister(instruction.getSrcDest(false));
-                    auto result = numerator - ((numerator / denominator) * denominator);
-                    if (((numerator * denominator) < 0) && (result != 0)) {
-                        result += denominator;
-                    }
-                    dest.setInteger(result);
-                }
-            }();
-            break;
+        case Opcode::modac: dest.setOrdinal(ac_.modify(src1.getOrdinal(), src2.getOrdinal())); break;
+        case Opcode::modi: {
+                               auto denominator = src1.getInteger();
+                               if (denominator == 0) {
+                                   generateFault(FaultType::Arithmetic_ArithmeticZeroDivide);
+                               } else {
+                                   auto numerator = src2.getInteger();
+                                   auto result = numerator - ((numerator / denominator) * denominator);
+                                   if (((numerator * denominator) < 0) && (result != 0)) {
+                                       result += denominator;
+                                   }
+                                   dest.setInteger(result);
+                               }
+                               break;
+                           }
         case Opcode::modify:
-            [this, &instruction]() {
                 // this is my encode operation but expanded out
-                auto& dest = getRegister(instruction.getSrcDest(false));
-                auto mask = getRegister(instruction.getSrc1()).getOrdinal();
-                auto src = getRegister(instruction.getSrc2()).getOrdinal();
-                dest.setOrdinal((src & mask) | (dest.getOrdinal() & ~mask));
-            }();
-            break;
-        case Opcode::call:
-            call(instruction);
-            break;
-        case Opcode::callx:
-            callx(instruction);
-            break;
-        case Opcode::shlo:
-            shlo(instruction);
-            break;
-        case Opcode::shro:
-            shro(instruction);
-            break;
-        case Opcode::shli:
-            [this, &instruction]() {
-                auto& dest = getRegister(instruction.getSrcDest(false));
-                auto len = getSourceRegister(instruction.getSrc1()).getInteger();
-                auto src = getSourceRegister(instruction.getSrc2()).getInteger();
-                dest.setInteger(src << len);
-            }();
-            break;
+                            dest.setOrdinal((src2.getOrdinal() & src1.getOrdinal()) | (dest.getOrdinal() & ~src1.getOrdinal()));
+                            break;
+        case Opcode::call: call(instruction); break;
+        case Opcode::callx: callx(instruction); break;
+        case Opcode::shlo: shlo(instruction); break;
+        case Opcode::shro: shro(instruction); break;
+        case Opcode::shli: dest.setInteger(src2.getInteger() << src1.getInteger()); break;
         case Opcode::scanbyte:
             [this, &instruction]() {
                 auto& src1 = getRegister(instruction.getSrc1());
