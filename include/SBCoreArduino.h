@@ -34,10 +34,6 @@ class SBCoreArduino : public SimplifiedSxCore {
 public:
     using Parent = SimplifiedSxCore;
     using Parent::Parent;
-    static constexpr Address HaltRegisterOffset = 0x00FF'FFFC;
-    static constexpr Address ConsoleRegisterOffset = 0x00E0'0000;
-    static constexpr Address ConsoleFlushOffset = 0x00E0'0004;
-    static constexpr Address IACBaseAddress = 0x0000'0010;
     SBCoreArduino();
     ~SBCoreArduino() override = default;
     virtual void begin();

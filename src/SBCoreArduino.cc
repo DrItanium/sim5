@@ -28,13 +28,6 @@
 SBCoreArduino::SBCoreArduino() : Parent() {
 
 }
-void
-SBCoreArduino::generateFault(FaultType ) {
-    Serial.print(F("FAULT GENERATED AT 0x"));
-    Serial.print(ip_.getOrdinal(), HEX);
-    Serial.println(F("! HALTING!!"));
-    haltExecution();
-}
 
 
 

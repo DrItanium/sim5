@@ -249,21 +249,21 @@ Instruction
 Core::loadInstruction(Address baseAddress) noexcept {
     // load words 64-bits at a time for simplicity, we increment by eight on double wide instructions and four on single wide
     auto targetAddress = baseAddress & ~(static_cast<Address>(0b11));
-    auto theLong = loadLong(targetAddress);
+    auto theLong = load64(targetAddress);
     return Instruction(theLong);
 }
 
 void
 Core::saveRegisterFrame(const RegisterFrame &theFrame, Address baseAddress) noexcept {
     for (int i = 0; i < 16; ++i, baseAddress += 4) {
-        store(baseAddress, theFrame.getRegister(i).getOrdinal());
+        store32(baseAddress, theFrame.getRegister(i).getOrdinal());
     }
 }
 
 void
 Core::restoreRegisterFrame(RegisterFrame &theFrame, Address baseAddress) noexcept {
     for (auto& reg : theFrame.gprs) {
-        reg.setOrdinal(load(baseAddress));
+        reg.setOrdinal(load32(baseAddress));
         baseAddress += 4;
     }
 }
@@ -571,7 +571,7 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
                               }
             // MEM Format
         case Opcode::ldob: 
-                              dest.setOrdinal(loadByte(computeMemoryAddress(instruction))); 
+                              dest.setOrdinal(load8(computeMemoryAddress(instruction))); 
                               break;
         case Opcode::bx:
                 ip_.setOrdinal(computeMemoryAddress(instruction));
@@ -584,18 +584,18 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
                                advanceIPBy = 0;
                                break;
                            }
-        case Opcode::ldos: dest.setOrdinal(loadShort(computeMemoryAddress(instruction))); break;
+        case Opcode::ldos: dest.setOrdinal(load16(computeMemoryAddress(instruction))); break;
         case Opcode::lda: lda(instruction); break;
-        case Opcode::ld: dest.setOrdinal(load(computeMemoryAddress(instruction))); break;
+        case Opcode::ld: dest.setOrdinal(load32(computeMemoryAddress(instruction))); break;
         case Opcode::ldl: {
                               auto& dest = getDoubleRegister(instruction.getSrcDest(false));
                               auto address = computeMemoryAddress(instruction);
-                              auto result = loadLong(address);
+                              auto result = load64(address);
                               dest.setLongOrdinal(result);
                               break;
                           }
-        case Opcode::ldt: load(computeMemoryAddress(instruction), getTripleRegister(instruction.getSrcDest(false))); break;
-        case Opcode::ldq: load(computeMemoryAddress(instruction), getQuadRegister(instruction.getSrcDest(false))); break;
+        case Opcode::ldt: load96(computeMemoryAddress(instruction), getTripleRegister(instruction.getSrcDest(false))); break;
+        case Opcode::ldq: load128(computeMemoryAddress(instruction), getQuadRegister(instruction.getSrcDest(false))); break;
             // REG format
 #define X(code, op) case Opcode:: code ## i : dest.setInteger(src2Int op src1Int); break; \
                     case Opcode:: code ## o : dest.setOrdinal(src2Ord op src1Ord); break
@@ -797,9 +797,9 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
                                 syncf();
                                 lock();
                                 auto addr = src1Ord & 0xFFFF'FFFC; // force alignment to word boundary
-                                auto temp = load(addr);
+                                auto temp = load32(addr);
                                 auto src = src2Ord;
-                                store(addr, temp + src);
+                                store32(addr, temp + src);
                                 dest.setOrdinal(temp);
                                 unlock();
                                 break;
@@ -810,10 +810,10 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
                                 // value from memory is stored in src/dest
                                 syncf();
                                 lock();
-                                auto addr = load(src1Ord & 0xFFFF'FFFC); // force alignment to word boundary
-                                auto temp = load(addr);
+                                auto addr = load32(src1Ord & 0xFFFF'FFFC); // force alignment to word boundary
+                                auto temp = load32(addr);
                                 auto mask = src2Ord;
-                                store(addr, (dest.getOrdinal() & mask) | (temp & ~mask));
+                                store32(addr, (dest.getOrdinal() & mask) | (temp & ~mask));
                                 dest.setOrdinal(temp);
                                 unlock();
                                 break;
