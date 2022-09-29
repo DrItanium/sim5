@@ -49,49 +49,7 @@ protected:
     Ordinal loadAligned(Address address) override;
     void storeAligned(Address address, Ordinal value) override;
     void generateFault(FaultType ) override;
-protected:
-    virtual ByteOrdinal ioSpaceLoad(Address address, TreatAsByteOrdinal) = 0;
-    virtual ShortOrdinal ioSpaceLoad(Address address, TreatAsShortOrdinal) = 0;
-    virtual Ordinal ioSpaceLoad(Address address, TreatAsOrdinal) = 0;
 
-    virtual void ioSpaceStore(Address address, ByteOrdinal value) = 0;
-    virtual void ioSpaceStore(Address address, ShortOrdinal value) = 0;
-    virtual void ioSpaceStore(Address address, Ordinal value) = 0;
-
-    virtual ByteOrdinal doIACLoad(Address address, TreatAsByteOrdinal) = 0;
-    virtual ShortOrdinal doIACLoad(Address address, TreatAsShortOrdinal) = 0;
-    virtual Ordinal doIACLoad(Address address, TreatAsOrdinal) = 0;
-
-    virtual void doIACStore(Address address, ByteOrdinal value) = 0;
-    virtual void doIACStore(Address address, ShortOrdinal value) = 0;
-    virtual void doIACStore(Address address, Ordinal value) = 0;
-
-    virtual ByteOrdinal doRAMLoad(Address address, TreatAsByteOrdinal) = 0;
-    virtual ShortOrdinal doRAMLoad(Address address, TreatAsShortOrdinal) = 0;
-    virtual Ordinal doRAMLoad(Address address, TreatAsOrdinal) = 0;
-    virtual void doRAMStore(Address address, ByteOrdinal value) = 0;
-    virtual void doRAMStore(Address address, ShortOrdinal value) = 0;
-    virtual void doRAMStore(Address address, Ordinal value) = 0;
-
-    virtual bool inIOSpace(Address target) noexcept {
-        return target >= 0xFE00'0000 && !inIACSpace(target);
-    }
-    virtual Address toIOSpaceOffset(Address target)  noexcept {
-        return toIACSpaceOffset(target);
-    }
-    static constexpr bool inIACSpace(Address target) noexcept {
-        return target >= 0xFF00'0000;
-    }
-    static constexpr Address toIACSpaceOffset(Address target) noexcept {
-        return target & (~0xFF00'0000);
-    }
-    virtual bool inRAMArea(Address target) noexcept = 0;
-    /**
-     * @brief Convert the full 32-bit address into an offset into the ram area
-     * @param target the raw 32-bit address
-     * @return the raw 32-bit address now as an offset into ram
-     */
-    virtual Address toRAMOffset(Address target) noexcept = 0;
 };
 
 #endif

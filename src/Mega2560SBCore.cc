@@ -29,8 +29,8 @@
 #include <SPI.h>
 #include "Types.h"
 #include "Mega2560SBCore.h"
-#include <SdFat.h>
-SdFat SD;
+//#include <SdFat.h>
+//SdFat SD;
 
 void
 MEGA2560SBCore::begin() {
