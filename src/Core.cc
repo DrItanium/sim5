@@ -382,6 +382,7 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
     auto& src2 = getSourceRegister(instruction.getSrc2());
     auto src2Ord = src2.getOrdinal();
     auto src2Int = src2.getInteger();
+    auto bitpos = bitPositions[src1Ord & 0b11111];
     switch (instruction.identifyOpcode()) {
         // CTRL Format opcodes
         case Opcode::b:
@@ -471,7 +472,6 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
         case Opcode::bbc: {
                               // branch if bit is clear
                               auto src = src2Ord;
-                              auto bitpos = bitPositions[src1Ord & 0b11111];
                               if ((bitpos & src) == 0) {
                                   // another lie in the i960Sx manual, when this bit is clear we assign 0b000 otherwise it is 0b010
                                   ac_.setConditionCode(0b000);
@@ -487,7 +487,6 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
                           }
         case Opcode::bbs: {
                               auto src = src2Ord;
-                              auto bitpos = bitPositions[src1Ord & 0b11111];
                               if ((bitpos & src) != 0) {
                                   ac_.setConditionCode(0b010);
                                   // while the docs show (displacement * 4), I am currently including the bottom two bits being forced to zero in displacement
@@ -560,38 +559,25 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
         case Opcode::cmpibo:
             cmpibx(instruction, 0b111);
             break;
-        case Opcode::concmpi:
-            [this, &instruction]() {
-                if ((ac_.getConditionCode() & 0b100) == 0) {
-                    auto src1 = getRegister(instruction.getSrc1()).getInteger();
-                    auto src2 = getRegister(instruction.getSrc2()).getInteger();
-                    ac_.setConditionCode((src1 <= src2) ? 0b010 : 0b001);
-                }
-            }();
-            break;
-        case Opcode::concmpo:
-            [this, &instruction]() {
-                if ((ac_.getConditionCode() & 0b100) == 0) {
-                    auto src1 = getRegister(instruction.getSrc1()).getOrdinal();
-                    auto src2 = getRegister(instruction.getSrc2()).getOrdinal();
-                    ac_.setConditionCode((src1 <= src2) ? 0b010 : 0b001);
-                }
-            }();
-            break;
+        case Opcode::concmpi: {
+                                  if ((ac_.getConditionCode() & 0b100) == 0) {
+                                      ac_.setConditionCode((src1Int <= src2Int) ? 0b010 : 0b001);
+                                  }
+                                  break;
+                              }
+        case Opcode::concmpo: {
+                                  if ((ac_.getConditionCode() & 0b100) == 0) {
+                                      ac_.setConditionCode((src1Ord <= src2Ord) ? 0b010 : 0b001);
+                                  }
+                                  break;
+                              }
             // MEM Format
-        case Opcode::ldob:
-            [this, &instruction]() {
-                auto address = computeMemoryAddress(instruction);
-                auto result = loadByte(address);
-                setDestination(instruction.getSrcDest(false), result, TreatAsOrdinal{});
-            }();
-            break;
+        case Opcode::ldob: 
+                              dest.setOrdinal(loadByte(computeMemoryAddress(instruction))); 
+                              break;
         case Opcode::bx:
-            [this, &instruction]() {
-                auto memoryAddress = computeMemoryAddress(instruction);
-                ip_.setOrdinal(memoryAddress);
+                ip_.setOrdinal(computeMemoryAddress(instruction));
                 advanceIPBy = 0;
-            }();
             break;
         case Opcode::balx:
             [this, &instruction]() {
@@ -645,12 +631,9 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
                 /// @todo check denominator and do proper handling
                 dest.setInteger(src2Int / src1Int);
             break;
-        case Opcode::notbit: {
-                                 auto bitpos = bitPositions[src1Ord & 0b11111];
-                                 auto src = src2Ord;
-                                 dest.setOrdinal(src ^ bitpos);
-                                 break;
-                             }
+        case Opcode::notbit: 
+            dest.setOrdinal(src2Ord ^ bitpos);
+            break;
 #define X(code, op) case Opcode :: code : dest.setOrdinal(src2Ord op src1Ord); break
             X(logicalAnd, &);
             X(logicalOr, |);
@@ -705,17 +688,12 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
                                break;
                            }
         case Opcode::alterbit:
-            [this, &instruction]() {
-                auto bitpos = bitPositions[getRegister(instruction.getSrc1()).getOrdinal() & 0b11111];
-                auto src = getRegister(instruction.getSrc2()).getOrdinal();
-                auto& dest = getRegister(instruction.getSrcDest(false));
-                if (ac_.getConditionCode() & 0b010) {
-                    dest.setOrdinal(src | bitpos);
-                } else {
-                    dest.setOrdinal(src & ~bitpos);
-                }
-            }();
-            break;
+                           if (ac_.getConditionCode() & 0b010) {
+                               dest.setOrdinal(src2Ord | bitpos);
+                           } else {
+                               dest.setOrdinal(src2Ord & ~bitpos);
+                           }
+                           break;
         case Opcode::ediv:
             [this, &instruction]() {
                 auto denomord = getRegister(instruction.getSrc1()).getOrdinal();
@@ -859,11 +837,9 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
                 dest.setOrdinal(temp);
             }();
             break;
-        case Opcode::chkbit: {
-                                 auto bitpos = bitPositions[src1Ord & 0b11111];
-                                 ac_.setConditionCode((src2Ord & bitpos) == 0 ? 0b000 : 0b010);
-                                 break;
-                             }
+        case Opcode::chkbit: 
+            ac_.setConditionCode((src2Ord & bitpos) == 0 ? 0b000 : 0b010);
+            break;
         case Opcode::addc: {
                                union {
                                    LongOrdinal value = 0;
@@ -969,7 +945,7 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
             break;
         case Opcode::shrdi: 
             // according to the manual, equivalent to divi value, 2 so that is what we're going to do for correctness sake
-            dest.setInteger(src1Int < 32 && src1Int >= 0 ? src2Int/ bitPositions[src1Int] : 0);
+            dest.setInteger(src1Int < 32 && src1Int >= 0 ? src2Int / bitPositions[src1Int] : 0);
             break;
         case Opcode::synld:
             // wait until another execution unit sets the condition codes to continue after requesting a load.
@@ -1042,18 +1018,10 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
             }( );
             break;
         case Opcode::modtc: dest.setOrdinal(tc_.modify(src1Ord, src2Ord)); break;
-        case Opcode::setbit: dest.setOrdinal(src2Ord | bitPositions[src1Ord & 0b11111]); break;
-        case Opcode::clrbit:
-            [this, &instruction]() {
-                auto& dest = getRegister(instruction.getSrcDest(false));
-                auto bitpos = bitPositions[getSourceRegister(instruction.getSrc1()).getOrdinal() & 0b11111];
-                auto src = getSourceRegister(instruction.getSrc2()).getOrdinal();
-                dest.setOrdinal(src & ~bitpos);
-            }();
-            break;
+        case Opcode::setbit: dest.setOrdinal(src2Ord | bitpos); break;
+        case Opcode::clrbit: dest.setOrdinal(src2Ord & ~bitpos); break;
         case Opcode::calls:
             calls(instruction);
-            break;
             break;
         case Opcode::ret:
             ret();
