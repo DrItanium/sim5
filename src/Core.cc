@@ -360,6 +360,10 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
             generateFault(FaultType::Constraint_Range);
         }
     };
+    auto& src1AsDest = getRegister(instruction.getSrc1(true));
+    auto& dest = getRegister(instruction.getSrcDest(false));
+    auto& src1 = getSourceRegister(instruction.getSrc1());
+    auto& src2 = getSourceRegister(instruction.getSrc2());
     switch (instruction.identifyOpcode()) {
         // CTRL Format opcodes
         case Opcode::b:
@@ -423,102 +427,63 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
             break;
             // COBR Format
         case Opcode::testno:
-            [this, &instruction]() {
-                getRegister(instruction.getSrc1(true)).setOrdinal(ac_.conditionCodeIs<0b000>() ? 1 : 0);
-            }();
+            src1AsDest.setOrdinal(ac_.conditionCodeIs<0b000>() ? 1 : 0);
             break;
         case Opcode::testg:
-            [this, &instruction]() {
-                getRegister(instruction.getSrc1(true)).setOrdinal(ac_.conditionCodeIs<0b001>() ? 1 : 0);
-
-            }();
+            src1AsDest.setOrdinal(ac_.conditionCodeIs<0b001>() ? 1 : 0);
             break;
         case Opcode::teste:
-            [this, &instruction]() {
-                getRegister(instruction.getSrc1(true)).setOrdinal(ac_.conditionCodeIs<0b010>() ? 1 : 0);
-
-            }();
+            src1AsDest.setOrdinal(ac_.conditionCodeIs<0b010>() ? 1 : 0);
             break;
         case Opcode::testge:
-            [this, &instruction]() {
-                getRegister(instruction.getSrc1(true)).setOrdinal(ac_.conditionCodeIs<0b011>() ? 1 : 0);
-
-            }();
+            src1AsDest.setOrdinal(ac_.conditionCodeIs<0b011>() ? 1 : 0);
             break;
         case Opcode::testl:
-            [this, &instruction]() {
-                getRegister(instruction.getSrc1(true)).setOrdinal(ac_.conditionCodeIs<0b100>() ? 1 : 0);
-            }();
+            src1AsDest.setOrdinal(ac_.conditionCodeIs<0b100>() ? 1 : 0);
             break;
         case Opcode::testne:
-            [this, &instruction]() {
-                getRegister(instruction.getSrc1(true)).setOrdinal(ac_.conditionCodeIs<0b101>() ? 1 : 0);
-            }();
+            src1AsDest.setOrdinal(ac_.conditionCodeIs<0b101>() ? 1 : 0);
             break;
         case Opcode::testle:
-            [this, &instruction]() {
-                getRegister(instruction.getSrc1(true)).setOrdinal(ac_.conditionCodeIs<0b110>() ? 1 : 0);
-            }();
+            src1AsDest.setOrdinal(ac_.conditionCodeIs<0b110>() ? 1 : 0);
             break;
         case Opcode::testo:
-            [this, &instruction]() {
-                getRegister(instruction.getSrc1(true)).setOrdinal(ac_.conditionCodeIs<0b111>() ? 1 : 0);
-            }();
+            src1AsDest.setOrdinal(ac_.conditionCodeIs<0b111>() ? 1 : 0);
             break;
-        case Opcode::bbc:
-            // branch if bit is clear
-            [this, &instruction]() {
-                auto targetRegister = instruction.getSrc1();
-                auto& bpReg = getSourceRegister(targetRegister);
-                auto bpOrd = bpReg.getOrdinal();
-                auto masked = bpOrd & 0b11111;
-                auto srcIndex = instruction.getSrc2();
-                const auto& srcReg = getSourceRegister(srcIndex);
-                auto src = srcReg.getOrdinal();
-                auto bitpos = bitPositions[masked];
-                if ((bitpos & src) == 0) {
-                    // another lie in the i960Sx manual, when this bit is clear we assign 0b000 otherwise it is 0b010
-                    ac_.setConditionCode(0b000);
-                    // while the docs show (displacement * 4), I am currently including the bottom two bits being forced to zero in displacement
-                    // in the future (the HX uses those two bits as "S2" so that will be a fun future change...)
-                    auto displacement = instruction.getDisplacement();
-                    ip_.setInteger(ip_.getInteger() + displacement);
-                    advanceIPBy = 0;
-                } else {
-                    ac_.setConditionCode(0b010);
-                }
-            }();
-            break;
-        case Opcode::bbs:
-            [this, &instruction]() {
-                auto targetRegister = instruction.getSrc1();
-                auto& bpReg = getSourceRegister(targetRegister);
-                auto bpOrd = bpReg.getOrdinal();
-                auto masked = bpOrd & 0b11111;
-                auto srcIndex = instruction.getSrc2();
-                const auto& srcReg = getSourceRegister(srcIndex);
-                auto src = srcReg.getOrdinal();
-                auto bitpos = bitPositions[masked];
-                if ((bitpos & src) != 0) {
-                    ac_.setConditionCode(0b010);
-                    // while the docs show (displacement * 4), I am currently including the bottom two bits being forced to zero in displacement
-                    // in the future (the HX uses those two bits as "S2" so that will be a fun future change...)
-                    auto displacement = instruction.getDisplacement();
-                    ip_.setInteger(ip_.getInteger() + displacement);
-                    advanceIPBy = 0;
-                } else {
-                    ac_.setConditionCode(0b000);
-                }
-            }();
-            break;
-        case Opcode::cmpo:
-            cmpo(getSourceRegisterValue(instruction.getSrc1(), TreatAsOrdinal{}),
-                 getSourceRegisterValue(instruction.getSrc2(), TreatAsOrdinal{}));
-            break;
-        case Opcode::cmpi:
-            cmpi(getSourceRegisterValue(instruction.getSrc1(), TreatAsInteger{}),
-                 getSourceRegisterValue(instruction.getSrc2(), TreatAsInteger{}));
-            break;
+        case Opcode::bbc: {
+                              // branch if bit is clear
+                              auto src = src2.getOrdinal();
+                              auto bitpos = bitPositions[src1.getOrdinal() & 0b11111];
+                              if ((bitpos & src) == 0) {
+                                  // another lie in the i960Sx manual, when this bit is clear we assign 0b000 otherwise it is 0b010
+                                  ac_.setConditionCode(0b000);
+                                  // while the docs show (displacement * 4), I am currently including the bottom two bits being forced to zero in displacement
+                                  // in the future (the HX uses those two bits as "S2" so that will be a fun future change...)
+                                  auto displacement = instruction.getDisplacement();
+                                  ip_.setInteger(ip_.getInteger() + displacement);
+                                  advanceIPBy = 0;
+                              } else {
+                                  ac_.setConditionCode(0b010);
+                              }
+                              break;
+                          }
+        case Opcode::bbs: {
+                              auto src = src2.getOrdinal();
+                              auto bitpos = bitPositions[src1.getOrdinal() & 0b11111];
+                              if ((bitpos & src) != 0) {
+                                  ac_.setConditionCode(0b010);
+                                  // while the docs show (displacement * 4), I am currently including the bottom two bits being forced to zero in displacement
+                                  // in the future (the HX uses those two bits as "S2" so that will be a fun future change...)
+                                  auto displacement = instruction.getDisplacement();
+                                  ip_.setInteger(ip_.getInteger() + displacement);
+                                  advanceIPBy = 0;
+                              } else {
+                                  ac_.setConditionCode(0b000);
+                              }
+                              break;
+                          }
+        case Opcode::cmpo: cmpo(src1.getOrdinal(), src2.getOrdinal()); break;
+        case Opcode::cmpi: cmpi(src1.getInteger(), src2.getInteger()); break;
         case Opcode::cmpdeco:
             [this, &instruction]() {
                 auto src2 = getSourceRegister(instruction.getSrc2()).getOrdinal();
@@ -636,64 +601,54 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
         case Opcode::lda:
             lda(instruction);
             break;
-        case Opcode::ld:
-            [this, &instruction]() {
-                auto& dest = getRegister(instruction.getSrcDest(false));
+        case Opcode::ld: {
                 auto address = computeMemoryAddress(instruction);
                 auto result = load(address);
                 dest.setOrdinal(result);
-            }();
             break;
-        case Opcode::ldl:
-            [this, &instruction]() {
-                auto& dest = getDoubleRegister(instruction.getSrcDest(false));
-                auto address = computeMemoryAddress(instruction);
-                auto result = loadLong(address);
-                dest.setLongOrdinal(result);
-            }();
-            break;
-        case Opcode::ldt:
-            [this, &instruction]() {
+                         }
+        case Opcode::ldl: {
+                              auto& dest = getDoubleRegister(instruction.getSrcDest(false));
+                              auto address = computeMemoryAddress(instruction);
+                              auto result = loadLong(address);
+                              dest.setLongOrdinal(result);
+                              break;
+                          }
+        case Opcode::ldt: {
                 load(computeMemoryAddress(instruction),
                      getTripleRegister(instruction.getSrcDest(false)));
-            }();
             break;
-        case Opcode::ldq:
-            [this, &instruction]() {
-                load(computeMemoryAddress(instruction),
-                     getQuadRegister(instruction.getSrcDest(false)));
-            }();
-            break;
+                          }
+        case Opcode::ldq: {
+                              load(computeMemoryAddress(instruction),
+                                      getQuadRegister(instruction.getSrcDest(false)));
+                              break;
+                          }
             // REG format
-        case Opcode::addi:
-            [this, &instruction]() {
-                auto src1 = getSourceRegister(instruction.getSrc1()).getInteger();
-                auto src2 = getSourceRegister(instruction.getSrc2()).getInteger();
-                getRegister(instruction.getSrcDest(false)).setInteger(src2 + src1);
-            }( );
-            break;
-        case Opcode::addo:
-            [this, &instruction]() {
-                auto src1 = getSourceRegister(instruction.getSrc1()).getOrdinal();
-                auto src2 = getSourceRegister(instruction.getSrc2()).getOrdinal();
-                auto destIndex = instruction.getSrcDest(false);
-                auto& dest = getRegister(destIndex);
-                auto result = src2 + src1;
-                dest.setOrdinal(result);
-            }();
-            break;
-        case Opcode::subi:
-            [this, &instruction]() {
-                getRegister(instruction.getSrcDest(false)).setInteger(
-                        getSourceRegister(instruction.getSrc2()).getInteger() - getSourceRegister(instruction.getSrc1()).getInteger());
-            }();
-            break;
-        case Opcode::subo:
-            [this, &instruction]() {
-                getRegister(instruction.getSrcDest(false)).setOrdinal(
-                        getSourceRegister(instruction.getSrc2()).getOrdinal() - getSourceRegister(instruction.getSrc1()).getOrdinal());
-            }();
-            break;
+        case Opcode::addi: {
+                               auto src1 = getSourceRegister(instruction.getSrc1()).getInteger();
+                               auto src2 = getSourceRegister(instruction.getSrc2()).getInteger();
+                               dest.setInteger(src2 + src1);
+                               break;
+                           }
+        case Opcode::addo: {
+                               auto src1 = getSourceRegister(instruction.getSrc1()).getOrdinal();
+                               auto src2 = getSourceRegister(instruction.getSrc2()).getOrdinal();
+                               dest.setOrdinal(src2 + src1);
+                               break;
+                           }
+        case Opcode::subi: {
+                               auto src1 = getSourceRegister(instruction.getSrc1()).getInteger();
+                               auto src2 = getSourceRegister(instruction.getSrc2()).getInteger();
+                               dest.setInteger(src2 - src1);
+                               break;
+                           }
+        case Opcode::subo: {
+                               auto src1 = getSourceRegister(instruction.getSrc1()).getOrdinal();
+                               auto src2 = getSourceRegister(instruction.getSrc2()).getOrdinal();
+                               dest.setOrdinal(src2 - src1);
+                               break;
+                           }
         case Opcode::muli:
             [this, &instruction]() {
                 getRegister(instruction.getSrcDest(false)).setInteger(
