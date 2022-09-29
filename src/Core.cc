@@ -579,26 +579,16 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
                 ip_.setOrdinal(computeMemoryAddress(instruction));
                 advanceIPBy = 0;
             break;
-        case Opcode::balx:
-            [this, &instruction]() {
-                auto address = computeMemoryAddress(instruction);
-                setDestination(instruction.getSrcDest(false), ip_.getOrdinal() + advanceIPBy, TreatAsOrdinal{});
-                ip_.setOrdinal(address);
-                advanceIPBy = 0;
-            }();
-            break;
-        case Opcode::ldos:
-            setDestination(instruction.getSrcDest(false), loadShort(computeMemoryAddress(instruction)), TreatAsOrdinal{});
-            break;
-        case Opcode::lda:
-            lda(instruction);
-            break;
-        case Opcode::ld: {
-                auto address = computeMemoryAddress(instruction);
-                auto result = load(address);
-                dest.setOrdinal(result);
-            break;
-                         }
+        case Opcode::balx: {
+                               auto address = computeMemoryAddress(instruction);
+                               dest.setOrdinal(ip_.getOrdinal() + advanceIPBy);
+                               ip_.setOrdinal(address);
+                               advanceIPBy = 0;
+                               break;
+                           }
+        case Opcode::ldos: dest.setOrdinal(loadShort(computeMemoryAddress(instruction))); break;
+        case Opcode::lda: lda(instruction); break;
+        case Opcode::ld: dest.setOrdinal(load(computeMemoryAddress(instruction))); break;
         case Opcode::ldl: {
                               auto& dest = getDoubleRegister(instruction.getSrcDest(false));
                               auto address = computeMemoryAddress(instruction);
@@ -606,16 +596,8 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
                               dest.setLongOrdinal(result);
                               break;
                           }
-        case Opcode::ldt: {
-                load(computeMemoryAddress(instruction),
-                     getTripleRegister(instruction.getSrcDest(false)));
-            break;
-                          }
-        case Opcode::ldq: {
-                              load(computeMemoryAddress(instruction),
-                                      getQuadRegister(instruction.getSrcDest(false)));
-                              break;
-                          }
+        case Opcode::ldt: load(computeMemoryAddress(instruction), getTripleRegister(instruction.getSrcDest(false))); break;
+        case Opcode::ldq: load(computeMemoryAddress(instruction), getQuadRegister(instruction.getSrcDest(false))); break;
             // REG format
 #define X(code, op) case Opcode:: code ## i : dest.setInteger(src2Int op src1Int); break; \
                     case Opcode:: code ## o : dest.setOrdinal(src2Ord op src1Ord); break
@@ -639,14 +621,14 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
             X(logicalOr, |);
             X(logicalXor, ^);
 #undef X
-        case Opcode::logicalXnor: [this, &instruction]() { getRegister(instruction.getSrcDest(false)).setOrdinal(~(getSourceRegister(instruction.getSrc2()).getOrdinal() ^ getSourceRegister(instruction.getSrc1()).getOrdinal())); }(); break;
-        case Opcode::logicalNor: [this, &instruction]() { getRegister(instruction.getSrcDest(false)).setOrdinal(~(getSourceRegister(instruction.getSrc2()).getOrdinal() | getSourceRegister(instruction.getSrc1()).getOrdinal())); }(); break;
-        case Opcode::logicalNand: [this, &instruction]() { getRegister(instruction.getSrcDest(false)).setOrdinal(~(getSourceRegister(instruction.getSrc2()).getOrdinal() & getSourceRegister(instruction.getSrc1()).getOrdinal())); }(); break;
-        case Opcode::logicalNot: [this, &instruction]() { getRegister(instruction.getSrcDest(false)).setOrdinal(~(getSourceRegister(instruction.getSrc1()).getOrdinal())); }(); break;
-        case Opcode::andnot: [this, &instruction]() { getRegister(instruction.getSrcDest(false)).setOrdinal(getSourceRegister(instruction.getSrc2()).getOrdinal() & ~getSourceRegister(instruction.getSrc1()).getOrdinal()); }(); break;
-        case Opcode::notand: [this, &instruction]() { getRegister(instruction.getSrcDest(false)).setOrdinal(~getSourceRegister(instruction.getSrc2()).getOrdinal() & getSourceRegister(instruction.getSrc1()).getOrdinal()); }(); break;
-        case Opcode::ornot: [this, &instruction]() { getRegister(instruction.getSrcDest(false)).setOrdinal(getRegister(instruction.getSrc2()).getOrdinal() | ~getRegister(instruction.getSrc1()).getOrdinal()); }(); break;
-        case Opcode::notor: [this, &instruction]() { getRegister(instruction.getSrcDest(false)).setOrdinal(~getRegister(instruction.getSrc2()).getOrdinal() | getRegister(instruction.getSrc1()).getOrdinal()); }(); break;
+        case Opcode::logicalXnor: dest.setOrdinal(~(src2Ord ^ src1Ord)); break;
+        case Opcode::logicalNor: dest.setOrdinal(~(src2Ord | src1Ord)); break;
+        case Opcode::logicalNand: dest.setOrdinal(~(src2Ord & src1Ord)); break;
+        case Opcode::logicalNot: dest.setOrdinal(~src1Ord); break;
+        case Opcode::andnot: dest.setOrdinal(src2Ord & ~src1Ord); break;
+        case Opcode::notand: dest.setOrdinal(~src2Ord & src1Ord); break;
+        case Opcode::ornot: dest.setOrdinal(src2Ord | ~src1Ord); break;
+        case Opcode::notor: dest.setOrdinal(~src2Ord | src1Ord); break;
         case Opcode::remi:
                 // taken from the i960Sx manual
                 //dest.setInteger(src2 - ((src2 / src1) * src1));
@@ -694,24 +676,23 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
                                dest.setOrdinal(src2Ord & ~bitpos);
                            }
                            break;
-        case Opcode::ediv:
-            [this, &instruction]() {
-                auto denomord = getRegister(instruction.getSrc1()).getOrdinal();
-                if (denomord == 0) {
-                    // raise an arithmetic zero divide fault
-                    generateFault(FaultType::Arithmetic_ArithmeticZeroDivide);
-                } else {
-                    auto numerator = getDoubleRegister(instruction.getSrc2()).getLongOrdinal();
-                    auto denominator = static_cast<LongOrdinal>(denomord);
-                    auto& dest = getDoubleRegister(instruction.getSrcDest(false));
-                    // taken from the manual
-                    auto remainder = static_cast<Ordinal>(numerator - (numerator / denominator) * denominator);
-                    auto quotient = static_cast<Ordinal>(numerator / denominator);
-                    dest.setOrdinal(remainder, 0);
-                    dest.setOrdinal(quotient, 1);
-                }
-            }();
-            break;
+        case Opcode::ediv: {
+                               auto denomord = src1Ord;
+                               if (denomord == 0) {
+                                   // raise an arithmetic zero divide fault
+                                   generateFault(FaultType::Arithmetic_ArithmeticZeroDivide);
+                               } else {
+                                   auto numerator = getDoubleRegister(instruction.getSrc2()).getLongOrdinal();
+                                   auto denominator = static_cast<LongOrdinal>(denomord);
+                                   auto& dest = getDoubleRegister(instruction.getSrcDest(false));
+                                   // taken from the manual
+                                   auto remainder = static_cast<Ordinal>(numerator - (numerator / denominator) * denominator);
+                                   auto quotient = static_cast<Ordinal>(numerator / denominator);
+                                   dest.setOrdinal(remainder, 0);
+                                   dest.setOrdinal(quotient, 1);
+                               }
+                               break;
+                           }
         case Opcode::emul:
             getDoubleRegister(instruction.getSrcDest(false)).setLongOrdinal(
                     static_cast<LongOrdinal>(src2Ord) * static_cast<LongOrdinal>(src1Ord));
@@ -823,20 +804,18 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
                                 dest.setOrdinal(temp);
                                 break;
                             }
-        case Opcode::atmod:
-            [this, &instruction]() {
-                // copies the src/dest value (logical version) into the memory location specifeid by src1.
-                // The bits set in the mask (src2) operand select the bits to be modified in memory. The initial
-                // value from memory is stored in src/dest
-                syncf();
-                auto addr = getSourceRegister(instruction.getSrc1()).getOrdinal() & 0xFFFF'FFFC; // force alignment to word boundary
-                auto temp = atomicLoad(addr);
-                auto& dest = getRegister(instruction.getSrcDest(false));
-                auto mask = getSourceRegister(instruction.getSrc2()).getOrdinal();
-                atomicStore(addr, (dest.getOrdinal() & mask) | (temp & ~mask));
-                dest.setOrdinal(temp);
-            }();
-            break;
+        case Opcode::atmod: {
+                                // copies the src/dest value (logical version) into the memory location specifeid by src1.
+                                // The bits set in the mask (src2) operand select the bits to be modified in memory. The initial
+                                // value from memory is stored in src/dest
+                                syncf();
+                                auto addr = atomicLoad(src1Ord & 0xFFFF'FFFC); // force alignment to word boundary
+                                auto temp = atomicLoad(addr);
+                                auto mask = src2Ord;
+                                atomicStore(addr, (dest.getOrdinal() & mask) | (temp & ~mask));
+                                dest.setOrdinal(temp);
+                                break;
+                            }
         case Opcode::chkbit: 
             ac_.setConditionCode((src2Ord & bitpos) == 0 ? 0b000 : 0b010);
             break;
