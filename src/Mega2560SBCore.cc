@@ -29,57 +29,9 @@
 #include <SPI.h>
 #include "Types.h"
 #include "Mega2560SBCore.h"
-//#include <SdFat.h>
-//SdFat SD;
 
 void
 MEGA2560SBCore::begin() {
-#if 0
-    Serial.println(F("BRINGING UP HITAGI SBCORE EMULATOR!"));
-    pinMode(LED_BUILTIN, OUTPUT);
-    digitalWrite(LED_BUILTIN, LOW);
-    SPI.begin();
-    while (!SD.begin(SDCardPin)) {
-        Serial.println(F("NO SDCARD...WILL TRY AGAIN!"));
-        delay(1000);
-    }
-    Serial.println(F("SDCARD UP!"));
-    if (auto theFile = SD.open("boot.sys", FILE_READ); !theFile) {
-        Serial.println(F("Could not open \"boot.sys\"! SD CARD may be corrupt?"));
-        while (true) { delay(1000); }
-    } else {
-        memoryImage_.begin();
-#ifndef USE_PSRAM_CHIP
-        Serial.println(F("SUCCESSFULLY OPENED \"live.bin\""));
-#endif
-        // now we copy from the pristine image over to the new one in blocks
-        Address size = theFile.size();
-        constexpr auto CacheSize = Cache::CacheSize;
-        auto* transferCache = theCache_.asTransferCache();
-#ifndef USE_PSRAM_CHIP
-        Serial.println(F("CONSTRUCTING NEW MEMORY IMAGE IN \"live.bin\""));
-#else
-        Serial.println(F("TRANSFERRING IMAGE TO PSRAM!"));
-#endif
-        for (Address i = 0; i < size; i += CacheSize) {
-            while (SD.card()->isBusy());
-            auto numRead = theFile.read(transferCache, CacheSize);
-            if (numRead < 0) {
-                SD.errorHalt();
-            }
-            // wait until the sd card is ready again to transfer
-            (void)memoryImage_.write(i, transferCache, numRead);
-            // wait until we are ready to
-            Serial.print(F("."));
-        }
-        Serial.println(F("CONSTRUCTION COMPLETE!!!"));
-        // make a new copy of this file
-        theFile.close();
-        while (SD.card()->isBusy());
-        // okay also clear out the cache lines since the transfer buffer is shared with the cache
-        theCache_.clear();
-    }
-#endif
 }
 
 
