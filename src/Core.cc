@@ -845,18 +845,17 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
         case Opcode::syncf:
             syncf();
             break;
-        case Opcode::atadd:
-            [this, &instruction]() {
-                // adds the src (src2 internally) value to the value in memory location specified with the addr (src1 in this case) operand.
-                // The initial value from memory is stored in dst (internally src/dst).
-                syncf();
-                auto addr = getSourceRegister(instruction.getSrc1()).getOrdinal() & 0xFFFF'FFFC; // force alignment to word boundary
-                auto temp = atomicLoad(addr);
-                auto src = getSourceRegister(instruction.getSrc2()).getOrdinal();
-                atomicStore(addr, temp + src);
-                getRegister(instruction.getSrcDest(false)).setOrdinal(temp);
-            }();
-            break;
+        case Opcode::atadd: {
+                                // adds the src (src2 internally) value to the value in memory location specified with the addr (src1 in this case) operand.
+                                // The initial value from memory is stored in dst (internally src/dst).
+                                syncf();
+                                auto addr = src1.getOrdinal() & 0xFFFF'FFFC; // force alignment to word boundary
+                                auto temp = atomicLoad(addr);
+                                auto src = src2.getOrdinal();
+                                atomicStore(addr, temp + src);
+                                dest.setOrdinal(temp);
+                                break;
+                            }
         case Opcode::atmod:
             [this, &instruction]() {
                 // copies the src/dest value (logical version) into the memory location specifeid by src1.
@@ -871,13 +870,11 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
                 dest.setOrdinal(temp);
             }();
             break;
-        case Opcode::chkbit:
-            [this, &instruction]() {
-                auto src = getSourceRegister(instruction.getSrc2()).getOrdinal();
-                auto bitpos = bitPositions[getSourceRegister(instruction.getSrc1()).getOrdinal() & 0b11111];
-                ac_.setConditionCode((src & bitpos) == 0 ? 0b000 : 0b010);
-            }();
-            break;
+        case Opcode::chkbit: {
+                                 auto bitpos = bitPositions[src1.getOrdinal() & 0b11111];
+                                 ac_.setConditionCode((src2.getOrdinal() & bitpos) == 0 ? 0b000 : 0b010);
+                                 break;
+                             }
         case Opcode::addc:
             [this, &instruction]() {
                 auto& src1 = getSourceRegister(instruction.getSrc1());
