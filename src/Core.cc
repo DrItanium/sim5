@@ -332,6 +332,9 @@ Core::cmpobx(const Instruction &instruction, uint8_t mask) noexcept {
         ip_.setInteger(destination);
     }
 };
+constexpr Ordinal rotateOperation(Ordinal src, Ordinal length) noexcept {
+    return (src << length)  | (src >> ((-length) & 31u));
+}
 void
 Core::executeInstruction(const Instruction &instruction) noexcept {
 #ifdef EMULATOR_TRACE
@@ -659,15 +662,7 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
                 dest.setOrdinal(src2.getOrdinal() % src1.getOrdinal());
             break;
         case Opcode::rotate:
-            [this, &instruction]() {
-                auto rotateOperation = [](Ordinal src, Ordinal length)  {
-                    return (src << length)  | (src >> ((-length) & 31u));
-                };
-                auto& dest = getRegister(instruction.getSrcDest(false));
-                auto src = getSourceRegister(instruction.getSrc2()).getOrdinal();
-                auto len = getSourceRegister(instruction.getSrc1()).getOrdinal();
-                dest.setOrdinal(rotateOperation(src, len));
-            }();
+                dest.setOrdinal(rotateOperation(src2.getOrdinal(), src1.getOrdinal()));
             break;
         case Opcode::mov:
             [this, &instruction]() {
