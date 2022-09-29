@@ -300,8 +300,20 @@ protected:
     LocalRegisterPack& getCurrentPack() noexcept { return frames[currentFrameIndex_]; }
 private:
     void lda(const Instruction& inst) noexcept;
-    void shro(Register& dest, Ordinal src, Ordinal len) noexcept;
-    void shlo(Register& dest, Ordinal src, Ordinal len) noexcept;
+    constexpr Ordinal shro(Ordinal src, Ordinal len) const noexcept {
+        if (len < 32) {
+            return src >> len;
+        } else {
+            return 0;
+        }
+    }
+    constexpr Ordinal shlo(Ordinal src, Ordinal len) const noexcept {
+        if (len < 32) {
+            return src << len;
+        } else {
+            return 0;
+        }
+    }
     void flushreg() noexcept;
     void cmpibx(const Instruction& instruction, uint8_t mask, Integer src1, Integer src2) noexcept;
     void ipRelativeBranch(Integer displacement) noexcept {

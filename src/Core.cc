@@ -713,8 +713,8 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
                             break;
         case Opcode::call: call(instruction); break;
         case Opcode::callx: callx(instruction); break;
-        case Opcode::shlo: shlo(dest, src2Ord, src1Ord); break;
-        case Opcode::shro: shro(dest, src2Ord, src1Ord); break;
+        case Opcode::shlo: dest.setOrdinal(shlo(src2Ord, src1Ord)); break;
+        case Opcode::shro: dest.setOrdinal(shro(src2Ord, src1Ord)); break;
         case Opcode::shli: dest.setInteger(src2Int << src1Int); break;
         case Opcode::scanbyte:
             [this, &instruction]() {
@@ -1011,27 +1011,6 @@ Core::getSourceRegisterValue(RegisterIndex index, TreatAsOrdinal) const {
     return getSourceRegister(index).getOrdinal();
 
 }
-
-void
-Core::shro(Register& dest, Ordinal src, Ordinal len) noexcept {
-    /// @todo implement "speed" optimization by only getting src if we need it
-    if (len < 32) {
-        dest.setOrdinal(src >> len);
-    } else {
-        dest.setOrdinal(0);
-    }
-}
-
-void
-Core::shlo(Register& dest, Ordinal src, Ordinal len) noexcept {
-    if (len < 32) {
-        dest.setOrdinal(src << len);
-    } else {
-        dest.setOrdinal(0);
-    }
-}
-
-
 
 Core::Core(Ordinal salign) : ip_(0), ac_(0), pc_(0), tc_(0), salign_(salign), c_((salign * 16) - 1) {
 }
