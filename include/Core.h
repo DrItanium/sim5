@@ -198,11 +198,14 @@ public:
 public:
 public:
     explicit Core(Ordinal salign = 4);
-    virtual ~Core();
+    virtual ~Core() = default;
 public:
     void run();
+    void cycle() noexcept;
 protected:
     virtual void boot() = 0;
+    virtual void lock() = 0;
+    virtual void unlock() = 0;
     virtual Ordinal getSystemAddressTableBase() const noexcept = 0;
     virtual Ordinal getPRCBPtrBase() const noexcept = 0;
     virtual bool continueToExecute() const noexcept = 0;
@@ -213,80 +216,47 @@ protected:
     virtual Ordinal getFaultTableBase() ;
     virtual Ordinal getInterruptStackPointer();
     virtual void generateFault(FaultType fault);
-    virtual void storeLong(Address destination, LongOrdinal value) {
-        DoubleRegister wrapper(value);
-        store(destination + 0, wrapper.getOrdinal(0));
-        store(destination + 4, wrapper.getOrdinal(1));
+
+    virtual byte load8(Address destination) noexcept;
+    virtual ShortOrdinal load16(Address destination) noexcept;
+    virtual Ordinal load32(Address destination) noexcept;
+    inline void load32(Address destination, Register& reg) noexcept {
+        reg.setOrdinal(load32(destination));
     }
-    virtual void atomicStore(Address destination, Ordinal value) {
-        store(destination, value);
+    virtual LongOrdinal load64(Address destination) noexcept;
+    inline void load64(Address destination, DoubleRegister& reg) noexcept {
+        reg.setLongOrdinal(load64(destination));
     }
-    virtual void store(Address destination, const TripleRegister& reg) {
-        store(destination + 0, reg.getOrdinal(0));
-        store(destination + 4, reg.getOrdinal(1));
-        store(destination + 8, reg.getOrdinal(2));
-    }
-    virtual void store(Address destination, const QuadRegister& reg) {
-        store(destination + 0, reg.getOrdinal(0));
-        store(destination + 4, reg.getOrdinal(1));
-        store(destination + 8, reg.getOrdinal(2));
-        store(destination + 12, reg.getOrdinal(3));
-    }
-    virtual void storeShortInteger(Address destination, ShortInteger value) {
+    virtual void load96(Address destination, TripleRegister& reg) noexcept;
+    virtual void load128(Address destination, QuadRegister& reg) noexcept;
+
+    virtual void store8(Address destination, byte value) noexcept;
+    virtual void store32(Address destination, Ordinal value) noexcept;
+    inline void store32(Address destination, const Register& reg) noexcept { store32(destination, reg.getOrdinal()); }
+    virtual void store16(Address destination, ShortOrdinal value) noexcept;
+    virtual void store64(Address destination, LongOrdinal value) noexcept;
+    inline void store64(Address destination, const DoubleRegister& reg) noexcept { store64(destination, reg.getLongOrdinal()); }
+    virtual void store96(Address destination, const TripleRegister& reg) noexcept;
+    virtual void store128(Address destination, const QuadRegister& reg) noexcept;
+    void storeShortInteger(Address destination, ShortInteger value) {
         union {
             ShortInteger in;
             ShortOrdinal out;
         } thing;
         thing.in = value;
-        storeShort(destination, thing.out);
+        store16(destination, thing.out);
     }
-    virtual void storeByteInteger(Address destination, ByteInteger value) {
+    void storeByteInteger(Address destination, ByteInteger value) {
         union {
             ByteInteger in;
             ByteOrdinal out;
         } thing;
         thing.in = value;
-        storeByte(destination, thing.out);
-    }
-    virtual Ordinal atomicLoad(Address destination) {
-        return load(destination);
-    }
-    virtual LongOrdinal loadLong(Address destination) {
-        auto lower = load(destination + 0);
-        auto upper = load(destination + 4);
-        auto outcome = DoubleRegister(lower, upper).getLongOrdinal();
-        return outcome;
-    }
-    virtual void load(Address destination, TripleRegister& reg) noexcept {
-        reg.setOrdinal(load(destination + 0), 0);
-        reg.setOrdinal(load(destination + 4), 1);
-        reg.setOrdinal(load(destination + 8), 2);
-    }
-    virtual void load(Address destination, QuadRegister& reg) noexcept {
-        reg.setOrdinal(load(destination + 0), 0);
-        reg.setOrdinal(load(destination + 4), 1);
-        reg.setOrdinal(load(destination + 8), 2);
-        reg.setOrdinal(load(destination + 12), 3);
-    }
-    QuadRegister loadQuad(Address destination) noexcept {
-        QuadRegister tmp;
-        load(destination, tmp);
-        return tmp;
+        store8(destination, thing.out);
     }
     virtual void synchronizedStore(Address destination, const DoubleRegister& value) noexcept = 0;
     virtual void synchronizedStore(Address destination, const QuadRegister& value) noexcept = 0;
     virtual void synchronizedStore(Address destination, const Register& value) noexcept = 0;
-    virtual ByteOrdinal loadByte(Address destination) = 0;
-    virtual void storeByte(Address destination, ByteOrdinal value) = 0;
-    virtual ShortOrdinal loadShortAligned(Address destination) = 0;
-    virtual void storeShortAligned(Address destination, ShortOrdinal value) = 0;
-    virtual Ordinal loadAligned(Address destination) = 0;
-    virtual void storeAligned(Address destination, Ordinal value) = 0;
-    ShortOrdinal loadShort(Address destination) noexcept;
-    virtual void storeShort(Address destination, ShortOrdinal value);
-    Ordinal load(Address destination);
-    void store(Address destination, Ordinal value);
-
     Register& getRegister(RegisterIndex targetIndex);
     const Register& getRegister(RegisterIndex targetIndex) const;
     const Register& getSourceRegister(RegisterIndex targetIndex) const { return getRegister(targetIndex); }
@@ -340,7 +310,6 @@ private:
     void cmpi(Integer src1, Integer src2) noexcept;
     void cmpo(Ordinal src1, Ordinal src2) noexcept;
     void syncf() noexcept;
-    void cycle() noexcept;
     void setDestination(RegisterIndex index, Ordinal value, TreatAsOrdinal);
     void setDestination(RegisterIndex index, Integer value, TreatAsInteger);
     Integer getSourceRegisterValue(RegisterIndex index, TreatAsInteger) const;

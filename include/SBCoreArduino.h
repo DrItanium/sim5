@@ -41,14 +41,6 @@ public:
     SBCoreArduino();
     ~SBCoreArduino() override = default;
     virtual void begin();
-protected:
-    ShortOrdinal loadShortAligned(Address destination) override;
-    void storeShortAligned(Address destination, ShortOrdinal value) override;
-    ByteOrdinal loadByte(Address destination) override;
-    void storeByte(Address destination, ByteOrdinal value) override;
-    Ordinal loadAligned(Address address) override;
-    void storeAligned(Address address, Ordinal value) override;
-    void generateFault(FaultType ) override;
 
 };
 

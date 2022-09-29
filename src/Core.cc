@@ -795,11 +795,13 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
                                 // adds the src (src2 internally) value to the value in memory location specified with the addr (src1 in this case) operand.
                                 // The initial value from memory is stored in dst (internally src/dst).
                                 syncf();
+                                lock();
                                 auto addr = src1Ord & 0xFFFF'FFFC; // force alignment to word boundary
-                                auto temp = atomicLoad(addr);
+                                auto temp = load(addr);
                                 auto src = src2Ord;
-                                atomicStore(addr, temp + src);
+                                store(addr, temp + src);
                                 dest.setOrdinal(temp);
+                                unlock();
                                 break;
                             }
         case Opcode::atmod: {
@@ -807,11 +809,13 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
                                 // The bits set in the mask (src2) operand select the bits to be modified in memory. The initial
                                 // value from memory is stored in src/dest
                                 syncf();
-                                auto addr = atomicLoad(src1Ord & 0xFFFF'FFFC); // force alignment to word boundary
-                                auto temp = atomicLoad(addr);
+                                lock();
+                                auto addr = load(src1Ord & 0xFFFF'FFFC); // force alignment to word boundary
+                                auto temp = load(addr);
                                 auto mask = src2Ord;
-                                atomicStore(addr, (dest.getOrdinal() & mask) | (temp & ~mask));
+                                store(addr, (dest.getOrdinal() & mask) | (temp & ~mask));
                                 dest.setOrdinal(temp);
+                                unlock();
                                 break;
                             }
         case Opcode::chkbit: 
@@ -1048,55 +1052,6 @@ Core::getSourceRegisterValue(RegisterIndex index, TreatAsOrdinal) const {
 
 }
 
-Ordinal
-Core::load(Address destination) {
-    if ((destination & 0b11) == 0) {
-        // phew, things are aligned
-        return loadAligned(destination);
-    } else {
-        // have to do this short by short as we could span cache lines or other such nonsense
-        // we want to get 16-bit quantities out because it could turn out that the lsb is still zero and thus we would still be able to do
-        // partially fast loads
-        auto lower = static_cast<Ordinal>(loadShort(destination + 0));
-        auto upper = static_cast<Ordinal>(loadShort(destination + 2)) << 16;
-        return lower | upper;
-    }
-}
-
-ShortOrdinal
-Core::loadShort(Address destination) noexcept {
-    if ((destination & 0b1) == 0) {
-        // okay, it is aligned to 2-byte boundaries, we can call the aligned version of this function
-        return loadShortAligned(destination);
-    } else {
-        // bad news, we are looking at an unaligned load so do byte by byte instead and then compose it together
-        auto lower = static_cast<ShortOrdinal>(loadByte(destination + 0));
-        auto upper = static_cast<ShortOrdinal>(loadByte(destination + 1)) << 8;
-        return lower | upper;
-    }
-}
-
-void
-Core::store(Address destination, Ordinal value) {
-    if ((destination & 0b11) == 0b00) {
-        storeAligned(destination, value);
-    } else {
-        // store the upper and lower halves in separate requests
-        storeShort(destination + 0, value);
-        storeShort(destination + 2, value >> 16);
-    }
-}
-void
-Core::storeShort(Address destination, ShortOrdinal value) {
-    if ((destination & 1) == 0) {
-        // yay! aligned
-        storeShortAligned(destination, value);
-    } else {
-        // store the components into memory
-        storeByte(destination + 0, value)  ;
-        storeByte(destination + 1, value >> 8);
-    }
-}
 void
 Core::shro(Register& dest, Ordinal src, Ordinal len) noexcept {
     /// @todo implement "speed" optimization by only getting src if we need it
@@ -1358,6 +1313,3 @@ Core::enterCall(Address newFP) noexcept {
 #endif
 }
 
-Core::~Core() {
-    // default impl
-}
