@@ -665,39 +665,32 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
                 dest.setOrdinal(rotateOperation(src2.getOrdinal(), src1.getOrdinal()));
             break;
         case Opcode::mov:
-            [this, &instruction]() {
-                auto& dest = getRegister(instruction.getSrcDest(false));
-                auto srcValue = getSourceRegister(instruction.getSrc1()).getOrdinal();
-                dest.setOrdinal(srcValue);
-            }();
+            dest.setOrdinal(src1.getOrdinal());
             break;
-        case Opcode::movl:
-            [this, &instruction]() {
-                auto& dest = getDoubleRegister(instruction.getSrcDest(false));
-                const auto& src = getSourceDoubleRegister(instruction.getSrc1());
-                auto srcValue = src.getLongOrdinal();
-                dest.setLongOrdinal(srcValue);
-            }();
-            break;
-        case Opcode::movt:
-            [this, &instruction]() {
-                auto& dest = getTripleRegister(instruction.getSrcDest(false));
-                const auto& src = getTripleRegister(instruction.getSrc1());
-                dest.setOrdinal(src.getOrdinal(0), 0);
-                dest.setOrdinal(src.getOrdinal(1), 1);
-                dest.setOrdinal(src.getOrdinal(2), 2);
-            }();
-            break;
-        case Opcode::movq:
-            [this, &instruction]() {
-                auto& dest = getQuadRegister(instruction.getSrcDest(false));
-                const auto& src = getQuadRegister(instruction.getSrc1());
-                dest.setOrdinal(src.getOrdinal(0), 0);
-                dest.setOrdinal(src.getOrdinal(1), 1);
-                dest.setOrdinal(src.getOrdinal(2), 2);
-                dest.setOrdinal(src.getOrdinal(3), 3);
-            }();
-            break;
+        case Opcode::movl: {
+                               auto& dest = getDoubleRegister(instruction.getSrcDest(false));
+                               const auto& src = getSourceDoubleRegister(instruction.getSrc1());
+                               auto srcValue = src.getLongOrdinal();
+                               dest.setLongOrdinal(srcValue);
+                               break;
+                           }
+        case Opcode::movt: {
+                               auto& dest = getTripleRegister(instruction.getSrcDest(false));
+                               const auto& src = getTripleRegister(instruction.getSrc1());
+                               dest.setOrdinal(src.getOrdinal(0), 0);
+                               dest.setOrdinal(src.getOrdinal(1), 1);
+                               dest.setOrdinal(src.getOrdinal(2), 2);
+                               break;
+                           }
+        case Opcode::movq: {
+                               auto& dest = getQuadRegister(instruction.getSrcDest(false));
+                               const auto& src = getQuadRegister(instruction.getSrc1());
+                               dest.setOrdinal(src.getOrdinal(0), 0);
+                               dest.setOrdinal(src.getOrdinal(1), 1);
+                               dest.setOrdinal(src.getOrdinal(2), 2);
+                               dest.setOrdinal(src.getOrdinal(3), 3);
+                               break;
+                           }
         case Opcode::alterbit:
             [this, &instruction]() {
                 auto bitpos = bitPositions[getRegister(instruction.getSrc1()).getOrdinal() & 0b11111];
