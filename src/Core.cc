@@ -747,8 +747,8 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
                             break;
         case Opcode::call: call(instruction); break;
         case Opcode::callx: callx(instruction); break;
-        case Opcode::shlo: shlo(instruction); break;
-        case Opcode::shro: shro(instruction); break;
+        case Opcode::shlo: shlo(dest, src2Ord, src1Ord); break;
+        case Opcode::shro: shro(dest, src2Ord, src1Ord); break;
         case Opcode::shli: dest.setInteger(src2Int << src1Int); break;
         case Opcode::scanbyte:
             [this, &instruction]() {
@@ -988,12 +988,6 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
             generateFault(FaultType::Operation_InvalidOpcode);
             break;
     }
-#ifdef EMULATOR_TRACE
-#ifdef ARDUINO
-    Serial.print("EXITING ");
-    Serial.println(__PRETTY_FUNCTION__);
-#endif
-#endif
 }
 void
 Core::run() {
@@ -1040,13 +1034,11 @@ Core::clearLocalRegisters() noexcept {
 
 void
 Core::setDestination(RegisterIndex index, Ordinal value, TreatAsOrdinal) {
-    auto& reg = getRegister(index);
-    reg.setOrdinal(value);
+    getRegister(index).setOrdinal(value);
 }
 void
 Core::setDestination(RegisterIndex index, Integer value, TreatAsInteger) {
-    auto& reg = getRegister(index);
-    reg.setInteger(value);
+    getRegister(index).setInteger(value);
 }
 Integer
 Core::getSourceRegisterValue(RegisterIndex index, TreatAsInteger) const {
@@ -1108,11 +1100,8 @@ Core::storeShort(Address destination, ShortOrdinal value) {
     }
 }
 void
-Core::shro(const Instruction &inst) noexcept {
-    auto& dest = getRegister(inst.getSrcDest(false));
-    auto len = getSourceRegister(inst.getSrc1()).getOrdinal();
+Core::shro(Register& dest, Ordinal src, Ordinal len) noexcept {
     /// @todo implement "speed" optimization by only getting src if we need it
-    auto src = getSourceRegister(inst.getSrc2()).getOrdinal();
     if (len < 32) {
         dest.setOrdinal(src >> len);
     } else {
@@ -1121,10 +1110,7 @@ Core::shro(const Instruction &inst) noexcept {
 }
 
 void
-Core::shlo(const Instruction &inst) noexcept {
-    auto& dest = getRegister(inst.getSrcDest(false));
-    auto len = getSourceRegister(inst.getSrc1()).getOrdinal();
-    auto src = getSourceRegister(inst.getSrc2()).getOrdinal();
+Core::shlo(Register& dest, Ordinal src, Ordinal len) noexcept {
     if (len < 32) {
         dest.setOrdinal(src << len);
     } else {

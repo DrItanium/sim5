@@ -327,8 +327,8 @@ protected:
     LocalRegisterPack& getCurrentPack() noexcept { return frames[currentFrameIndex_]; }
 private:
     void lda(const Instruction& inst) noexcept;
-    void shro(const Instruction& inst) noexcept;
-    void shlo(const Instruction& inst) noexcept;
+    void shro(Register& dest, Ordinal src, Ordinal len) noexcept;
+    void shlo(Register& dest, Ordinal src, Ordinal len) noexcept;
     void flushreg() noexcept;
     void cmpibx(const Instruction& instruction, uint8_t mask) noexcept;
     void ipRelativeBranch(Integer displacement) noexcept {
