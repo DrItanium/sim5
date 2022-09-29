@@ -200,13 +200,12 @@ public:
     explicit Core(Ordinal salign = 4);
     virtual ~Core() = default;
 public:
-    void run();
     void cycle() noexcept;
     void begin() noexcept;
+    void boot();
 protected:
-    virtual void boot() = 0;
-    virtual void lock();
-    virtual void unlock();
+    void lock();
+    void unlock();
     constexpr Ordinal getSystemAddressTableBase() const noexcept { return systemAddressTableBase_; }
     constexpr Ordinal getPRCBPtrBase() const noexcept { return prcbBase_; }
     virtual Ordinal getSystemProcedureTableBase() ;
@@ -217,32 +216,32 @@ protected:
     virtual Ordinal getInterruptStackPointer();
     virtual void generateFault(FaultType fault);
 
-    virtual byte load8(Address destination) noexcept;
-    virtual ShortOrdinal load16(Address destination) noexcept;
-    virtual Ordinal load32(Address destination) noexcept;
+    byte load8(Address destination) noexcept;
+    ShortOrdinal load16(Address destination) noexcept;
+    Ordinal load32(Address destination) noexcept;
     inline void load32(Address destination, Register& reg) noexcept {
         reg.setOrdinal(load32(destination));
     }
-    virtual LongOrdinal load64(Address destination) noexcept;
+    LongOrdinal load64(Address destination) noexcept;
     inline void load64(Address destination, DoubleRegister& reg) noexcept {
         reg.setLongOrdinal(load64(destination));
     }
-    virtual void load96(Address destination, TripleRegister& reg) noexcept;
-    virtual void load128(Address destination, QuadRegister& reg) noexcept;
+    void load96(Address destination, TripleRegister& reg) noexcept;
+    void load128(Address destination, QuadRegister& reg) noexcept;
     QuadRegister load128(Address destination) noexcept {
         QuadRegister tmp;
         load128(destination, tmp);
         return tmp;
     }
 
-    virtual void store8(Address destination, byte value) noexcept;
-    virtual void store32(Address destination, Ordinal value) noexcept;
+    void store8(Address destination, byte value) noexcept;
+    void store32(Address destination, Ordinal value) noexcept;
     inline void store32(Address destination, const Register& reg) noexcept { store32(destination, reg.getOrdinal()); }
-    virtual void store16(Address destination, ShortOrdinal value) noexcept;
-    virtual void store64(Address destination, LongOrdinal value) noexcept;
+    void store16(Address destination, ShortOrdinal value) noexcept;
+    void store64(Address destination, LongOrdinal value) noexcept;
     inline void store64(Address destination, const DoubleRegister& reg) noexcept { store64(destination, reg.getLongOrdinal()); }
-    virtual void store96(Address destination, const TripleRegister& reg) noexcept;
-    virtual void store128(Address destination, const QuadRegister& reg) noexcept;
+    void store96(Address destination, const TripleRegister& reg) noexcept;
+    void store128(Address destination, const QuadRegister& reg) noexcept;
     void storeShortInteger(Address destination, ShortInteger value) {
         union {
             ShortInteger in;
@@ -259,9 +258,9 @@ protected:
         thing.in = value;
         store8(destination, thing.out);
     }
-    virtual void synchronizedStore(Address destination, const DoubleRegister& value) noexcept = 0;
-    virtual void synchronizedStore(Address destination, const QuadRegister& value) noexcept = 0;
-    virtual void synchronizedStore(Address destination, const Register& value) noexcept = 0;
+    void synchronizedStore(Address destination, const DoubleRegister& value) noexcept;
+    void synchronizedStore(Address destination, const QuadRegister& value) noexcept;
+    void synchronizedStore(Address destination, const Register& value) noexcept;
     Register& getRegister(RegisterIndex targetIndex);
     const Register& getRegister(RegisterIndex targetIndex) const;
     const Register& getSourceRegister(RegisterIndex targetIndex) const { return getRegister(targetIndex); }
@@ -323,6 +322,7 @@ private:
     void saveRegisterFrame(const RegisterFrame& theFrame, Address baseAddress) noexcept;
     void restoreRegisterFrame(RegisterFrame& theFrame, Address baseAddress) noexcept;
     Ordinal computeMemoryAddress(const Instruction& instruction) noexcept;
+    void boot0(Ordinal sat, Ordinal pcb, Ordinal startIP) noexcept;
 //protected:
     //void clearLocalRegisters() noexcept;
 private:

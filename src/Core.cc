@@ -268,14 +268,6 @@ Core::restoreRegisterFrame(RegisterFrame &theFrame, Address baseAddress) noexcep
     }
 }
 
-void
-Core::generateFault(FaultType) {
-    /// @todo implement this at some point
-    // lookup fault information
-    // setup fault data frame
-    // call fault handler
-    // probably should exit or something here
-}
 Ordinal
 Core::computeMemoryAddress(const Instruction &instruction) noexcept {
     // assume we are looking at a correct style instruction :)
@@ -1305,14 +1297,4 @@ Core::enterCall(Address newFP) noexcept {
 #endif
 }
 
-
-void
-Core::lock() {
-
-}
-
-void
-Core::unlock() {
-
-}
 
