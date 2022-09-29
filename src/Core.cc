@@ -485,32 +485,20 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
         case Opcode::cmpo: cmpo(src1.getOrdinal(), src2.getOrdinal()); break;
         case Opcode::cmpi: cmpi(src1.getInteger(), src2.getInteger()); break;
         case Opcode::cmpdeco:
-            [this, &instruction]() {
-                auto src2 = getSourceRegister(instruction.getSrc2()).getOrdinal();
-                cmpo(getSourceRegister(instruction.getSrc1()).getOrdinal(), src2);
-                getRegister(instruction.getSrcDest(false)).setOrdinal(src2 - 1);
-            }();
+                cmpo(src1.getOrdinal(), src2.getOrdinal());
+                dest.setOrdinal(src2.getOrdinal() - 1);
             break;
         case Opcode::cmpdeci:
-            [this, &instruction]() {
-                auto src2 = getSourceRegister(instruction.getSrc2()).getInteger();
-                cmpi(getSourceRegister(instruction.getSrc1()).getInteger(), src2);
-                getRegister(instruction.getSrcDest(false)).setInteger(src2 - 1);
-            }();
+                cmpo(src1.getInteger(), src2.getInteger());
+                dest.setInteger(src2.getInteger() - 1);
             break;
         case Opcode::cmpinco:
-            [this, &instruction]() {
-                auto src2 = getSourceRegister(instruction.getSrc2()).getOrdinal();
-                cmpo(getSourceRegister(instruction.getSrc1()).getOrdinal(), src2);
-                getRegister(instruction.getSrcDest(false)).setOrdinal(src2 + 1);
-            }();
+                cmpo(src1.getOrdinal(), src2.getOrdinal());
+                dest.setOrdinal(src2.getOrdinal() + 1);
             break;
         case Opcode::cmpinci:
-            [this, &instruction]() {
-                auto src2 = getSourceRegister(instruction.getSrc2()).getInteger();
-                cmpi(getSourceRegister(instruction.getSrc1()).getInteger(), src2);
-                getRegister(instruction.getSrcDest(false)).setInteger(src2 + 1);
-            }();
+                cmpo(src1.getInteger(), src2.getInteger());
+                dest.setInteger(src2.getInteger() + 1);
             break;
         case Opcode::cmpobg:
             cmpobx(instruction, 0b001);
@@ -625,55 +613,19 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
                               break;
                           }
             // REG format
-        case Opcode::addi: {
-                               auto src1 = getSourceRegister(instruction.getSrc1()).getInteger();
-                               auto src2 = getSourceRegister(instruction.getSrc2()).getInteger();
-                               dest.setInteger(src2 + src1);
-                               break;
-                           }
-        case Opcode::addo: {
-                               auto src1 = getSourceRegister(instruction.getSrc1()).getOrdinal();
-                               auto src2 = getSourceRegister(instruction.getSrc2()).getOrdinal();
-                               dest.setOrdinal(src2 + src1);
-                               break;
-                           }
-        case Opcode::subi: {
-                               auto src1 = getSourceRegister(instruction.getSrc1()).getInteger();
-                               auto src2 = getSourceRegister(instruction.getSrc2()).getInteger();
-                               dest.setInteger(src2 - src1);
-                               break;
-                           }
-        case Opcode::subo: {
-                               auto src1 = getSourceRegister(instruction.getSrc1()).getOrdinal();
-                               auto src2 = getSourceRegister(instruction.getSrc2()).getOrdinal();
-                               dest.setOrdinal(src2 - src1);
-                               break;
-                           }
-        case Opcode::muli:
-            [this, &instruction]() {
-                getRegister(instruction.getSrcDest(false)).setInteger(
-                        getSourceRegister(instruction.getSrc2()).getInteger() * getSourceRegister(instruction.getSrc1()).getInteger());
-            }();
-            break;
-        case Opcode::mulo:
-            [this, &instruction]() {
-                getRegister(instruction.getSrcDest(false)).setOrdinal(
-                        getSourceRegister(instruction.getSrc2()).getOrdinal() * getSourceRegister(instruction.getSrc1()).getOrdinal());
-            }();
-            break;
+#define X(code, op) case Opcode:: code ## i : dest.setInteger(src2.getInteger() op src1.getInteger()); break; \
+                    case Opcode:: code ## o : dest.setOrdinal(src2.getOrdinal() op src1.getOrdinal()); break
+        X(add, +);
+        X(sub, -);
+        X(mul, *);
+#undef X
         case Opcode::divo:
-            [this, &instruction]() {
                 /// @todo check denominator and do proper handling
-                getRegister(instruction.getSrcDest(false)).setOrdinal(
-                        getSourceRegister(instruction.getSrc2()).getOrdinal() / getSourceRegister(instruction.getSrc1()).getOrdinal());
-            }();
+                dest.setOrdinal(src2.getOrdinal() / src1.getOrdinal());
             break;
         case Opcode::divi:
-            [this, &instruction]() {
                 /// @todo check denominator and do proper handling
-                getRegister(instruction.getSrcDest(false)).setInteger(
-                        getSourceRegister(instruction.getSrc2()).getInteger() / getSourceRegister(instruction.getSrc1()).getInteger());
-            }();
+                dest.setInteger(src2.getInteger() / src1.getInteger());
             break;
         case Opcode::notbit:
             [this, &instruction]() {
@@ -683,30 +635,11 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
                 dest.setOrdinal(src ^ bitpos);
             }();
             break;
-        case Opcode::logicalAnd:
-            [this, &instruction]() {
-                setDestination(instruction.getSrcDest(false),
-                               getSourceRegisterValue(instruction.getSrc2(), TreatAsOrdinal{}) &
-                               getSourceRegisterValue(instruction.getSrc1(), TreatAsOrdinal{}),
-                               TreatAsOrdinal{});
-            }();
-            break;
-        case Opcode::logicalOr:
-            [this, &instruction]() {
-                setDestination(instruction.getSrcDest(false),
-                               getSourceRegisterValue(instruction.getSrc2(), TreatAsOrdinal{}) |
-                               getSourceRegisterValue(instruction.getSrc1(), TreatAsOrdinal{}),
-                               TreatAsOrdinal{});
-            }();
-            break;
-        case Opcode::logicalXor:
-            [this, &instruction]() {
-                setDestination(instruction.getSrcDest(false),
-                               getSourceRegisterValue(instruction.getSrc2(), TreatAsOrdinal{}) ^
-                               getSourceRegisterValue(instruction.getSrc1(), TreatAsOrdinal{}),
-                               TreatAsOrdinal{});
-            }();
-            break;
+#define X(code, op) case Opcode :: code : dest.setOrdinal(src2.getOrdinal() op src1.getOrdinal()); break
+            X(logicalAnd, &);
+            X(logicalOr, |);
+            X(logicalXor, ^);
+#undef X
         case Opcode::logicalXnor: [this, &instruction]() { getRegister(instruction.getSrcDest(false)).setOrdinal(~(getSourceRegister(instruction.getSrc2()).getOrdinal() ^ getSourceRegister(instruction.getSrc1()).getOrdinal())); }(); break;
         case Opcode::logicalNor: [this, &instruction]() { getRegister(instruction.getSrcDest(false)).setOrdinal(~(getSourceRegister(instruction.getSrc2()).getOrdinal() | getSourceRegister(instruction.getSrc1()).getOrdinal())); }(); break;
         case Opcode::logicalNand: [this, &instruction]() { getRegister(instruction.getSrcDest(false)).setOrdinal(~(getSourceRegister(instruction.getSrc2()).getOrdinal() & getSourceRegister(instruction.getSrc1()).getOrdinal())); }(); break;
@@ -716,23 +649,14 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
         case Opcode::ornot: [this, &instruction]() { getRegister(instruction.getSrcDest(false)).setOrdinal(getRegister(instruction.getSrc2()).getOrdinal() | ~getRegister(instruction.getSrc1()).getOrdinal()); }(); break;
         case Opcode::notor: [this, &instruction]() { getRegister(instruction.getSrcDest(false)).setOrdinal(~getRegister(instruction.getSrc2()).getOrdinal() | getRegister(instruction.getSrc1()).getOrdinal()); }(); break;
         case Opcode::remi:
-            [this, &instruction]() {
-                auto src2 = getSourceRegister(instruction.getSrc2()).getInteger();
-                auto src1 = getSourceRegister(instruction.getSrc1()).getInteger();
                 // taken from the i960Sx manual
                 //dest.setInteger(src2 - ((src2 / src1) * src1));
-                setDestination(instruction.getSrcDest(false), src2 % src1, TreatAsInteger{});
-            }();
+                dest.setInteger(src2.getInteger() % src1.getInteger());
             break;
         case Opcode::remo:
-            [this, &instruction]() {
-                auto src2 = getSourceRegisterValue(instruction.getSrc2(), TreatAsOrdinal{});
-                auto src1 = getSourceRegisterValue(instruction.getSrc1(), TreatAsOrdinal{});
                 // taken from the i960Sx manual
-                //auto result = src2 - ((src2 / src1) * src1);
-                auto result = src2 % src1;
-                setDestination(instruction.getSrcDest(false), result, TreatAsOrdinal{});
-            }();
+                //dest.setOrdinal(src2 - ((src2 / src1) * src1));
+                dest.setOrdinal(src2.getOrdinal() % src1.getOrdinal());
             break;
         case Opcode::rotate:
             [this, &instruction]() {
