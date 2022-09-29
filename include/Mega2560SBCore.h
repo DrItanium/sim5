@@ -28,8 +28,6 @@
 #define SIM3_MEGA2560SBCORE_H
 #ifdef ARDUINO_AVR_MEGA2560
 #include <Arduino.h>
-#include <SPI.h>
-#include <SdFat.h>
 #include "Types.h"
 #include "SBCoreArduino.h"
 #include "MemoryMappedFileThing.h"
