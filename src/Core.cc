@@ -84,11 +84,10 @@ Core::syncf() noexcept {
 void
 Core::cycle() noexcept {
     advanceIPBy = 4;
-    auto instruction = loadInstruction(ip_.getOrdinal());
+    auto instruction = loadInstruction(ip_.get<Ordinal>());
     executeInstruction(instruction);
-    //executeInstruction(loadInstruction(ip_.getOrdinal()));
     if (advanceIPBy > 0)  {
-        ip_.setOrdinal(ip_.getOrdinal() + advanceIPBy);
+        ip_.setOrdinal(ip_.get<Ordinal>() + advanceIPBy);
     }
 }
 
@@ -232,7 +231,7 @@ Core::loadInstruction(Address baseAddress) noexcept {
 void
 Core::saveRegisterFrame(const RegisterFrame &theFrame, Address baseAddress) noexcept {
     for (int i = 0; i < 16; ++i, baseAddress += 4) {
-        store32(baseAddress, theFrame.getRegister(i).getOrdinal());
+        store32(baseAddress, theFrame.getRegister(i).get<Ordinal>());
     }
 }
 
@@ -255,12 +254,12 @@ Core::computeMemoryAddress(const Instruction &instruction) noexcept {
         case MEMFormatMode::MEMA_AbsoluteOffset:
             return instruction.getOffset();
         case MEMFormatMode::MEMA_RegisterIndirectWithOffset:
-            return instruction.getOffset() + getSourceRegister(instruction.getABase()).getOrdinal();
+            return instruction.getOffset() + getSourceRegister(instruction.getABase()).get<Ordinal>();
         case MEMFormatMode::MEMB_RegisterIndirect:
-            return getRegister(instruction.getABase()).getOrdinal();
+            return getRegister(instruction.getABase()).get<Ordinal>();
         case MEMFormatMode::MEMB_RegisterIndirectWithIndex:
-            return getSourceRegister(instruction.getABase()).getOrdinal() +
-                   (getSourceRegister(instruction.getIndex()).getOrdinal() << instruction.getScale());
+            return getSourceRegister(instruction.getABase()).get<Ordinal>() +
+                   (getSourceRegister(instruction.getIndex()).get<Ordinal>() << instruction.getScale());
         case MEMFormatMode::MEMB_IPWithDisplacement:
             return static_cast<Ordinal>(ip_.getInteger() + instruction.getDisplacement() + 8);
         case MEMFormatMode::MEMB_AbsoluteDisplacement:
@@ -284,7 +283,7 @@ Core::lda(const Instruction &inst) noexcept {
     Serial.print("ENTERING ");
     Serial.println(__PRETTY_FUNCTION__);
     Serial.print("IP: 0x");
-    Serial.println(ip_.getOrdinal(), HEX);
+    Serial.println(ip_.get<Ordinal>(), HEX);
 #endif
 #endif
     // compute the effective address (memory address) and store it in destination
@@ -323,7 +322,7 @@ constexpr Ordinal rotateOperation(Ordinal src, Ordinal length) noexcept {
 void 
 Core::branchGeneric(const Instruction& instruction, bool andLink) noexcept {
     if (andLink) {
-        setDestination(RegisterIndex::Global14, ip_.getOrdinal() + 4, TreatAsOrdinal{});
+        setDestination(RegisterIndex::Global14, ip_.get<Ordinal>() + 4, TreatAsOrdinal{});
     }
     ipRelativeBranch(instruction.getDisplacement()) ;
 }
@@ -340,7 +339,7 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
     Serial.print("ENTERING ");
     Serial.println(__PRETTY_FUNCTION__);
     Serial.print("IP: 0x");
-    Serial.println(ip_.getOrdinal(), HEX);
+    Serial.println(ip_.get<Ordinal>(), HEX);
 #endif
 #endif
     auto condFault = [this](uint8_t mask) {
@@ -351,10 +350,10 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
     auto& src1AsDest = getRegister(instruction.getSrc1(true));
     auto& dest = getRegister(instruction.getSrcDest(false));
     auto& src1 = getSourceRegister(instruction.getSrc1());
-    auto src1Ord = src1.getOrdinal();
+    auto src1Ord = src1.get<Ordinal>();
     auto src1Int = src1.getInteger();
     auto& src2 = getSourceRegister(instruction.getSrc2());
-    auto src2Ord = src2.getOrdinal();
+    auto src2Ord = src2.get<Ordinal>();
     auto src2Int = src2.getInteger();
     auto bitpos = bitPositions[src1Ord & 0b11111];
     switch (instruction.identifyOpcode()) {
@@ -554,7 +553,7 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
                               break;
         case Opcode::balx: {
                                auto address = computeMemoryAddress(instruction);
-                               dest.setOrdinal(ip_.getOrdinal() + advanceIPBy);
+                               dest.setOrdinal(ip_.get<Ordinal>() + advanceIPBy);
                                ip_.setOrdinal(address);
                                advanceIPBy = 0;
                                break;
@@ -663,7 +662,7 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
             break;
         case Opcode::extract:
                 // taken from the Hx manual as it isn't insane
-                dest.setOrdinal((dest.getOrdinal() >> (src1Ord > 32 ? 32 : src1Ord)) & ~(0xFFFF'FFFF << src2Ord));
+                dest.setOrdinal((dest.get<Ordinal>() >> (src1Ord > 32 ? 32 : src1Ord)) & ~(0xFFFF'FFFF << src2Ord));
             break;
         case Opcode::flushreg: flushreg(); break;
         case Opcode::fmark: {
@@ -707,21 +706,14 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
                            }
         case Opcode::modify:
                 // this is my encode operation but expanded out
-                            dest.setOrdinal((src2Ord & src1Ord) | (dest.getOrdinal() & ~src1Ord));
+                            dest.setOrdinal((src2Ord & src1Ord) | (dest.get<Ordinal>() & ~src1Ord));
                             break;
         case Opcode::call: call(instruction); break;
         case Opcode::callx: callx(instruction); break;
         case Opcode::shlo: dest.setOrdinal(shlo(src2Ord, src1Ord)); break;
         case Opcode::shro: dest.setOrdinal(shro(src2Ord, src1Ord)); break;
         case Opcode::shli: dest.setInteger(src2Int << src1Int); break;
-        case Opcode::scanbyte:
-            [this, &instruction]() {
-                auto& src1 = getRegister(instruction.getSrc1());
-                auto& src2 = getRegister(instruction.getSrc2());
-                auto bytesEqual = [&src1, &src2](int which) constexpr { return src1.getByteOrdinal(which) == src2.getByteOrdinal(which); };
-                ac_.setConditionCode((bytesEqual(0) || bytesEqual(1) || bytesEqual(2) || bytesEqual(3)) ? 0b010 : 0b000);
-            }();
-            break;
+        case Opcode::scanbyte: ac_.setConditionCode(src1.scanByte(src2) ? 0b010 : 0b000); break;
         case Opcode::scanbit: {
                                   // perform a sanity check
                                   auto src = src1Ord;
@@ -781,8 +773,8 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
                                 auto addr = load32(src1Ord & 0xFFFF'FFFC); // force alignment to word boundary
                                 auto temp = load32(addr);
                                 auto mask = src2Ord;
-                                store32(addr, (dest.getOrdinal() & mask) | (temp & ~mask));
-                                dest.setOrdinal(temp);
+                                store32(addr, (dest.get<Ordinal>() & mask) | (temp & ~mask));
+                                dest.set<Ordinal>(temp);
                                 unlock();
                                 break;
                             }
@@ -829,7 +821,7 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
         case Opcode::ldib: dest.setInteger(load8(computeMemoryAddress(instruction))); break;
         case Opcode::ldis: dest.setInteger(load16(computeMemoryAddress(instruction))); break;
         case Opcode::st: {
-                             auto src = getSourceRegister(instruction.getSrcDest(true)).getOrdinal();
+                             auto src = getSourceRegister(instruction.getSrcDest(true)).get<Ordinal>();
                              store32(computeMemoryAddress(instruction), src);
                              break;
                          }
@@ -888,11 +880,11 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
              *
              */
             /// @todo perhaps implement the extra logic if necessary
-            dest.setInteger(src2Int >> src1Int);
+            dest.set<Integer>(src2Int >> src1Int);
             break;
         case Opcode::shrdi: 
             // according to the manual, equivalent to divi value, 2 so that is what we're going to do for correctness sake
-            dest.setInteger(src1Int < 32 && src1Int >= 0 ? src2Int / bitPositions[src1Int] : 0);
+            dest.set<Integer>(src1Int < 32 && src1Int >= 0 ? src2Int / bitPositions[src1Int] : 0);
             break;
         case Opcode::synld:
             // wait until another execution unit sets the condition codes to continue after requesting a load.
@@ -902,7 +894,7 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
             // with condition code assignments and forced alignments
 
             // load basically takes care of accessing different registers and such even memory mapped ones
-            dest.setOrdinal(load32(src1Ord & 0xFFFF'FFFC)); // force word alignment
+            dest.set<Ordinal>(load32(src1Ord & 0xFFFF'FFFC)); // force word alignment
                                                           // there is a _fail_ condition where a bad access condition will result in 0b000
                                                           /// @todo implement support for bad access conditions
             ac_.setConditionCode(0b010);
@@ -933,19 +925,19 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
                                     } else {
                                         auto src = src2Ord;
                                         dest.setOrdinal(pc_.modify(mask, src));
-                                        ProcessControls tmp(dest.getOrdinal());
+                                        ProcessControls tmp(dest.get<Ordinal>());
                                         if (tmp.getPriority() > pc_.getPriority()) {
                                             /// @todo check for pending interrupts
                                         }
                                     }
                                 } else {
-                                    dest.setOrdinal(pc_.getValue());
+                                    dest.set<Ordinal>(pc_.getValue());
                                 }
                                 break;
                             }
-        case Opcode::modtc: dest.setOrdinal(tc_.modify(src1Ord, src2Ord)); break;
-        case Opcode::setbit: dest.setOrdinal(src2Ord | bitpos); break;
-        case Opcode::clrbit: dest.setOrdinal(src2Ord & ~bitpos); break;
+        case Opcode::modtc: dest.set<Ordinal>(tc_.modify(src1Ord, src2Ord)); break;
+        case Opcode::setbit: dest.set<Ordinal>(src2Ord | bitpos); break;
+        case Opcode::clrbit: dest.set<Ordinal>(src2Ord & ~bitpos); break;
         case Opcode::calls:
             calls(instruction);
             break;

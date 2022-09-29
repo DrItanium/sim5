@@ -39,6 +39,10 @@ public:
     constexpr auto getShortInteger(int which = 0) const noexcept { return sints_[which&0b01]; }
     constexpr auto getByteOrdinal(int which = 0) const noexcept { return bords_[which&0b11]; }
     constexpr auto getByteInteger(int which = 0) const noexcept { return bints_[which&0b11]; }
+    template<typename T>
+    void set(T value) noexcept {
+        set(value, TreatAs<T>{});
+    }
     void setOrdinal(Ordinal value) noexcept {
         ord_ = value;
     }
@@ -57,10 +61,25 @@ public:
     void increment(Ordinal advance) noexcept { ord_ += advance; }
     void decrement(Integer advance) noexcept { integer_ -= advance; }
     void decrement(Ordinal advance) noexcept { ord_ -= advance; }
+    bool scanByte(const Register& other) const noexcept {
+        return bords_[0] == other.bords_[0] ||
+               bords_[1] == other.bords_[1] ||
+               bords_[2] == other.bords_[2] ||
+               bords_[3] == other.bords_[3];
+
+    }
 #ifdef NUMERICS_ARCHTIECTURE
     constexpr auto getReal() const noexcept { return real_; }
 void setReal(Real value) noexcept { real_ = value; }
 #endif
+    void set(Ordinal value, TreatAsOrdinal) noexcept { setOrdinal(value); }
+    void set(Integer value, TreatAsInteger) noexcept { setInteger(value); }
+    template<typename T>
+    T get() const noexcept {
+        return get(TreatAs<T>{});
+    }
+    Ordinal get(TreatAsOrdinal) const noexcept { return ord_; }
+    Integer get(TreatAsInteger) const noexcept { return integer_; }
 private:
     Ordinal ord_ = 0;
     Integer integer_;
