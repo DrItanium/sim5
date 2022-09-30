@@ -796,7 +796,6 @@ Core::executeInstruction(const Instruction &instruction) noexcept {
                                    ac_.setOverflowBit(1);
                                }
                                ac_.setCarryBit(result.halves[1] != 0);
-
                                // set the carry out bit
                                break;
                            }
