@@ -351,10 +351,6 @@ void
 raiseFault(byte code) noexcept {
     configRegs().faultPort = code;
 }
-void 
-call() {
-
-}
 void
 ret() {
 
@@ -600,8 +596,8 @@ void
 callx() noexcept {
     // wait for any uncompleted instructions to finish
     auto temp = (gprs[SPIndex].o + C) & NotC; // round stack pointer to next boundary
-    auto fp = gprs[FPIndex].o;
     auto addr = computeAddress();
+    auto fp = gprs[FPIndex].o;
     gprs[RIPIndex].o = ip.o + advanceBy;
     if (registerSetAvailable()) {
         allocateNewRegisterFrame();
@@ -610,6 +606,25 @@ callx() noexcept {
         allocateNewRegisterFrame();
     }
     ip.o = addr;
+    gprs[PFPIndex].o = fp;
+    gprs[FPIndex].o = temp;
+    gprs[SPIndex].o = temp + 64;
+    advanceBy = 0;
+}
+void 
+call() {
+    // wait for any uncompleted instructions to finish
+    auto temp = (gprs[SPIndex].o + C) & NotC; // round stack pointer to next boundary
+    auto addr = computeAddress();
+    auto fp = gprs[FPIndex].o;
+    gprs[RIPIndex].o = ip.o + advanceBy;
+    if (registerSetAvailable()) {
+        allocateNewRegisterFrame();
+    } else {
+        saveRegisterSet(fp);
+        allocateNewRegisterFrame();
+    }
+    ip.i += instruction.ctrl.displacement;
     gprs[PFPIndex].o = fp;
     gprs[FPIndex].o = temp;
     gprs[SPIndex].o = temp + 64;
