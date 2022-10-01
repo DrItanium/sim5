@@ -576,7 +576,8 @@ callx() noexcept {
 }
 void
 bx() noexcept {
-
+    ip.o = computeAddress();
+    advanceBy = 0;
 }
 
 void 
