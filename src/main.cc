@@ -449,8 +449,6 @@ cmpGeneric(T src1, T src2) noexcept {
         ac.arith.conditionCode = 0b001;
     }
 }
-inline void cmpi(Integer src1, Integer src2) noexcept { cmpGeneric<Integer>(src1, src2); }
-inline void cmpo(Ordinal src1, Ordinal src2) noexcept { cmpGeneric<Ordinal>(src1, src2); }
 template<typename T>
 void
 cmpxGeneric() noexcept {
@@ -585,6 +583,16 @@ loop() {
         case Opcodes::cmpobne:
         case Opcodes::cmpoble:
             cmpoGeneric();
+            break;
+        case Opcodes::cmpibno: // never branches
+        case Opcodes::cmpibg:
+        case Opcodes::cmpibe:
+        case Opcodes::cmpibge:
+        case Opcodes::cmpibl:
+        case Opcodes::cmpibne:
+        case Opcodes::cmpible:
+        case Opcodes::cmpibo: // always branches
+            cmpiGeneric();
             break;
 
     }
