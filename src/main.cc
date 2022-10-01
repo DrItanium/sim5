@@ -70,43 +70,20 @@ union SplitAddress {
     };
 };
     
-
-Ordinal
-load32(Address address) noexcept {
+template<typename T>
+T load(Address address, TreatAs<T>) noexcept {
     set328BusAddress(address);
     SplitAddress split(address);
-    return memory<Ordinal>(static_cast<size_t>(split.lower) + 0x8000);
+    return memory<T>(static_cast<size_t>(split.lower) + 0x8000);
 }
-ByteOrdinal
-load8(Address address) noexcept {
+inline Ordinal load32(Address address) noexcept { return load(address, TreatAsOrdinal{}); }
+template<typename T>
+void store(Address address, T value, TreatAs<T>) noexcept {
     set328BusAddress(address);
     SplitAddress split(address);
-    return memory<ByteOrdinal>(static_cast<size_t>(split.lower) + 0x8000);
+    memory<T>(static_cast<size_t>(split.lower) + 0x8000) = value;
 }
-ShortOrdinal
-load16(Address address) noexcept {
-    set328BusAddress(address);
-    SplitAddress split(address);
-    return memory<ShortOrdinal>(static_cast<size_t>(split.lower) + 0x8000);
-}
-void 
-store32(Address address, Ordinal value) noexcept {
-    set328BusAddress(address);
-    SplitAddress split(address);
-    memory<Ordinal>(static_cast<size_t>(split.lower) + 0x8000) = value;
-}
-void
-store8(Address address, ByteOrdinal value) noexcept {
-    set328BusAddress(address);
-    SplitAddress split(address);
-    memory<ByteOrdinal>(static_cast<size_t>(split.lower) + 0x8000) = value;
-}
-void
-store16(Address address, ShortOrdinal value) noexcept {
-    set328BusAddress(address);
-    SplitAddress split(address);
-    memory<ShortOrdinal>(static_cast<size_t>(split.lower) + 0x8000) = value;
-}
+void store32(Address address, Ordinal value) noexcept { store<Ordinal>(address, value, TreatAsOrdinal{}); }
 enum class Opcodes : uint8_t {
     b = 0x08,
     call,
@@ -586,10 +563,10 @@ loop() {
             gprs[instruction.cobr.src1].o = (ac.arith.conditionCode & instruction.instGeneric.mask) != 0 ? 1 : 0;
             break;
         case Opcodes::ld: 
-            gprs[instruction.mem.srcDest].o = load32(computeAddress());
+            gprs[instruction.mem.srcDest].o = load(computeAddress(), TreatAsOrdinal{});
             break;
         case Opcodes::st: 
-            store32(computeAddress(), gprs[instruction.mem.srcDest].o);
+            store(computeAddress(), gprs[instruction.mem.srcDest].o, TreatAsOrdinal{});
             break;
         case Opcodes::lda:
             gprs[instruction.mem.srcDest].o = computeAddress();
@@ -619,16 +596,16 @@ loop() {
             cmpiGeneric();
             break;
         case Opcodes::ldob:
-            gprs[instruction.mem.srcDest].o = load8(computeAddress());
+            gprs[instruction.mem.srcDest].o = load(computeAddress(), TreatAs<ByteOrdinal>{});
             break;
         case Opcodes::stob:
-            store8(computeAddress(), gprs[instruction.mem.srcDest].o);
+            store<ByteOrdinal>(computeAddress(), gprs[instruction.mem.srcDest].o, TreatAs<ByteOrdinal>{});
             break;
         case Opcodes::ldos:
-            gprs[instruction.mem.srcDest].o = load16(computeAddress());
+            gprs[instruction.mem.srcDest].o = load(computeAddress(), TreatAs<ShortOrdinal>{});
             break;
         case Opcodes::stos:
-            store16(computeAddress(), gprs[instruction.mem.srcDest].o);
+            store<ShortOrdinal>(computeAddress(), gprs[instruction.mem.srcDest].o, TreatAs<ShortOrdinal>{});
             break;
     }
     // okay we got here so we need to start grabbing data off of the bus and
