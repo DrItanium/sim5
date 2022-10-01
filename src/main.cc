@@ -654,7 +654,7 @@ setup() {
     // so we need to do any sort of processor setup here
     ip.clear();
     for (int i = 0; i < 32; ++i) {
-        gprs[i].clear();
+        getGPR(i).clear();
     }
 }
 
@@ -664,7 +664,7 @@ loop() {
     instruction.o = load(ip.a, TreatAsOrdinal{});
     switch (instruction.getOpcode()) {
         case Opcodes::bal: // bal
-            gprs[LRIndex].o = ip.o + 4;
+            getGPR(LRIndex).o = ip.o + 4;
             // then fallthrough and take the branch
         case Opcodes::b: // b
             ip.i += instruction.cobr.displacement;
@@ -717,7 +717,7 @@ loop() {
             }
             break;
         case Opcodes::testno:
-            gprs[instruction.cobr.src1].o = ac.arith.conditionCode == 0 ? 1 : 0;
+            getGPR(instruction.cobr.src1).o = ac.arith.conditionCode == 0 ? 1 : 0;
             break;
         case Opcodes::testg:
         case Opcodes::teste:
@@ -726,16 +726,16 @@ loop() {
         case Opcodes::testne:
         case Opcodes::testle:
         case Opcodes::testo:
-            gprs[instruction.cobr.src1].o = (ac.arith.conditionCode & instruction.instGeneric.mask) != 0 ? 1 : 0;
+            getGPR(instruction.cobr.src1).o = (ac.arith.conditionCode & instruction.instGeneric.mask) != 0 ? 1 : 0;
             break;
         case Opcodes::ld: 
-            gprs[instruction.mem.srcDest].o = load(computeAddress(), TreatAsOrdinal{});
+            getGPR(instruction.mem.srcDest).o = load(computeAddress(), TreatAsOrdinal{});
             break;
         case Opcodes::st: 
-            store(computeAddress(), gprs[instruction.mem.srcDest].o, TreatAsOrdinal{});
+            store(computeAddress(), getGPR(instruction.mem.srcDest).o, TreatAsOrdinal{});
             break;
         case Opcodes::lda:
-            gprs[instruction.mem.srcDest].o = computeAddress();
+            getGPR(instruction.mem.srcDest).o = computeAddress();
             break;
         case Opcodes::bbc:
             bbc();
@@ -762,28 +762,28 @@ loop() {
             cmpibGeneric();
             break;
         case Opcodes::ldob:
-            gprs[instruction.mem.srcDest].o = load(computeAddress(), TreatAs<ByteOrdinal>{});
+            getGPR(instruction.mem.srcDest).o = load(computeAddress(), TreatAs<ByteOrdinal>{});
             break;
         case Opcodes::stob:
-            store<ByteOrdinal>(computeAddress(), gprs[instruction.mem.srcDest].o, TreatAs<ByteOrdinal>{});
+            store<ByteOrdinal>(computeAddress(), getGPR(instruction.mem.srcDest).o, TreatAs<ByteOrdinal>{});
             break;
         case Opcodes::ldos:
-            gprs[instruction.mem.srcDest].o = load(computeAddress(), TreatAs<ShortOrdinal>{});
+            getGPR(instruction.mem.srcDest).o = load(computeAddress(), TreatAs<ShortOrdinal>{});
             break;
         case Opcodes::stos:
-            store<ShortOrdinal>(computeAddress(), gprs[instruction.mem.srcDest].o, TreatAs<ShortOrdinal>{});
+            store<ShortOrdinal>(computeAddress(), getGPR(instruction.mem.srcDest).o, TreatAs<ShortOrdinal>{});
             break;
         case Opcodes::ldib:
-            gprs[instruction.mem.srcDest].i = load(computeAddress(), TreatAs<ByteInteger>{});
+            getGPR(instruction.mem.srcDest).o = load(computeAddress(), TreatAs<ByteInteger>{});
             break;
         case Opcodes::stib:
-            store<ByteInteger>(computeAddress(), gprs[instruction.mem.srcDest].i, TreatAs<ByteInteger>{});
+            store<ByteInteger>(computeAddress(), getGPR(instruction.mem.srcDest).o, TreatAs<ByteInteger>{});
             break;
         case Opcodes::ldis:
-            gprs[instruction.mem.srcDest].i = load(computeAddress(), TreatAs<ShortInteger>{});
+            getGPR(instruction.mem.srcDest).o = load(computeAddress(), TreatAs<ShortInteger>{});
             break;
         case Opcodes::stis:
-            store<ShortInteger>(computeAddress(), gprs[instruction.mem.srcDest].i, TreatAs<ShortInteger>{});
+            store<ShortInteger>(computeAddress(), getGPR(instruction.mem.srcDest).o, TreatAs<ShortInteger>{});
             break;
         case Opcodes::ldl:
             ldl();
