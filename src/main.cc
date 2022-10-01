@@ -26,6 +26,10 @@
 //
 #include <Arduino.h>
 using Address = uint32_t;
+using Ordinal = uint32_t;
+using Integer = int32_t;
+using LongOrdinal = uint64_t;
+using LongInteger = int64_t;
 constexpr size_t ConfigurationAddress = 0x7F00;
 template<typename T>
 volatile T& memory(size_t address) noexcept {
@@ -41,9 +45,34 @@ volatile ConfigRegisters&
 configRegs() noexcept {
     return memory<ConfigRegisters>(ConfigurationAddress);
 }
+
+
 void
 set328BusAddress(Address address) noexcept {
     configRegs().address = address;
+}
+
+union SplitAddress {
+    constexpr SplitAddress(Address a) : addr(a) { }
+    Address addr;
+    struct {
+        Address lower : 15;
+        Address rest : 17;
+    };
+};
+    
+
+Ordinal
+load32(Address address) noexcept {
+    set328BusAddress(address);
+    SplitAddress split(address);
+    return memory<Ordinal>(static_cast<size_t>(split.lower) + 0x8000);
+}
+void 
+store32(Address address, Ordinal value) noexcept {
+    set328BusAddress(address);
+    SplitAddress split(address);
+    memory<Ordinal>(static_cast<size_t>(split.lower) + 0x8000) = value;
 }
 void 
 setup() {
