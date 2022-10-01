@@ -305,6 +305,9 @@ constexpr auto RIPIndex = 18;
 Register gprs[32]; 
 Register sfrs[32];
 Register instruction;
+Register& getGPR(byte index) noexcept {
+    return gprs[index];
+}
 Register& getSFR(byte index) noexcept;
 Ordinal 
 unpackSrc1_COBR(TreatAsOrdinal) noexcept {
@@ -312,7 +315,7 @@ unpackSrc1_COBR(TreatAsOrdinal) noexcept {
         // treat src1 as a literal
         return instruction.cobr.src1;
     } else {
-        return gprs[instruction.cobr.src1].o;
+        return getGPR(instruction.cobr.src1).o;
     }
 }
 Ordinal
@@ -322,7 +325,7 @@ unpackSrc2_COBR(TreatAsOrdinal) noexcept {
         // at this point it is just a simple extra set of 32 registers
         return getSFR(instruction.cobr.src2).o;
     } else {
-        return gprs[instruction.cobr.src2].o;
+        return getGPR(instruction.cobr.src2).o;
     }
 }
 Integer
@@ -331,7 +334,7 @@ unpackSrc1_COBR(TreatAsInteger) noexcept {
         // treat src1 as a literal
         return instruction.cobr.src1;
     } else {
-        return gprs[instruction.cobr.src1].i;
+        return getGPR(instruction.cobr.src1).i;
     }
 }
 Integer
@@ -341,7 +344,7 @@ unpackSrc2_COBR(TreatAsInteger) noexcept {
         // at this point it is just a simple extra set of 32 registers
         return getSFR(instruction.cobr.src2).i;
     } else {
-        return gprs[instruction.cobr.src2].i;
+        return getGPR(instruction.cobr.src2).i;
     }
 }
 Register& getSFR(byte index) noexcept {
@@ -404,7 +407,7 @@ computeAddress() noexcept {
     if (instruction.isMEMA()) {
         Ordinal result = instruction.mem.offset;
         if (instruction.mema.action) {
-            result += gprs[instruction.mem.abase].o;
+            result += getGPR(instruction.mem.abase).o;
         }
         return result;
     } else {
@@ -416,22 +419,22 @@ computeAddress() noexcept {
             advanceBy += 4;
             Integer result = static_cast<Integer>(load(ip.a + 4, TreatAsOrdinal{})); // load the optional displacement
             if (instruction.memb_grp2.useIndex) {
-                result += (gprs[instruction.memb_grp2.index].i << static_cast<Integer>(instruction.memb_grp2.scale));
+                result += (getGPR(instruction.memb_grp2.index).i << static_cast<Integer>(instruction.memb_grp2.scale));
             }
             if (instruction.memb_grp2.registerIndirect) {
-                result += gprs[instruction.memb_grp2.abase].i;
+                result += getGPR(instruction.memb_grp2.abase).i;
             }
             return static_cast<Ordinal>(result);
         } else {
             // okay so the other group isn't as cleanly designed
             switch (instruction.memb.modeMinor) {
                 case 0b00: // Register Indirect
-                    return gprs[instruction.memb.abase].o;
+                    return getGPR(instruction.memb.abase).o;
                 case 0b01: // IP With Displacement 
                     advanceBy += 4;
                     return static_cast<Ordinal>(ip.i + load(ip.a + 4, TreatAsInteger{}) + 8);
                 case 0b11: // Register Indirect With Index
-                    return gprs[instruction.memb.abase].o + (gprs[instruction.memb.index].o << instruction.memb.scale);
+                    return getGPR(instruction.memb.abase).o + (getGPR(instruction.memb.index).o << instruction.memb.scale);
                 default:
                     return -1;
             }
@@ -480,8 +483,8 @@ ldl() noexcept {
         /// @note the hx manual shows that destination is modified o_O
     } else {
         auto value = load(computeAddress(), TreatAs<LongOrdinal>{});
-        gprs[instruction.mem.srcDest].o = static_cast<Ordinal>(value);
-        gprs[instruction.mem.srcDest+1].o = static_cast<Ordinal>(value >> 32);
+        getGPR(instruction.mem.srcDest).o = static_cast<Ordinal>(value);
+        getGPR(instruction.mem.srcDest+1).o = static_cast<Ordinal>(value >> 32);
         // support unaligned accesses
     }
 }
@@ -494,8 +497,8 @@ stl() noexcept {
         /// @note the hx manual shows that destination is modified o_O
     } else {
         auto address = computeAddress();
-        store(address, gprs[instruction.mem.srcDest].o, TreatAsOrdinal{});
-        store(address+4, gprs[instruction.mem.srcDest+1].o, TreatAsOrdinal{});
+        store(address, getGPR(instruction.mem.srcDest).o, TreatAsOrdinal{});
+        store(address+4, getGPR(instruction.mem.srcDest+1).o, TreatAsOrdinal{});
         // support unaligned accesses
     }
 }
@@ -507,9 +510,9 @@ ldt() noexcept {
         /// @note the hx manual shows that destination is modified o_O
     } else {
         auto address = computeAddress();
-        gprs[instruction.mem.srcDest].o = load(address, TreatAsOrdinal{});
-        gprs[instruction.mem.srcDest+1].o = load(address+4, TreatAsOrdinal{});
-        gprs[instruction.mem.srcDest+2].o = load(address+8, TreatAsOrdinal{});
+        getGPR(instruction.mem.srcDest).o = load(address, TreatAsOrdinal{});
+        getGPR(instruction.mem.srcDest+1).o = load(address+4, TreatAsOrdinal{});
+        getGPR(instruction.mem.srcDest+2).o = load(address+8, TreatAsOrdinal{});
         // support unaligned accesses
     }
 }
@@ -522,9 +525,9 @@ stt() noexcept {
         /// @note the hx manual shows that destination is modified o_O
     } else {
         auto address = computeAddress();
-        store(address, gprs[instruction.mem.srcDest].o, TreatAsOrdinal{});
-        store(address+4, gprs[instruction.mem.srcDest+1].o, TreatAsOrdinal{});
-        store(address+8, gprs[instruction.mem.srcDest+2].o, TreatAsOrdinal{});
+        store(address, getGPR(instruction.mem.srcDest).o, TreatAsOrdinal{});
+        store(address+4, getGPR(instruction.mem.srcDest+1).o, TreatAsOrdinal{});
+        store(address+8, getGPR(instruction.mem.srcDest+2).o, TreatAsOrdinal{});
         // support unaligned accesses
     }
 }
@@ -537,10 +540,10 @@ ldq() noexcept {
         /// @note the hx manual shows that destination is modified o_O
     } else {
         auto address = computeAddress();
-        gprs[instruction.mem.srcDest].o = load(address, TreatAsOrdinal{});
-        gprs[instruction.mem.srcDest+1].o = load(address+4, TreatAsOrdinal{});
-        gprs[instruction.mem.srcDest+2].o = load(address+8, TreatAsOrdinal{});
-        gprs[instruction.mem.srcDest+3].o = load(address+12, TreatAsOrdinal{});
+        getGPR(instruction.mem.srcDest).o = load(address, TreatAsOrdinal{});
+        getGPR(instruction.mem.srcDest+1).o = load(address+4, TreatAsOrdinal{});
+        getGPR(instruction.mem.srcDest+2).o = load(address+8, TreatAsOrdinal{});
+        getGPR(instruction.mem.srcDest+3).o = load(address+12, TreatAsOrdinal{});
         // support unaligned accesses
     }
 }
@@ -553,10 +556,10 @@ stq() noexcept {
         /// @note the hx manual shows that destination is modified o_O
     } else {
         auto address = computeAddress();
-        store(address, gprs[instruction.mem.srcDest].o, TreatAsOrdinal{});
-        store(address+4, gprs[instruction.mem.srcDest+1].o, TreatAsOrdinal{});
-        store(address+8, gprs[instruction.mem.srcDest+2].o, TreatAsOrdinal{});
-        store(address+12, gprs[instruction.mem.srcDest+3].o, TreatAsOrdinal{});
+        store(address, getGPR(instruction.mem.srcDest).o, TreatAsOrdinal{});
+        store(address+4, getGPR(instruction.mem.srcDest+1).o, TreatAsOrdinal{});
+        store(address+8, getGPR(instruction.mem.srcDest+2).o, TreatAsOrdinal{});
+        store(address+12, getGPR(instruction.mem.srcDest+3).o, TreatAsOrdinal{});
         // support unaligned accesses
     }
 }
@@ -564,7 +567,7 @@ stq() noexcept {
 void
 balx() noexcept {
     auto address = computeAddress();
-    gprs[instruction.mem.srcDest].o = ip.o + advanceBy;
+    getGPR(instruction.mem.srcDest).o = ip.o + advanceBy;
     ip.o = address;
     advanceBy = 0;
 }
@@ -582,23 +585,23 @@ void
 saveRegisterSet(Ordinal fp) noexcept {
     // save the "next" register frame to main memory to reclaim it
     for (int i = 16; i < 32; ++i, fp += 4) {
-        store(fp, gprs[i].o, TreatAsOrdinal{});
+        store(fp, getGPR(i).o, TreatAsOrdinal{});
     }
 }
 void
 restoreRegisterSet(Ordinal fp) noexcept {
     // load the register set back from main memory
     for (int i = 16; i < 32; ++i, fp += 4) {
-        gprs[i].o = load(fp, TreatAsOrdinal{});
+        getGPR(i).o = load(fp, TreatAsOrdinal{});
     }
 }
 void
 callx() noexcept {
     // wait for any uncompleted instructions to finish
-    auto temp = (gprs[SPIndex].o + C) & NotC; // round stack pointer to next boundary
+    auto temp = (getGPR(SPIndex).o + C) & NotC; // round stack pointer to next boundary
     auto addr = computeAddress();
-    auto fp = gprs[FPIndex].o;
-    gprs[RIPIndex].o = ip.o + advanceBy;
+    auto fp = getGPR(FPIndex).o;
+    getGPR(RIPIndex).o = ip.o + advanceBy;
     if (registerSetAvailable()) {
         allocateNewRegisterFrame();
     } else {
@@ -606,18 +609,17 @@ callx() noexcept {
         allocateNewRegisterFrame();
     }
     ip.o = addr;
-    gprs[PFPIndex].o = fp;
-    gprs[FPIndex].o = temp;
-    gprs[SPIndex].o = temp + 64;
+    getGPR(PFPIndex).o = fp;
+    getGPR(FPIndex).o = temp;
+    getGPR(SPIndex).o = temp + 64;
     advanceBy = 0;
 }
 void 
 call() {
     // wait for any uncompleted instructions to finish
-    auto temp = (gprs[SPIndex].o + C) & NotC; // round stack pointer to next boundary
-    auto addr = computeAddress();
-    auto fp = gprs[FPIndex].o;
-    gprs[RIPIndex].o = ip.o + advanceBy;
+    auto temp = (getGPR(SPIndex).o + C) & NotC; // round stack pointer to next boundary
+    auto fp = getGPR(FPIndex).o;
+    getGPR(RIPIndex).o = ip.o + advanceBy;
     if (registerSetAvailable()) {
         allocateNewRegisterFrame();
     } else {
@@ -625,9 +627,9 @@ call() {
         allocateNewRegisterFrame();
     }
     ip.i += instruction.ctrl.displacement;
-    gprs[PFPIndex].o = fp;
-    gprs[FPIndex].o = temp;
-    gprs[SPIndex].o = temp + 64;
+    getGPR(PFPIndex).o = fp;
+    getGPR(FPIndex).o = temp;
+    getGPR(SPIndex).o = temp + 64;
     advanceBy = 0;
 }
 void
