@@ -263,7 +263,6 @@ volatile byte advanceBy = 0;
 // with
 Register gprs[32]; 
 Register instruction;
-Register optionalDisplacement;
 void 
 setup() {
     // cleave the address space in half via sector limits.
@@ -298,7 +297,11 @@ ret() {
 Ordinal
 computeAddress() noexcept {
     if (instruction.isMEMA()) {
-        return instruction.mem.offset + (instruction.mem.modeMajor != 0 ? gprs[instruction.mem.abase].o : 0);
+        Ordinal result = instruction.mem.offset;
+        if (instruction.mema.action) {
+            result += gprs[instruction.mem.abase].o;
+        }
+        return result;
     } else {
         // okay so we need to figure out the minor mode after figuring out if
         // it is a double wide operation or not
@@ -311,19 +314,19 @@ computeAddress() noexcept {
                 result += (gprs[instruction.memb_grp2.index].i << static_cast<Integer>(instruction.memb_grp2.scale));
             }
             if (instruction.memb_grp2.registerIndirect) {
-                result += gprs[instruction.memb_grp2.abse].i;
+                result += gprs[instruction.memb_grp2.abase].i;
             }
             return static_cast<Ordinal>(result);
         } else {
             // okay so the other group isn't as cleanly designed
             switch (instruction.memb.modeMinor) {
                 case 0b00: // Register Indirect
-                    return gprs[instruction.mema.abase].o;
+                    return gprs[instruction.memb.abase].o;
                 case 0b01: // IP With Displacement 
                     advanceBy += 4;
-                    return static_cast<Ordinal>(ip_.getInteger() + static_cast<Integer>(load32(ip.a + 4)) + 8);
+                    return static_cast<Ordinal>(ip.i + static_cast<Integer>(load32(ip.a + 4)) + 8);
                 case 0b11: // Register Indirect With Index
-                    return gprs[instruction.mema.abase].o + (gprs[instruction.mema.index].o << instruction.mema.scale);
+                    return gprs[instruction.memb.abase].o + (gprs[instruction.memb.index].o << instruction.memb.scale);
                 default:
                     return -1;
             }
