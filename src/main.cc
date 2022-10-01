@@ -83,7 +83,6 @@ void store(Address address, T value, TreatAs<T>) noexcept {
     SplitAddress split(address);
     memory<T>(static_cast<size_t>(split.lower) + 0x8000) = value;
 }
-void store32(Address address, Ordinal value) noexcept { store<Ordinal>(address, value, TreatAsOrdinal{}); }
 enum class Opcodes : uint8_t {
     b = 0x08,
     call,
@@ -415,7 +414,7 @@ computeAddress() noexcept {
             // okay so it is going to be the displacement versions
             // load 32-bits into the optionalDisplacement field
             advanceBy += 4;
-            Integer result = static_cast<Integer>(load32(ip.a + 4)); // load the optional displacement
+            Integer result = static_cast<Integer>(load(ip.a + 4, TreatAsOrdinal{})); // load the optional displacement
             if (instruction.memb_grp2.useIndex) {
                 result += (gprs[instruction.memb_grp2.index].i << static_cast<Integer>(instruction.memb_grp2.scale));
             }
@@ -430,7 +429,7 @@ computeAddress() noexcept {
                     return gprs[instruction.memb.abase].o;
                 case 0b01: // IP With Displacement 
                     advanceBy += 4;
-                    return static_cast<Ordinal>(ip.i + static_cast<Integer>(load32(ip.a + 4)) + 8);
+                    return static_cast<Ordinal>(ip.i + load(ip.a + 4, TreatAsInteger{}) + 8);
                 case 0b11: // Register Indirect With Index
                     return gprs[instruction.memb.abase].o + (gprs[instruction.memb.index].o << instruction.memb.scale);
                 default:
@@ -495,7 +494,7 @@ setup() {
 void 
 loop() {
     advanceBy = 4;
-    instruction.o = load32(ip.a);
+    instruction.o = load(ip.a, TreatAsOrdinal{});
     switch (instruction.getOpcode()) {
         case Opcodes::bal: // bal
             gprs[LRIndex].o = ip.o + 4;
