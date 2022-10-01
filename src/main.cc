@@ -63,3 +63,14 @@ void
 loop() {
 }
 
+ISR(INT0_vect) {
+
+}
+
+
+ISR(INT1_vect) {
+
+}
+ISR(INT2_vect) {
+
+}
