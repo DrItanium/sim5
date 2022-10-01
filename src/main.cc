@@ -471,6 +471,34 @@ cmpiGeneric() noexcept {
     cmpxGeneric<Integer>();
 }
 
+void
+ldl() noexcept {
+    if ((instruction.mem.srcDest & 1) != 0) {
+        /// @todo fix
+        raiseFault(130);
+        /// @note the hx manual shows that destination is modified o_O
+    } else {
+        auto value = load(computeAddress(), TreatAs<LongOrdinal>{});
+        gprs[instruction.mem.srcDest].o = static_cast<Ordinal>(value);
+        gprs[instruction.mem.srcDest+1].o = static_cast<Ordinal>(value >> 32);
+        // support unaligned accesses
+    }
+}
+
+void
+stl() noexcept {
+    if ((instruction.mem.srcDest & 1) != 0) {
+        /// @todo fix
+        raiseFault(130);
+        /// @note the hx manual shows that destination is modified o_O
+    } else {
+        auto address = computeAddress();
+        store(address, gprs[instruction.mem.srcDest].o, TreatAsOrdinal{});
+        store(address+4, gprs[instruction.mem.srcDest+1].o, TreatAsOrdinal{});
+        // support unaligned accesses
+    }
+}
+
 void 
 setup() {
     // cleave the address space in half via sector limits.
@@ -617,6 +645,12 @@ loop() {
             break;
         case Opcodes::stis:
             store<ShortInteger>(computeAddress(), gprs[instruction.mem.srcDest].i, TreatAs<ShortInteger>{});
+            break;
+        case Opcodes::ldl:
+            ldl();
+            break;
+        case Opcodes::stl:
+            stl();
             break;
     }
     // okay we got here so we need to start grabbing data off of the bus and
