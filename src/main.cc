@@ -24,9 +24,8 @@
 // The main for the arduino version of the simulator's main
 // Created by jwscoggins on 8/21/21.
 //
-#ifdef ARDUINO
-#include "Core.h"
 #include <Arduino.h>
+
 void 
 setBankAddressRegisters(Address address) noexcept {
 
@@ -121,20 +120,4 @@ void loop() {
     theCore.cycle();
     delay(1000);
 }
-#if __cplusplus >= 201402L
-#ifdef ARDUINO_AVR_MEGA2560
-
-void operator delete(void * ptr, size_t)
-{
-    ::operator delete(ptr);
-}
-
-
-void operator delete[](void * ptr, size_t)
-{
-    ::operator delete(ptr);
-}
-#endif
-#endif // end language is C++14 or greater
-#endif
 
