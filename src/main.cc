@@ -26,6 +26,8 @@
 //
 #include <Arduino.h>
 using Address = uint32_t;
+using ByteOrdinal = uint8_t;
+using ByteInteger = int8_t;
 using ShortOrdinal = uint16_t;
 using ShortInteger = int16_t;
 using Ordinal = uint32_t;
@@ -80,19 +82,32 @@ union Register {
     constexpr explicit Register(Ordinal value = 0) : o(value) { }
     Ordinal o;
     Integer i;
+    Address a;
     byte bytes[sizeof(Ordinal)];
     ShortOrdinal shorts[sizeof(Ordinal)/sizeof(ShortOrdinal)];
+    struct {
+        Integer displacement : 13;
+        Ordinal m1: 1;
+        Ordinal src2: 5;
+        Ordinal src1: 5;
+        Ordinal opcode : 8;
+    } cobr;
     void clear() noexcept { 
         o = 0; 
     }
+    [[nodiscard]] constexpr ByteOrdinal getOpcode() const noexcept { return bytes[3]; }
 };
 using RegisterFrame = Register[16];
 Register ip, ac, pc, tc;
 volatile bool int0Triggered = false;
 volatile bool int1Triggered = false;
 volatile bool int2Triggered = false;
+volatile byte advanceBy = 0;
 RegisterFrame globals;
-RegisterFrame locals;
+RegisterFrame* locals;
+RegisterFrame sets[4];
+Register instruction;
+Register optionalDisplacement;
 void 
 setup() {
     // cleave the address space in half via sector limits.
@@ -106,18 +121,40 @@ setup() {
     MCUCR = 0b1000'10'10; // enable XMEM, leave sleep off, and set int1 and
                           // int0 to be falling edge
     set328BusAddress(0);
+    locals = &sets[0];
     // so we need to do any sort of processor setup here
     ip.clear();
     for (int i = 0; i < 16; ++i) {
         globals[i].clear();
-        locals[i].clear();
+        sets[0][i].clear();
+        sets[1][i].clear();
+        sets[2][i].clear();
+        sets[3][i].clear();
     }
+}
+void
+raiseFault(byte code) noexcept {
+
 }
 void 
 loop() {
+    advanceBy = 4;
+    instruction.o = load32(ip.a);
+    switch (instruction.getOpcode()) {
+        case 0x08:
+            ip.i += instruction.cobr.displacement;
+            advanceBy = 0;
+            break;
+        case 0x09:
+            break;
+        default:
+            raiseFault(128);
+            break;
+
+    }
     // okay we got here so we need to start grabbing data off of the bus and
     // start executing the next instruction
-    ip.o += 4; 
+    ip.o += advanceBy; 
 }
 
 ISR(INT0_vect) {
