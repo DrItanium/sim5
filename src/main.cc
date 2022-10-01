@@ -299,6 +299,11 @@ volatile byte advanceBy = 0;
 // operations. However, to simplify things I am not keeping any extra sets on
 // chip for the time being so there is just a single register block to work
 // with
+constexpr auto LRIndex = 14;
+constexpr auto FPIndex = 15;
+constexpr auto PFPIndex = 16;
+constexpr auto SPIndex = 17;
+constexpr auto RIPIndex = 18;
 Register gprs[32]; 
 Register instruction;
 void 
@@ -378,7 +383,7 @@ loop() {
     instruction.o = load32(ip.a);
     switch (instruction.getOpcode()) {
         case Opcodes::bal: // bal
-            gprs[14].o = ip.o + 4;
+            gprs[LRIndex].o = ip.o + 4;
             // then fallthrough and take the branch
         case Opcodes::b: // b
             ip.i += instruction.cobr.displacement;
