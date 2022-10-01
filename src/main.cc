@@ -27,97 +27,10 @@
 #include <Arduino.h>
 
 void 
-setBankAddressRegisters(Address address) noexcept {
-
+setup() {
+    
 }
-void
-Core::begin() noexcept {
-
-}
-void
-Core::lock() {
-
-}
-
-void
-Core::unlock() {
-
-}
-Ordinal
-Core::load32(Address address) noexcept {
-    setBankAddressRegisters(address);
-    return 0;
-}
-LongOrdinal
-Core::load64(Address address) noexcept {
-    setBankAddressRegisters(address);
-    return 0;
-}
-ShortOrdinal
-Core::load16(Address address) noexcept {
-    setBankAddressRegisters(address);
-    return 0;
-}
-ByteOrdinal
-Core::load8(Address address) noexcept {
-    setBankAddressRegisters(address);
-    return 0;
-}
-
-void
-Core::load96(Address address, TripleRegister& reg) noexcept {
-    /// @todo implement
-    setBankAddressRegisters(address);
-}
-
-void
-Core::load128(Address address, QuadRegister& reg) noexcept {
-    /// @todo implement
-    setBankAddressRegisters(address);
-}
-
-void
-Core::store8(Address address, ByteOrdinal value) noexcept {
-    setBankAddressRegisters(address);
-}
-
-void
-Core::store16(Address address, ShortOrdinal value) noexcept {
-    setBankAddressRegisters(address);
-
-}
-
-void
-Core::store32(Address address, Ordinal value) noexcept {
-    setBankAddressRegisters(address);
-}
-
-void
-Core::store64(Address address, LongOrdinal value) noexcept {
-    setBankAddressRegisters(address);
-
-}
-void
-Core::store96(Address address, const TripleRegister& reg) noexcept {
-    setBankAddressRegisters(address);
-
-}
-void
-Core::store128(Address address, const QuadRegister& reg) noexcept {
-    setBankAddressRegisters(address);
-
-}
-// make it an Sx core with SALIGN of 4
-Core theCore(4);
-void setup() {
-    Serial.begin(115200);
-    while (!Serial);
-    theCore.begin();
-
-    theCore.boot();
-}
-void loop() {
-    theCore.cycle();
-    delay(1000);
+void 
+loop() {
 }
 
