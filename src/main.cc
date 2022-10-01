@@ -383,6 +383,7 @@ branchIfBitGeneric() {
         temp.alignedTransfer.important = instruction.cobr.displacement;
         ip.alignedTransfer.important = ip.alignedTransfer.important + temp.alignedTransfer.important;
         ip.alignedTransfer.aligned = 0;
+        advanceBy = 0;
     } else {
         if constexpr (checkClear) {
             ac.arith.conditionCode = 0b010;
@@ -451,7 +452,7 @@ cmpGeneric(T src1, T src2) noexcept {
 }
 template<typename T>
 void
-cmpxGeneric() noexcept {
+cmpxbGeneric() noexcept {
     auto src1 = unpackSrc1_COBR(TreatAs<T>{});
     auto src2 = unpackSrc2_COBR(TreatAs<T>{});
     cmpGeneric(src1, src2);
@@ -460,15 +461,16 @@ cmpxGeneric() noexcept {
         temp.alignedTransfer.important = instruction.cobr.displacement;
         ip.alignedTransfer.important = ip.alignedTransfer.important + temp.alignedTransfer.important;
         ip.alignedTransfer.aligned = 0;
+        advanceBy = 0;
     }
 }
 void 
-cmpoGeneric() noexcept {
-    cmpxGeneric<Ordinal>();
+cmpobGeneric() noexcept {
+    cmpxbGeneric<Ordinal>();
 }
 void
-cmpiGeneric() noexcept {
-    cmpxGeneric<Integer>();
+cmpibGeneric() noexcept {
+    cmpxbGeneric<Integer>();
 }
 
 void
@@ -558,6 +560,23 @@ stq() noexcept {
         store(address+12, gprs[instruction.mem.srcDest+3].o, TreatAsOrdinal{});
         // support unaligned accesses
     }
+}
+
+void
+balx() noexcept {
+    auto address = computeAddress();
+    gprs[instruction.mem.srcDest].o = ip.o + advanceBy;
+    ip.o = address;
+    advanceBy = 0;
+}
+
+void
+callx() noexcept {
+
+}
+void
+bx() noexcept {
+
 }
 
 void 
@@ -671,7 +690,7 @@ loop() {
         case Opcodes::cmpobl:
         case Opcodes::cmpobne:
         case Opcodes::cmpoble:
-            cmpoGeneric();
+            cmpobGeneric();
             break;
         case Opcodes::cmpibno: // never branches
         case Opcodes::cmpibg:
@@ -681,7 +700,7 @@ loop() {
         case Opcodes::cmpibne:
         case Opcodes::cmpible:
         case Opcodes::cmpibo: // always branches
-            cmpiGeneric();
+            cmpibGeneric();
             break;
         case Opcodes::ldob:
             gprs[instruction.mem.srcDest].o = load(computeAddress(), TreatAs<ByteOrdinal>{});
@@ -725,6 +744,16 @@ loop() {
         case Opcodes::stq:
             stq();
             break;
+        case Opcodes::bx:
+            bx();
+            break;
+        case Opcodes::balx:
+            balx();
+            break;
+        case Opcodes::callx:
+            callx();
+            break;
+
     }
     // okay we got here so we need to start grabbing data off of the bus and
     // start executing the next instruction
