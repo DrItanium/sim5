@@ -275,6 +275,31 @@ union Register {
         Ordinal unused3 : 16;
 #endif // end defined(NUMERICS_ARCHITECTURE)
     } arith;
+    struct {
+        Ordinal rt : 3;
+        Ordinal p : 1;
+        Ordinal unused : 2; // according to the Sx manual these bits go unused
+                            // but in the Hx manual they are used :/
+        Ordinal a : 26;
+    } pfp;
+    struct {
+        Ordinal align : 6;
+        Ordinal proper : 26;
+    } pfpAddress;
+    struct {
+        Ordinal traceEnable : 1;
+        Ordinal executionMode : 1;
+        Ordinal unused : 7;
+        Ordinal resume : 1;
+        Ordinal traceFaultPending : 1;
+        Ordinal unused1 : 2;
+        Ordinal state : 1;
+        Ordinal unused2 : 2;
+        Ordinal priority : 5;
+        Ordinal internalState : 11;
+    } pc;
+    bool inSupervisorMode() const noexcept { return pc.executionMode; }
+    bool inUserMode() const noexcept { return !inSupervisorMode(); }
     bool isMEMA() const noexcept { return !mem.selector; }
     bool isMEMB() const noexcept { return mem.selector; }
     bool isDoubleWide() const noexcept {
@@ -282,6 +307,17 @@ union Register {
     }
     void clear() noexcept { 
         o = 0; 
+    }
+    constexpr Ordinal getPFPAddress() noexcept {
+        Register copy(o);
+        copy.pfpAddress.align = 0;
+        return copy.o;
+    }
+    void setPFPAddress(Ordinal address) noexcept {
+        o = address;
+        pfp.unused = 0;
+        pfp.p = 0;
+        pfp.rt = 0;
     }
     [[nodiscard]] constexpr auto getOpcode() const noexcept { return static_cast<Opcodes>(bytes[3]); }
 };
@@ -355,8 +391,48 @@ raiseFault(byte code) noexcept {
     configRegs().faultPort = code;
 }
 void
-ret() {
+syncf() {
+    /// @todo implement
+}
+void
+restoreStandardFrame() noexcept {
 
+}
+void
+ret() {
+    syncf();
+    auto& pfp = getGPR(PFPIndex);
+    switch (pfp.pfp.rt) {
+        case 0b000: 
+            restoreStandardFrame();
+            break;
+        case 0b001:
+            {
+                auto& fp = getGPR(FPIndex);
+                auto x = load(fp.o - 16, TreatAsOrdinal{});
+                auto y = load(fp.o - 12, TreatAsOrdinal{});
+                restoreStandardFrame();
+                ac.o = y;
+                if (pc.inSupervisorMode()) {
+                    pc.o = x;
+                }
+                break;
+            }
+        case 0b010: 
+            break;
+        case 0b011: 
+            break;
+        case 0b100: 
+            break;
+        case 0b101: 
+            break;
+        case 0b110: 
+            break;
+        case 0b111: 
+            break;
+        default: 
+            break;
+    }
 }
 Ordinal 
 computeBitPosition(Ordinal value) noexcept {
