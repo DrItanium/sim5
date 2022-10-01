@@ -473,7 +473,7 @@ cmpiGeneric() noexcept {
 
 void
 ldl() noexcept {
-    if ((instruction.mem.srcDest & 1) != 0) {
+    if ((instruction.mem.srcDest & 0b1) != 0) {
         /// @todo fix
         raiseFault(130);
         /// @note the hx manual shows that destination is modified o_O
@@ -487,7 +487,7 @@ ldl() noexcept {
 
 void
 stl() noexcept {
-    if ((instruction.mem.srcDest & 1) != 0) {
+    if ((instruction.mem.srcDest & 0b1) != 0) {
         /// @todo fix
         raiseFault(130);
         /// @note the hx manual shows that destination is modified o_O
@@ -495,6 +495,67 @@ stl() noexcept {
         auto address = computeAddress();
         store(address, gprs[instruction.mem.srcDest].o, TreatAsOrdinal{});
         store(address+4, gprs[instruction.mem.srcDest+1].o, TreatAsOrdinal{});
+        // support unaligned accesses
+    }
+}
+void
+ldt() noexcept {
+    if ((instruction.mem.srcDest & 0b11) != 0) {
+        /// @todo fix
+        raiseFault(130);
+        /// @note the hx manual shows that destination is modified o_O
+    } else {
+        auto address = computeAddress();
+        gprs[instruction.mem.srcDest].o = load(address, TreatAsOrdinal{});
+        gprs[instruction.mem.srcDest+1].o = load(address+4, TreatAsOrdinal{});
+        gprs[instruction.mem.srcDest+2].o = load(address+8, TreatAsOrdinal{});
+        // support unaligned accesses
+    }
+}
+
+void
+stt() noexcept {
+    if ((instruction.mem.srcDest & 0b11) != 0) {
+        /// @todo fix
+        raiseFault(130);
+        /// @note the hx manual shows that destination is modified o_O
+    } else {
+        auto address = computeAddress();
+        store(address, gprs[instruction.mem.srcDest].o, TreatAsOrdinal{});
+        store(address+4, gprs[instruction.mem.srcDest+1].o, TreatAsOrdinal{});
+        store(address+8, gprs[instruction.mem.srcDest+2].o, TreatAsOrdinal{});
+        // support unaligned accesses
+    }
+}
+
+void
+ldq() noexcept {
+    if ((instruction.mem.srcDest & 0b11) != 0) {
+        /// @todo fix
+        raiseFault(130);
+        /// @note the hx manual shows that destination is modified o_O
+    } else {
+        auto address = computeAddress();
+        gprs[instruction.mem.srcDest].o = load(address, TreatAsOrdinal{});
+        gprs[instruction.mem.srcDest+1].o = load(address+4, TreatAsOrdinal{});
+        gprs[instruction.mem.srcDest+2].o = load(address+8, TreatAsOrdinal{});
+        gprs[instruction.mem.srcDest+3].o = load(address+12, TreatAsOrdinal{});
+        // support unaligned accesses
+    }
+}
+
+void
+stq() noexcept {
+    if ((instruction.mem.srcDest & 0b11) != 0) {
+        /// @todo fix
+        raiseFault(130);
+        /// @note the hx manual shows that destination is modified o_O
+    } else {
+        auto address = computeAddress();
+        store(address, gprs[instruction.mem.srcDest].o, TreatAsOrdinal{});
+        store(address+4, gprs[instruction.mem.srcDest+1].o, TreatAsOrdinal{});
+        store(address+8, gprs[instruction.mem.srcDest+2].o, TreatAsOrdinal{});
+        store(address+12, gprs[instruction.mem.srcDest+3].o, TreatAsOrdinal{});
         // support unaligned accesses
     }
 }
@@ -651,6 +712,18 @@ loop() {
             break;
         case Opcodes::stl:
             stl();
+            break;
+        case Opcodes::ldt:
+            ldt();
+            break;
+        case Opcodes::stt:
+            stt();
+            break;
+        case Opcodes::ldq:
+            ldq();
+            break;
+        case Opcodes::stq:
+            stq();
             break;
     }
     // okay we got here so we need to start grabbing data off of the bus and
