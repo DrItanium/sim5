@@ -606,6 +606,18 @@ loop() {
         case Opcodes::stos:
             store<ShortOrdinal>(computeAddress(), gprs[instruction.mem.srcDest].o, TreatAs<ShortOrdinal>{});
             break;
+        case Opcodes::ldib:
+            gprs[instruction.mem.srcDest].i = load(computeAddress(), TreatAs<ByteInteger>{});
+            break;
+        case Opcodes::stib:
+            store<ByteInteger>(computeAddress(), gprs[instruction.mem.srcDest].i, TreatAs<ByteInteger>{});
+            break;
+        case Opcodes::ldis:
+            gprs[instruction.mem.srcDest].i = load(computeAddress(), TreatAs<ShortInteger>{});
+            break;
+        case Opcodes::stis:
+            store<ShortInteger>(computeAddress(), gprs[instruction.mem.srcDest].i, TreatAs<ShortInteger>{});
+            break;
     }
     // okay we got here so we need to start grabbing data off of the bus and
     // start executing the next instruction
