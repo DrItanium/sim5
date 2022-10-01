@@ -25,10 +25,44 @@
 // Created by jwscoggins on 8/21/21.
 //
 #include <Arduino.h>
+using Address = uint32_t;
+constexpr size_t ConfigurationAddress = 0x7F00;
+template<typename T>
+volatile T& memory(size_t address) noexcept {
+    return *reinterpret_cast<volatile T*>(address);
+}
+struct ConfigRegisters {
+    Address address;
+};
 
+static_assert(sizeof(ConfigRegisters) <= 256);
+
+volatile ConfigRegisters& 
+configRegs() noexcept {
+    return memory<ConfigRegisters>(ConfigurationAddress);
+}
+void
+set328BusAddress(Address address) noexcept {
+    configRegs().address = address;
+}
 void 
 setup() {
-    
+    // cleave the address space in half via sector limits.
+    // lower half is io space for the implementation
+    // upper half is the window into the 32/8 bus
+    bitClear(SFIOR, XMBK);
+    bitClear(SFIOR, XMM2);
+    bitClear(SFIOR, XMM1);
+    bitClear(SFIOR, XMM0);
+    bitSet(EMCUCR, SRL2);
+    bitClear(EMCUCR, SRL1);
+    bitClear(EMCUCR, SRL0);
+    bitClear(EMCUCR, SRW01);
+    bitClear(EMCUCR, SRW00);
+    bitClear(EMCUCR, SRW11);
+    bitClear(MCUCR, SRW10);
+    bitSet(MCUCR, SRE);
+    set328BusAddress(0);
 }
 void 
 loop() {
