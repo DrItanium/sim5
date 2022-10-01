@@ -436,6 +436,9 @@ loop() {
         case Opcodes::st: 
             store32(computeAddress(), gprs[instruction.mem.srcDest].o);
             break;
+        case Opcodes::lda:
+            gprs[instruction.mem.srcDest].o = computeAddress();
+            break;
         default:
             raiseFault(128);
             break;
