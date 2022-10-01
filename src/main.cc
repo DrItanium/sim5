@@ -158,20 +158,6 @@ enum class Opcodes : uint8_t {
     ldis = 0xc8,
     stis = 0xca,
 };
-enum class MEMFormatMode : uint8_t {
-    AbsoluteOffset = 0b0000,
-    Bad = 0b0001,
-    RegisterIndirectWithOffset = 0b1000,
-    RegisterIndirect = 0b0100, 
-    IPWithDisplacement = 0b0101, 
-    Reserved = 0b0110, 
-    RegisterIndirectWithIndex = 0b0111,
-
-    AbsoluteDisplacement = 0b1100,
-    RegisterIndirectWithDisplacement = 0b1101,
-    IndexWithDisplacement = 0b1110,
-    RegisterIndirectWithIndexAndDisplacement = 0b1111,
-};
 union Register {
     constexpr explicit Register(Ordinal value = 0) : o(value) { }
     Ordinal o;
@@ -185,12 +171,24 @@ union Register {
         Ordinal major : 5;
     } instGeneric;
     struct {
+        Integer aligned : 2;
+        Integer important : 30;
+    } alignedTransfer;
+    struct {
         Integer displacement : 13;
         Ordinal m1: 1;
         Ordinal src2: 5;
         Ordinal src1: 5;
         Ordinal opcode : 8;
     } cobr;
+    struct {
+        Ordinal unused : 2;
+        Integer displacement : 11;
+        Ordinal m1: 1;
+        Ordinal src2: 5;
+        Ordinal src1: 5;
+        Ordinal opcode : 8;
+    } cobr2;
     struct {
         Ordinal src1 : 5;
         Ordinal s1 : 1;
@@ -337,6 +335,37 @@ void
 ret() {
 
 }
+constexpr Ordinal computeBitPosition(Ordinal value) noexcept {
+    return static_cast<Ordinal>(1u) << (value & 0b11111);
+}
+void
+bbc() {
+    // branch if bit clear
+    if ((computeBitPosition(gprs[instruction.cobr.src1].o) & gprs[instruction.cobr.src2].o) == 0) {
+        // another lie in the i960Sx manual
+        ac.arith.conditionCode = 0;
+        Register temp;
+        temp.alignedTransfer.important = instruction.cobr2.displacement;
+        ip.alignedTransfer.important = ip.alignedTransfer.important + temp.alignedTransfer.important;
+        ip.alignedTransfer.aligned = 0;
+    } else {
+        ac.arith.conditionCode = 0b010;
+    }
+}
+void 
+bbs() {
+    // Branch if bit set
+    if ((computeBitPosition(gprs[instruction.cobr.src1].o) & gprs[instruction.cobr.src2].o) != 0) {
+        // another lie in the i960Sx manual
+        ac.arith.conditionCode = 0b010;
+        Register temp;
+        temp.alignedTransfer.important = instruction.cobr2.displacement;
+        ip.alignedTransfer.important = ip.alignedTransfer.important + temp.alignedTransfer.important;
+        ip.alignedTransfer.aligned = 0;
+    } else {
+        ac.arith.conditionCode = 0b000;
+    }
+}
 Ordinal
 computeAddress() noexcept {
     if (instruction.isMEMA()) {
@@ -456,8 +485,11 @@ loop() {
         case Opcodes::lda:
             gprs[instruction.mem.srcDest].o = computeAddress();
             break;
-        default:
-            raiseFault(128);
+        case Opcodes::bbc:
+            bbc();
+            break;
+        case Opcodes::bbs:
+            bbs();
             break;
 
     }
