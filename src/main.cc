@@ -50,18 +50,13 @@ setup() {
     // cleave the address space in half via sector limits.
     // lower half is io space for the implementation
     // upper half is the window into the 32/8 bus
-    bitClear(SFIOR, XMBK);
-    bitClear(SFIOR, XMM2);
-    bitClear(SFIOR, XMM1);
-    bitClear(SFIOR, XMM0);
-    bitSet(EMCUCR, SRL2);
-    bitClear(EMCUCR, SRL1);
-    bitClear(EMCUCR, SRL0);
-    bitClear(EMCUCR, SRW01);
-    bitClear(EMCUCR, SRW00);
-    bitClear(EMCUCR, SRW11);
-    bitClear(MCUCR, SRW10);
-    bitSet(MCUCR, SRE);
+    SFIOR = 0; // this will setup the full 64k space, no pullup disable, no bus
+               // keeper and leaving PSR10 alone
+    EMCUCR = 0b0'100'00'0'0; // INT2 is falling edge, carve XMEM into two 32k
+                             // sectors, no wait states, and make sure INT2 is
+                             // falling edge
+    MCUCR = 0b1000'10'10; // enable XMEM, leave sleep off, and set int1 and
+                          // int0 to be falling edge
     set328BusAddress(0);
 }
 void 
