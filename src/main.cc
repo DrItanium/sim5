@@ -77,11 +77,23 @@ load32(Address address) noexcept {
     SplitAddress split(address);
     return memory<Ordinal>(static_cast<size_t>(split.lower) + 0x8000);
 }
+ByteOrdinal
+load8(Address address) noexcept {
+    set328BusAddress(address);
+    SplitAddress split(address);
+    return memory<ByteOrdinal>(static_cast<size_t>(split.lower) + 0x8000);
+}
 void 
 store32(Address address, Ordinal value) noexcept {
     set328BusAddress(address);
     SplitAddress split(address);
     memory<Ordinal>(static_cast<size_t>(split.lower) + 0x8000) = value;
+}
+void
+store8(Address address, ByteOrdinal value) noexcept {
+    set328BusAddress(address);
+    SplitAddress split(address);
+    memory<ByteOrdinal>(static_cast<size_t>(split.lower) + 0x8000) = value;
 }
 enum class Opcodes : uint8_t {
     b = 0x08,
@@ -594,7 +606,12 @@ loop() {
         case Opcodes::cmpibo: // always branches
             cmpiGeneric();
             break;
-
+        case Opcodes::ldob:
+            gprs[instruction.mem.srcDest].o = load8(computeAddress());
+            break;
+        case Opcodes::stob:
+            store8(computeAddress(), gprs[instruction.mem.srcDest].o);
+            break;
     }
     // okay we got here so we need to start grabbing data off of the bus and
     // start executing the next instruction
