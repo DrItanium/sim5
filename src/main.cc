@@ -92,20 +92,57 @@ union Register {
         Ordinal src1: 5;
         Ordinal opcode : 8;
     } cobr;
+    struct {
+        Ordinal src1 : 5;
+        Ordinal s1 : 1;
+        Ordinal s2 : 1;
+        Ordinal opcodeExt : 4;
+        Ordinal m1 : 1;
+        Ordinal m2 : 1;
+        Ordinal m3 : 1;
+        Ordinal src2 : 5;
+        Ordinal srcDest : 5;
+        Ordinal opcode : 8;
+    } reg;
+    struct {
+        Integer displacement : 24;
+        Ordinal opcode : 8;
+    } ctrl;
+    struct {
+        Ordinal offset: 12;
+        Ordinal modeMajor : 2;
+        Ordinal abase : 5;
+        Ordinal srcDest : 5;
+        Ordinal opcode : 8;
+    } mem;
+    struct {
+        Ordinal index : 5;
+        Ordinal unused : 2;
+        Ordinal scale : 3;
+        Ordinal mode : 4;
+        Ordinal abase : 5;
+        Ordinal srcDest : 5;
+        Ordinal opcode : 8;
+    } memb;
+    bool isMEMA() const noexcept { return (mem.modeMajor & 1u) == 0; }
     void clear() noexcept { 
         o = 0; 
     }
     [[nodiscard]] constexpr ByteOrdinal getOpcode() const noexcept { return bytes[3]; }
 };
-using RegisterFrame = Register[16];
+static_assert(sizeof(Register) == sizeof(Ordinal));
 Register ip, ac, pc, tc;
 volatile bool int0Triggered = false;
 volatile bool int1Triggered = false;
 volatile bool int2Triggered = false;
 volatile byte advanceBy = 0;
-RegisterFrame globals;
-RegisterFrame* locals;
-RegisterFrame sets[4];
+// On the i960 this is separated out into two parts, locals and globals
+// The idea is that globals are always available and locals are per function.
+// You are supposed to have multiple local frames on chip to accelerate
+// operations. However, to simplify things I am not keeping any extra sets on
+// chip for the time being so there is just a single register block to work
+// with
+Register gprs[32]; 
 Register instruction;
 Register optionalDisplacement;
 void 
@@ -121,15 +158,10 @@ setup() {
     MCUCR = 0b1000'10'10; // enable XMEM, leave sleep off, and set int1 and
                           // int0 to be falling edge
     set328BusAddress(0);
-    locals = &sets[0];
     // so we need to do any sort of processor setup here
     ip.clear();
-    for (int i = 0; i < 16; ++i) {
-        globals[i].clear();
-        sets[0][i].clear();
-        sets[1][i].clear();
-        sets[2][i].clear();
-        sets[3][i].clear();
+    for (int i = 0; i < 32; ++i) {
+        gprs[i].clear();
     }
 }
 void
@@ -137,15 +169,47 @@ raiseFault(byte code) noexcept {
 
 }
 void 
+call() {
+
+}
+void
+ret() {
+
+}
+Ordinal
+computeAddress() noexcept {
+    if (instruction.isMEMA()) {
+        return instruction.mem.offset + (instruction.mem.modeMajor != 0 ? gprs[instruction.mem.abase].o : 0);
+    } else {
+        switch (instruction.memb.mode) {
+            default:
+                return 0;
+        }
+    }
+}
+void 
 loop() {
     advanceBy = 4;
     instruction.o = load32(ip.a);
     switch (instruction.getOpcode()) {
-        case 0x08:
+        case 0x0B: // bal
+            gprs[14].o = ip.o + 4;
+            // then fallthrough and take the branch
+        case 0x08: // b
             ip.i += instruction.cobr.displacement;
             advanceBy = 0;
             break;
-        case 0x09:
+        case 0x09: // call
+            call();
+            break;
+        case 0x0A: // ret
+            ret();
+            break;
+        case 0x90: // ld
+            gprs[instruction.mem.srcDest].o = load32(computeAddress());
+            break;
+        case 0x92: // st
+            store32(computeAddress(), gprs[instruction.mem.srcDest].o);
             break;
         default:
             raiseFault(128);
