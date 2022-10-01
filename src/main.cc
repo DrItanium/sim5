@@ -394,9 +394,17 @@ void
 syncf() {
     /// @todo implement
 }
+void restoreRegisterSet(Ordinal fp) noexcept;
 void
 restoreStandardFrame() noexcept {
-
+    // need to leave the current call
+    getGPR(FPIndex).o = getGPR(PFPIndex).o;
+    // remember that the lowest 6 bits are ignored so it is important to mask
+    // them out of the frame pointer address when using the address
+    auto realAddress = getGPR(FPIndex).o & NotC;
+    restoreRegisterSet(realAddress);
+    ip.o = getGPR(RIPIndex).o;
+    advanceBy = 0;
 }
 void
 ret() {
@@ -419,18 +427,38 @@ ret() {
                 break;
             }
         case 0b010: 
+            if (pc.inSupervisorMode()) {
+                pc.pc.traceEnable = 0;
+                pc.pc.executionMode = 0;
+            }
+            restoreStandardFrame();
             break;
         case 0b011: 
-            break;
-        case 0b100: 
-            break;
-        case 0b101: 
-            break;
-        case 0b110: 
+            if (pc.inSupervisorMode()) {
+                pc.pc.traceEnable = 1;
+                pc.pc.executionMode = 0;
+            }
+            restoreStandardFrame();
             break;
         case 0b111: 
+            {
+                // interrupt return
+                auto& fp = getGPR(FPIndex);
+                auto x = load(fp.o - 16, TreatAsOrdinal{});
+                auto y = load(fp.o - 12, TreatAsOrdinal{});
+                restoreStandardFrame();
+                ac.o = y;
+                if (pc.inSupervisorMode()) {
+                    pc.o = x;
+                    /// @todo check pending interrupts
+                }
+                break;
+            }
+
             break;
         default: 
+            // undefined!
+            /// @todo raise a fault?
             break;
     }
 }
