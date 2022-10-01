@@ -26,6 +26,8 @@
 //
 #include <Arduino.h>
 using Address = uint32_t;
+using ShortOrdinal = uint16_t;
+using ShortInteger = int16_t;
 using Ordinal = uint32_t;
 using Integer = int32_t;
 using LongOrdinal = uint64_t;
@@ -74,6 +76,23 @@ store32(Address address, Ordinal value) noexcept {
     SplitAddress split(address);
     memory<Ordinal>(static_cast<size_t>(split.lower) + 0x8000) = value;
 }
+union Register {
+    constexpr explicit Register(Ordinal value = 0) : o(value) { }
+    Ordinal o;
+    Integer i;
+    byte bytes[sizeof(Ordinal)];
+    ShortOrdinal shorts[sizeof(Ordinal)/sizeof(ShortOrdinal)];
+    void clear() noexcept { 
+        o = 0; 
+    }
+};
+using RegisterFrame = Register[16];
+Register ip, ac, pc, tc;
+volatile bool int0Triggered = false;
+volatile bool int1Triggered = false;
+volatile bool int2Triggered = false;
+RegisterFrame globals;
+RegisterFrame locals;
 void 
 setup() {
     // cleave the address space in half via sector limits.
@@ -87,19 +106,30 @@ setup() {
     MCUCR = 0b1000'10'10; // enable XMEM, leave sleep off, and set int1 and
                           // int0 to be falling edge
     set328BusAddress(0);
+    // so we need to do any sort of processor setup here
+    ip.clear();
+    for (int i = 0; i < 16; ++i) {
+        globals[i].clear();
+        locals[i].clear();
+    }
 }
 void 
 loop() {
+    // okay we got here so we need to start grabbing data off of the bus and
+    // start executing the next instruction
+    ip.o += 4; 
 }
 
 ISR(INT0_vect) {
-
+    int0Triggered = true;
 }
 
 
 ISR(INT1_vect) {
+    int1Triggered = true;
 
 }
 ISR(INT2_vect) {
+    int2Triggered = true;
 
 }
