@@ -38,6 +38,9 @@ template<typename T> struct TreatAs { };
 using TreatAsOrdinal = TreatAs<Ordinal>;
 using TreatAsInteger = TreatAs<Integer>;
 constexpr size_t ConfigurationAddress = 0x7F00;
+constexpr Ordinal SALIGN = 4;
+constexpr Ordinal C = (SALIGN * 16) - 1;
+constexpr Ordinal NotC = ~C;
 template<typename T>
 volatile T& memory(size_t address) noexcept {
     return *reinterpret_cast<volatile T*>(address);
@@ -569,10 +572,48 @@ balx() noexcept {
     ip.o = address;
     advanceBy = 0;
 }
-
+bool 
+registerSetAvailable() noexcept {
+    /// @todo implement this properly when we implement support for register
+    /// sets
+    return false;
+}
+void
+allocateNewRegisterFrame() noexcept {
+    // do nothing right now
+}
+void 
+saveRegisterSet(Ordinal fp) noexcept {
+    // save the "next" register frame to main memory to reclaim it
+    for (int i = 16; i < 32; ++i, fp += 4) {
+        store(fp, gprs[i].o, TreatAsOrdinal{});
+    }
+}
+void
+restoreRegisterSet(Ordinal fp) noexcept {
+    // load the register set back from main memory
+    for (int i = 16; i < 32; ++i, fp += 4) {
+        gprs[i].o = load(fp, TreatAsOrdinal{});
+    }
+}
 void
 callx() noexcept {
-
+    // wait for any uncompleted instructions to finish
+    auto temp = (gprs[SPIndex].o + C) & NotC; // round stack pointer to next boundary
+    auto fp = gprs[FPIndex].o;
+    auto addr = computeAddress();
+    gprs[RIPIndex].o = ip.o + advanceBy;
+    if (registerSetAvailable()) {
+        allocateNewRegisterFrame();
+    } else {
+        saveRegisterSet(fp);
+        allocateNewRegisterFrame();
+    }
+    ip.o = addr;
+    gprs[PFPIndex].o = fp;
+    gprs[FPIndex].o = temp;
+    gprs[SPIndex].o = temp + 64;
+    advanceBy = 0;
 }
 void
 bx() noexcept {
