@@ -131,18 +131,24 @@ enum class Opcodes : uint8_t {
     cmpibne,
     cmpible,
     cmpibo,
-    reg0 = 0x58,
-    reg1,
-    reg2,
-    reg3,
-    reg4,
-    reg5,
-    reg6,
-    reg7,
-    reg8, reg9, reg10, reg11, reg12, reg13, reg14, reg15,
-    reg16, reg17, reg18, reg19, reg20, reg21, reg22, reg23,
-    reg24, reg25, reg26, reg27, reg28, reg29, reg30, reg31,
-    reg32, reg33, reg34, reg35, reg36, reg37, reg38, reg39,
+#define X(value) reg_ ## value = value
+    X(0x58),
+    X(0x59),
+    X(0x5a),
+    X(0x5b),
+    X(0x5c),
+    X(0x5d),
+    X(0x5e),
+    X(0x5f),
+    X(0x60),
+    X(0x61),
+    X(0x64),
+    X(0x65),
+    X(0x66),
+    X(0x67),
+    X(0x70),
+    X(0x74),
+#undef X
     ldob = 0x80,
     stob = 0x82,
     bx = 0x84,
@@ -741,6 +747,24 @@ bx() noexcept {
     ip.o = computeAddress();
     advanceBy = 0;
 }
+#define X(index) void reg_ ## index () 
+    X(0x58);
+    X(0x59);
+    X(0x5a);
+    X(0x5b);
+    X(0x5c);
+    X(0x5d);
+    X(0x5e);
+    X(0x5f);
+    X(0x60);
+    X(0x61);
+    X(0x64);
+    X(0x65);
+    X(0x66);
+    X(0x67);
+    X(0x70);
+    X(0x74);
+#undef X
 
 void 
 setup() {
@@ -916,6 +940,22 @@ loop() {
         case Opcodes::callx:
             callx();
             break;
+#define X(index) case Opcodes:: reg_0x ## index: reg_0x ## index () ; break
+            X(58);
+#undef X
+#if 0
+            X(0); X(1); X(2); X(3); X(4); X(5); X(6); X(7); 
+            //X(8); X(9); X(10); X(11); X(12); X(13); X(14); X(15); 
+            //X(16); X(17); X(18); X(19); X(20); X(21); X(22); X(23); 
+            //X(24); X(25); X(26); X(27); X(28); X(29); X(30); X(31); 
+            //X(32); X(33); X(34); X(35); X(36); X(37); X(38); X(39); 
+#undef X
+            break;
+        default:
+            /// @todo implement properly
+            raiseFault(0xFD);
+            break;
+#endif
 
     }
     // okay we got here so we need to start grabbing data off of the bus and
@@ -935,4 +975,9 @@ ISR(INT1_vect) {
 ISR(INT2_vect) {
     int2Triggered = true;
 
+}
+
+void 
+reg0() noexcept {
+    // 0x58
 }
