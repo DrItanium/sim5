@@ -302,25 +302,6 @@ Register instruction;
 Register& getSFR(byte index) noexcept {
     return sfrs[index & 0b11111];
 }
-void 
-setup() {
-    // cleave the address space in half via sector limits.
-    // lower half is io space for the implementation
-    // upper half is the window into the 32/8 bus
-    SFIOR = 0; // this will setup the full 64k space, no pullup disable, no bus
-               // keeper and leaving PSR10 alone
-    EMCUCR = 0b0'100'00'0'0; // INT2 is falling edge, carve XMEM into two 32k
-                             // sectors, no wait states, and make sure INT2 is
-                             // falling edge
-    MCUCR = 0b1000'10'10; // enable XMEM, leave sleep off, and set int1 and
-                          // int0 to be falling edge
-    set328BusAddress(0);
-    // so we need to do any sort of processor setup here
-    ip.clear();
-    for (int i = 0; i < 32; ++i) {
-        gprs[i].clear();
-    }
-}
 void
 raiseFault(byte code) noexcept {
     configRegs().faultPort = code;
@@ -353,7 +334,7 @@ branchIfBitGeneric() {
     if (instruction.cobr.s2) {
         // access the contents of the sfrs
         // at this point it is just a simple extra set of 32 registers
-        against = sfrs[instruction.cobr.src2].o;
+        against = getSFR(instruction.cobr.src2).o;
     } else {
         against = gprs[instruction.cobr.src2].o;
     }
@@ -426,6 +407,65 @@ computeAddress() noexcept {
                     return -1;
             }
         }
+    }
+}
+template<typename T>
+void
+cmpGeneric(T src1, T src2) noexcept {
+    if (src1 < src2) {
+        ac.arith.conditionCode = 0b100;
+    } else if (src1 == src2) {
+        ac.arith.conditionCode = 0b010;
+    } else {
+        ac.arith.conditionCode = 0b001;
+    }
+}
+inline void cmpi(Integer src1, Integer src2) noexcept { cmpGeneric<Integer>(src1, src2); }
+inline void cmpo(Ordinal src1, Ordinal src2) noexcept { cmpGeneric<Ordinal>(src1, src2); }
+
+void 
+cmpoGeneric() noexcept {
+    Ordinal src1 = 0;
+    Ordinal src2 = 0;
+    if (instruction.cobr.m1) {
+        // treat src1 as a literal
+        src1 = instruction.cobr.src1;
+    } else {
+        src1 = gprs[instruction.cobr.src1].o;
+    }
+    if (instruction.cobr.s2) {
+        // access the contents of the sfrs
+        // at this point it is just a simple extra set of 32 registers
+        src2 = getSFR(instruction.cobr.src2).o;
+    } else {
+        src2 = gprs[instruction.cobr.src2].o;
+    }
+    cmpGeneric(src1, src2);
+    if ((instruction.instGeneric.mask & ac.arith.conditionCode) != 0) {
+        Register temp;
+        temp.alignedTransfer.important = instruction.cobr.displacement;
+        ip.alignedTransfer.important = ip.alignedTransfer.important + temp.alignedTransfer.important;
+        ip.alignedTransfer.aligned = 0;
+    }
+}
+
+void 
+setup() {
+    // cleave the address space in half via sector limits.
+    // lower half is io space for the implementation
+    // upper half is the window into the 32/8 bus
+    SFIOR = 0; // this will setup the full 64k space, no pullup disable, no bus
+               // keeper and leaving PSR10 alone
+    EMCUCR = 0b0'100'00'0'0; // INT2 is falling edge, carve XMEM into two 32k
+                             // sectors, no wait states, and make sure INT2 is
+                             // falling edge
+    MCUCR = 0b1000'10'10; // enable XMEM, leave sleep off, and set int1 and
+                          // int0 to be falling edge
+    set328BusAddress(0);
+    // so we need to do any sort of processor setup here
+    ip.clear();
+    for (int i = 0; i < 32; ++i) {
+        gprs[i].clear();
     }
 }
 
@@ -513,6 +553,14 @@ loop() {
             break;
         case Opcodes::bbs:
             bbs();
+            break;
+        case Opcodes::cmpobg:
+        case Opcodes::cmpobe:
+        case Opcodes::cmpobge:
+        case Opcodes::cmpobl:
+        case Opcodes::cmpobne:
+        case Opcodes::cmpoble:
+            cmpoGeneric();
             break;
 
     }
