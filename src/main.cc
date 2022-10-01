@@ -34,6 +34,9 @@ using Ordinal = uint32_t;
 using Integer = int32_t;
 using LongOrdinal = uint64_t;
 using LongInteger = int64_t;
+template<typename T> struct TreatAs { };
+using TreatAsOrdinal = TreatAs<Ordinal>;
+using TreatAsInteger = TreatAs<Integer>;
 constexpr size_t ConfigurationAddress = 0x7F00;
 template<typename T>
 volatile T& memory(size_t address) noexcept {
@@ -422,24 +425,49 @@ cmpGeneric(T src1, T src2) noexcept {
 }
 inline void cmpi(Integer src1, Integer src2) noexcept { cmpGeneric<Integer>(src1, src2); }
 inline void cmpo(Ordinal src1, Ordinal src2) noexcept { cmpGeneric<Ordinal>(src1, src2); }
-
-void 
-cmpoGeneric() noexcept {
-    Ordinal src1 = 0;
-    Ordinal src2 = 0;
+Ordinal 
+unpackSrc1_COBR(TreatAsOrdinal) noexcept {
     if (instruction.cobr.m1) {
         // treat src1 as a literal
-        src1 = instruction.cobr.src1;
+        return instruction.cobr.src1;
     } else {
-        src1 = gprs[instruction.cobr.src1].o;
+        return gprs[instruction.cobr.src1].o;
     }
+}
+Ordinal
+unpackSrc2_COBR(TreatAsOrdinal) noexcept {
     if (instruction.cobr.s2) {
         // access the contents of the sfrs
         // at this point it is just a simple extra set of 32 registers
-        src2 = getSFR(instruction.cobr.src2).o;
+        return getSFR(instruction.cobr.src2).o;
     } else {
-        src2 = gprs[instruction.cobr.src2].o;
+        return gprs[instruction.cobr.src2].o;
     }
+}
+Integer
+unpackSrc1_COBR(TreatAsInteger) noexcept {
+    if (instruction.cobr.m1) {
+        // treat src1 as a literal
+        return instruction.cobr.src1;
+    } else {
+        return gprs[instruction.cobr.src1].i;
+    }
+}
+Integer
+unpackSrc2_COBR(TreatAsInteger) noexcept {
+    if (instruction.cobr.s2) {
+        // access the contents of the sfrs
+        // at this point it is just a simple extra set of 32 registers
+        return getSFR(instruction.cobr.src2).i;
+    } else {
+        return gprs[instruction.cobr.src2].i;
+    }
+}
+template<typename T>
+void
+cmpxGeneric() noexcept {
+    auto src1 = unpackSrc1_COBR(TreatAs<T>{});
+    auto src2 = unpackSrc2_COBR(TreatAs<T>{});
     cmpGeneric(src1, src2);
     if ((instruction.instGeneric.mask & ac.arith.conditionCode) != 0) {
         Register temp;
@@ -447,6 +475,14 @@ cmpoGeneric() noexcept {
         ip.alignedTransfer.important = ip.alignedTransfer.important + temp.alignedTransfer.important;
         ip.alignedTransfer.aligned = 0;
     }
+}
+void 
+cmpoGeneric() noexcept {
+    cmpxGeneric<Ordinal>();
+}
+void
+cmpiGeneric() noexcept {
+    cmpxGeneric<Integer>();
 }
 
 void 
