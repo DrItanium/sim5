@@ -83,6 +83,12 @@ load8(Address address) noexcept {
     SplitAddress split(address);
     return memory<ByteOrdinal>(static_cast<size_t>(split.lower) + 0x8000);
 }
+ShortOrdinal
+load16(Address address) noexcept {
+    set328BusAddress(address);
+    SplitAddress split(address);
+    return memory<ShortOrdinal>(static_cast<size_t>(split.lower) + 0x8000);
+}
 void 
 store32(Address address, Ordinal value) noexcept {
     set328BusAddress(address);
@@ -94,6 +100,12 @@ store8(Address address, ByteOrdinal value) noexcept {
     set328BusAddress(address);
     SplitAddress split(address);
     memory<ByteOrdinal>(static_cast<size_t>(split.lower) + 0x8000) = value;
+}
+void
+store16(Address address, ShortOrdinal value) noexcept {
+    set328BusAddress(address);
+    SplitAddress split(address);
+    memory<ShortOrdinal>(static_cast<size_t>(split.lower) + 0x8000) = value;
 }
 enum class Opcodes : uint8_t {
     b = 0x08,
@@ -611,6 +623,12 @@ loop() {
             break;
         case Opcodes::stob:
             store8(computeAddress(), gprs[instruction.mem.srcDest].o);
+            break;
+        case Opcodes::ldos:
+            gprs[instruction.mem.srcDest].o = load16(computeAddress());
+            break;
+        case Opcodes::stos:
+            store16(computeAddress(), gprs[instruction.mem.srcDest].o);
             break;
     }
     // okay we got here so we need to start grabbing data off of the bus and
