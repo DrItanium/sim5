@@ -430,6 +430,18 @@ loop() {
                 raiseFault(129);
             }
             break;
+        case Opcodes::testno:
+            gprs[instruction.cobr.src1].o = ac.arith.conditionCode == 0 ? 1 : 0;
+            break;
+        case Opcodes::testg:
+        case Opcodes::teste:
+        case Opcodes::testge:
+        case Opcodes::testl:
+        case Opcodes::testne:
+        case Opcodes::testle:
+        case Opcodes::testo:
+            gprs[instruction.cobr.src1].o = (ac.arith.conditionCode & instruction.instGeneric.mask) != 0 ? 1 : 0;
+            break;
         case Opcodes::ld: 
             gprs[instruction.mem.srcDest].o = load32(computeAddress());
             break;
