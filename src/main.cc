@@ -78,6 +78,98 @@ store32(Address address, Ordinal value) noexcept {
     SplitAddress split(address);
     memory<Ordinal>(static_cast<size_t>(split.lower) + 0x8000) = value;
 }
+enum class Opcodes : uint8_t {
+    b = 0x08,
+    call,
+    ret,
+    bal,
+    bno = 0x10,
+    bg,
+    be,
+    bge,
+    bl,
+    bne,
+    ble,
+    bo,
+    faultno,
+    faultg,
+    faulte,
+    faultge,
+    faultl,
+    faultne, 
+    faultle, 
+    faulto,
+    testno,
+    testg,
+    teste,
+    testge,
+    testl,
+    testne,
+    testle,
+    testo,
+    bbc = 0x30,
+    cmpobg,
+    cmpobe,
+    cmpobge,
+    cmpobl,
+    cmpobne,
+    cmpoble,
+    bbs,
+    cmpibno,
+    cmpibg,
+    cmpibe,
+    cmpibge,
+    cmpibl,
+    cmpibne,
+    cmpible,
+    cmpibo,
+    reg0 = 0x58,
+    reg1,
+    reg2,
+    reg3,
+    reg4,
+    reg5,
+    reg6,
+    reg7,
+    reg8, reg9, reg10, reg11, reg12, reg13, reg14, reg15,
+    reg16, reg17, reg18, reg19, reg20, reg21, reg22, reg23,
+    reg24, reg25, reg26, reg27, reg28, reg29, reg30, reg31,
+    reg32, reg33, reg34, reg35, reg36, reg37, reg38, reg39,
+    ldob = 0x80,
+    stob = 0x82,
+    bx = 0x84,
+    balx,
+    callx,
+    ldos = 0x88,
+    stos = 0x8a,
+    lda = 0x8c,
+    ld = 0x90,
+    st = 0x92,
+    ldl = 0x98,
+    stl = 0x9a,
+    ldt = 0xa0,
+    stt = 0xa2,
+    ldq = 0xb0,
+    stq = 0xb2,
+    ldib = 0xc0,
+    stib = 0xc2,
+    ldis = 0xc8,
+    stis = 0xca,
+};
+enum class MEMFormatMode : uint8_t {
+    AbsoluteOffset = 0b0000,
+    Bad = 0b0001,
+    RegisterIndirectWithOffset = 0b1000,
+    RegisterIndirect = 0b0100, 
+    IPWithDisplacement = 0b0101, 
+    Reserved = 0b0110, 
+    RegisterIndirectWithIndex = 0b0111,
+
+    AbsoluteDisplacement = 0b1100,
+    RegisterIndirectWithDisplacement = 0b1101,
+    IndexWithDisplacement = 0b1110,
+    RegisterIndirectWithIndexAndDisplacement = 0b1111,
+};
 union Register {
     constexpr explicit Register(Ordinal value = 0) : o(value) { }
     Ordinal o;
@@ -110,25 +202,52 @@ union Register {
     } ctrl;
     struct {
         Ordinal offset: 12;
-        Ordinal modeMajor : 2;
+        Ordinal selector : 1;
+        Ordinal selector2 : 1;
         Ordinal abase : 5;
         Ordinal srcDest : 5;
         Ordinal opcode : 8;
     } mem;
     struct {
+        Ordinal offset : 12;
+        Ordinal fixed : 1;
+        Ordinal action : 1;
+        Ordinal abase : 5;
+        Ordinal srcDest : 5;
+        Ordinal opcode : 8;
+    } mema;
+    struct {
         Ordinal index : 5;
         Ordinal unused : 2;
         Ordinal scale : 3;
-        Ordinal mode : 4;
+        Ordinal modeMinor : 2;
+        Ordinal fixed : 1;
+        Ordinal group: 1;
         Ordinal abase : 5;
         Ordinal srcDest : 5;
         Ordinal opcode : 8;
     } memb;
-    bool isMEMA() const noexcept { return (mem.modeMajor & 1u) == 0; }
+    struct {
+        Ordinal index : 5;
+        Ordinal unused : 2;
+        Ordinal scale : 3;
+        Ordinal registerIndirect : 1;
+        Ordinal useIndex : 1;
+        Ordinal fixed : 1;
+        Ordinal group: 1;
+        Ordinal abase : 5;
+        Ordinal srcDest : 5;
+        Ordinal opcode : 8;
+    } memb_grp2;
+    bool isMEMA() const noexcept { return !mem.selector; }
+    bool isMEMB() const noexcept { return mem.selector; }
+    bool isDoubleWide() const noexcept {
+        return isMEMB() && (memb.group || (memb.modeMinor == 0b01));
+    }
     void clear() noexcept { 
         o = 0; 
     }
-    [[nodiscard]] constexpr ByteOrdinal getOpcode() const noexcept { return bytes[3]; }
+    [[nodiscard]] constexpr auto getOpcode() const noexcept { return static_cast<Opcodes>(bytes[3]); }
 };
 static_assert(sizeof(Register) == sizeof(Ordinal));
 Register ip, ac, pc, tc;
@@ -181,9 +300,33 @@ computeAddress() noexcept {
     if (instruction.isMEMA()) {
         return instruction.mem.offset + (instruction.mem.modeMajor != 0 ? gprs[instruction.mem.abase].o : 0);
     } else {
-        switch (instruction.memb.mode) {
-            default:
-                return 0;
+        // okay so we need to figure out the minor mode after figuring out if
+        // it is a double wide operation or not
+        if (instruction.memb.group) {
+            // okay so it is going to be the displacement versions
+            // load 32-bits into the optionalDisplacement field
+            advanceBy += 4;
+            Integer result = static_cast<Integer>(load32(ip.a + 4)); // load the optional displacement
+            if (instruction.memb_grp2.useIndex) {
+                result += (gprs[instruction.memb_grp2.index].i << static_cast<Integer>(instruction.memb_grp2.scale));
+            }
+            if (instruction.memb_grp2.registerIndirect) {
+                result += gprs[instruction.memb_grp2.abse].i;
+            }
+            return static_cast<Ordinal>(result);
+        } else {
+            // okay so the other group isn't as cleanly designed
+            switch (instruction.memb.modeMinor) {
+                case 0b00: // Register Indirect
+                    return gprs[instruction.mema.abase].o;
+                case 0b01: // IP With Displacement 
+                    advanceBy += 4;
+                    return static_cast<Ordinal>(ip_.getInteger() + static_cast<Integer>(load32(ip.a + 4)) + 8);
+                case 0b11: // Register Indirect With Index
+                    return gprs[instruction.mema.abase].o + (gprs[instruction.mema.index].o << instruction.mema.scale);
+                default:
+                    return -1;
+            }
         }
     }
 }
@@ -192,23 +335,23 @@ loop() {
     advanceBy = 4;
     instruction.o = load32(ip.a);
     switch (instruction.getOpcode()) {
-        case 0x0B: // bal
+        case Opcodes::bal: // bal
             gprs[14].o = ip.o + 4;
             // then fallthrough and take the branch
-        case 0x08: // b
+        case Opcodes::b: // b
             ip.i += instruction.cobr.displacement;
             advanceBy = 0;
             break;
-        case 0x09: // call
+        case Opcodes::call: // call
             call();
             break;
-        case 0x0A: // ret
+        case Opcodes::ret: // ret
             ret();
             break;
-        case 0x90: // ld
+        case Opcodes::ld: 
             gprs[instruction.mem.srcDest].o = load32(computeAddress());
             break;
-        case 0x92: // st
+        case Opcodes::st: 
             store32(computeAddress(), gprs[instruction.mem.srcDest].o);
             break;
         default:
