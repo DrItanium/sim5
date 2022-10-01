@@ -302,6 +302,45 @@ constexpr auto RIPIndex = 18;
 Register gprs[32]; 
 Register sfrs[32];
 Register instruction;
+Register& getSFR(byte index) noexcept;
+Ordinal 
+unpackSrc1_COBR(TreatAsOrdinal) noexcept {
+    if (instruction.cobr.m1) {
+        // treat src1 as a literal
+        return instruction.cobr.src1;
+    } else {
+        return gprs[instruction.cobr.src1].o;
+    }
+}
+Ordinal
+unpackSrc2_COBR(TreatAsOrdinal) noexcept {
+    if (instruction.cobr.s2) {
+        // access the contents of the sfrs
+        // at this point it is just a simple extra set of 32 registers
+        return getSFR(instruction.cobr.src2).o;
+    } else {
+        return gprs[instruction.cobr.src2].o;
+    }
+}
+Integer
+unpackSrc1_COBR(TreatAsInteger) noexcept {
+    if (instruction.cobr.m1) {
+        // treat src1 as a literal
+        return instruction.cobr.src1;
+    } else {
+        return gprs[instruction.cobr.src1].i;
+    }
+}
+Integer
+unpackSrc2_COBR(TreatAsInteger) noexcept {
+    if (instruction.cobr.s2) {
+        // access the contents of the sfrs
+        // at this point it is just a simple extra set of 32 registers
+        return getSFR(instruction.cobr.src2).i;
+    } else {
+        return gprs[instruction.cobr.src2].i;
+    }
+}
 Register& getSFR(byte index) noexcept {
     return sfrs[index & 0b11111];
 }
@@ -324,23 +363,10 @@ computeBitPosition(Ordinal value) noexcept {
 template<bool checkClear>
 void 
 branchIfBitGeneric() {
-    Ordinal bitpos = 0;
-    Ordinal against = 0;
+    Ordinal bitpos = computeBitPosition(unpackSrc1_COBR(TreatAsOrdinal{}));
+    Ordinal against = unpackSrc2_COBR(TreatAsOrdinal{});
     bool condition = false;
     // Branch if bit set
-    if (instruction.cobr.m1) {
-        // treat src1 as a literal
-        bitpos = computeBitPosition(instruction.cobr.src1);
-    } else {
-        bitpos = computeBitPosition(gprs[instruction.cobr.src1].o);
-    }
-    if (instruction.cobr.s2) {
-        // access the contents of the sfrs
-        // at this point it is just a simple extra set of 32 registers
-        against = getSFR(instruction.cobr.src2).o;
-    } else {
-        against = gprs[instruction.cobr.src2].o;
-    }
     if constexpr (checkClear) {
         condition = (bitpos & against) == 0;
     } else {
@@ -425,44 +451,6 @@ cmpGeneric(T src1, T src2) noexcept {
 }
 inline void cmpi(Integer src1, Integer src2) noexcept { cmpGeneric<Integer>(src1, src2); }
 inline void cmpo(Ordinal src1, Ordinal src2) noexcept { cmpGeneric<Ordinal>(src1, src2); }
-Ordinal 
-unpackSrc1_COBR(TreatAsOrdinal) noexcept {
-    if (instruction.cobr.m1) {
-        // treat src1 as a literal
-        return instruction.cobr.src1;
-    } else {
-        return gprs[instruction.cobr.src1].o;
-    }
-}
-Ordinal
-unpackSrc2_COBR(TreatAsOrdinal) noexcept {
-    if (instruction.cobr.s2) {
-        // access the contents of the sfrs
-        // at this point it is just a simple extra set of 32 registers
-        return getSFR(instruction.cobr.src2).o;
-    } else {
-        return gprs[instruction.cobr.src2].o;
-    }
-}
-Integer
-unpackSrc1_COBR(TreatAsInteger) noexcept {
-    if (instruction.cobr.m1) {
-        // treat src1 as a literal
-        return instruction.cobr.src1;
-    } else {
-        return gprs[instruction.cobr.src1].i;
-    }
-}
-Integer
-unpackSrc2_COBR(TreatAsInteger) noexcept {
-    if (instruction.cobr.s2) {
-        // access the contents of the sfrs
-        // at this point it is just a simple extra set of 32 registers
-        return getSFR(instruction.cobr.src2).i;
-    } else {
-        return gprs[instruction.cobr.src2].i;
-    }
-}
 template<typename T>
 void
 cmpxGeneric() noexcept {
