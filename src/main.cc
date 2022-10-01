@@ -41,6 +41,8 @@ volatile T& memory(size_t address) noexcept {
 }
 struct ConfigRegisters {
     Address address;
+    byte faultPort; /// @todo remove this when we do this right, this is here
+                    /// to make sure the optimizer doesn't get dumb
 };
 
 static_assert(sizeof(ConfigRegisters) <= 256);
@@ -178,6 +180,11 @@ union Register {
     byte bytes[sizeof(Ordinal)];
     ShortOrdinal shorts[sizeof(Ordinal)/sizeof(ShortOrdinal)];
     struct {
+        Ordinal unused : 24;
+        Ordinal mask : 3;
+        Ordinal major : 5;
+    } instGeneric;
+    struct {
         Integer displacement : 13;
         Ordinal m1: 1;
         Ordinal src2: 5;
@@ -239,6 +246,37 @@ union Register {
         Ordinal srcDest : 5;
         Ordinal opcode : 8;
     } memb_grp2;
+    struct {
+        Ordinal conditionCode : 3;
+#ifdef NUMERICS_ARCHITECTURE
+        Ordinal arithmeticStatus : 4;
+        Ordinal unused0 : 1;
+#else
+        Ordinal unused0 : 5;
+#endif // end defined(NUMERICS_ARCHITECTURE)
+        Ordinal integerOverflowFlag : 1;
+        Ordinal unused1 : 3;
+        Ordinal integerOverflowMask : 1;
+        Ordinal unused2 : 2;
+        Ordinal noImpreciseFaults : 1;
+#ifdef NUMERICS_ARCHITECTURE
+        Ordinal floatingOverflowFlag : 1;
+        Ordinal floatingUnderflowFlag : 1;
+        Ordinal floatingInvalidOpFlag : 1;
+        Ordinal floatingZeroDivideFlag : 1;
+        Ordinal floatingInexactFlag : 1;
+        Ordinal unused3 : 3;
+        Ordinal floatingOverflowMask : 1;
+        Ordinal floatingUnderflowMask : 1;
+        Ordinal floatingInvalidOpMask : 1;
+        Ordinal floatingZeroDivideMask : 1;
+        Ordinal floatingInexactMask : 1;
+        Ordinal floatingPointNormalizingMode : 1;
+        Ordinal floatingPointRoundingControl : 2;
+#else
+        Ordinal unused3 : 16;
+#endif // end defined(NUMERICS_ARCHITECTURE)
+    } arith;
     bool isMEMA() const noexcept { return !mem.selector; }
     bool isMEMB() const noexcept { return mem.selector; }
     bool isDoubleWide() const noexcept {
@@ -284,7 +322,7 @@ setup() {
 }
 void
 raiseFault(byte code) noexcept {
-
+    configRegs().faultPort = code;
 }
 void 
 call() {
@@ -333,6 +371,7 @@ computeAddress() noexcept {
         }
     }
 }
+
 void 
 loop() {
     advanceBy = 4;
@@ -350,6 +389,46 @@ loop() {
             break;
         case Opcodes::ret: // ret
             ret();
+            break;
+        case Opcodes::bno:
+            if (ac.arith.conditionCode == 0) {
+                ip.i += instruction.ctrl.displacement;
+                advanceBy = 0;
+            }
+            break;
+        case Opcodes::be:
+        case Opcodes::bne:
+        case Opcodes::bl:
+        case Opcodes::ble:
+        case Opcodes::bg:
+        case Opcodes::bge:
+        case Opcodes::bo:
+            // the branch instructions have the mask encoded into the opcode
+            // itself so we can just use it and save a ton of space overall
+            if ((ac.arith.conditionCode & instruction.instGeneric.mask) != 0) {
+                ip.i += instruction.ctrl.displacement;
+                advanceBy = 0;
+            }
+            break;
+        case Opcodes::faultno:
+            if (ac.arith.conditionCode == 0) {
+                /// @todo fix fault mechanism to be correct and use proper
+                /// codes as well
+                raiseFault(129);
+            }
+            break;
+        case Opcodes::faulte:
+        case Opcodes::faultne:
+        case Opcodes::faultl:
+        case Opcodes::faultle:
+        case Opcodes::faultg:
+        case Opcodes::faultge:
+        case Opcodes::faulto:
+            if ((ac.arith.conditionCode & instruction.instGeneric.mask) != 0) {
+                /// @todo fix fault mechanism to be correct and use proper
+                /// codes as well
+                raiseFault(129);
+            }
             break;
         case Opcodes::ld: 
             gprs[instruction.mem.srcDest].o = load32(computeAddress());
