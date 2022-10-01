@@ -175,20 +175,14 @@ union Register {
         Integer important : 30;
     } alignedTransfer;
     struct {
-        Integer displacement : 13;
-        Ordinal m1: 1;
-        Ordinal src2: 5;
-        Ordinal src1: 5;
-        Ordinal opcode : 8;
-    } cobr;
-    struct {
-        Ordinal unused : 2;
+        Ordinal s2 : 1;
+        Ordinal t : 1;
         Integer displacement : 11;
         Ordinal m1: 1;
         Ordinal src2: 5;
         Ordinal src1: 5;
         Ordinal opcode : 8;
-    } cobr2;
+    } cobr;
     struct {
         Ordinal src1 : 5;
         Ordinal s1 : 1;
@@ -303,7 +297,11 @@ constexpr auto PFPIndex = 16;
 constexpr auto SPIndex = 17;
 constexpr auto RIPIndex = 18;
 Register gprs[32]; 
+Register sfrs[32];
 Register instruction;
+Register& getSFR(byte index) noexcept {
+    return sfrs[index & 0b11111];
+}
 void 
 setup() {
     // cleave the address space in half via sector limits.
@@ -335,36 +333,61 @@ void
 ret() {
 
 }
-constexpr Ordinal computeBitPosition(Ordinal value) noexcept {
+Ordinal 
+computeBitPosition(Ordinal value) noexcept {
     return static_cast<Ordinal>(1u) << (value & 0b11111);
+}
+template<bool checkClear>
+void 
+branchIfBitGeneric() {
+    Ordinal bitpos = 0;
+    Ordinal against = 0;
+    bool condition = false;
+    // Branch if bit set
+    if (instruction.cobr.m1) {
+        // treat src1 as a literal
+        bitpos = computeBitPosition(instruction.cobr.src1);
+    } else {
+        bitpos = computeBitPosition(gprs[instruction.cobr.src1].o);
+    }
+    if (instruction.cobr.s2) {
+        // access the contents of the sfrs
+        // at this point it is just a simple extra set of 32 registers
+        against = sfrs[instruction.cobr.src2].o;
+    } else {
+        against = gprs[instruction.cobr.src2].o;
+    }
+    if constexpr (checkClear) {
+        condition = (bitpos & against) == 0;
+    } else {
+        condition = (bitpos & against) != 0;
+    }
+    if (condition) {
+        // another lie in the i960Sx manual
+        if constexpr (checkClear) {
+            ac.arith.conditionCode = 0b000;
+        } else {
+            ac.arith.conditionCode = 0b010;
+        }
+        Register temp;
+        temp.alignedTransfer.important = instruction.cobr.displacement;
+        ip.alignedTransfer.important = ip.alignedTransfer.important + temp.alignedTransfer.important;
+        ip.alignedTransfer.aligned = 0;
+    } else {
+        if constexpr (checkClear) {
+            ac.arith.conditionCode = 0b010;
+        } else {
+            ac.arith.conditionCode = 0b000;
+        }
+    }
 }
 void
 bbc() {
-    // branch if bit clear
-    if ((computeBitPosition(gprs[instruction.cobr.src1].o) & gprs[instruction.cobr.src2].o) == 0) {
-        // another lie in the i960Sx manual
-        ac.arith.conditionCode = 0;
-        Register temp;
-        temp.alignedTransfer.important = instruction.cobr2.displacement;
-        ip.alignedTransfer.important = ip.alignedTransfer.important + temp.alignedTransfer.important;
-        ip.alignedTransfer.aligned = 0;
-    } else {
-        ac.arith.conditionCode = 0b010;
-    }
+    branchIfBitGeneric<true>();
 }
-void 
+void
 bbs() {
-    // Branch if bit set
-    if ((computeBitPosition(gprs[instruction.cobr.src1].o) & gprs[instruction.cobr.src2].o) != 0) {
-        // another lie in the i960Sx manual
-        ac.arith.conditionCode = 0b010;
-        Register temp;
-        temp.alignedTransfer.important = instruction.cobr2.displacement;
-        ip.alignedTransfer.important = ip.alignedTransfer.important + temp.alignedTransfer.important;
-        ip.alignedTransfer.aligned = 0;
-    } else {
-        ac.arith.conditionCode = 0b000;
-    }
+    branchIfBitGeneric<false>();
 }
 Ordinal
 computeAddress() noexcept {
