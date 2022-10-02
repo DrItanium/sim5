@@ -918,6 +918,7 @@ loop() {
     auto makeSrc1Negative = false;
     auto performLogical = false;
     auto src1IsBitPosition = false;
+    auto performMultiply = false;
     
     switch (instruction.getOpcode()) {
         case Opcodes::bal: // bal
@@ -1271,6 +1272,14 @@ loop() {
         case Opcodes::mark:
             mark();
             break;
+        case Opcodes::mulo:
+            performMultiply = true;
+            ordinalOp = true;
+            break;
+        case Opcodes::muli:
+            performMultiply = true;
+            integerOp = true;
+            break;
             
 
 #if 0
@@ -1345,7 +1354,14 @@ loop() {
             }
             regDest.i = src2i + src1i;
         }
-    } 
+    } else if (performMultiply) {
+        if (ordinalOp) {
+            regDest.o = src2o * src1o;
+        } else {
+            regDest.i = src2i * src1i;
+        }
+    }
+
     if (faultCode) {
         /// @todo implement this as the fallback operation when something bad
         /// happens
