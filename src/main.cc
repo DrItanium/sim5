@@ -472,6 +472,8 @@ void moveGPR(byte destIndex, byte destOffset, byte srcIndex, byte srcOffset, Tre
 void scanbyte(Ordinal src2, Ordinal src1) noexcept;
 void atadd(Register& dest, Ordinal src1, Ordinal src2) noexcept;
 void atmod(Register& dest, Ordinal src1, Ordinal src2) noexcept;
+int emul(Register& dest, Ordinal src1, Ordinal src2) noexcept;
+int ediv(Register& dest, Ordinal src1, Ordinal src2) noexcept;
 void arithmeticWithCarryGeneric(Ordinal result, bool src2MSB, bool src1MSB, bool destMSB) noexcept;
 Ordinal 
 unpackSrc1_COBR(TreatAsOrdinal) noexcept {
@@ -1360,6 +1362,12 @@ loop() {
         case Opcodes::atmod:
             atmod(regDest, src1o, src2o);
             break;
+        case Opcodes::emul:
+            faultCode = emul(regDest, src2o, src1o);
+            break;
+        case Opcodes::ediv:
+            faultCode = ediv(regDest, src2o, src1o);
+            break;
 
 
 #if 0
@@ -1639,3 +1647,49 @@ atmod(Register& dest, Ordinal src1, Ordinal src2) noexcept {
     unlockBus();
 }
 
+int
+emul(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+    union {
+        LongOrdinal lord;
+        Ordinal parts[sizeof(LongOrdinal)/sizeof(Ordinal)];
+    } result;
+    int faultCode = 0;
+    if ((instruction.reg.srcDest & 0b1) != 0) {
+        /// @todo fix
+        faultCode = 0xFD; // invalid operation
+    }  else {
+        result.lord = static_cast<LongOrdinal>(src2) * static_cast<LongOrdinal>(src1);
+    }
+    // yes this can be undefined by design :)
+    // if we hit a fault then we just give up whats on the stack :)
+    dest.o = result.parts[0];
+    setGPR(instruction.reg.srcDest, 1, result.parts[1], TreatAsOrdinal{});
+    return faultCode;
+}
+
+int
+ediv(Register& dest, Ordinal src1, Ordinal src2Lower) noexcept {
+    union {
+        LongOrdinal lord;
+        Ordinal parts[sizeof(LongOrdinal)/sizeof(Ordinal)];
+    } result, src2;
+    src2.parts[0] = src2Lower;
+    int faultCode = 0;
+    if ((instruction.reg.srcDest & 0b1) != 0 || (instruction.reg.src2 & 0b1) != 0) {
+        /// @todo fix
+        faultCode = 0xFD; // invalid operation
+    } else if (src1 == 0) {
+        // divide by zero
+        /// @todo fix
+        faultCode = 0xFC; // divide by zero
+    } else {
+        src2.parts[1] = getGPRValue(instruction.reg.src2, 1, TreatAsOrdinal{});
+        result.parts[1] = src2.lord / src1; // quotient
+        result.parts[0] = static_cast<Ordinal>(src2.lord - (src2.lord / src1) * src1); // remainder
+    }
+    // yes this can be undefined by design :)
+    // if we hit a fault then we just give whats on the stack :)
+    dest.o = result.parts[0];
+    setGPR(instruction.reg.srcDest, 1, result.parts[1], TreatAsOrdinal{});
+    return faultCode;
+}
