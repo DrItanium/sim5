@@ -1063,6 +1063,7 @@ reg_0x58() noexcept {
     auto& dest = getGPR(instruction.reg.srcDest);
     switch (instruction.reg.opcodeExt) {
         case 0b0000: // notbit
+            dest.o = src2 ^ computeBitPosition(src1);
             break;
         case 0b0001: // and
             dest.o = src2 & src1;
@@ -1071,6 +1072,7 @@ reg_0x58() noexcept {
             dest.o = src2 & ~src1;
             break;
         case 0b0011: // setbit
+            dest.o = src2 | computeBitPosition(src1);
             break;
         case 0b0100: // notand
             dest.o = ~src2 & src1;
@@ -1090,16 +1092,19 @@ reg_0x58() noexcept {
         case 0b1010: // not 
             dest.o = ~src1;
             break;
-        case 0b1011:
+        case 0b1011: // ornot
+            dest.o = src2 | ~src1;
             break;
-        case 0b1100:
+        case 0b1100: // clrbit
+            dest.o = src2 & ~computeBitPosition(src1);
             break;
-        case 0b1101:
+        case 0b1101: // notor
+            dest.o = ~src2 | src1;
             break;
         case 0b1110: // nand
             dest.o = ~(src2 & src1);
             break;
-        case 0b1111:
+        case 0b1111: // alterbit
             break;
         default:
             /// @todo implement
