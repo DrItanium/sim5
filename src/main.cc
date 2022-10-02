@@ -236,6 +236,15 @@ enum class Opcodes : uint16_t {
     fmark,
     flushreg,
     syncf = 0x66f,
+    emul,
+    ediv,
+    mulo = 0x700,
+    remo = 0x708,
+    divo = 0x70b,
+    muli = 0x710,
+    remi = 0x718,
+    modi,
+    divi = 0x71b,
 
 };
 union Register {
