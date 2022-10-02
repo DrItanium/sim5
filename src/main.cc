@@ -414,6 +414,7 @@ union Register {
         }
     }
     bool getCarryBit() const noexcept { return arith.conditionCode & 0b001; }
+    [[nodiscard]] Ordinal modify(Ordinal mask, Ordinal src) noexcept;
 };
 static_assert(sizeof(Register) == sizeof(Ordinal));
 Register ip, ac, pc, tc;
@@ -891,6 +892,15 @@ performRegisterTransfer(byte mask, byte count) noexcept {
     }
     return result;
 }
+constexpr Ordinal modify(Ordinal mask, Ordinal src, Ordinal srcDest) noexcept {
+    return (src & mask) | (srcDest & ~mask);
+}
+Ordinal 
+Register::modify(Ordinal mask, Ordinal src) noexcept {
+    auto tmp = o;
+    o = ::modify(mask, src, o);
+    return tmp;
+}
 void 
 loop() {
     advanceBy = 4;
@@ -1311,12 +1321,14 @@ loop() {
             }
             break;
         case Opcodes::modify:
-            regDest.o = (src2o & src1o) | (regDest.o & ~src1o);
+            regDest.o = modify(src1o, src2o, regDest.o);
             break;
         case Opcodes::extract:
             // taken from the Hx manual as it isn't insane
             regDest.o = (regDest.o >> (src1o > 32 ? 32 : src1o)) & ~(0xFFFF'FFFF << src2o);
             break;
+        case Opcodes::modac: regDest.o = ac.modify(src1o, src2o); break;
+        case Opcodes::modtc: regDest.o = tc.modify(src1o, src2o); break;
 
 #if 0
         default:

@@ -1,9 +1,9 @@
-# sim5 - an i960 simulator targeting the atmega8515
+# sim5 - an i960 simulator targeting the atmega162
 
-The atmega8515 is a very simple AVR microcontroller with 8k of flash and 512
-bytes of SRAM. It is actually a very good target to emulate an i960 for one
+The atmega162 is a very simple AVR microcontroller with 16k of flash and 1k
+of SRAM. It is actually a very good target to emulate an i960 for one
 very important reason. It comes with something called EBI/XMEM. This maps a
-16-bit bus to the data space of the 8515. Thus it becomes simple to access
+16-bit bus to the data space of the 162. Thus it becomes simple to access
 external devices very easily. Combining this with a series of external latches
 and an SRAM chip allows one to create a 32-bit bus and also enough space to
 cache values if necessary. This means we can emulate a 32-bit address bus with
