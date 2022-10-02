@@ -787,73 +787,7 @@ bx() noexcept {
     ip.o = computeAddress();
     advanceBy = 0;
 }
-#if 0
-#define X(index) void reg_ ## index () 
-    X(0x58);
-    X(0x59);
-    X(0x5a);
-    X(0x5b);
-    X(0x5c);
-    X(0x5d);
-    X(0x5e);
-    X(0x5f);
-    X(0x60);
-    X(0x61);
-    X(0x64);
-    X(0x65);
-    X(0x66);
-    X(0x67);
-    X(0x70);
-    X(0x74);
-#undef X
 
-using FunctionBody = void(*)();
-
-FunctionBody JumpTable[40] {
-#define X(index) reg_ ## index
-    X(0x58),
-    X(0x59),
-    X(0x5a),
-    X(0x5b),
-    X(0x5c),
-    X(0x5d),
-    X(0x5e),
-    X(0x5f),
-    X(0x60),
-    X(0x61),
-    nullptr,
-    nullptr,
-    X(0x64),
-    X(0x65),
-    X(0x66),
-    X(0x67),
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    X(0x70),
-    nullptr,
-    nullptr,
-    nullptr,
-    X(0x74),
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-#undef X
-};
-#endif
 
 void 
 setup() {
@@ -1040,54 +974,6 @@ loop() {
         case Opcodes::callx:
             callx();
             break;
-#if 0
-        case Opcodes:: reg_0x58:
-        case Opcodes:: reg_0x59:
-        case Opcodes:: reg_0x5a:
-        case Opcodes:: reg_0x5b:
-        case Opcodes:: reg_0x5c:
-        case Opcodes:: reg_0x5d:
-        case Opcodes:: reg_0x5e:
-        case Opcodes:: reg_0x5f:
-        case Opcodes:: reg_0x60:
-        case Opcodes:: reg_0x61:
-//        case Opcodes:: reg_0x62:
-//        case Opcodes:: reg_0x63:
-        case Opcodes:: reg_0x64:
-        case Opcodes:: reg_0x65:
-        case Opcodes:: reg_0x66:
-        case Opcodes:: reg_0x67:
-//        case Opcodes:: reg_0x68:
-//        case Opcodes:: reg_0x69:
-//        case Opcodes:: reg_0x6a:
-//        case Opcodes:: reg_0x6b:
-//        case Opcodes:: reg_0x6c:
-//        case Opcodes:: reg_0x6d:
-//        case Opcodes:: reg_0x6e:
-//        case Opcodes:: reg_0x6f:
-        case Opcodes:: reg_0x70:
-//        case Opcodes:: reg_0x71:
-//        case Opcodes:: reg_0x72:
-//        case Opcodes:: reg_0x73:
-        case Opcodes:: reg_0x74:
-//        case Opcodes:: reg_0x75:
-//        case Opcodes:: reg_0x76:
-//        case Opcodes:: reg_0x77:
-//        case Opcodes:: reg_0x78:
-//        case Opcodes:: reg_0x79:
-//        case Opcodes:: reg_0x7a:
-//        case Opcodes:: reg_0x7b:
-//        case Opcodes:: reg_0x7c:
-//        case Opcodes:: reg_0x7d:
-//        case Opcodes:: reg_0x7e:
-//        case Opcodes:: reg_0x7f:
-            if (auto op = JumpTable[static_cast<uint8_t>(instruction.getOpcode()) - 0x58]; op) {
-                op();
-            } else {
-                raiseFault(0xFD);
-            }
-            break;
-#endif
     // in some of the opcodeExt values seem to reflect the resultant truth
     // table for the operation :). That's pretty cool
         case Opcodes::nand: // nand
@@ -1329,70 +1215,6 @@ unpackSrc2_REG(TreatAsInteger) noexcept {
 
 constexpr Ordinal rotateOperation(Ordinal src, Ordinal length) noexcept {
     return (src << length)  | (src >> ((-length) & 31u));
-}
-void 
-reg_0x59() noexcept {
-    auto src2o = unpackSrc2_REG(TreatAsOrdinal{});
-    auto src1o = unpackSrc1_REG(TreatAsOrdinal{});
-    auto src2i = unpackSrc2_REG(TreatAsInteger{});
-    auto src1i = unpackSrc1_REG(TreatAsInteger{});
-    auto& dest = getGPR(instruction.reg.srcDest);
-    switch (instruction.reg.opcodeExt) {
-
-        case 0x0: // addo
-            dest.o = src2o + src1o;
-            break;
-        case 0x1: // addi
-            dest.i = src2i + src1i;
-            break;
-        case 0x2: // subo
-            dest.o = src2o - src1o;
-            break;
-        case 0x3: // subi
-            dest.i = src2i - src1i;
-            break;
-        case 0x8: // shro
-            dest.o = src1o < 32 ? src2o >> src1o : 0;
-            break;
-        case 0xa: // shrdi
-                  // according to the manual, equivalent to divi value, 2 so that is what we're going to do for correctness sake
-            dest.i = src1i < 32 && src1i >= 0 ? src2i / computeBitPosition(src1i) : 0;
-            break;
-        case 0xb: // shri
-            /*
-             * if (src >= 0) {
-             *  if (len < 32) {
-             *      dest <- src/2^len
-             *  } else {
-             *      dest <- 0
-             *  }
-             * }else {
-             *  if (len < 32) {
-             *      dest <- (src - 2^len + 1)/2^len;
-             *  } else {
-             *      dest <- -1;
-             *   }
-             * }
-             *
-             */
-            /// @todo perhaps implement the extra logic if necessary
-            dest.i = src2i >> src1i;
-            break;
-        case 0xc: // shlo
-            dest.o = src1o < 32 ? src2o << src1o : 0;
-            break;
-        case 0xd: // rotate
-            dest.o = rotateOperation(src2o, src1o);
-            break;
-        case 0xe: // shli
-            dest.i = src2i << src1i;
-            break;
-
-        default:
-            /// @todo implement
-            raiseFault(0xFF);
-            break;
-    }
 }
 void
 scanbyte(Ordinal src2, Ordinal src1) noexcept {
