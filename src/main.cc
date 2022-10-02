@@ -47,7 +47,7 @@ volatile T& memory(size_t address) noexcept {
 }
 struct ConfigRegisters {
     Address address;
-    byte faultPort; /// @todo remove this when we do this right, this is here
+    int faultPort; /// @todo remove this when we do this right, this is here
                     /// to make sure the optimizer doesn't get dumb
 };
 
@@ -503,10 +503,6 @@ Register& getSFR(byte index, byte offset) noexcept {
     return sfrs[(index + offset) & 0b11111];
 }
 void
-raiseFault(byte code) noexcept {
-    configRegs().faultPort = code;
-}
-void
 syncf() noexcept {
     /// @todo implement
 }
@@ -882,7 +878,7 @@ performRegisterTransfer(byte mask, byte count) noexcept {
         result = 0xFE; // operation.invalid operation
     }
     for (byte i = 0; i < count; ++i) {
-        getGPR(instruction.reg.srcDest, i).o = unpackSrc1_REG(i, TreatAsOrdinal{});
+        setGPR(instruction.reg.srcDest, i, unpackSrc1_REG(i, TreatAsOrdinal{}), TreatAsOrdinal{});
     }
     return result;
 }
@@ -916,7 +912,7 @@ loop() {
     
     switch (instruction.getOpcode()) {
         case Opcodes::bal: // bal
-            getGPR(LRIndex).o = ip.o + 4;
+            setGPR(LRIndex, ip.o + 4, TreatAsOrdinal{});
             // then fallthrough and take the branch
         case Opcodes::b: // b
             ip.i += instruction.cobr.displacement;
@@ -969,7 +965,7 @@ loop() {
             }
             break;
         case Opcodes::testno:
-            getGPR(instruction.cobr.src1).o = ac.arith.conditionCode == 0 ? 1 : 0;
+            setGPR(instruction.cobr.src1, ac.arith.conditionCode == 0 ? 1 : 0, TreatAsOrdinal{});
             break;
         case Opcodes::testg:
         case Opcodes::teste:
@@ -978,7 +974,7 @@ loop() {
         case Opcodes::testne:
         case Opcodes::testle:
         case Opcodes::testo:
-            getGPR(instruction.cobr.src1).o = (ac.arith.conditionCode & instruction.instGeneric.mask) != 0 ? 1 : 0;
+            setGPR(instruction.cobr.src1, (ac.arith.conditionCode & instruction.instGeneric.mask) != 0 ? 1 : 0, TreatAsOrdinal{});
             break;
         case Opcodes::ld: 
             loadBlock(computeAddress(), instruction.mem.srcDest, 1);
@@ -987,7 +983,7 @@ loop() {
             storeBlock(computeAddress(), instruction.mem.srcDest, 1);
             break;
         case Opcodes::lda:
-            getGPR(instruction.mem.srcDest).o = computeAddress();
+            setGPR(instruction.mem.srcDest, computeAddress(), TreatAsOrdinal{});
             break;
         case Opcodes::bbc:
             bbc();
@@ -1014,28 +1010,28 @@ loop() {
             cmpibGeneric();
             break;
         case Opcodes::ldob:
-            getGPR(instruction.mem.srcDest).o = load(computeAddress(), TreatAs<ByteOrdinal>{});
+            setGPR(instruction.mem.srcDest, load(computeAddress(), TreatAs<ByteOrdinal>{}), TreatAsOrdinal{});
             break;
         case Opcodes::stob:
-            store<ByteOrdinal>(computeAddress(), getGPR(instruction.mem.srcDest).o, TreatAs<ByteOrdinal>{});
+            store<ByteOrdinal>(computeAddress(), getGPRValue(instruction.mem.srcDest, TreatAs<Ordinal>{}), TreatAs<ByteOrdinal>{});
             break;
         case Opcodes::ldos:
-            getGPR(instruction.mem.srcDest).o = load(computeAddress(), TreatAs<ShortOrdinal>{});
+            setGPR(instruction.mem.srcDest, load(computeAddress(), TreatAs<ShortOrdinal>{}), TreatAsOrdinal{});
             break;
         case Opcodes::stos:
-            store<ShortOrdinal>(computeAddress(), getGPR(instruction.mem.srcDest).o, TreatAs<ShortOrdinal>{});
+            store<ShortOrdinal>(computeAddress(), getGPRValue(instruction.mem.srcDest, TreatAsOrdinal{}), TreatAs<ShortOrdinal>{});
             break;
         case Opcodes::ldib:
-            getGPR(instruction.mem.srcDest).o = load(computeAddress(), TreatAs<ByteInteger>{});
+            setGPR(instruction.mem.srcDest, load(computeAddress(), TreatAs<ByteInteger>{}), TreatAsInteger{});
             break;
         case Opcodes::stib:
-            store<ByteInteger>(computeAddress(), getGPR(instruction.mem.srcDest).o, TreatAs<ByteInteger>{});
+            store<ByteInteger>(computeAddress(), getGPRValue(instruction.mem.srcDest, TreatAsInteger{}), TreatAs<ByteInteger>{});
             break;
         case Opcodes::ldis:
-            getGPR(instruction.mem.srcDest).o = load(computeAddress(), TreatAs<ShortInteger>{});
+            setGPR(instruction.mem.srcDest, load(computeAddress(), TreatAs<ShortInteger>{}), TreatAsInteger{});
             break;
         case Opcodes::stis:
-            store<ShortInteger>(computeAddress(), getGPR(instruction.mem.srcDest).o, TreatAs<ShortInteger>{});
+            store<ShortInteger>(computeAddress(), getGPRValue(instruction.mem.srcDest, TreatAsInteger{}), TreatAs<ShortInteger>{});
             break;
         case Opcodes::ldl:
             faultCode = ldl();
@@ -1342,7 +1338,11 @@ loop() {
         }
     } 
     if (faultCode) {
-        raiseFault(faultCode);
+        /// @todo implement this as the fallback operation when something bad
+        /// happens
+        ///
+        /// Faults are basically fallback behavior when something goes wacky!
+        configRegs().faultPort = faultCode;
     }
     // okay we got here so we need to start grabbing data off of the bus and
     // start executing the next instruction
