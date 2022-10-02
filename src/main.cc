@@ -471,7 +471,7 @@ ret() {
 }
 constexpr Ordinal 
 computeBitPosition(Ordinal value) noexcept {
-    return static_cast<Ordinal>(1u) << (value & 0b11111);
+    return static_cast<Ordinal>(1u) << static_cast<Ordinal>(value & 0b11111);
 }
 template<bool checkClear>
 void 
