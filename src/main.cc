@@ -212,6 +212,8 @@ enum class Opcodes : uint16_t {
     cmpdeci,
     scanbyte = 0x5ac,
     chkbit = 0x5ae,
+    addc = 0x5b0,
+    subc = 0x5b2,
 
 };
 union Register {
@@ -840,6 +842,9 @@ loop() {
     auto integerCompareOp = false;
     auto performIncrement = false;
     auto performDecrement = false;
+    auto performAdd = false;
+    auto performSubtract = false;
+    auto performCarry = false;
     switch (instruction.getOpcode()) {
         case Opcodes::bal: // bal
             getGPR(LRIndex).o = ip.o + 4;
@@ -1135,6 +1140,14 @@ loop() {
         case Opcodes::chkbit: // chkbit
             ac.arith.conditionCode = ((src2o & computeBitPosition(src1o)) == 0 ? 0b000 : 0b010);
             break;
+        case Opcodes::addc: 
+            performAdd = true;
+            performCarry = true;
+            break;
+        case Opcodes::subc:
+            performSubtract = true;
+            performCarry = true;
+            break;
 #if 0
         default:
             /// @todo implement properly
@@ -1165,6 +1178,20 @@ loop() {
         if (performDecrement) {
             regDest.i = src2i - 1;
         }
+    }
+    if (performCarry) {
+        LongOrdinal result = 0;
+        if (performAdd) {
+            result = static_cast<LongOrdinal>(src2o) + static_cast<LongOrdinal>(src1o);
+        } else if (performSubtract) {
+            result = static_cast<LongOrdinal>(src2o) - static_cast<LongOrdinal>(src1o) - 1;
+        }
+        result += (ac.getCarryBit() ? 1 : 0);
+        regDest.o = static_cast<Ordinal>(result);
+        arithmeticWithCarryGeneric(static_cast<Ordinal>(result >> 32), 
+                (src2o & 0x8000'0000), 
+                (src1o & 0x8000'0000), 
+                (regDest.o & 0x8000'0000));
     }
     // okay we got here so we need to start grabbing data off of the bus and
     // start executing the next instruction
@@ -1299,80 +1326,6 @@ scanbyte(Ordinal src2, Ordinal src1) noexcept {
     }
     ac.arith.conditionCode = 0;
 }
-void 
-reg_0x5a() noexcept {
-    auto src2o = unpackSrc2_REG(TreatAsOrdinal{});
-    auto src1o = unpackSrc1_REG(TreatAsOrdinal{});
-    auto src2i = unpackSrc2_REG(TreatAsInteger{});
-    auto src1i = unpackSrc1_REG(TreatAsInteger{});
-    auto& dest = getGPR(instruction.reg.srcDest);
-    bool ordinalOp = false;
-    bool integerOp = false;
-    bool performIncrement = false;
-    bool performDecrement = false;
-    switch (instruction.reg.opcodeExt) {
-
-        case 0x0: // cmpo
-            ordinalOp = true;
-            break;
-        case 0x1: // cmpi
-            integerOp = true;
-            break;
-        case 0x2: // concmpo
-            if ((ac.arith.conditionCode & 0b100) == 0) {
-                ac.arith.conditionCode = src1o <= src2o ? 0b010 : 0b001;
-            }
-            return;
-        case 0x3: // concmpi
-            if ((ac.arith.conditionCode & 0b100) == 0) {
-                ac.arith.conditionCode = src1i <= src2i ? 0b010 : 0b001;
-            }
-            return;
-        case 0x4: // cmpinco
-            ordinalOp = true;
-            performIncrement = true;
-            break;
-        case 0x5: // cmpinci
-            integerOp = true;
-            performIncrement = true;
-            break;
-        case 0x6: // cmpdeco
-            ordinalOp = true;
-            performDecrement = true;
-            break;
-        case 0x7: // cmpdeci
-            integerOp = true;
-            performDecrement = true;
-            break;
-        case 0xc: // scanbyte
-            scanbyte(src2o, src1o);
-            return;
-        case 0xe: // chkbit
-            ac.arith.conditionCode = ((src2o & computeBitPosition(src1o)) == 0 ? 0b000 : 0b010);
-            return;
-        default:
-            /// @todo implement
-            raiseFault(0xFF);
-            return;
-    }
-    if (ordinalOp) {
-        cmpGeneric(src1o, src2o);
-        if (performIncrement) {
-            dest.o = src2o + 1;
-        }
-        if (performDecrement) {
-            dest.o = src2o - 1;
-        }
-    } else if (integerOp) {
-        cmpGeneric(src1i, src2i);
-        if (performIncrement) {
-            dest.i = src2i + 1;
-        }
-        if (performDecrement) {
-            dest.i = src2i - 1;
-        }
-    }
-}
 void
 arithmeticWithCarryGeneric(Ordinal result, bool src2MSB, bool src1MSB, bool destMSB) noexcept {
     // set the carry bit
@@ -1389,33 +1342,3 @@ arithmeticWithCarryGeneric(Ordinal result, bool src2MSB, bool src1MSB, bool dest
         ac.arith.conditionCode &= 0b101;
     }
 }
-void
-reg_0x5b() noexcept {
-    auto src2 = unpackSrc2_REG(TreatAsOrdinal{});
-    auto src1 = unpackSrc1_REG(TreatAsOrdinal{});
-    auto& dest = getGPR(instruction.reg.srcDest);
-    bool performAdd = false;
-    bool performSubtract = false;
-    switch (instruction.reg.opcodeExt) {
-        case 0x0:
-            performAdd = true;
-            break;
-        case 0x2:
-            performSubtract = true;
-            break;
-        default:
-            /// @todo implement
-            raiseFault(0xFF);
-            return;
-    }
-    LongOrdinal result = 0;
-    if (performAdd) {
-        result = static_cast<LongOrdinal>(src2) + static_cast<LongOrdinal>(src1);
-    } else if (performSubtract) {
-        result = static_cast<LongOrdinal>(src2) - static_cast<LongOrdinal>(src1) - 1;
-    }
-    result += (ac.getCarryBit() ? 1 : 0);
-    dest.o = static_cast<Ordinal>(result);
-    arithmeticWithCarryGeneric(static_cast<Ordinal>(result >> 32), (src2 & 0x8000'0000), (src1 & 0x8000'0000), dest.o & 0x8000'0000);
-}
-
