@@ -326,6 +326,7 @@ union Register {
         pfp.rt = 0;
     }
     [[nodiscard]] constexpr auto getOpcode() const noexcept { return static_cast<Opcodes>(bytes[3]); }
+    bool getCarryBit() const noexcept { return arith.conditionCode & 0b001; }
 };
 static_assert(sizeof(Register) == sizeof(Ordinal));
 Register ip, ac, pc, tc;
@@ -937,6 +938,7 @@ loop() {
             X(0x58);
             X(0x59);
             X(0x5a);
+            X(0x5b);
 #undef X
 #if 0
             X(0); X(1); X(2); X(3); X(4); X(5); X(6); X(7); 
@@ -1205,25 +1207,115 @@ reg_0x59() noexcept {
             break;
     }
 }
-
+void
+scanbyte(Ordinal src2, Ordinal src1) noexcept {
+    Register s2(src2);
+    Register s1(src1);
+    for (int i = 0; i < 4; ++i) {
+        if (s1.bytes[i] == s2.bytes[i]) {
+            ac.arith.conditionCode = 0b010;
+            return;
+        }
+    }
+    ac.arith.conditionCode = 0;
+}
 void 
 reg_0x5a() noexcept {
     auto src2o = unpackSrc2_REG(TreatAsOrdinal{});
     auto src1o = unpackSrc1_REG(TreatAsOrdinal{});
     auto src2i = unpackSrc2_REG(TreatAsInteger{});
     auto src1i = unpackSrc1_REG(TreatAsInteger{});
-    //auto& dest = getGPR(instruction.reg.srcDest);
+    auto& dest = getGPR(instruction.reg.srcDest);
     switch (instruction.reg.opcodeExt) {
 
         case 0x0: // cmpo
             cmpGeneric<Ordinal>(src1o, src2o);
             break;
-        case 0x1: 
+        case 0x1: // cmpi
             cmpGeneric<Integer>(src1i, src2i);
+            break;
+        case 0x2: // concmpo
+            if ((ac.arith.conditionCode & 0b100) == 0) {
+                ac.arith.conditionCode = src1o <= src2o ? 0b010 : 0b001;
+            }
+            break;
+        case 0x3: // concmpi
+            if ((ac.arith.conditionCode & 0b100) == 0) {
+                ac.arith.conditionCode = src1i <= src2i ? 0b010 : 0b001;
+            }
+            break;
+        case 0x4: // cmpinco
+            cmpGeneric(src1o, src2o);
+            dest.o = src2o + 1;
+            break;
+        case 0x5: // cmpinci
+            cmpGeneric(src1i, src2i);
+            dest.i = src2i + 1;
+            break;
+        case 0x6: // cmpdeco
+            cmpGeneric(src1o, src2o);
+            dest.o = src2o - 1;
+            break;
+        case 0x7: // cmpdeci
+            cmpGeneric(src1i, src2i);
+            dest.i = src2i - 1;
+            break;
+        case 0xc: // scanbyte
+            scanbyte(src2o, src1o);
+            break;
+        case 0xe: // chkbit
+            ac.arith.conditionCode = ((src2o & computeBitPosition(src1o)) == 0 ? 0b000 : 0b010);
             break;
         default:
             /// @todo implement
             raiseFault(0xFF);
             break;
     }
+}
+void
+arithmeticWithCarryGeneric(Ordinal result, bool src2MSB, bool src1MSB, bool destMSB) noexcept {
+    // set the carry bit
+    ac.arith.conditionCode = 0;
+    // set the overflow bit
+    if ((src2MSB == src1MSB) && (src2MSB != destMSB)) {
+        ac.arith.conditionCode |= 0b001;
+    } else {
+        ac.arith.conditionCode &= 0b110;
+    }
+    if (result != 0) {
+        ac.arith.conditionCode |= 0b010;
+    } else {
+        ac.arith.conditionCode &= 0b101;
+    }
+}
+void
+addc(Register& dest, Ordinal src2, Ordinal src1) noexcept {
+    LongOrdinal result = static_cast<LongOrdinal>(src2) + static_cast<LongOrdinal>(src1) + (ac.getCarryBit() ? 1 : 0);
+    dest.o = static_cast<Ordinal>(result);
+    arithmeticWithCarryGeneric(static_cast<Ordinal>(result >> 32), (src2 & 0x8000'0000), (src1 & 0x8000'0000), dest.o & 0x8000'0000);
+}
+void
+subc(Register& dest, Ordinal src2, Ordinal src1) noexcept {
+    LongOrdinal result = static_cast<LongOrdinal>(src2) - static_cast<LongOrdinal>(src1) - 1 + (ac.getCarryBit() ? 1 : 0);
+    dest.o = static_cast<Ordinal>(result);
+    arithmeticWithCarryGeneric(static_cast<Ordinal>(result >> 32), (src2 & 0x8000'0000), (src1 & 0x8000'0000), dest.o & 0x8000'0000);
+}
+void
+reg_0x5b() noexcept {
+    auto src2o = unpackSrc2_REG(TreatAsOrdinal{});
+    auto src1o = unpackSrc1_REG(TreatAsOrdinal{});
+    auto& dest = getGPR(instruction.reg.srcDest);
+    switch (instruction.reg.opcodeExt) {
+        case 0x0:
+            addc(dest, src2o, src1o);
+            break;
+        case 0x2:
+            subc(dest, src2o, src1o);
+            break;
+        default:
+            /// @todo implement
+            raiseFault(0xFF);
+            break;
+    }
+
 }
