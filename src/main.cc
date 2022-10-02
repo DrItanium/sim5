@@ -469,6 +469,8 @@ void moveGPR(byte destIndex, byte destOffset, byte srcIndex, byte srcOffset, Tre
 }
 [[nodiscard]] constexpr Ordinal rotateOperation(Ordinal src, Ordinal length) noexcept;
 void scanbyte(Ordinal src2, Ordinal src1) noexcept;
+void atadd(Register& dest, Ordinal src1, Ordinal src2) noexcept;
+void atmod(Register& dest, Ordinal src1, Ordinal src2) noexcept;
 void arithmeticWithCarryGeneric(Ordinal result, bool src2MSB, bool src1MSB, bool destMSB) noexcept;
 Ordinal 
 unpackSrc1_COBR(TreatAsOrdinal) noexcept {
@@ -894,9 +896,7 @@ performRegisterTransfer(byte mask, byte count) noexcept {
     }
     return result;
 }
-constexpr Ordinal modify(Ordinal mask, Ordinal src, Ordinal srcDest) noexcept {
-    return (src & mask) | (srcDest & ~mask);
-}
+constexpr Ordinal modify(Ordinal mask, Ordinal src, Ordinal srcDest) noexcept;
 Ordinal 
 Register::modify(Ordinal mask, Ordinal src) noexcept {
     auto tmp = o;
@@ -1350,6 +1350,13 @@ loop() {
                 regDest.o = pc.o;
             }
             break;
+        case Opcodes::atadd:
+            atadd(regDest, src1o, src2o);
+            break;
+        case Opcodes::atmod:
+            atmod(regDest, src1o, src2o);
+            break;
+
 
 #if 0
         default:
@@ -1508,20 +1515,6 @@ ISR(INT2_vect) {
     int2Triggered = true;
 
 }
-#if 0
-struct {
-    Ordinal src1 : 5;
-    Ordinal s1 : 1;
-    Ordinal s2 : 1;
-    Ordinal opcodeExt : 4;
-    Ordinal m1 : 1;
-    Ordinal m2 : 1;
-    Ordinal m3 : 1;
-    Ordinal src2 : 5;
-    Ordinal srcDest : 5;
-    Ordinal opcode : 8;
-} reg;
-#endif
 Ordinal 
 unpackSrc1_REG(TreatAsOrdinal) noexcept {
     if (instruction.reg.m1) {
@@ -1611,3 +1604,34 @@ void
 checkForPendingInterrupts() noexcept {
     /// @todo implement
 }
+
+void
+atadd(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+    // adds the src (src2 internally) value to the value in memory location specified with the addr (src1 in this case) operand.
+    // The initial value from memory is stored in dst (internally src/dst).
+    syncf();
+    lockBus();
+    auto addr = src1 & 0xFFFF'FFFC;
+    auto temp = load(addr, TreatAsOrdinal{});
+    store(addr, temp + src2, TreatAsOrdinal{});
+    dest.o = temp;
+    unlockBus();
+}
+
+constexpr Ordinal modify(Ordinal mask, Ordinal src, Ordinal srcDest) noexcept {
+    return (src & mask) | (srcDest & ~mask);
+}
+void
+atmod(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+    // copies the src/dest value (logical version) into the memory location specifeid by src1.
+    // The bits set in the mask (src2) operand select the bits to be modified in memory. The initial
+    // value from memory is stored in src/dest
+    syncf();
+    lockBus();
+    auto addr = src1 & 0xFFFF'FFFC;
+    auto temp = load(addr, TreatAsOrdinal{});
+    store(addr, modify(src2, dest.o, temp), TreatAsOrdinal{});
+    dest.o = temp;
+    unlockBus();
+}
+
