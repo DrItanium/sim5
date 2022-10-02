@@ -441,7 +441,7 @@ Register& getGPR(byte index) noexcept {
     return gprs[index];
 }
 Register& getGPR(byte index, byte offset) noexcept {
-    return gprs[(index + offset) & 0b11111];
+    return getGPR((index + offset) & 0b11111);
 }
 void setGPR(byte index, Ordinal value, TreatAsOrdinal) noexcept { getGPR(index).o = value; }
 void setGPR(byte index, byte offset, Ordinal value, TreatAsOrdinal) noexcept { getGPR(index, offset).o = value; }
@@ -512,7 +512,7 @@ Register& getSFR(byte index) noexcept {
     return sfrs[index];
 }
 Register& getSFR(byte index, byte offset) noexcept {
-    return sfrs[(index + offset) & 0b11111];
+    return getSFR((index + offset) & 0b11111);
 }
 void
 syncf() noexcept {
