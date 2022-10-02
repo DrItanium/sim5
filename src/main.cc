@@ -1081,6 +1081,8 @@ reg_0x58() noexcept {
     auto src2 = unpackSrc2_REG(TreatAsOrdinal{});
     auto src1 = unpackSrc1_REG(TreatAsOrdinal{});
     auto& dest = getGPR(instruction.reg.srcDest);
+    // in some of the opcodeExt values seem to reflect the resultant truth
+    // table for the operation :). That's pretty cool
     switch (instruction.reg.opcodeExt) {
         case 0b0001: // and
             dest.o = performAndOperation(src2, src1, false, false, false);
