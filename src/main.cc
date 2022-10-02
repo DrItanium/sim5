@@ -1062,7 +1062,7 @@ unpackSrc2_REG(TreatAsInteger) noexcept {
         }
     }
 }
-
+using Function = void (*)();
 void 
 reg_0x58() noexcept {
     auto src2 = unpackSrc2_REG(TreatAsOrdinal{});
@@ -1093,6 +1093,7 @@ reg_0x58() noexcept {
             dest.o = ~(src2 ^ src1);
             break;
         case 0xa: // not 
+            dest.o = ~src1;
             break;
         case 0xb:
             break;
@@ -1104,6 +1105,10 @@ reg_0x58() noexcept {
             dest.o = ~(src2 & src1);
             break;
         case 0xf:
+            break;
+        default:
+            /// @todo implement
+            raiseFault(0xFF);
             break;
     }
 }
