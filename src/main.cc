@@ -390,6 +390,9 @@ Ordinal unpackSrc1_REG(TreatAsOrdinal) noexcept;
 Integer unpackSrc1_REG(TreatAsInteger) noexcept;
 Ordinal unpackSrc2_REG(TreatAsOrdinal) noexcept;
 Integer unpackSrc2_REG(TreatAsInteger) noexcept;
+[[nodiscard]] constexpr Ordinal performAndOperation(Ordinal src2, Ordinal src1, bool invertOutput, bool invertSrc2, bool invertSrc1) noexcept;
+[[nodiscard]] constexpr Ordinal performOrOperation(Ordinal src2, Ordinal src1, bool invertOutput, bool invertSrc2, bool invertSrc1) noexcept;
+[[nodiscard]] constexpr Ordinal performXorOperation(Ordinal src2, Ordinal src1, bool invertOutput) noexcept;
 Ordinal 
 unpackSrc1_COBR(TreatAsOrdinal) noexcept {
     if (instruction.cobr.m1) {
@@ -865,6 +868,17 @@ void
 loop() {
     advanceBy = 4;
     instruction.o = load(ip.a, TreatAsOrdinal{});
+    auto& regDest = getGPR(instruction.reg.srcDest);
+    auto src2o_reg = unpackSrc2_REG(TreatAsOrdinal{});
+    auto src2i_reg = unpackSrc2_REG(TreatAsInteger{});
+    auto src1o_reg = unpackSrc1_REG(TreatAsOrdinal{});
+    auto src1i_reg = unpackSrc1_REG(TreatAsInteger{});
+    auto invertResult = false;
+    auto invertSrc1 = false;
+    auto invertSrc2 = false;
+    auto doXor = false;
+    auto doOr = false;
+    auto doAnd = false;
     switch (instruction.getOpcode()) {
         case Opcodes::bal: // bal
             getGPR(LRIndex).o = ip.o + 4;
@@ -1063,11 +1077,64 @@ loop() {
             }
             break;
 #endif
-        case Opcodes::notbit:
-            getGPR(instruction.reg.srcDest).o = unpackSrc2_REG(TreatAsOrdinal{}) ^ computeBitPosition(unpackSrc1_REG(TreatAsOrdinal{}));
+    // in some of the opcodeExt values seem to reflect the resultant truth
+    // table for the operation :). That's pretty cool
+        case Opcodes::nand: // nand
+            invertResult = true;
+        case Opcodes::andOperation: // and
+            doAnd = true;
             break;
+        case Opcodes::clrbit: // clrbit
+                              // clrbit is src2 & ~computeBitPosition(src1)
+                              // so lets use andnot
+            src1o_reg = computeBitPosition(src1o_reg);
+        case Opcodes::andnot: // andnot
+            doAnd = true;
+            invertSrc1 = true;
+            break;
+        case Opcodes::notand: // notand
+            doAnd = true;
+            invertSrc2 = true;
+            break;
+        case Opcodes::notbit: // notbit
+                     // notbit is src2 ^ computeBitPosition(src1)
+            src1o_reg = computeBitPosition(src1o_reg);
         case Opcodes::xorOperation: // xor
-            getGPR(instruction.reg.srcDest).o = unpackSrc2_REG(TreatAsOrdinal{}) ^ unpackSrc1_REG(TreatAsOrdinal{});
+            doXor = true;
+            break;
+        case Opcodes::setbit: // setbit
+                     // setbit is src2 | computeBitPosition(src1o_reg)
+            src1o_reg = computeBitPosition(src1o_reg);
+        case Opcodes::orOperation: // or
+            doOr = true;
+            break;
+        case Opcodes::nor: // nor
+            doOr = true;
+            invertResult = true;
+            break;
+        case Opcodes::xnor: // xnor
+            doXor = true;
+            invertResult = true;
+            break;
+        case Opcodes::notOperation: // not 
+                     // perform fallthrough to ornot with src2 set to zero
+            src2o_reg = 0;
+        case Opcodes::ornot: // ornot
+            doOr = true;
+            invertSrc1 = true;
+            break;
+        case Opcodes::notor: // notor
+            doOr = true;
+            invertSrc2 = true;
+            break;
+        case Opcodes::alterbit: // alterbit
+            src1o_reg = computeBitPosition(src1o_reg);
+            if (ac.arith.conditionCode & 0b010) {
+                doOr = true;
+            } else {
+                doAnd = true;
+                invertSrc1 = true;
+            }
             break;
 #if 0
         default:
@@ -1075,7 +1142,13 @@ loop() {
             raiseFault(0xFD);
             break;
 #endif
-
+    }
+    if (doAnd) {
+        regDest.o = performAndOperation(src2o_reg, src1o_reg, invertResult, invertSrc1, invertSrc2);
+    } else if (doXor) {
+        regDest.o = performXorOperation(src2o_reg, src1o_reg, invertResult);
+    } else if (doOr) {
+        regDest.o = performOrOperation(src2o_reg, src1o_reg, invertResult, invertSrc1, invertSrc2);
     }
     // okay we got here so we need to start grabbing data off of the bus and
     // start executing the next instruction
@@ -1193,90 +1266,6 @@ unpackSrc2_REG(TreatAsInteger) noexcept {
 [[nodiscard]] constexpr Ordinal performXorOperation(Ordinal src2, Ordinal src1, bool invertOutput) noexcept {
     auto result = src2 ^ src1;
     return invertOutput ? ~result : result;
-}
-
-void 
-reg_0x58() noexcept {
-    auto src2 = unpackSrc2_REG(TreatAsOrdinal{});
-    auto src1 = unpackSrc1_REG(TreatAsOrdinal{});
-    auto& dest = getGPR(instruction.reg.srcDest);
-    bool invertResult = false;
-    bool invertSrc1 = false;
-    bool invertSrc2 = false;
-    bool doXor = false;
-    bool doOr = false;
-    bool doAnd = false;
-    // in some of the opcodeExt values seem to reflect the resultant truth
-    // table for the operation :). That's pretty cool
-    switch (instruction.reg.opcodeExt) {
-        case 0b1110: // nand
-            invertResult = true;
-        case 0b0001: // and
-            doAnd = true;
-            break;
-        case 0b1100: // clrbit
-                     // clrbit is src2 & ~computeBitPosition(src1)
-                     // so lets use andnot
-            src1 = computeBitPosition(src1);
-        case 0b0010: // andnot
-            doAnd = true;
-            invertSrc1 = true;
-            break;
-        case 0b0100: // notand
-            doAnd = true;
-            invertSrc2 = true;
-            break;
-        case 0b0000: // notbit
-                     // notbit is src2 ^ computeBitPosition(src1)
-            src1 = computeBitPosition(src1);
-        case 0b0110: // xor
-            doXor = true;
-            break;
-        case 0b0011: // setbit
-                     // setbit is src2 | computeBitPosition(src1)
-            src1 = computeBitPosition(src1);
-        case 0b0111: // or
-            doOr = true;
-            break;
-        case 0b1000: // nor
-            doOr = true;
-            invertResult = true;
-            break;
-        case 0b1001: // xnor
-            doXor = true;
-            invertResult = true;
-            break;
-        case 0b1010: // not 
-                     // perform fallthrough to ornot with src2 set to zero
-            src2 = 0;
-        case 0b1011: // ornot
-            doOr = true;
-            invertSrc1 = true;
-            break;
-        case 0b1101: // notor
-            doOr = true;
-            invertSrc2 = true;
-            break;
-        case 0b1111: // alterbit
-            src1 = computeBitPosition(src1);
-            if (ac.arith.conditionCode & 0b010) {
-                doOr = true;
-            } else {
-                doAnd = true;
-                invertSrc1 = true;
-            }
-            break;
-        default:
-            raiseFault(0xFF);
-            return;
-    }
-    if (doAnd) {
-        dest.o = performAndOperation(src2, src1, invertResult, invertSrc1, invertSrc2);
-    } else if (doXor) {
-        dest.o = performXorOperation(src2, src1, invertResult);
-    } else if (doOr) {
-        dest.o = performOrOperation(src2, src1, invertResult, invertSrc1, invertSrc2);
-    }
 }
 
 constexpr Ordinal rotateOperation(Ordinal src, Ordinal length) noexcept {
