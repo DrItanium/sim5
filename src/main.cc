@@ -919,6 +919,7 @@ loop() {
     auto performLogical = false;
     auto src1IsBitPosition = false;
     auto performMultiply = false;
+    auto performDivide = false;
     
     switch (instruction.getOpcode()) {
         case Opcodes::bal: // bal
@@ -1280,7 +1281,14 @@ loop() {
             performMultiply = true;
             integerOp = true;
             break;
-            
+        case Opcodes::divi:
+            performDivide = true;
+            integerOp = true;
+            break;
+        case Opcodes::divo:
+            performDivide = true;
+            ordinalOp = true;
+            break;
 
 #if 0
         default:
@@ -1327,6 +1335,10 @@ loop() {
             if (performDecrement) {
                 regDest.i = src2i - 1;
             }
+        } else {
+            // if we got here then it means we don't have something configured
+            // correctly
+            faultCode = 0xFF; // invalid opcode/operation
         }
     }
     if (performCarry) {
@@ -1353,12 +1365,36 @@ loop() {
                 src1i = -src1i;
             }
             regDest.i = src2i + src1i;
+        } else {
+            // if we got here then it means we don't have something configured
+            // correctly
+            faultCode = 0xFF; // invalid opcode
         }
     } else if (performMultiply) {
         if (ordinalOp) {
             regDest.o = src2o * src1o;
-        } else {
+        } else if (integerOp) {
             regDest.i = src2i * src1i;
+        }
+    } else if (performDivide) {
+        if (ordinalOp) {
+            if (src1o == 0) {
+                /// @todo fix this
+                faultCode = 0xFC; // divide by zero
+            } else {
+                regDest.o = src2o / src1o;
+            }
+        } else if (integerOp) {
+            if (src1i == 0) {
+                /// @todo fix this
+                faultCode = 0xFC; // divide by zero
+            } else {
+                regDest.i = src2i / src1i;
+            }
+        } else {
+            // if we got here then it means we don't have something configured
+            // correctly
+            faultCode = 0xFF; // invalid opcode
         }
     }
 
