@@ -1229,50 +1229,71 @@ reg_0x5a() noexcept {
     auto src2i = unpackSrc2_REG(TreatAsInteger{});
     auto src1i = unpackSrc1_REG(TreatAsInteger{});
     auto& dest = getGPR(instruction.reg.srcDest);
+    bool ordinalOp = false;
+    bool integerOp = false;
+    bool performIncrement = false;
+    bool performDecrement = false;
     switch (instruction.reg.opcodeExt) {
 
         case 0x0: // cmpo
-            cmpGeneric<Ordinal>(src1o, src2o);
+            ordinalOp = true;
             break;
         case 0x1: // cmpi
-            cmpGeneric<Integer>(src1i, src2i);
+            integerOp = true;
             break;
         case 0x2: // concmpo
             if ((ac.arith.conditionCode & 0b100) == 0) {
                 ac.arith.conditionCode = src1o <= src2o ? 0b010 : 0b001;
             }
-            break;
+            return;
         case 0x3: // concmpi
             if ((ac.arith.conditionCode & 0b100) == 0) {
                 ac.arith.conditionCode = src1i <= src2i ? 0b010 : 0b001;
             }
-            break;
+            return;
         case 0x4: // cmpinco
-            cmpGeneric(src1o, src2o);
-            dest.o = src2o + 1;
+            ordinalOp = true;
+            performIncrement = true;
             break;
         case 0x5: // cmpinci
-            cmpGeneric(src1i, src2i);
-            dest.i = src2i + 1;
+            integerOp = true;
+            performIncrement = true;
             break;
         case 0x6: // cmpdeco
-            cmpGeneric(src1o, src2o);
-            dest.o = src2o - 1;
+            ordinalOp = true;
+            performDecrement = true;
             break;
         case 0x7: // cmpdeci
-            cmpGeneric(src1i, src2i);
-            dest.i = src2i - 1;
+            integerOp = true;
+            performDecrement = true;
             break;
         case 0xc: // scanbyte
             scanbyte(src2o, src1o);
-            break;
+            return;
         case 0xe: // chkbit
             ac.arith.conditionCode = ((src2o & computeBitPosition(src1o)) == 0 ? 0b000 : 0b010);
-            break;
+            return;
         default:
             /// @todo implement
             raiseFault(0xFF);
-            break;
+            return;
+    }
+    if (ordinalOp) {
+        cmpGeneric(src1o, src2o);
+        if (performIncrement) {
+            dest.o = src2o + 1;
+        }
+        if (performDecrement) {
+            dest.o = src2o - 1;
+        }
+    } else if (integerOp) {
+        cmpGeneric(src1i, src2i);
+        if (performIncrement) {
+            dest.i = src2i + 1;
+        }
+        if (performDecrement) {
+            dest.i = src2i - 1;
+        }
     }
 }
 void
