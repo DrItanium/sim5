@@ -214,6 +214,10 @@ enum class Opcodes : uint16_t {
     chkbit = 0x5ae,
     addc = 0x5b0,
     subc = 0x5b2,
+    mov = 0x5cc,
+    movl = 0x5dc,
+    movt = 0x5ec,
+    movq = 0x5fc,
 
 };
 union Register {
@@ -409,6 +413,7 @@ Register& getGPR(byte index) noexcept {
 }
 Register& getSFR(byte index) noexcept;
 Ordinal unpackSrc1_REG(TreatAsOrdinal) noexcept;
+Ordinal unpackSrc1_REG(byte offset, TreatAsOrdinal) noexcept;
 Integer unpackSrc1_REG(TreatAsInteger) noexcept;
 Ordinal unpackSrc2_REG(TreatAsOrdinal) noexcept;
 Integer unpackSrc2_REG(TreatAsInteger) noexcept;
@@ -822,10 +827,27 @@ setup() {
         getGPR(i).clear();
     }
 }
-
+int
+alignmentCheck(byte mask) noexcept {
+    if (((instruction.reg.srcDest & mask) != 0) || ((instruction.reg.src1 & mask) != 0)) {
+        /// @todo fix
+        return 0xFE; // operation.invalid operation
+    } else {
+        return 0;
+    }
+}
+int
+performRegisterTransfer(byte mask, byte count) noexcept {
+    auto result = alignmentCheck(mask);
+    for (byte i = 0; i < count; ++i) {
+        getGPR(instruction.reg.srcDest+i).o = unpackSrc1_REG(i, TreatAsOrdinal{});
+    }
+    return result;
+}
 void 
 loop() {
     advanceBy = 4;
+    int faultCode = 0;
     instruction.o = load(ip.a, TreatAsOrdinal{});
     auto& regDest = getGPR(instruction.reg.srcDest);
     auto src2o = unpackSrc2_REG(TreatAsOrdinal{});
@@ -849,6 +871,7 @@ loop() {
     auto makeSrc1Negative = false;
     auto performLogical = false;
     auto src1IsBitPosition = false;
+    
     switch (instruction.getOpcode()) {
         case Opcodes::bal: // bal
             getGPR(LRIndex).o = ip.o + 4;
@@ -887,7 +910,7 @@ loop() {
             if (ac.arith.conditionCode == 0) {
                 /// @todo fix fault mechanism to be correct and use proper
                 /// codes as well
-                raiseFault(129);
+                faultCode = 129;
             }
             break;
         case Opcodes::faulte:
@@ -900,7 +923,7 @@ loop() {
             if ((ac.arith.conditionCode & instruction.instGeneric.mask) != 0) {
                 /// @todo fix fault mechanism to be correct and use proper
                 /// codes as well
-                raiseFault(129);
+                faultCode = 129; 
             }
             break;
         case Opcodes::testno:
@@ -1177,10 +1200,24 @@ loop() {
             performSubtract = true;
             performCarry = true;
             break;
+        case Opcodes::mov:
+            regDest.o = src1o;
+            break;
+        case Opcodes::movl:
+            faultCode = performRegisterTransfer(0b1, 2);
+            break;
+        case Opcodes::movt:
+            faultCode = performRegisterTransfer(0b11, 3);
+            break;
+        case Opcodes::movq:
+            faultCode = performRegisterTransfer(0b11, 4);
+            break;
+            
+
 #if 0
         default:
             /// @todo implement properly
-            raiseFault(0xFD);
+            faultCode = 0xFD;
             break;
 #endif
     }
@@ -1250,6 +1287,9 @@ loop() {
             regDest.i = src2i + src1i;
         }
     } 
+    if (faultCode) {
+        raiseFault(faultCode);
+    }
     // okay we got here so we need to start grabbing data off of the bus and
     // start executing the next instruction
     ip.o += advanceBy; 
@@ -1285,18 +1325,26 @@ struct {
 Ordinal 
 unpackSrc1_REG(TreatAsOrdinal) noexcept {
     if (instruction.reg.m1) {
-        if (instruction.reg.s1) {
-            // reserved so another complement of registers?
-            raiseFault(0xFF); // bad operand
-            return 0;
-        } else {
-            return instruction.reg.src1;
-        }
+        /// @todo what to do if s1 is also set?
+        return instruction.reg.src1;
+    } else if (instruction.reg.s1) {
+        return getSFR(instruction.reg.src1).o;
     } else {
-        if (instruction.reg.s1) {
-            return getSFR(instruction.reg.src1).o;
+        return getGPR(instruction.reg.src1).o;
+    }
+}
+Ordinal 
+unpackSrc1_REG(byte offset, TreatAsOrdinal) noexcept {
+    if (offset == 0) {
+        return unpackSrc1_REG(TreatAsOrdinal{});
+    } else {
+        if (instruction.reg.m1) {
+            // literals should always return zero
+            return 0;
+        } else if (instruction.reg.s1) {
+            return getSFR(instruction.reg.src1+offset).o;
         } else {
-            return getGPR(instruction.reg.src1).o;
+            return getGPR(instruction.reg.src1+offset).o;
         }
     }
 }
