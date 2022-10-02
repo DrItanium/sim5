@@ -1760,3 +1760,29 @@ Ordinal
 getSupervisorStackPointer() noexcept {
     return load((getSystemProcedureTableBase() + 12), TreatAsOrdinal{});
 }
+
+void 
+scanbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+    for (Ordinal index = 0; index < 32; ++index) {
+        if ((src1 & computeBitPosition(31 - index)) != 0) {
+            dest.o = (31 - index);
+            ac.arith.conditionCode = 0b010;
+            return;
+        }
+    }
+    dest.o = 0xFFFF'FFFF;
+    ac.arith.conditionCode = 0;
+}
+void 
+spanbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+    for (Ordinal index = 0; index < 32; ++index) {
+        if ((src1 & computeBitPosition(31 - index)) == 0) {
+            dest.o = (31 - index);
+            ac.arith.conditionCode = 0b010;
+            return;
+        }
+    }
+    dest.o = 0xFFFF'FFFF;
+    ac.arith.conditionCode = 0;
+
+}
