@@ -494,7 +494,20 @@ raiseFault(byte code) noexcept {
     configRegs().faultPort = code;
 }
 void
-syncf() {
+syncf() noexcept {
+    /// @todo implement
+}
+void
+flushreg() noexcept {
+    /// @todo implement if it makes sense
+}
+void
+mark() noexcept {
+    /// @todo implement
+}
+void
+fmark() noexcept {
+
     /// @todo implement
 }
 void restoreRegisterSet(Ordinal fp) noexcept;
@@ -567,8 +580,9 @@ ret() {
 }
 constexpr Ordinal 
 computeBitPosition(Ordinal value) noexcept {
-    return static_cast<Ordinal>(1u) << static_cast<Ordinal>(value & 0b11111);
+    return static_cast<Ordinal>(1u) << static_cast<Ordinal>(value);
 }
+
 template<bool checkClear>
 void 
 branchIfBitGeneric() {
@@ -582,23 +596,14 @@ branchIfBitGeneric() {
         condition = (bitpos & against) != 0;
     }
     if (condition) {
-        // another lie in the i960Sx manual
-        if constexpr (checkClear) {
-            ac.arith.conditionCode = 0b000;
-        } else {
-            ac.arith.conditionCode = 0b010;
-        }
+        ac.arith.conditionCode = checkClear ? 0b000 : 0b010;
         Register temp;
         temp.alignedTransfer.important = instruction.cobr.displacement;
         ip.alignedTransfer.important = ip.alignedTransfer.important + temp.alignedTransfer.important;
         ip.alignedTransfer.aligned = 0;
         advanceBy = 0;
     } else {
-        if constexpr (checkClear) {
-            ac.arith.conditionCode = 0b010;
-        } else {
-            ac.arith.conditionCode = 0b000;
-        }
+        ac.arith.conditionCode = checkClear ? 0b010 : 0b000;
     }
 }
 void
@@ -1231,6 +1236,18 @@ loop() {
             break;
         case Opcodes::movq:
             faultCode = performRegisterTransfer(0b11, 4);
+            break;
+        case Opcodes::syncf:
+            syncf();
+            break;
+        case Opcodes::flushreg:
+            flushreg();
+            break;
+        case Opcodes::fmark:
+            fmark();
+            break;
+        case Opcodes::mark:
+            mark();
             break;
             
 
