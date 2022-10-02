@@ -415,6 +415,7 @@ union Register {
     }
     bool getCarryBit() const noexcept { return arith.conditionCode & 0b001; }
     [[nodiscard]] Ordinal modify(Ordinal mask, Ordinal src) noexcept;
+    [[nodiscard]] constexpr byte getPriority() const noexcept { return pc.priority; }
 };
 static_assert(sizeof(Register) == sizeof(Ordinal));
 Register ip, ac, pc, tc;
@@ -457,6 +458,7 @@ Ordinal unpackSrc1_REG(byte offset, TreatAsOrdinal) noexcept;
 Integer unpackSrc1_REG(TreatAsInteger) noexcept;
 Ordinal unpackSrc2_REG(TreatAsOrdinal) noexcept;
 Integer unpackSrc2_REG(TreatAsInteger) noexcept;
+void checkForPendingInterrupts() noexcept;
 template<typename T>
 void moveGPR(byte destIndex, byte srcIndex, TreatAs<T>) noexcept {
     setGPR(destIndex, getGPRValue(srcIndex, TreatAs<T>{}), TreatAs<T>{});
@@ -585,7 +587,7 @@ ret() {
                 ac.o = y;
                 if (pc.inSupervisorMode()) {
                     pc.o = x;
-                    /// @todo check pending interrupts
+                    checkForPendingInterrupts();
                 }
                 break;
             }
@@ -1327,8 +1329,27 @@ loop() {
             // taken from the Hx manual as it isn't insane
             regDest.o = (regDest.o >> (src1o > 32 ? 32 : src1o)) & ~(0xFFFF'FFFF << src2o);
             break;
-        case Opcodes::modac: regDest.o = ac.modify(src1o, src2o); break;
-        case Opcodes::modtc: regDest.o = tc.modify(src1o, src2o); break;
+        case Opcodes::modac: 
+            regDest.o = ac.modify(src1o, src2o); 
+            break;
+        case Opcodes::modtc: 
+            regDest.o = tc.modify(src1o, src2o); 
+            break;
+        case Opcodes::modpc:
+            if (auto mask = src1o; mask != 0) {
+                if (!pc.inSupervisorMode()) {
+                    /// @todo fix
+                    faultCode = 0xFB; // type mismatch
+                } else {
+                    regDest.o = pc.modify(mask, src2o);
+                    if (regDest.getPriority() > pc.getPriority()) {
+                        checkForPendingInterrupts();
+                    }
+                }
+            } else {
+                regDest.o = pc.o;
+            }
+            break;
 
 #if 0
         default:
@@ -1584,4 +1605,9 @@ arithmeticWithCarryGeneric(Ordinal result, bool src2MSB, bool src1MSB, bool dest
     } else {
         ac.arith.conditionCode &= 0b101;
     }
+}
+
+void
+checkForPendingInterrupts() noexcept {
+    /// @todo implement
 }
