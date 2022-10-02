@@ -1136,6 +1136,10 @@ reg_0x58() noexcept {
             break;
     }
 }
+
+constexpr Ordinal rotateOperation(Ordinal src, Ordinal length) noexcept {
+    return (src << length)  | (src >> ((-length) & 31u));
+}
 void 
 reg_0x59() noexcept {
     auto src2o = unpackSrc2_REG(TreatAsOrdinal{});
@@ -1186,6 +1190,12 @@ reg_0x59() noexcept {
             break;
         case 0xc: // shlo
             dest.o = src1o < 32 ? src2o << src1o : 0;
+            break;
+        case 0xd: // rotate
+            dest.o = rotateOperation(src2o, src1o);
+            break;
+        case 0xe: // shli
+            dest.i = src2i << src1i;
             break;
 
         default:
