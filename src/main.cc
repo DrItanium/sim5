@@ -1074,11 +1074,13 @@ reg_0x58() noexcept {
         case 0x1: // and
             dest.o = src2 & src1;
             break;
-        case 0x2:
+        case 0x2: // andnot
+            dest.o = src2 & ~src1;
             break;
         case 0x3:
             break;
-        case 0x4:
+        case 0x4: // notand
+            dest.o = ~src2 & src1;
             break;
         case 0x6: // xor
             dest.o = src2 ^ src1;
