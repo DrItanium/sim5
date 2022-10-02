@@ -932,6 +932,7 @@ loop() {
             X(0x59);
             X(0x5a);
             X(0x5b);
+            X(0x5c);
 #undef X
 #if 0
         default:
@@ -1340,4 +1341,16 @@ reg_0x5b() noexcept {
     result += (ac.getCarryBit() ? 1 : 0);
     dest.o = static_cast<Ordinal>(result);
     arithmeticWithCarryGeneric(static_cast<Ordinal>(result >> 32), (src2 & 0x8000'0000), (src1 & 0x8000'0000), dest.o & 0x8000'0000);
+}
+
+void
+reg_0x5c() noexcept {
+    switch (instruction.reg.opcodeExt) {
+        case 0xc: // mov
+            getGPR(instruction.reg.srcDest).o = unpackSrc1_REG(TreatAsOrdinal{});
+            break;
+        default:
+            raiseFault(0xFF);
+            break;
+    }
 }
