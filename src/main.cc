@@ -57,14 +57,15 @@ volatile ConfigRegisters&
 configRegs() noexcept {
     return memory<ConfigRegisters>(ConfigurationAddress);
 }
-
+constexpr auto LOCKPIN = PIN_PE2;
 void
 lockBus() noexcept {
-
+    while (digitalRead(LOCKPIN) == LOW);
+    pinMode(LOCKPIN, OUTPUT);
 }
 void
 unlockBus() noexcept {
-
+    pinMode(LOCKPIN, INPUT);
 }
 void
 set328BusAddress(Address address) noexcept {
@@ -867,6 +868,9 @@ bx() noexcept {
 
 void 
 setup() {
+    pinMode(LOCKPIN, OUTPUT);
+    digitalWrite(LOCKPIN, LOW);
+    pinMode(LOCKPIN, INPUT);
     // cleave the address space in half via sector limits.
     // lower half is io space for the implementation
     // upper half is the window into the 32/8 bus
