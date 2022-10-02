@@ -838,13 +838,15 @@ loop() {
     auto doXor = false;
     auto doOr = false;
     auto doAnd = false;
-    auto ordinalCompareOp = false;
-    auto integerCompareOp = false;
+    auto ordinalOp = false;
+    auto integerOp = false;
     auto performIncrement = false;
     auto performDecrement = false;
     auto performAdd = false;
     auto performSubtract = false;
     auto performCarry = false;
+    auto performCompare = false;
+    auto makeSrc1Negative = false;
     switch (instruction.getOpcode()) {
         case Opcodes::bal: // bal
             getGPR(LRIndex).o = ip.o + 4;
@@ -1055,16 +1057,25 @@ loop() {
             }
             break;
         case Opcodes::addo: // addo
-            regDest.o = src2o + src1o;
+            performAdd = true;
+            ordinalOp = true;
             break;
         case Opcodes::addi: // addi
-            regDest.i = src2i + src1i;
+            performAdd = true;
+            integerOp = true;
             break;
         case Opcodes::subo: // subo
-            regDest.o = src2o - src1o;
+            // I remember this trick from college, subtraction is just addition
+            // with a negative second argument :). I never gave it much thought
+            // until now but it seems to be an effective trick to save space.
+            performAdd = true;
+            makeSrc1Negative = true;
+            ordinalOp = true;
             break;
         case Opcodes::subi: // subi
-            regDest.i = src2i - src1i;
+            performAdd = true;
+            makeSrc1Negative = true;
+            integerOp = true;
             break;
         case Opcodes::shro: // shro
             regDest.o = src1o < 32 ? src2o >> src1o : 0;
@@ -1103,10 +1114,12 @@ loop() {
             regDest.i = src2i << src1i;
             break;
         case Opcodes::cmpo: // cmpo
-            ordinalCompareOp = true;
+            performCompare = true;
+            ordinalOp = true;
             break;
         case Opcodes::cmpi: // cmpi
-            integerCompareOp = true;
+            performCompare = true;
+            integerOp = true;
             break;
         case Opcodes::concmpo: // concmpo
             if ((ac.arith.conditionCode & 0b100) == 0) {
@@ -1119,19 +1132,23 @@ loop() {
             }
             break;
         case Opcodes::cmpinco: // cmpinco
-            ordinalCompareOp = true;
+            performCompare = true;
+            ordinalOp = true;
             performIncrement = true;
             break;
         case Opcodes::cmpinci: // cmpinci
-            integerCompareOp = true;
+            performCompare = true;
+            integerOp = true;
             performIncrement = true;
             break;
         case Opcodes::cmpdeco: // cmpdeco
-            ordinalCompareOp = true;
+            performCompare = true;
+            ordinalOp = true;
             performDecrement = true;
             break;
         case Opcodes::cmpdeci: // cmpdeci
-            integerCompareOp = true;
+            performCompare = true;
+            integerOp = true;
             performDecrement = true;
             break;
         case Opcodes::scanbyte: // scanbyte
@@ -1162,21 +1179,23 @@ loop() {
     } else if (doOr) {
         regDest.o = performOrOperation(src2o, src1o, invertResult, invertSrc1, invertSrc2);
     }
-    if (ordinalCompareOp) {
-        cmpGeneric(src1o, src2o);
-        if (performIncrement) {
-            regDest.o = src2o + 1;
-        }
-        if (performDecrement) {
-            regDest.o = src2o - 1;
-        }
-    } else if (integerCompareOp) {
-        cmpGeneric(src1i, src2i);
-        if (performIncrement) {
-            regDest.i = src2i + 1;
-        }
-        if (performDecrement) {
-            regDest.i = src2i - 1;
+    if (performCompare) {
+        if (ordinalOp) {
+            cmpGeneric(src1o, src2o);
+            if (performIncrement) {
+                regDest.o = src2o + 1;
+            }
+            if (performDecrement) {
+                regDest.o = src2o - 1;
+            }
+        } else if (integerOp) {
+            cmpGeneric(src1i, src2i);
+            if (performIncrement) {
+                regDest.i = src2i + 1;
+            }
+            if (performDecrement) {
+                regDest.i = src2i - 1;
+            }
         }
     }
     if (performCarry) {
@@ -1192,7 +1211,19 @@ loop() {
                 (src2o & 0x8000'0000), 
                 (src1o & 0x8000'0000), 
                 (regDest.o & 0x8000'0000));
-    }
+    } else if (performAdd) {
+        if (ordinalOp) {
+            if (makeSrc1Negative) {
+                src1o = -src1o;
+            }
+            regDest.o = src2o + src1o;
+        } else if (integerOp) {
+            if (makeSrc1Negative) {
+                src1i = -src1i;
+            }
+            regDest.i = src2i + src1i;
+        }
+    } 
     // okay we got here so we need to start grabbing data off of the bus and
     // start executing the next instruction
     ip.o += advanceBy; 
