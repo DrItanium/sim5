@@ -475,6 +475,7 @@ void atmod(Register& dest, Ordinal src1, Ordinal src2) noexcept;
 int emul(Register& dest, Ordinal src1, Ordinal src2) noexcept;
 int ediv(Register& dest, Ordinal src1, Ordinal src2) noexcept;
 void arithmeticWithCarryGeneric(Ordinal result, bool src2MSB, bool src1MSB, bool destMSB) noexcept;
+Ordinal getSystemProcedureTableBase() noexcept;
 Ordinal 
 unpackSrc1_COBR(TreatAsOrdinal) noexcept {
     if (instruction.cobr.m1) {
@@ -860,6 +861,42 @@ call() {
     setGPR(FPIndex, temp, TreatAsOrdinal{});
     setGPR(SPIndex , temp + 64, TreatAsOrdinal{});
     advanceBy = 0;
+}
+Ordinal getSupervisorStackPointer() noexcept;
+int
+calls(Ordinal src1) noexcept {
+    if (auto targ = src1; targ > 259) {
+        return 0xFB; // protection length fault
+    } else {
+        syncf();
+        auto tempPE = load(getSystemProcedureTableBase() + 48 + (4 * targ), TreatAsOrdinal{});
+        auto type = tempPE & 0b11;
+        auto procedureAddress = tempPE & ~0b11;
+        // read entry from system-procedure table, where spbase is address of
+        // system-procedure table from Initial Memory Image
+        setGPR(RIPIndex, ip.o + advanceBy, TreatAsOrdinal{});
+        ip.o = procedureAddress;
+        Ordinal temp = 0, tempRRR = 0;
+        if ((type == 0b00) || pc.inSupervisorMode()) {
+            temp = (getGPRValue(SPIndex, TreatAsOrdinal{}) + C) & NotC;
+            tempRRR = 0;
+        } else {
+            temp = getSupervisorStackPointer();
+            tempRRR = 0b010 | (pc.pc.traceEnable ? 0b001 : 0);
+            pc.pc.executionMode = 1;
+            pc.pc.traceEnable = temp & 0b1;
+        }
+        enterCall(temp);
+        /// @todo expand pfp and fp to accurately model how this works
+        auto& pfp = getGPR(PFPIndex);
+        // lowest six bits are ignored
+        pfp.o = getGPRValue(FPIndex, TreatAsOrdinal{}) & ~0b1'111;
+        pfp.pfp.rt = tempRRR;
+        setGPR(FPIndex, temp, TreatAsOrdinal{});
+        setGPR(SPIndex, temp + 64, TreatAsOrdinal{});
+        advanceBy = 0;
+        return 0;
+    }
 }
 void
 bx() noexcept {
@@ -1367,6 +1404,9 @@ loop() {
             break;
         case Opcodes::ediv:
             faultCode = ediv(regDest, src2o, src1o);
+            break;
+        case Opcodes::calls:
+            faultCode = calls(src1o);
             break;
 
 
