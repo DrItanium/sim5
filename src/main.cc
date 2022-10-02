@@ -219,12 +219,16 @@ enum class Opcodes : uint16_t {
     movl = 0x5dc,
     movt = 0x5ec,
     movq = 0x5fc,
+#ifdef SxKxInstructions
     synmov = 0x600,
     synmovl,
     synmovq,
+#endif
     atmod = 0x610,
     atadd = 0x612,
+#ifdef SxKxInstructions
     synld = 0x615,
+#endif
     spanbit = 0x640,
     scanbit,
     modac = 0x645,
@@ -475,6 +479,8 @@ void atadd(Register& dest, Ordinal src1, Ordinal src2) noexcept;
 void atmod(Register& dest, Ordinal src1, Ordinal src2) noexcept;
 int emul(Register& dest, Ordinal src1, Ordinal src2) noexcept;
 int ediv(Register& dest, Ordinal src1, Ordinal src2) noexcept;
+void scanbit(Register& dest, Ordinal src1, Ordinal src2) noexcept;
+void spanbit(Register& dest, Ordinal src1, Ordinal src2) noexcept;
 void arithmeticWithCarryGeneric(Ordinal result, bool src2MSB, bool src1MSB, bool destMSB) noexcept;
 Ordinal getSystemProcedureTableBase() noexcept;
 Ordinal 
@@ -1408,6 +1414,12 @@ loop() {
             break;
         case Opcodes::calls:
             faultCode = calls(src1o);
+            break;
+        case Opcodes::spanbit:
+            spanbit(regDest, src2o, src1o);
+            break;
+        case Opcodes::scanbit:
+            scanbit(regDest, src2o, src1o);
             break;
 
 
