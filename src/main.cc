@@ -1,4 +1,4 @@
-// sim3
+// sim
 // Copyright (c) 2021, Joshua Scoggins
 // All rights reserved.
 //
@@ -411,7 +411,11 @@ Register instruction;
 Register& getGPR(byte index) noexcept {
     return gprs[index];
 }
+Register& getGPR(byte index, byte offset) noexcept {
+    return gprs[(index + offset) & 0b11111];
+}
 Register& getSFR(byte index) noexcept;
+Register& getSFR(byte index, byte offset) noexcept;
 Ordinal unpackSrc1_REG(TreatAsOrdinal) noexcept;
 Ordinal unpackSrc1_REG(byte offset, TreatAsOrdinal) noexcept;
 Integer unpackSrc1_REG(TreatAsInteger) noexcept;
@@ -462,7 +466,10 @@ unpackSrc2_COBR(TreatAsInteger) noexcept {
     }
 }
 Register& getSFR(byte index) noexcept {
-    return sfrs[index & 0b11111];
+    return sfrs[index];
+}
+Register& getSFR(byte index, byte offset) noexcept {
+    return sfrs[(index + offset) & 0b11111];
 }
 void
 raiseFault(byte code) noexcept {
@@ -658,14 +665,14 @@ cmpibGeneric() noexcept {
 }
 void
 storeBlock(Ordinal baseAddress, byte baseRegister, byte count) noexcept {
-    for (byte i = 0; i < count; ++i, baseAddress += 4, ++baseRegister) {
-        store(baseAddress, getGPR(baseRegister).o, TreatAsOrdinal{});
+    for (byte i = 0; i < count; ++i, baseAddress += 4) {
+        store(baseAddress, getGPR(baseRegister, i).o, TreatAsOrdinal{});
     }
 }
 void
 loadBlock(Ordinal baseAddress, byte baseRegister, byte count) noexcept {
-    for (byte i = 0; i < count; ++i, baseAddress += 4, ++baseRegister) {
-        getGPR(baseRegister).o = load(baseAddress, TreatAsOrdinal{});
+    for (byte i = 0; i < count; ++i, baseAddress += 4) {
+        getGPR(baseRegister, i).o = load(baseAddress, TreatAsOrdinal{});
     }
 }
 void
@@ -828,19 +835,14 @@ setup() {
     }
 }
 int
-alignmentCheck(byte mask) noexcept {
+performRegisterTransfer(byte mask, byte count) noexcept {
+    auto result = 0;
     if (((instruction.reg.srcDest & mask) != 0) || ((instruction.reg.src1 & mask) != 0)) {
         /// @todo fix
-        return 0xFE; // operation.invalid operation
-    } else {
-        return 0;
+        result = 0xFE; // operation.invalid operation
     }
-}
-int
-performRegisterTransfer(byte mask, byte count) noexcept {
-    auto result = alignmentCheck(mask);
     for (byte i = 0; i < count; ++i) {
-        getGPR(instruction.reg.srcDest+i).o = unpackSrc1_REG(i, TreatAsOrdinal{});
+        getGPR(instruction.reg.srcDest, i).o = unpackSrc1_REG(i, TreatAsOrdinal{});
     }
     return result;
 }
@@ -1342,9 +1344,9 @@ unpackSrc1_REG(byte offset, TreatAsOrdinal) noexcept {
             // literals should always return zero
             return 0;
         } else if (instruction.reg.s1) {
-            return getSFR(instruction.reg.src1+offset).o;
+            return getSFR(instruction.reg.src1, offset).o;
         } else {
-            return getGPR(instruction.reg.src1+offset).o;
+            return getGPR(instruction.reg.src1, offset).o;
         }
     }
 }
