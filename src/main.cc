@@ -202,6 +202,16 @@ enum class Opcodes : uint16_t {
     shlo,
     rotate,
     shli,
+    cmpo = 0x5a0,
+    cmpi,
+    concmpo,
+    concmpi,
+    cmpinco,
+    cmpinci,
+    cmpdeco,
+    cmpdeci,
+    scanbyte = 0x5ac,
+    chkbit = 0x5ae,
 
 };
 union Register {
@@ -404,6 +414,8 @@ Integer unpackSrc2_REG(TreatAsInteger) noexcept;
 [[nodiscard]] constexpr Ordinal performOrOperation(Ordinal src2, Ordinal src1, bool invertOutput, bool invertSrc2, bool invertSrc1) noexcept;
 [[nodiscard]] constexpr Ordinal performXorOperation(Ordinal src2, Ordinal src1, bool invertOutput) noexcept;
 [[nodiscard]] constexpr Ordinal rotateOperation(Ordinal src, Ordinal length) noexcept;
+void scanbyte(Ordinal src2, Ordinal src1) noexcept;
+void arithmeticWithCarryGeneric(Ordinal result, bool src2MSB, bool src1MSB, bool destMSB) noexcept;
 Ordinal 
 unpackSrc1_COBR(TreatAsOrdinal) noexcept {
     if (instruction.cobr.m1) {
@@ -824,6 +836,10 @@ loop() {
     auto doXor = false;
     auto doOr = false;
     auto doAnd = false;
+    auto ordinalCompareOp = false;
+    auto integerCompareOp = false;
+    auto performIncrement = false;
+    auto performDecrement = false;
     switch (instruction.getOpcode()) {
         case Opcodes::bal: // bal
             getGPR(LRIndex).o = ip.o + 4;
@@ -1081,6 +1097,44 @@ loop() {
         case Opcodes::shli: // shli
             regDest.i = src2i << src1i;
             break;
+        case Opcodes::cmpo: // cmpo
+            ordinalCompareOp = true;
+            break;
+        case Opcodes::cmpi: // cmpi
+            integerCompareOp = true;
+            break;
+        case Opcodes::concmpo: // concmpo
+            if ((ac.arith.conditionCode & 0b100) == 0) {
+                ac.arith.conditionCode = src1o <= src2o ? 0b010 : 0b001;
+            }
+            break;
+        case Opcodes::concmpi: // concmpi
+            if ((ac.arith.conditionCode & 0b100) == 0) {
+                ac.arith.conditionCode = src1i <= src2i ? 0b010 : 0b001;
+            }
+            break;
+        case Opcodes::cmpinco: // cmpinco
+            ordinalCompareOp = true;
+            performIncrement = true;
+            break;
+        case Opcodes::cmpinci: // cmpinci
+            integerCompareOp = true;
+            performIncrement = true;
+            break;
+        case Opcodes::cmpdeco: // cmpdeco
+            ordinalCompareOp = true;
+            performDecrement = true;
+            break;
+        case Opcodes::cmpdeci: // cmpdeci
+            integerCompareOp = true;
+            performDecrement = true;
+            break;
+        case Opcodes::scanbyte: // scanbyte
+            scanbyte(src2o, src1o);
+            break;
+        case Opcodes::chkbit: // chkbit
+            ac.arith.conditionCode = ((src2o & computeBitPosition(src1o)) == 0 ? 0b000 : 0b010);
+            break;
 #if 0
         default:
             /// @todo implement properly
@@ -1094,6 +1148,23 @@ loop() {
         regDest.o = performXorOperation(src2o, src1o, invertResult);
     } else if (doOr) {
         regDest.o = performOrOperation(src2o, src1o, invertResult, invertSrc1, invertSrc2);
+    }
+    if (ordinalCompareOp) {
+        cmpGeneric(src1o, src2o);
+        if (performIncrement) {
+            regDest.o = src2o + 1;
+        }
+        if (performDecrement) {
+            regDest.o = src2o - 1;
+        }
+    } else if (integerCompareOp) {
+        cmpGeneric(src1i, src2i);
+        if (performIncrement) {
+            regDest.i = src2i + 1;
+        }
+        if (performDecrement) {
+            regDest.i = src2i - 1;
+        }
     }
     // okay we got here so we need to start grabbing data off of the bus and
     // start executing the next instruction
@@ -1348,110 +1419,3 @@ reg_0x5b() noexcept {
     arithmeticWithCarryGeneric(static_cast<Ordinal>(result >> 32), (src2 & 0x8000'0000), (src1 & 0x8000'0000), dest.o & 0x8000'0000);
 }
 
-void
-reg_0x5c() noexcept {
-    switch (instruction.reg.opcodeExt) {
-        case 0xc: // mov
-            getGPR(instruction.reg.srcDest).o = unpackSrc1_REG(TreatAsOrdinal{});
-            break;
-        default:
-            raiseFault(0xFF);
-            break;
-    }
-}
-void
-reg_0x5d() noexcept {
-    switch (instruction.reg.opcodeExt) {
-        case 0xc: // movl
-            break;
-        default:
-            raiseFault(0xFF);
-            break;
-    }
-}
-void
-reg_0x5e() noexcept {
-    switch (instruction.reg.opcodeExt) {
-        case 0xc: // movt
-            break;
-        default:
-            raiseFault(0xFF);
-            break;
-    }
-}
-void
-reg_0x5f() noexcept {
-    switch (instruction.reg.opcodeExt) {
-        case 0xc: // movq
-            break;
-        default:
-            raiseFault(0xFF);
-            break;
-    }
-}
-void
-reg_0x60() noexcept {
-    switch (instruction.reg.opcodeExt) {
-        default:
-            raiseFault(0xFF);
-            break;
-    }
-}
-void
-reg_0x61() noexcept {
-    switch (instruction.reg.opcodeExt) {
-        default:
-            raiseFault(0xFF);
-            break;
-    }
-}
-void
-reg_0x64() noexcept {
-    switch (instruction.reg.opcodeExt) {
-        default:
-            raiseFault(0xFF);
-            break;
-    }
-}
-
-void
-reg_0x65() noexcept {
-    switch (instruction.reg.opcodeExt) {
-        default:
-            raiseFault(0xFF);
-            break;
-    }
-}
-void
-reg_0x66() noexcept {
-    switch (instruction.reg.opcodeExt) {
-        default:
-            raiseFault(0xFF);
-            break;
-    }
-}
-void
-reg_0x67() noexcept {
-    switch (instruction.reg.opcodeExt) {
-        default:
-            raiseFault(0xFF);
-            break;
-    }
-}
-
-void
-reg_0x70() noexcept {
-    switch (instruction.reg.opcodeExt) {
-        default:
-            raiseFault(0xFF);
-            break;
-    }
-}
-void
-reg_0x74() noexcept {
-    switch (instruction.reg.opcodeExt) {
-        default:
-            raiseFault(0xFF);
-            break;
-    }
-}
