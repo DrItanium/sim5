@@ -1298,6 +1298,18 @@ loop() {
             performRemainder = true;
             integerOp = true;
             break;
+        case Opcodes::modi: 
+            if (auto denominator = src1i; denominator == 0) {
+                faultCode = 0xFC; // divide by zero
+            } else {
+                auto numerator = src2i;
+                auto result = numerator - ((numerator / denominator) * denominator);
+                if (((numerator * denominator) < 0) && (result != 0)) {
+                    result += denominator;
+                }
+                regDest.i = result;
+            }
+            break;
 
 #if 0
         default:
