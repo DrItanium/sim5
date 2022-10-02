@@ -1070,47 +1070,40 @@ constexpr Ordinal performXorOperation(Ordinal src2, Ordinal src1, bool invertOut
     auto result = src2 ^ src1;
     return invertOutput ? ~result : result;
 }
-constexpr Ordinal notbit(Ordinal src2, Ordinal src1) noexcept {
-    return performXorOperation(src2, computeBitPosition(src1), false);
-}
 constexpr Ordinal setbit(Ordinal src2, Ordinal src1) noexcept {
     return performOrOperation(src2, computeBitPosition(src1), false, false, false);
 }
 constexpr Ordinal clrbit(Ordinal src2, Ordinal src1) noexcept {
     return performAndOperation(src2, ~computeBitPosition(src1), false, false, true);
 }
-using Function = void(*)();
-using FunctionBlock = Function[16];
-FunctionBlock on0x58 = {
-    []() {
-        // notbit
-       getGPR(instruction.reg.srcDest).o = notbit(unpackSrc2_REG(TreatAsOrdinal{}), unpackSrc1_REG(TreatAsOrdinal{}));
-    }
-};
 void 
 reg_0x58() noexcept {
     auto src2 = unpackSrc2_REG(TreatAsOrdinal{});
     auto src1 = unpackSrc1_REG(TreatAsOrdinal{});
     auto& dest = getGPR(instruction.reg.srcDest);
     switch (instruction.reg.opcodeExt) {
-        case 0b0000: // notbit
-            dest.o = notbit(src2, src1);
-            break;
         case 0b0001: // and
             dest.o = performAndOperation(src2, src1, false, false, false);
             break;
+        case 0b1100: // clrbit
+                     // clrbit is src2 & ~computeBitPosition(src1)
+                     // so lets use andnot
+            src1 = computeBitPosition(src1);
         case 0b0010: // andnot
             dest.o = performAndOperation(src2, src1, false, false, true);
-            break;
-        case 0b0011: // setbit
-            dest.o = setbit(src2, src1);
             break;
         case 0b0100: // notand
             dest.o = performAndOperation(src2, src1, false, true, false);
             break;
+        case 0b0000: // notbit
+                     // notbit is src2 ^ computeBitPosition(src1)
+            src1 = computeBitPosition(src1);
         case 0b0110: // xor
             dest.o = performXorOperation(src2, src1, false);
             break;
+        case 0b0011: // setbit
+                     // setbit is src2 | computeBitPosition(src1)
+            src1 = computeBitPosition(src1);
         case 0b0111: // or
             dest.o = performOrOperation(src2, src1, false, false, false);
             break;
@@ -1125,9 +1118,6 @@ reg_0x58() noexcept {
             src2 = 0;
         case 0b1011: // ornot
             dest.o = performOrOperation(src2, src1, false, false, true);
-            break;
-        case 0b1100: // clrbit
-            dest.o = clrbit(src2, src1);
             break;
         case 0b1101: // notor
             dest.o = performOrOperation(src2, src1, false, true, false);
