@@ -1734,11 +1734,16 @@ ediv(Register& dest, Ordinal src1, Ordinal src2Lower) noexcept {
     setGPR(instruction.reg.srcDest, 1, result.parts[1], TreatAsOrdinal{});
     return faultCode;
 }
-Ordinal getSystemAddressTableBase() noexcept { return systemAddressTableBase; }
+Ordinal 
+getSystemAddressTableBase() noexcept { 
+    return systemAddressTableBase; 
+}
+
 Ordinal
 getSystemProcedureTableBase() noexcept {
     return load(getSystemAddressTableBase() + 120, TreatAsOrdinal{});
 }
+
 Ordinal
 getSupervisorStackPointer() noexcept {
     return load((getSystemProcedureTableBase() + 12), TreatAsOrdinal{});
