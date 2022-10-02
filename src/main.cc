@@ -934,13 +934,6 @@ loop() {
             X(0x5b);
 #undef X
 #if 0
-            X(0); X(1); X(2); X(3); X(4); X(5); X(6); X(7); 
-            //X(8); X(9); X(10); X(11); X(12); X(13); X(14); X(15); 
-            //X(16); X(17); X(18); X(19); X(20); X(21); X(22); X(23); 
-            //X(24); X(25); X(26); X(27); X(28); X(29); X(30); X(31); 
-            //X(32); X(33); X(34); X(35); X(36); X(37); X(38); X(39); 
-#undef X
-            break;
         default:
             /// @todo implement properly
             raiseFault(0xFD);
@@ -1076,61 +1069,83 @@ reg_0x58() noexcept {
     auto src2 = unpackSrc2_REG(TreatAsOrdinal{});
     auto src1 = unpackSrc1_REG(TreatAsOrdinal{});
     auto& dest = getGPR(instruction.reg.srcDest);
+    bool invertResult = false;
+    bool invertSrc1 = false;
+    bool invertSrc2 = false;
+    bool doXor = false;
+    bool doOr = false;
+    bool doAnd = false;
     // in some of the opcodeExt values seem to reflect the resultant truth
     // table for the operation :). That's pretty cool
     switch (instruction.reg.opcodeExt) {
+        case 0b1110: // nand
+            invertResult = true;
         case 0b0001: // and
-            dest.o = performAndOperation(src2, src1, false, false, false);
+            doAnd = true;
             break;
         case 0b1100: // clrbit
                      // clrbit is src2 & ~computeBitPosition(src1)
                      // so lets use andnot
             src1 = computeBitPosition(src1);
         case 0b0010: // andnot
-            dest.o = performAndOperation(src2, src1, false, false, true);
+            doAnd = true;
+            invertSrc1 = true;
             break;
         case 0b0100: // notand
-            dest.o = performAndOperation(src2, src1, false, true, false);
+            doAnd = true;
+            invertSrc2 = true;
             break;
         case 0b0000: // notbit
                      // notbit is src2 ^ computeBitPosition(src1)
             src1 = computeBitPosition(src1);
         case 0b0110: // xor
-            dest.o = performXorOperation(src2, src1, false);
+            doXor = true;
             break;
         case 0b0011: // setbit
                      // setbit is src2 | computeBitPosition(src1)
             src1 = computeBitPosition(src1);
         case 0b0111: // or
-            dest.o = performOrOperation(src2, src1, false, false, false);
+            doOr = true;
             break;
         case 0b1000: // nor
-            dest.o = performOrOperation(src2, src1, true, false, false);
+            doOr = true;
+            invertResult = true;
             break;
         case 0b1001: // xnor
-            dest.o = performXorOperation(src2, src1, true);
+            doXor = true;
+            invertResult = true;
             break;
         case 0b1010: // not 
                      // perform fallthrough to ornot with src2 set to zero
             src2 = 0;
         case 0b1011: // ornot
-            dest.o = performOrOperation(src2, src1, false, false, true);
+            doOr = true;
+            invertSrc1 = true;
             break;
         case 0b1101: // notor
-            dest.o = performOrOperation(src2, src1, false, true, false);
-            break;
-        case 0b1110: // nand
-            dest.o = performAndOperation(src2, src1, true, false, false);
+            doOr = true;
+            invertSrc2 = true;
             break;
         case 0b1111: // alterbit
-            dest.o = (ac.arith.conditionCode & 0b010) ? setbit(src2, src1) : clrbit(src2, src1);
+            src1 = computeBitPosition(src1);
+            if (ac.arith.conditionCode & 0b010) {
+                doOr = true;
+            } else {
+                doAnd = true;
+                invertSrc1 = true;
+            }
             break;
-
         default:
-            /// @todo implement
             raiseFault(0xFF);
-            break;
+            return;
     }
+    if (doAnd) {
+        performAndOperation(src2, src1, invertResult, invertSrc1, invertSrc2);
+    } else if (doXor) {
+        performXorOperation(src2, src1, invertResult);
+    } else if (doOr) {
+        performOrOperation(src2, src1, invertResult, invertSrc1, invertSrc2);
+    } 
 }
 
 constexpr Ordinal rotateOperation(Ordinal src, Ordinal length) noexcept {
