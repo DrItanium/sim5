@@ -41,13 +41,14 @@ constexpr size_t ConfigurationAddress = 0x7F00;
 constexpr Ordinal SALIGN = 4;
 constexpr Ordinal C = (SALIGN * 16) - 1;
 constexpr Ordinal NotC = ~C;
+constexpr Ordinal NoFault = 0xFFFF'FFFF;
 template<typename T>
 volatile T& memory(size_t address) noexcept {
     return *reinterpret_cast<volatile T*>(address);
 }
 struct ConfigRegisters {
     Address address;
-    int faultPort; /// @todo remove this when we do this right, this is here
+    Ordinal faultPort; /// @todo remove this when we do this right, this is here
                     /// to make sure the optimizer doesn't get dumb
 };
 
@@ -732,7 +733,7 @@ loadBlock(Ordinal baseAddress, byte baseRegister, byte count) noexcept {
         setGPR(baseRegister, i, load(baseAddress, TreatAsOrdinal{}), TreatAsOrdinal{});
     }
 }
-int
+Ordinal
 ldl() noexcept {
     if ((instruction.mem.srcDest & 0b1) != 0) {
         /// @todo fix
@@ -740,11 +741,11 @@ ldl() noexcept {
     } else {
         loadBlock(computeAddress(), instruction.mem.srcDest, 2);
         // support unaligned accesses
-        return 0;
+        return NoFault;
     }
 }
 
-int
+Ordinal
 stl() noexcept {
     if ((instruction.mem.srcDest & 0b1) != 0) {
         /// @todo fix
@@ -752,10 +753,10 @@ stl() noexcept {
     } else {
         storeBlock(computeAddress(), instruction.mem.srcDest, 2);
         // support unaligned accesses
-        return 0;
+        return NoFault;
     }
 }
-int
+Ordinal
 ldt() noexcept {
     if ((instruction.mem.srcDest & 0b11) != 0) {
         /// @todo fix
@@ -764,11 +765,11 @@ ldt() noexcept {
     } else {
         loadBlock(computeAddress(), instruction.mem.srcDest, 3);
         // support unaligned accesses
-        return 0;
+        return NoFault;
     }
 }
 
-int
+Ordinal
 stt() noexcept {
     if ((instruction.mem.srcDest & 0b11) != 0) {
         /// @todo fix
@@ -777,11 +778,11 @@ stt() noexcept {
     } else {
         storeBlock(computeAddress(), instruction.mem.srcDest, 3);
         // support unaligned accesses
-        return 0;
+        return NoFault;
     }
 }
 
-int 
+Ordinal
 ldq() noexcept {
     if ((instruction.mem.srcDest & 0b11) != 0) {
         /// @todo fix
@@ -790,11 +791,11 @@ ldq() noexcept {
     } else {
         loadBlock(computeAddress(), instruction.mem.srcDest, 4);
         // support unaligned accesses
-        return 0;
+        return NoFault;
     }
 }
 
-int
+Ordinal
 stq() noexcept {
     if ((instruction.mem.srcDest & 0b11) != 0) {
         /// @todo fix
@@ -803,7 +804,7 @@ stq() noexcept {
     } else {
         storeBlock(computeAddress(), instruction.mem.srcDest, 4);
         // support unaligned accesses
-        return 0;
+        return NoFault;
     }
 }
 
@@ -870,7 +871,7 @@ call() {
     advanceBy = 0;
 }
 Ordinal getSupervisorStackPointer() noexcept;
-int
+Ordinal
 calls(Ordinal src1) noexcept {
     if (auto targ = src1; targ > 259) {
         return 0xFB; // protection length fault
@@ -902,7 +903,7 @@ calls(Ordinal src1) noexcept {
         setGPR(FPIndex, temp, TreatAsOrdinal{});
         setGPR(SPIndex, temp + 64, TreatAsOrdinal{});
         advanceBy = 0;
-        return 0;
+        return NoFault;
     }
 }
 void
@@ -936,7 +937,7 @@ setup() {
 }
 int
 performRegisterTransfer(byte mask, byte count) noexcept {
-    auto result = 0;
+    auto result = NoFault;
     if (((instruction.reg.srcDest & mask) != 0) || ((instruction.reg.src1 & mask) != 0)) {
         /// @todo fix
         result = 0xFE; // operation.invalid operation
@@ -956,7 +957,7 @@ Register::modify(Ordinal mask, Ordinal src) noexcept {
 void 
 loop() {
     advanceBy = 4;
-    int faultCode = 0;
+    Ordinal faultCode = NoFault;
     instruction.o = load(ip.a, TreatAsOrdinal{});
     auto& regDest = getGPR(instruction.reg.srcDest);
     auto src2o = unpackSrc2_REG(TreatAsOrdinal{});
@@ -1421,14 +1422,10 @@ loop() {
         case Opcodes::scanbit:
             scanbit(regDest, src2o, src1o);
             break;
-
-
-#if 0
         default:
             /// @todo implement properly
             faultCode = 0xFD;
             break;
-#endif
     }
     if (performLogical) {
         if (src1IsBitPosition) {
@@ -1555,7 +1552,7 @@ loop() {
         }
     }
 
-    if (faultCode) {
+    if (faultCode != NoFault) {
         /// @todo implement this as the fallback operation when something bad
         /// happens
         ///
@@ -1706,7 +1703,7 @@ emul(Register& dest, Ordinal src1, Ordinal src2) noexcept {
         LongOrdinal lord;
         Ordinal parts[sizeof(LongOrdinal)/sizeof(Ordinal)];
     } result;
-    int faultCode = 0;
+    auto faultCode = NoFault;
     if ((instruction.reg.srcDest & 0b1) != 0) {
         /// @todo fix
         faultCode = 0xFD; // invalid operation
@@ -1727,7 +1724,7 @@ ediv(Register& dest, Ordinal src1, Ordinal src2Lower) noexcept {
         Ordinal parts[sizeof(LongOrdinal)/sizeof(Ordinal)];
     } result, src2;
     src2.parts[0] = src2Lower;
-    int faultCode = 0;
+    auto faultCode = NoFault;
     if ((instruction.reg.srcDest & 0b1) != 0 || (instruction.reg.src2 & 0b1) != 0) {
         /// @todo fix
         faultCode = 0xFD; // invalid operation
