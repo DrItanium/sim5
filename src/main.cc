@@ -424,6 +424,7 @@ volatile bool int0Triggered = false;
 volatile bool int1Triggered = false;
 volatile bool int2Triggered = false;
 volatile byte advanceBy = 0;
+volatile Ordinal systemAddressTableBase = 0;
 // On the i960 this is separated out into two parts, locals and globals
 // The idea is that globals are always available and locals are per function.
 // You are supposed to have multiple local frames on chip to accelerate
@@ -1732,4 +1733,13 @@ ediv(Register& dest, Ordinal src1, Ordinal src2Lower) noexcept {
     dest.o = result.parts[0];
     setGPR(instruction.reg.srcDest, 1, result.parts[1], TreatAsOrdinal{});
     return faultCode;
+}
+Ordinal getSystemAddressTableBase() noexcept { return systemAddressTableBase; }
+Ordinal
+getSystemProcedureTableBase() noexcept {
+    return load(getSystemAddressTableBase() + 120, TreatAsOrdinal{});
+}
+Ordinal
+getSupervisorStackPointer() noexcept {
+    return load((getSystemProcedureTableBase() + 12), TreatAsOrdinal{});
 }
