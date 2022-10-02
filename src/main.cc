@@ -1310,6 +1310,9 @@ loop() {
                 regDest.i = result;
             }
             break;
+        case Opcodes::modify:
+            regDest.o = (src2o & src1o) | (regDest.o & ~src1o);
+            break;
 
 #if 0
         default:
