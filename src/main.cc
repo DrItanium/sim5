@@ -92,7 +92,7 @@ void store(Address address, T value, TreatAs<T>) noexcept {
     SplitAddress split(address);
     memory<T>(static_cast<size_t>(split.lower) + 0x8000) = value;
 }
-enum class Opcodes : uint8_t {
+enum class Opcodes : uint16_t {
     b = 0x08,
     call,
     ret,
@@ -137,6 +137,7 @@ enum class Opcodes : uint8_t {
     cmpibne,
     cmpible,
     cmpibo,
+#if 0
 #define X(value) reg_ ## value = value
     X(0x58),
     X(0x59),
@@ -155,6 +156,7 @@ enum class Opcodes : uint8_t {
     X(0x70),
     X(0x74),
 #undef X
+#endif
     ldob = 0x80,
     stob = 0x82,
     bx = 0x84,
@@ -175,6 +177,22 @@ enum class Opcodes : uint8_t {
     stib = 0xc2,
     ldis = 0xc8,
     stis = 0xca,
+    notbit = 0x580,
+    andOperation,
+    andnot,
+    setbit,
+    notand,
+    xorOperation = 0x586,
+    orOperation,
+    nor,
+    xnor,
+    notOperation,
+    ornot,
+    clrbit,
+    notor,
+    nand,
+    alterbit,
+
 };
 union Register {
     constexpr explicit Register(Ordinal value = 0) : o(value) { }
@@ -331,7 +349,17 @@ union Register {
         pfp.p = 0;
         pfp.rt = 0;
     }
-    [[nodiscard]] constexpr auto getOpcode() const noexcept { return static_cast<Opcodes>(bytes[3]); }
+    [[nodiscard]] constexpr auto isREGFormat() const noexcept {
+        return bytes[3] >= 0x58 && bytes[3] < 0x80;
+    }
+    [[nodiscard]] constexpr auto getOpcode() const noexcept { 
+        if (isREGFormat()) {
+            uint16_t baseValue = static_cast<uint16_t>(bytes[3]) << 4;
+            return static_cast<Opcodes>(baseValue | static_cast<uint16_t>(reg.opcodeExt));
+        } else {
+            return static_cast<Opcodes>(bytes[3]); 
+        }
+    }
     bool getCarryBit() const noexcept { return arith.conditionCode & 0b001; }
 };
 static_assert(sizeof(Register) == sizeof(Ordinal));
@@ -358,6 +386,10 @@ Register& getGPR(byte index) noexcept {
     return gprs[index];
 }
 Register& getSFR(byte index) noexcept;
+Ordinal unpackSrc1_REG(TreatAsOrdinal) noexcept;
+Integer unpackSrc1_REG(TreatAsInteger) noexcept;
+Ordinal unpackSrc2_REG(TreatAsOrdinal) noexcept;
+Integer unpackSrc2_REG(TreatAsInteger) noexcept;
 Ordinal 
 unpackSrc1_COBR(TreatAsOrdinal) noexcept {
     if (instruction.cobr.m1) {
@@ -741,6 +773,7 @@ bx() noexcept {
     ip.o = computeAddress();
     advanceBy = 0;
 }
+#if 0
 #define X(index) void reg_ ## index () 
     X(0x58);
     X(0x59);
@@ -806,6 +839,7 @@ FunctionBody JumpTable[40] {
     nullptr,
 #undef X
 };
+#endif
 
 void 
 setup() {
@@ -981,6 +1015,7 @@ loop() {
         case Opcodes::callx:
             callx();
             break;
+#if 0
         case Opcodes:: reg_0x58:
         case Opcodes:: reg_0x59:
         case Opcodes:: reg_0x5a:
@@ -1027,10 +1062,19 @@ loop() {
                 raiseFault(0xFD);
             }
             break;
+#endif
+        case Opcodes::notbit:
+            getGPR(instruction.reg.srcDest).o = unpackSrc2_REG(TreatAsOrdinal{}) ^ computeBitPosition(unpackSrc1_REG(TreatAsOrdinal{}));
+            break;
+        case Opcodes::xorOperation: // xor
+            getGPR(instruction.reg.srcDest).o = unpackSrc2_REG(TreatAsOrdinal{}) ^ unpackSrc1_REG(TreatAsOrdinal{});
+            break;
+#if 0
         default:
             /// @todo implement properly
             raiseFault(0xFD);
             break;
+#endif
 
     }
     // okay we got here so we need to start grabbing data off of the bus and
