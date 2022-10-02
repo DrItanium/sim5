@@ -1121,8 +1121,8 @@ reg_0x58() noexcept {
             dest.o = performXorOperation(src2, src1, true);
             break;
         case 0b1010: // not 
-            dest.o = ~src1;
-            break;
+                     // perform fallthrough to ornot with src2 set to zero
+            src2 = 0;
         case 0b1011: // ornot
             dest.o = performOrOperation(src2, src1, false, false, true);
             break;
