@@ -936,6 +936,7 @@ loop() {
 #define X(index) case Opcodes:: reg_ ## index: reg_ ## index () ; break
             X(0x58);
             X(0x59);
+            X(0x5a);
 #undef X
 #if 0
             X(0); X(1); X(2); X(3); X(4); X(5); X(6); X(7); 
@@ -1078,6 +1079,14 @@ constexpr Ordinal setbit(Ordinal src2, Ordinal src1) noexcept {
 constexpr Ordinal clrbit(Ordinal src2, Ordinal src1) noexcept {
     return performAndOperation(src2, ~computeBitPosition(src1), false, false, true);
 }
+using Function = void(*)();
+using FunctionBlock = Function[16];
+FunctionBlock on0x58 = {
+    []() {
+        // notbit
+       getGPR(instruction.reg.srcDest).o = notbit(unpackSrc2_REG(TreatAsOrdinal{}), unpackSrc1_REG(TreatAsOrdinal{}));
+    }
+};
 void 
 reg_0x58() noexcept {
     auto src2 = unpackSrc2_REG(TreatAsOrdinal{});
@@ -1198,6 +1207,28 @@ reg_0x59() noexcept {
             dest.i = src2i << src1i;
             break;
 
+        default:
+            /// @todo implement
+            raiseFault(0xFF);
+            break;
+    }
+}
+
+void 
+reg_0x5a() noexcept {
+    auto src2o = unpackSrc2_REG(TreatAsOrdinal{});
+    auto src1o = unpackSrc1_REG(TreatAsOrdinal{});
+    auto src2i = unpackSrc2_REG(TreatAsInteger{});
+    auto src1i = unpackSrc1_REG(TreatAsInteger{});
+    //auto& dest = getGPR(instruction.reg.srcDest);
+    switch (instruction.reg.opcodeExt) {
+
+        case 0x0: // cmpo
+            cmpGeneric<Ordinal>(src1o, src2o);
+            break;
+        case 0x1: 
+            cmpGeneric<Integer>(src1i, src2i);
+            break;
         default:
             /// @todo implement
             raiseFault(0xFF);
