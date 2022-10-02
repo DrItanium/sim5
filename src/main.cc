@@ -468,7 +468,7 @@ ret() {
             break;
     }
 }
-Ordinal 
+constexpr Ordinal 
 computeBitPosition(Ordinal value) noexcept {
     return static_cast<Ordinal>(1u) << (value & 0b11111);
 }
@@ -1055,7 +1055,20 @@ unpackSrc2_REG(TreatAsInteger) noexcept {
         }
     }
 }
-using Function = void (*)();
+
+constexpr Ordinal performAndOperation(Ordinal src2, Ordinal src1, bool invertOutput, bool invertSrc2, bool invertSrc1) noexcept {
+    auto result = (invertSrc2 ? ~src2 : src2) & (invertSrc1 ? ~src1 : src1);
+    return invertOutput ? ~result : result;
+}
+constexpr Ordinal notbit(Ordinal src2, Ordinal src1) noexcept {
+    return src2 ^ computeBitPosition(src1);
+}
+constexpr Ordinal setbit(Ordinal src2, Ordinal src1) noexcept {
+    return src2 | computeBitPosition(src1);
+}
+constexpr Ordinal clrbit(Ordinal src2, Ordinal src1) noexcept {
+    return src2 & ~computeBitPosition(src1);
+}
 void 
 reg_0x58() noexcept {
     auto src2 = unpackSrc2_REG(TreatAsOrdinal{});
@@ -1063,19 +1076,19 @@ reg_0x58() noexcept {
     auto& dest = getGPR(instruction.reg.srcDest);
     switch (instruction.reg.opcodeExt) {
         case 0b0000: // notbit
-            dest.o = src2 ^ computeBitPosition(src1);
+            dest.o = notbit(src2, src1);
             break;
         case 0b0001: // and
-            dest.o = src2 & src1;
+            dest.o = performAndOperation(src2, src1, false, false, false);
             break;
         case 0b0010: // andnot
-            dest.o = src2 & ~src1;
+            dest.o = performAndOperation(src2, src1, false, false, true);
             break;
         case 0b0011: // setbit
-            dest.o = src2 | computeBitPosition(src1);
+            dest.o = setbit(src2, src1);
             break;
         case 0b0100: // notand
-            dest.o = ~src2 & src1;
+            dest.o = performAndOperation(src2, src1, false, true, false);
             break;
         case 0b0110: // xor
             dest.o = src2 ^ src1;
@@ -1096,16 +1109,18 @@ reg_0x58() noexcept {
             dest.o = src2 | ~src1;
             break;
         case 0b1100: // clrbit
-            dest.o = src2 & ~computeBitPosition(src1);
+            dest.o = clrbit(src2, src1);
             break;
         case 0b1101: // notor
             dest.o = ~src2 | src1;
             break;
         case 0b1110: // nand
-            dest.o = ~(src2 & src1);
+            dest.o = performAndOperation(src2, src1, true, false, false);
             break;
         case 0b1111: // alterbit
+            dest.o = (ac.arith.conditionCode & 0b010) ? setbit(src2, src1) : clrbit(src2, src1);
             break;
+
         default:
             /// @todo implement
             raiseFault(0xFF);
