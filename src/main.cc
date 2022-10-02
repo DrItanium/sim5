@@ -1313,6 +1313,10 @@ loop() {
         case Opcodes::modify:
             regDest.o = (src2o & src1o) | (regDest.o & ~src1o);
             break;
+        case Opcodes::extract:
+            // taken from the Hx manual as it isn't insane
+            regDest.o = (regDest.o >> (src1o > 32 ? 32 : src1o)) & ~(0xFFFF'FFFF << src2o);
+            break;
 
 #if 0
         default:
