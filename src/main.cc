@@ -1292,33 +1292,31 @@ arithmeticWithCarryGeneric(Ordinal result, bool src2MSB, bool src1MSB, bool dest
     }
 }
 void
-addc(Register& dest, Ordinal src2, Ordinal src1) noexcept {
-    LongOrdinal result = static_cast<LongOrdinal>(src2) + static_cast<LongOrdinal>(src1) + (ac.getCarryBit() ? 1 : 0);
-    dest.o = static_cast<Ordinal>(result);
-    arithmeticWithCarryGeneric(static_cast<Ordinal>(result >> 32), (src2 & 0x8000'0000), (src1 & 0x8000'0000), dest.o & 0x8000'0000);
-}
-void
-subc(Register& dest, Ordinal src2, Ordinal src1) noexcept {
-    LongOrdinal result = static_cast<LongOrdinal>(src2) - static_cast<LongOrdinal>(src1) - 1 + (ac.getCarryBit() ? 1 : 0);
-    dest.o = static_cast<Ordinal>(result);
-    arithmeticWithCarryGeneric(static_cast<Ordinal>(result >> 32), (src2 & 0x8000'0000), (src1 & 0x8000'0000), dest.o & 0x8000'0000);
-}
-void
 reg_0x5b() noexcept {
-    auto src2o = unpackSrc2_REG(TreatAsOrdinal{});
-    auto src1o = unpackSrc1_REG(TreatAsOrdinal{});
+    auto src2 = unpackSrc2_REG(TreatAsOrdinal{});
+    auto src1 = unpackSrc1_REG(TreatAsOrdinal{});
     auto& dest = getGPR(instruction.reg.srcDest);
+    bool performAdd = false;
+    bool performSubtract = false;
     switch (instruction.reg.opcodeExt) {
         case 0x0:
-            addc(dest, src2o, src1o);
+            performAdd = true;
             break;
         case 0x2:
-            subc(dest, src2o, src1o);
+            performSubtract = true;
             break;
         default:
             /// @todo implement
             raiseFault(0xFF);
-            break;
+            return;
     }
-
+    LongOrdinal result = 0;
+    if (performAdd) {
+        result = static_cast<LongOrdinal>(src2) + static_cast<LongOrdinal>(src1);
+    } else if (performSubtract) {
+        result = static_cast<LongOrdinal>(src2) - static_cast<LongOrdinal>(src1) - 1;
+    }
+    result += (ac.getCarryBit() ? 1 : 0);
+    dest.o = static_cast<Ordinal>(result);
+    arithmeticWithCarryGeneric(static_cast<Ordinal>(result >> 32), (src2 & 0x8000'0000), (src1 & 0x8000'0000), dest.o & 0x8000'0000);
 }
