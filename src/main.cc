@@ -976,8 +976,129 @@ ISR(INT2_vect) {
     int2Triggered = true;
 
 }
+#if 0
+    struct {
+        Ordinal src1 : 5;
+        Ordinal s1 : 1;
+        Ordinal s2 : 1;
+        Ordinal opcodeExt : 4;
+        Ordinal m1 : 1;
+        Ordinal m2 : 1;
+        Ordinal m3 : 1;
+        Ordinal src2 : 5;
+        Ordinal srcDest : 5;
+        Ordinal opcode : 8;
+    } reg;
+#endif
+Ordinal 
+unpackSrc1_REG(TreatAsOrdinal) noexcept {
+    if (instruction.reg.m1) {
+        if (instruction.reg.s1) {
+            // reserved so another complement of registers?
+            raiseFault(0xFF); // bad operand
+            return 0;
+        } else {
+            return instruction.reg.src1;
+        }
+    } else {
+        if (instruction.reg.s1) {
+            return getSFR(instruction.reg.src1).o;
+        } else {
+            return getGPR(instruction.reg.src1).o;
+        }
+    }
+}
+Integer 
+unpackSrc1_REG(TreatAsInteger) noexcept {
+    if (instruction.reg.m1) {
+        if (instruction.reg.s1) {
+            // reserved so another complement of registers?
+            raiseFault(0xFF); // bad operand
+            return 0;
+        } else {
+            return instruction.reg.src1;
+        }
+    } else {
+        if (instruction.reg.s1) {
+            return getSFR(instruction.reg.src1).i;
+        } else {
+            return getGPR(instruction.reg.src1).i;
+        }
+    }
+}
+Ordinal 
+unpackSrc2_REG(TreatAsOrdinal) noexcept {
+    if (instruction.reg.m2) {
+        if (instruction.reg.s2) {
+            // reserved so another complement of registers?
+            raiseFault(0xFF); // bad operand
+            return 0;
+        } else {
+            return instruction.reg.src2;
+        }
+    } else {
+        if (instruction.reg.s2) {
+            return getSFR(instruction.reg.src2).o;
+        } else {
+            return getGPR(instruction.reg.src2).o;
+        }
+    }
+}
+Integer 
+unpackSrc2_REG(TreatAsInteger) noexcept {
+    if (instruction.reg.m2) {
+        if (instruction.reg.s2) {
+            // reserved so another complement of registers?
+            raiseFault(0xFF); // bad operand
+            return 0;
+        } else {
+            return instruction.reg.src2;
+        }
+    } else {
+        if (instruction.reg.s2) {
+            return getSFR(instruction.reg.src2).i;
+        } else {
+            return getGPR(instruction.reg.src2).i;
+        }
+    }
+}
 
 void 
-reg0() noexcept {
+reg_0x58() noexcept {
     // 0x58
+    switch (instruction.reg.opcodeExt) {
+        case 0x0:
+            break;
+        case 0x1:
+            break;
+        case 0x2:
+            break;
+        case 0x3:
+            break;
+        case 0x4:
+            break;
+        case 0x5:
+            break;
+        case 0x6:
+            getGPR(instruction.reg.srcDest).o = unpackSrc2_REG(TreatAsOrdinal{}) ^ unpackSrc1_REG(TreatAsOrdinal{});
+            break;
+        case 0x7:
+            break;
+        case 0x8:
+            break;
+        case 0x9:
+            break;
+        case 0xa:
+            break;
+        case 0xb:
+            break;
+        case 0xc:
+            break;
+        case 0xd:
+            break;
+        case 0xe:
+            break;
+        case 0xf:
+            break;
+    }
 }
