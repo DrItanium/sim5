@@ -1184,6 +1184,9 @@ reg_0x59() noexcept {
             /// @todo perhaps implement the extra logic if necessary
             dest.i = src2i >> src1i;
             break;
+        case 0xc: // shlo
+            dest.o = src1o < 32 ? src2o << src1o : 0;
+            break;
 
         default:
             /// @todo implement
