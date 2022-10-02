@@ -1069,44 +1069,44 @@ reg_0x58() noexcept {
     auto src1 = unpackSrc1_REG(TreatAsOrdinal{});
     auto& dest = getGPR(instruction.reg.srcDest);
     switch (instruction.reg.opcodeExt) {
-        case 0x0: // notbit
+        case 0b0000: // notbit
             break;
-        case 0x1: // and
+        case 0b0001: // and
             dest.o = src2 & src1;
             break;
-        case 0x2: // andnot
+        case 0b0010: // andnot
             dest.o = src2 & ~src1;
             break;
-        case 0x3:
+        case 0b0011:
             break;
-        case 0x4: // notand
+        case 0b0100: // notand
             dest.o = ~src2 & src1;
             break;
-        case 0x6: // xor
+        case 0b0110: // xor
             dest.o = src2 ^ src1;
             break;
-        case 0x7: // or
+        case 0b0111: // or
             dest.o = src2 | src1;
             break;
-        case 0x8: // nor
+        case 0b1000: // nor
             dest.o = ~(src2 | src1);
             break;
-        case 0x9:
+        case 0b1001:
             dest.o = ~(src2 ^ src1);
             break;
-        case 0xa: // not 
+        case 0b1010: // not 
             dest.o = ~src1;
             break;
-        case 0xb:
+        case 0b1011:
             break;
-        case 0xc:
+        case 0b1100:
             break;
-        case 0xd:
+        case 0b1101:
             break;
-        case 0xe: // nand
+        case 0b1110: // nand
             dest.o = ~(src2 & src1);
             break;
-        case 0xf:
+        case 0b1111:
             break;
         default:
             /// @todo implement
