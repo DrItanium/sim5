@@ -688,16 +688,11 @@ allocateNewRegisterFrame() noexcept {
 void 
 saveRegisterSet(Ordinal fp) noexcept {
     // save the "next" register frame to main memory to reclaim it
-    for (int i = 16; i < 32; ++i, fp += 4) {
-        store(fp, getGPR(i).o, TreatAsOrdinal{});
-    }
+    storeBlock(fp, 16, 16);
 }
 void
 restoreRegisterSet(Ordinal fp) noexcept {
-    // load the register set back from main memory
-    for (int i = 16; i < 32; ++i, fp += 4) {
-        getGPR(i).o = load(fp, TreatAsOrdinal{});
-    }
+    loadBlock(fp, 16, 16);
 }
 void
 callx() noexcept {
