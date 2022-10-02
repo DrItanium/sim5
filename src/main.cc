@@ -584,7 +584,18 @@ void
 cmpibGeneric() noexcept {
     cmpxbGeneric<Integer>();
 }
-
+void
+storeBlock(Ordinal baseAddress, byte baseRegister, byte count) noexcept {
+    for (byte i = 0; i < count; ++i, baseAddress += 4, ++baseRegister) {
+        store(baseAddress, getGPR(baseRegister).o, TreatAsOrdinal{});
+    }
+}
+void
+loadBlock(Ordinal baseAddress, byte baseRegister, byte count) noexcept {
+    for (byte i = 0; i < count; ++i, baseAddress += 4, ++baseRegister) {
+        getGPR(baseRegister).o = load(baseAddress, TreatAsOrdinal{});
+    }
+}
 void
 ldl() noexcept {
     if ((instruction.mem.srcDest & 0b1) != 0) {
@@ -592,9 +603,7 @@ ldl() noexcept {
         raiseFault(130);
         /// @note the hx manual shows that destination is modified o_O
     } else {
-        auto value = load(computeAddress(), TreatAs<LongOrdinal>{});
-        getGPR(instruction.mem.srcDest).o = static_cast<Ordinal>(value);
-        getGPR(instruction.mem.srcDest+1).o = static_cast<Ordinal>(value >> 32);
+        loadBlock(computeAddress(), instruction.mem.srcDest, 2);
         // support unaligned accesses
     }
 }
@@ -606,9 +615,7 @@ stl() noexcept {
         raiseFault(130);
         /// @note the hx manual shows that destination is modified o_O
     } else {
-        auto address = computeAddress();
-        store(address, getGPR(instruction.mem.srcDest).o, TreatAsOrdinal{});
-        store(address+4, getGPR(instruction.mem.srcDest+1).o, TreatAsOrdinal{});
+        storeBlock(computeAddress(), instruction.mem.srcDest, 2);
         // support unaligned accesses
     }
 }
@@ -619,10 +626,7 @@ ldt() noexcept {
         raiseFault(130);
         /// @note the hx manual shows that destination is modified o_O
     } else {
-        auto address = computeAddress();
-        getGPR(instruction.mem.srcDest).o = load(address, TreatAsOrdinal{});
-        getGPR(instruction.mem.srcDest+1).o = load(address+4, TreatAsOrdinal{});
-        getGPR(instruction.mem.srcDest+2).o = load(address+8, TreatAsOrdinal{});
+        loadBlock(computeAddress(), instruction.mem.srcDest, 3);
         // support unaligned accesses
     }
 }
@@ -634,10 +638,7 @@ stt() noexcept {
         raiseFault(130);
         /// @note the hx manual shows that destination is modified o_O
     } else {
-        auto address = computeAddress();
-        store(address, getGPR(instruction.mem.srcDest).o, TreatAsOrdinal{});
-        store(address+4, getGPR(instruction.mem.srcDest+1).o, TreatAsOrdinal{});
-        store(address+8, getGPR(instruction.mem.srcDest+2).o, TreatAsOrdinal{});
+        storeBlock(computeAddress(), instruction.mem.srcDest, 3);
         // support unaligned accesses
     }
 }
@@ -649,11 +650,7 @@ ldq() noexcept {
         raiseFault(130);
         /// @note the hx manual shows that destination is modified o_O
     } else {
-        auto address = computeAddress();
-        getGPR(instruction.mem.srcDest).o = load(address, TreatAsOrdinal{});
-        getGPR(instruction.mem.srcDest+1).o = load(address+4, TreatAsOrdinal{});
-        getGPR(instruction.mem.srcDest+2).o = load(address+8, TreatAsOrdinal{});
-        getGPR(instruction.mem.srcDest+3).o = load(address+12, TreatAsOrdinal{});
+        loadBlock(computeAddress(), instruction.mem.srcDest, 4);
         // support unaligned accesses
     }
 }
@@ -665,11 +662,7 @@ stq() noexcept {
         raiseFault(130);
         /// @note the hx manual shows that destination is modified o_O
     } else {
-        auto address = computeAddress();
-        store(address, getGPR(instruction.mem.srcDest).o, TreatAsOrdinal{});
-        store(address+4, getGPR(instruction.mem.srcDest+1).o, TreatAsOrdinal{});
-        store(address+8, getGPR(instruction.mem.srcDest+2).o, TreatAsOrdinal{});
-        store(address+12, getGPR(instruction.mem.srcDest+3).o, TreatAsOrdinal{});
+        storeBlock(computeAddress(), instruction.mem.srcDest, 4);
         // support unaligned accesses
     }
 }
@@ -857,10 +850,10 @@ loop() {
             getGPR(instruction.cobr.src1).o = (ac.arith.conditionCode & instruction.instGeneric.mask) != 0 ? 1 : 0;
             break;
         case Opcodes::ld: 
-            getGPR(instruction.mem.srcDest).o = load(computeAddress(), TreatAsOrdinal{});
+            loadBlock(computeAddress(), instruction.mem.srcDest, 1);
             break;
         case Opcodes::st: 
-            store(computeAddress(), getGPR(instruction.mem.srcDest).o, TreatAsOrdinal{});
+            storeBlock(computeAddress(), instruction.mem.srcDest, 1);
             break;
         case Opcodes::lda:
             getGPR(instruction.mem.srcDest).o = computeAddress();
@@ -1077,7 +1070,7 @@ reg_0x58() noexcept {
         case 0b0010: // andnot
             dest.o = src2 & ~src1;
             break;
-        case 0b0011:
+        case 0b0011: // setbit
             break;
         case 0b0100: // notand
             dest.o = ~src2 & src1;
@@ -1091,7 +1084,7 @@ reg_0x58() noexcept {
         case 0b1000: // nor
             dest.o = ~(src2 | src1);
             break;
-        case 0b1001:
+        case 0b1001: // xnor
             dest.o = ~(src2 ^ src1);
             break;
         case 0b1010: // not 
