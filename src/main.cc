@@ -192,6 +192,16 @@ enum class Opcodes : uint16_t {
     notor,
     nand,
     alterbit,
+    addo,
+    addi,
+    subo,
+    subi,
+    shro = 0x598,
+    shrdi = 0x59a,
+    shri,
+    shlo,
+    rotate,
+    shli,
 
 };
 union Register {
@@ -393,6 +403,7 @@ Integer unpackSrc2_REG(TreatAsInteger) noexcept;
 [[nodiscard]] constexpr Ordinal performAndOperation(Ordinal src2, Ordinal src1, bool invertOutput, bool invertSrc2, bool invertSrc1) noexcept;
 [[nodiscard]] constexpr Ordinal performOrOperation(Ordinal src2, Ordinal src1, bool invertOutput, bool invertSrc2, bool invertSrc1) noexcept;
 [[nodiscard]] constexpr Ordinal performXorOperation(Ordinal src2, Ordinal src1, bool invertOutput) noexcept;
+[[nodiscard]] constexpr Ordinal rotateOperation(Ordinal src, Ordinal length) noexcept;
 Ordinal 
 unpackSrc1_COBR(TreatAsOrdinal) noexcept {
     if (instruction.cobr.m1) {
@@ -869,10 +880,10 @@ loop() {
     advanceBy = 4;
     instruction.o = load(ip.a, TreatAsOrdinal{});
     auto& regDest = getGPR(instruction.reg.srcDest);
-    auto src2o_reg = unpackSrc2_REG(TreatAsOrdinal{});
-    auto src2i_reg = unpackSrc2_REG(TreatAsInteger{});
-    auto src1o_reg = unpackSrc1_REG(TreatAsOrdinal{});
-    auto src1i_reg = unpackSrc1_REG(TreatAsInteger{});
+    auto src2o = unpackSrc2_REG(TreatAsOrdinal{});
+    auto src2i = unpackSrc2_REG(TreatAsInteger{});
+    auto src1o = unpackSrc1_REG(TreatAsOrdinal{});
+    auto src1i = unpackSrc1_REG(TreatAsInteger{});
     auto invertResult = false;
     auto invertSrc1 = false;
     auto invertSrc2 = false;
@@ -1087,7 +1098,7 @@ loop() {
         case Opcodes::clrbit: // clrbit
                               // clrbit is src2 & ~computeBitPosition(src1)
                               // so lets use andnot
-            src1o_reg = computeBitPosition(src1o_reg);
+            src1o = computeBitPosition(src1o);
         case Opcodes::andnot: // andnot
             doAnd = true;
             invertSrc1 = true;
@@ -1098,13 +1109,13 @@ loop() {
             break;
         case Opcodes::notbit: // notbit
                      // notbit is src2 ^ computeBitPosition(src1)
-            src1o_reg = computeBitPosition(src1o_reg);
+            src1o = computeBitPosition(src1o);
         case Opcodes::xorOperation: // xor
             doXor = true;
             break;
         case Opcodes::setbit: // setbit
-                     // setbit is src2 | computeBitPosition(src1o_reg)
-            src1o_reg = computeBitPosition(src1o_reg);
+                     // setbit is src2 | computeBitPosition(src1o)
+            src1o = computeBitPosition(src1o);
         case Opcodes::orOperation: // or
             doOr = true;
             break;
@@ -1118,7 +1129,7 @@ loop() {
             break;
         case Opcodes::notOperation: // not 
                      // perform fallthrough to ornot with src2 set to zero
-            src2o_reg = 0;
+            src2o = 0;
         case Opcodes::ornot: // ornot
             doOr = true;
             invertSrc1 = true;
@@ -1128,13 +1139,61 @@ loop() {
             invertSrc2 = true;
             break;
         case Opcodes::alterbit: // alterbit
-            src1o_reg = computeBitPosition(src1o_reg);
+            src1o = computeBitPosition(src1o);
             if (ac.arith.conditionCode & 0b010) {
                 doOr = true;
             } else {
                 doAnd = true;
                 invertSrc1 = true;
             }
+            break;
+        case Opcodes::addo: // addo
+            regDest.o = src2o + src1o;
+            break;
+        case Opcodes::addi: // addi
+            regDest.i = src2i + src1i;
+            break;
+        case Opcodes::subo: // subo
+            regDest.o = src2o - src1o;
+            break;
+        case Opcodes::subi: // subi
+            regDest.i = src2i - src1i;
+            break;
+        case Opcodes::shro: // shro
+            regDest.o = src1o < 32 ? src2o >> src1o : 0;
+            break;
+        case Opcodes::shrdi: // shrdi
+                  // according to the manual, equivalent to divi value, 2 so that is what we're going to do for correctness sake
+            regDest.i = src1i < 32 && src1i >= 0 ? src2i / computeBitPosition(src1i) : 0;
+            break;
+        case Opcodes::shri: // shri
+            /*
+             * if (src >= 0) {
+             *  if (len < 32) {
+             *      dest <- src/2^len
+             *  } else {
+             *      dest <- 0
+             *  }
+             * }else {
+             *  if (len < 32) {
+             *      dest <- (src - 2^len + 1)/2^len;
+             *  } else {
+             *      dest <- -1;
+             *   }
+             * }
+             *
+             */
+            /// @todo perhaps implement the extra logic if necessary
+            regDest.i = src2i >> src1i;
+            break;
+        case Opcodes::shlo: // shlo
+            regDest.o = src1o < 32 ? src2o << src1o : 0;
+            break;
+        case Opcodes::rotate: // rotate
+            regDest.o = rotateOperation(src2o, src1o);
+            break;
+        case Opcodes::shli: // shli
+            regDest.i = src2i << src1i;
             break;
 #if 0
         default:
@@ -1144,11 +1203,11 @@ loop() {
 #endif
     }
     if (doAnd) {
-        regDest.o = performAndOperation(src2o_reg, src1o_reg, invertResult, invertSrc1, invertSrc2);
+        regDest.o = performAndOperation(src2o, src1o, invertResult, invertSrc1, invertSrc2);
     } else if (doXor) {
-        regDest.o = performXorOperation(src2o_reg, src1o_reg, invertResult);
+        regDest.o = performXorOperation(src2o, src1o, invertResult);
     } else if (doOr) {
-        regDest.o = performOrOperation(src2o_reg, src1o_reg, invertResult, invertSrc1, invertSrc2);
+        regDest.o = performOrOperation(src2o, src1o, invertResult, invertSrc1, invertSrc2);
     }
     // okay we got here so we need to start grabbing data off of the bus and
     // start executing the next instruction
