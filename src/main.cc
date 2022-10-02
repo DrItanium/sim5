@@ -711,74 +711,78 @@ loadBlock(Ordinal baseAddress, byte baseRegister, byte count) noexcept {
         setGPR(baseRegister, i, load(baseAddress, TreatAsOrdinal{}), TreatAsOrdinal{});
     }
 }
-void
+int
 ldl() noexcept {
     if ((instruction.mem.srcDest & 0b1) != 0) {
         /// @todo fix
-        raiseFault(130);
-        /// @note the hx manual shows that destination is modified o_O
+        return 130;
     } else {
         loadBlock(computeAddress(), instruction.mem.srcDest, 2);
         // support unaligned accesses
+        return 0;
     }
 }
 
-void
+int
 stl() noexcept {
     if ((instruction.mem.srcDest & 0b1) != 0) {
         /// @todo fix
-        raiseFault(130);
-        /// @note the hx manual shows that destination is modified o_O
+        return 130;
     } else {
         storeBlock(computeAddress(), instruction.mem.srcDest, 2);
         // support unaligned accesses
+        return 0;
     }
 }
-void
+int
 ldt() noexcept {
     if ((instruction.mem.srcDest & 0b11) != 0) {
         /// @todo fix
-        raiseFault(130);
+        return 130;
         /// @note the hx manual shows that destination is modified o_O
     } else {
         loadBlock(computeAddress(), instruction.mem.srcDest, 3);
         // support unaligned accesses
+        return 0;
     }
 }
 
-void
+int
 stt() noexcept {
     if ((instruction.mem.srcDest & 0b11) != 0) {
         /// @todo fix
-        raiseFault(130);
+        return 130;
         /// @note the hx manual shows that destination is modified o_O
     } else {
         storeBlock(computeAddress(), instruction.mem.srcDest, 3);
         // support unaligned accesses
+        return 0;
     }
 }
 
-void
+int 
 ldq() noexcept {
     if ((instruction.mem.srcDest & 0b11) != 0) {
         /// @todo fix
-        raiseFault(130);
+        return 130;
         /// @note the hx manual shows that destination is modified o_O
     } else {
         loadBlock(computeAddress(), instruction.mem.srcDest, 4);
         // support unaligned accesses
+        return 0;
     }
 }
 
-void
+int
 stq() noexcept {
     if ((instruction.mem.srcDest & 0b11) != 0) {
         /// @todo fix
-        raiseFault(130);
+        return 130;
         /// @note the hx manual shows that destination is modified o_O
     } else {
         storeBlock(computeAddress(), instruction.mem.srcDest, 4);
         // support unaligned accesses
+        return 0;
     }
 }
 
@@ -1034,22 +1038,22 @@ loop() {
             store<ShortInteger>(computeAddress(), getGPR(instruction.mem.srcDest).o, TreatAs<ShortInteger>{});
             break;
         case Opcodes::ldl:
-            ldl();
+            faultCode = ldl();
             break;
         case Opcodes::stl:
-            stl();
+            faultCode = stl();
             break;
         case Opcodes::ldt:
-            ldt();
+            faultCode = ldt();
             break;
         case Opcodes::stt:
-            stt();
+            faultCode = stt();
             break;
         case Opcodes::ldq:
-            ldq();
+            faultCode = ldq();
             break;
         case Opcodes::stq:
-            stq();
+            faultCode = stq();
             break;
         case Opcodes::bx:
             bx();
