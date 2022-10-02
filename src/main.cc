@@ -847,6 +847,8 @@ loop() {
     auto performCarry = false;
     auto performCompare = false;
     auto makeSrc1Negative = false;
+    auto performLogical = false;
+    auto src1IsBitPosition = false;
     switch (instruction.getOpcode()) {
         case Opcodes::bal: // bal
             getGPR(LRIndex).o = ip.o + 4;
@@ -1002,39 +1004,46 @@ loop() {
         case Opcodes::nand: // nand
             invertResult = true;
         case Opcodes::andOperation: // and
+            performLogical = true;
             doAnd = true;
             break;
         case Opcodes::clrbit: // clrbit
                               // clrbit is src2 & ~computeBitPosition(src1)
                               // so lets use andnot
-            src1o = computeBitPosition(src1o);
+            src1IsBitPosition = true;
         case Opcodes::andnot: // andnot
             doAnd = true;
             invertSrc1 = true;
+            performLogical = true;
             break;
         case Opcodes::notand: // notand
             doAnd = true;
             invertSrc2 = true;
+            performLogical = true;
             break;
         case Opcodes::notbit: // notbit
                      // notbit is src2 ^ computeBitPosition(src1)
-            src1o = computeBitPosition(src1o);
+            src1IsBitPosition = true;
         case Opcodes::xorOperation: // xor
             doXor = true;
+            performLogical = true;
             break;
         case Opcodes::setbit: // setbit
                      // setbit is src2 | computeBitPosition(src1o)
-            src1o = computeBitPosition(src1o);
+            src1IsBitPosition = true;
         case Opcodes::orOperation: // or
             doOr = true;
+            performLogical = true;
             break;
         case Opcodes::nor: // nor
             doOr = true;
             invertResult = true;
+            performLogical = true;
             break;
         case Opcodes::xnor: // xnor
             doXor = true;
             invertResult = true;
+            performLogical = true;
             break;
         case Opcodes::notOperation: // not 
                      // perform fallthrough to ornot with src2 set to zero
@@ -1042,13 +1051,16 @@ loop() {
         case Opcodes::ornot: // ornot
             doOr = true;
             invertSrc1 = true;
+            performLogical = true;
             break;
         case Opcodes::notor: // notor
             doOr = true;
             invertSrc2 = true;
+            performLogical = true;
             break;
         case Opcodes::alterbit: // alterbit
-            src1o = computeBitPosition(src1o);
+            src1IsBitPosition = true;
+            performLogical = true;
             if (ac.arith.conditionCode & 0b010) {
                 doOr = true;
             } else {
@@ -1172,12 +1184,26 @@ loop() {
             break;
 #endif
     }
-    if (doAnd) {
-        regDest.o = performAndOperation(src2o, src1o, invertResult, invertSrc1, invertSrc2);
-    } else if (doXor) {
-        regDest.o = performXorOperation(src2o, src1o, invertResult);
-    } else if (doOr) {
-        regDest.o = performOrOperation(src2o, src1o, invertResult, invertSrc1, invertSrc2);
+    if (performLogical) {
+        if (src1IsBitPosition) {
+            src1o = computeBitPosition(src1o);
+        }
+        if (invertSrc1) {
+            src1o = ~src1o;
+        }
+        if (invertSrc2) {
+            src2o = ~src2o;
+        }
+        if (doAnd) {
+            regDest.o = src2o & src1o;
+        } else if (doXor) {
+            regDest.o = src2o ^ src1o;
+        } else if (doOr) {
+            regDest.o = src2o | src1o;
+        }
+        if (invertResult) {
+            regDest.o = ~regDest.o;
+        }
     }
     if (performCompare) {
         if (ordinalOp) {
