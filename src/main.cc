@@ -1046,24 +1046,19 @@ unpackSrc2_REG(TreatAsInteger) noexcept {
     }
 }
 
-constexpr Ordinal performAndOperation(Ordinal src2, Ordinal src1, bool invertOutput, bool invertSrc2, bool invertSrc1) noexcept {
+[[nodiscard]] constexpr Ordinal performAndOperation(Ordinal src2, Ordinal src1, bool invertOutput, bool invertSrc2, bool invertSrc1) noexcept {
     auto result = (invertSrc2 ? ~src2 : src2) & (invertSrc1 ? ~src1 : src1);
     return invertOutput ? ~result : result;
 }
-constexpr Ordinal performOrOperation(Ordinal src2, Ordinal src1, bool invertOutput, bool invertSrc2, bool invertSrc1) noexcept {
+[[nodiscard]] constexpr Ordinal performOrOperation(Ordinal src2, Ordinal src1, bool invertOutput, bool invertSrc2, bool invertSrc1) noexcept {
     auto result = (invertSrc2 ? ~src2 : src2) | (invertSrc1 ? ~src1 : src1);
     return invertOutput ? ~result : result;
 }
-constexpr Ordinal performXorOperation(Ordinal src2, Ordinal src1, bool invertOutput) noexcept {
+[[nodiscard]] constexpr Ordinal performXorOperation(Ordinal src2, Ordinal src1, bool invertOutput) noexcept {
     auto result = src2 ^ src1;
     return invertOutput ? ~result : result;
 }
-constexpr Ordinal setbit(Ordinal src2, Ordinal src1) noexcept {
-    return performOrOperation(src2, computeBitPosition(src1), false, false, false);
-}
-constexpr Ordinal clrbit(Ordinal src2, Ordinal src1) noexcept {
-    return performAndOperation(src2, ~computeBitPosition(src1), false, false, true);
-}
+
 void 
 reg_0x58() noexcept {
     auto src2 = unpackSrc2_REG(TreatAsOrdinal{});
@@ -1140,12 +1135,12 @@ reg_0x58() noexcept {
             return;
     }
     if (doAnd) {
-        performAndOperation(src2, src1, invertResult, invertSrc1, invertSrc2);
+        dest.o = performAndOperation(src2, src1, invertResult, invertSrc1, invertSrc2);
     } else if (doXor) {
-        performXorOperation(src2, src1, invertResult);
+        dest.o = performXorOperation(src2, src1, invertResult);
     } else if (doOr) {
-        performOrOperation(src2, src1, invertResult, invertSrc1, invertSrc2);
-    } 
+        dest.o = performOrOperation(src2, src1, invertResult, invertSrc1, invertSrc2);
+    }
 }
 
 constexpr Ordinal rotateOperation(Ordinal src, Ordinal length) noexcept {
