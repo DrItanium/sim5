@@ -432,16 +432,29 @@ Register& getGPR(byte index) noexcept {
 Register& getGPR(byte index, byte offset) noexcept {
     return gprs[(index + offset) & 0b11111];
 }
+void setGPR(byte index, Ordinal value, TreatAsOrdinal) noexcept { getGPR(index).o = value; }
+void setGPR(byte index, byte offset, Ordinal value, TreatAsOrdinal) noexcept { getGPR(index, offset).o = value; }
+void setGPR(byte index, Integer value, TreatAsInteger) noexcept { getGPR(index).i = value; }
+void setGPR(byte index, byte offset, Integer value, TreatAsInteger) noexcept { getGPR(index, offset).i = value; }
 Register& getSFR(byte index) noexcept;
 Register& getSFR(byte index, byte offset) noexcept;
+Ordinal getGPRValue(byte index, TreatAsOrdinal) noexcept { return getGPR(index).o; }
+Ordinal getGPRValue(byte index, byte offset, TreatAsOrdinal) noexcept { return getGPR(index, offset).o; }
+Integer getGPRValue(byte index, TreatAsInteger) noexcept { return getGPR(index).i; }
+Integer getGPRValue(byte index, byte offset, TreatAsInteger) noexcept { return getGPR(index, offset).i; }
 Ordinal unpackSrc1_REG(TreatAsOrdinal) noexcept;
 Ordinal unpackSrc1_REG(byte offset, TreatAsOrdinal) noexcept;
 Integer unpackSrc1_REG(TreatAsInteger) noexcept;
 Ordinal unpackSrc2_REG(TreatAsOrdinal) noexcept;
 Integer unpackSrc2_REG(TreatAsInteger) noexcept;
-[[nodiscard]] constexpr Ordinal performAndOperation(Ordinal src2, Ordinal src1, bool invertOutput, bool invertSrc2, bool invertSrc1) noexcept;
-[[nodiscard]] constexpr Ordinal performOrOperation(Ordinal src2, Ordinal src1, bool invertOutput, bool invertSrc2, bool invertSrc1) noexcept;
-[[nodiscard]] constexpr Ordinal performXorOperation(Ordinal src2, Ordinal src1, bool invertOutput) noexcept;
+template<typename T>
+void moveGPR(byte destIndex, byte srcIndex, TreatAs<T>) noexcept {
+    setGPR(destIndex, getGPRValue(srcIndex, TreatAs<T>{}), TreatAs<T>{});
+}
+template<typename T>
+void moveGPR(byte destIndex, byte destOffset, byte srcIndex, byte srcOffset, TreatAs<T>) noexcept {
+    setGPR(destIndex, destOffset, getGPRValue(srcIndex, srcOffset, TreatAs<T>{}), TreatAs<T>{});
+}
 [[nodiscard]] constexpr Ordinal rotateOperation(Ordinal src, Ordinal length) noexcept;
 void scanbyte(Ordinal src2, Ordinal src1) noexcept;
 void arithmeticWithCarryGeneric(Ordinal result, bool src2MSB, bool src1MSB, bool destMSB) noexcept;
@@ -451,7 +464,7 @@ unpackSrc1_COBR(TreatAsOrdinal) noexcept {
         // treat src1 as a literal
         return instruction.cobr.src1;
     } else {
-        return getGPR(instruction.cobr.src1).o;
+        return getGPRValue(instruction.cobr.src1, TreatAsOrdinal{});
     }
 }
 Ordinal
@@ -461,7 +474,7 @@ unpackSrc2_COBR(TreatAsOrdinal) noexcept {
         // at this point it is just a simple extra set of 32 registers
         return getSFR(instruction.cobr.src2).o;
     } else {
-        return getGPR(instruction.cobr.src2).o;
+        return getGPRValue(instruction.cobr.src2, TreatAsOrdinal{});
     }
 }
 Integer
@@ -470,7 +483,7 @@ unpackSrc1_COBR(TreatAsInteger) noexcept {
         // treat src1 as a literal
         return instruction.cobr.src1;
     } else {
-        return getGPR(instruction.cobr.src1).i;
+        return getGPRValue(instruction.cobr.src1, TreatAsInteger{});
     }
 }
 Integer
@@ -480,7 +493,7 @@ unpackSrc2_COBR(TreatAsInteger) noexcept {
         // at this point it is just a simple extra set of 32 registers
         return getSFR(instruction.cobr.src2).i;
     } else {
-        return getGPR(instruction.cobr.src2).i;
+        return getGPRValue(instruction.cobr.src2, TreatAsInteger{});
     }
 }
 Register& getSFR(byte index) noexcept {
@@ -514,12 +527,12 @@ void restoreRegisterSet(Ordinal fp) noexcept;
 void
 restoreStandardFrame() noexcept {
     // need to leave the current call
-    getGPR(FPIndex).o = getGPR(PFPIndex).o;
+    moveGPR(FPIndex, PFPIndex, TreatAsOrdinal{});
     // remember that the lowest 6 bits are ignored so it is important to mask
     // them out of the frame pointer address when using the address
-    auto realAddress = getGPR(FPIndex).o & NotC;
+    auto realAddress = getGPRValue(FPIndex, TreatAsOrdinal{}) & NotC;
     restoreRegisterSet(realAddress);
-    ip.o = getGPR(RIPIndex).o;
+    ip.o = getGPRValue(RIPIndex, TreatAsOrdinal{});
     advanceBy = 0;
 }
 void
@@ -532,9 +545,9 @@ ret() {
             break;
         case 0b001:
             {
-                auto& fp = getGPR(FPIndex);
-                auto x = load(fp.o - 16, TreatAsOrdinal{});
-                auto y = load(fp.o - 12, TreatAsOrdinal{});
+                auto fp = getGPRValue(FPIndex, TreatAsOrdinal{});
+                auto x = load(fp - 16, TreatAsOrdinal{});
+                auto y = load(fp - 12, TreatAsOrdinal{});
                 restoreStandardFrame();
                 ac.o = y;
                 if (pc.inSupervisorMode()) {
@@ -559,9 +572,9 @@ ret() {
         case 0b111: 
             {
                 // interrupt return
-                auto& fp = getGPR(FPIndex);
-                auto x = load(fp.o - 16, TreatAsOrdinal{});
-                auto y = load(fp.o - 12, TreatAsOrdinal{});
+                auto fp = getGPRValue(FPIndex, TreatAsOrdinal{});
+                auto x = load(fp - 16, TreatAsOrdinal{});
+                auto y = load(fp - 12, TreatAsOrdinal{});
                 restoreStandardFrame();
                 ac.o = y;
                 if (pc.inSupervisorMode()) {
@@ -619,7 +632,7 @@ computeAddress() noexcept {
     if (instruction.isMEMA()) {
         Ordinal result = instruction.mem.offset;
         if (instruction.mema.action) {
-            result += getGPR(instruction.mem.abase).o;
+            result += getGPRValue(instruction.mem.abase, TreatAsOrdinal{});
         }
         return result;
     } else {
@@ -631,22 +644,22 @@ computeAddress() noexcept {
             advanceBy += 4;
             Integer result = static_cast<Integer>(load(ip.a + 4, TreatAsOrdinal{})); // load the optional displacement
             if (instruction.memb_grp2.useIndex) {
-                result += (getGPR(instruction.memb_grp2.index).i << static_cast<Integer>(instruction.memb_grp2.scale));
+                result += (getGPRValue(instruction.memb_grp2.index, TreatAsInteger{}) << static_cast<Integer>(instruction.memb_grp2.scale));
             }
             if (instruction.memb_grp2.registerIndirect) {
-                result += getGPR(instruction.memb_grp2.abase).i;
+                result += getGPRValue(instruction.memb_grp2.abase, TreatAsInteger{});
             }
             return static_cast<Ordinal>(result);
         } else {
             // okay so the other group isn't as cleanly designed
             switch (instruction.memb.modeMinor) {
                 case 0b00: // Register Indirect
-                    return getGPR(instruction.memb.abase).o;
+                    return getGPRValue(instruction.memb.abase, TreatAsOrdinal{});
                 case 0b01: // IP With Displacement 
                     advanceBy += 4;
                     return static_cast<Ordinal>(ip.i + load(ip.a + 4, TreatAsInteger{}) + 8);
                 case 0b11: // Register Indirect With Index
-                    return getGPR(instruction.memb.abase).o + (getGPR(instruction.memb.index).o << instruction.memb.scale);
+                    return getGPRValue(instruction.memb.abase, TreatAsOrdinal{}) + (getGPRValue(instruction.memb.index, TreatAsOrdinal{}) << instruction.memb.scale);
                 default:
                     return -1;
             }
@@ -689,13 +702,13 @@ cmpibGeneric() noexcept {
 void
 storeBlock(Ordinal baseAddress, byte baseRegister, byte count) noexcept {
     for (byte i = 0; i < count; ++i, baseAddress += 4) {
-        store(baseAddress, getGPR(baseRegister, i).o, TreatAsOrdinal{});
+        store(baseAddress, getGPRValue(baseRegister, i, TreatAsOrdinal{}), TreatAsOrdinal{});
     }
 }
 void
 loadBlock(Ordinal baseAddress, byte baseRegister, byte count) noexcept {
     for (byte i = 0; i < count; ++i, baseAddress += 4) {
-        getGPR(baseRegister, i).o = load(baseAddress, TreatAsOrdinal{});
+        setGPR(baseRegister, i, load(baseAddress, TreatAsOrdinal{}), TreatAsOrdinal{});
     }
 }
 void
@@ -772,7 +785,7 @@ stq() noexcept {
 void
 balx() noexcept {
     auto address = computeAddress();
-    getGPR(instruction.mem.srcDest).o = ip.o + advanceBy;
+    setGPR(instruction.mem.srcDest, ip.o + advanceBy, TreatAsOrdinal{});
     ip.o = address;
     advanceBy = 0;
 }
@@ -807,28 +820,28 @@ enterCall(Ordinal fp) noexcept {
 void
 callx() noexcept {
     // wait for any uncompleted instructions to finish
-    auto temp = (getGPR(SPIndex).o + C) & NotC; // round stack pointer to next boundary
+    auto temp = (getGPRValue(SPIndex, TreatAsOrdinal{}) + C) & NotC; // round stack pointer to next boundary
     auto addr = computeAddress();
-    auto fp = getGPR(FPIndex).o;
-    getGPR(RIPIndex).o = ip.o + advanceBy;
+    auto fp = getGPRValue(FPIndex, TreatAsOrdinal{});
+    setGPR(RIPIndex, ip.o + advanceBy, TreatAsOrdinal{});
     enterCall(fp);
     ip.o = addr;
-    getGPR(PFPIndex).o = fp;
-    getGPR(FPIndex).o = temp;
-    getGPR(SPIndex).o = temp + 64;
+    setGPR(PFPIndex, fp, TreatAsOrdinal{});
+    setGPR(FPIndex, temp, TreatAsOrdinal{});
+    setGPR(SPIndex , temp + 64, TreatAsOrdinal{});
     advanceBy = 0;
 }
 void 
 call() {
     // wait for any uncompleted instructions to finish
-    auto temp = (getGPR(SPIndex).o + C) & NotC; // round stack pointer to next boundary
-    auto fp = getGPR(FPIndex).o;
-    getGPR(RIPIndex).o = ip.o + advanceBy;
+    auto temp = (getGPRValue(SPIndex, TreatAsOrdinal{}) + C) & NotC; // round stack pointer to next boundary
+    auto fp = getGPRValue(FPIndex, TreatAsOrdinal{});
+    setGPR(RIPIndex, ip.o + advanceBy, TreatAsOrdinal{});
     enterCall(fp);
     ip.i += instruction.ctrl.displacement;
-    getGPR(PFPIndex).o = fp;
-    getGPR(FPIndex).o = temp;
-    getGPR(SPIndex).o = temp + 64;
+    setGPR(PFPIndex, fp, TreatAsOrdinal{});
+    setGPR(FPIndex, temp, TreatAsOrdinal{});
+    setGPR(SPIndex , temp + 64, TreatAsOrdinal{});
     advanceBy = 0;
 }
 void
@@ -1367,7 +1380,7 @@ unpackSrc1_REG(TreatAsOrdinal) noexcept {
     } else if (instruction.reg.s1) {
         return getSFR(instruction.reg.src1).o;
     } else {
-        return getGPR(instruction.reg.src1).o;
+        return getGPRValue(instruction.reg.src1, TreatAsOrdinal{});
     }
 }
 Ordinal 
@@ -1378,7 +1391,7 @@ unpackSrc1_REG(byte offset, TreatAsOrdinal) noexcept {
     } else if (instruction.reg.s1) {
         return getSFR(instruction.reg.src1, offset).o;
     } else {
-        return getGPR(instruction.reg.src1, offset).o;
+        return getGPRValue(instruction.reg.src1, offset, TreatAsOrdinal{});
     }
 }
 Integer 
@@ -1388,7 +1401,7 @@ unpackSrc1_REG(TreatAsInteger) noexcept {
     } else if (instruction.reg.s1) {
         return getSFR(instruction.reg.src1).i;
     } else {
-        return getGPR(instruction.reg.src1).i;
+        return getGPRValue(instruction.reg.src1, TreatAsInteger{});
     }
 }
 Ordinal 
@@ -1398,7 +1411,7 @@ unpackSrc2_REG(TreatAsOrdinal) noexcept {
     } else if (instruction.reg.s2) {
         return getSFR(instruction.reg.src2).o;
     } else {
-        return getGPR(instruction.reg.src2).o;
+        return getGPRValue(instruction.reg.src2, TreatAsOrdinal{});
     }
 }
 Integer 
@@ -1408,21 +1421,8 @@ unpackSrc2_REG(TreatAsInteger) noexcept {
     } else if (instruction.reg.s2) {
         return getSFR(instruction.reg.src2).i;
     } else {
-        return getGPR(instruction.reg.src2).i;
+        return getGPRValue(instruction.reg.src2, TreatAsInteger{});
     }
-}
-
-[[nodiscard]] constexpr Ordinal performAndOperation(Ordinal src2, Ordinal src1, bool invertOutput, bool invertSrc2, bool invertSrc1) noexcept {
-    auto result = (invertSrc2 ? ~src2 : src2) & (invertSrc1 ? ~src1 : src1);
-    return invertOutput ? ~result : result;
-}
-[[nodiscard]] constexpr Ordinal performOrOperation(Ordinal src2, Ordinal src1, bool invertOutput, bool invertSrc2, bool invertSrc1) noexcept {
-    auto result = (invertSrc2 ? ~src2 : src2) | (invertSrc1 ? ~src1 : src1);
-    return invertOutput ? ~result : result;
-}
-[[nodiscard]] constexpr Ordinal performXorOperation(Ordinal src2, Ordinal src1, bool invertOutput) noexcept {
-    auto result = src2 ^ src1;
-    return invertOutput ? ~result : result;
 }
 
 constexpr Ordinal rotateOperation(Ordinal src, Ordinal length) noexcept {
