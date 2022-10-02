@@ -1060,14 +1060,18 @@ constexpr Ordinal performAndOperation(Ordinal src2, Ordinal src1, bool invertOut
     auto result = (invertSrc2 ? ~src2 : src2) & (invertSrc1 ? ~src1 : src1);
     return invertOutput ? ~result : result;
 }
+constexpr Ordinal performXorOperation(Ordinal src2, Ordinal src1, bool invertOutput) noexcept {
+    auto result = src2 ^ src1;
+    return invertOutput ? ~result : result;
+}
 constexpr Ordinal notbit(Ordinal src2, Ordinal src1) noexcept {
-    return src2 ^ computeBitPosition(src1);
+    return performXorOperation(src2, computeBitPosition(src1), false);
 }
 constexpr Ordinal setbit(Ordinal src2, Ordinal src1) noexcept {
     return src2 | computeBitPosition(src1);
 }
 constexpr Ordinal clrbit(Ordinal src2, Ordinal src1) noexcept {
-    return src2 & ~computeBitPosition(src1);
+    return performAndOperation(src2, ~computeBitPosition(src1), false, false, true);
 }
 void 
 reg_0x58() noexcept {
@@ -1091,7 +1095,7 @@ reg_0x58() noexcept {
             dest.o = performAndOperation(src2, src1, false, true, false);
             break;
         case 0b0110: // xor
-            dest.o = src2 ^ src1;
+            dest.o = performXorOperation(src2, src1, false);
             break;
         case 0b0111: // or
             dest.o = src2 | src1;
@@ -1100,7 +1104,7 @@ reg_0x58() noexcept {
             dest.o = ~(src2 | src1);
             break;
         case 0b1001: // xnor
-            dest.o = ~(src2 ^ src1);
+            dest.o = performXorOperation(src2, src1, true);
             break;
         case 0b1010: // not 
             dest.o = ~src1;
