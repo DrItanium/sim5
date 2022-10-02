@@ -933,8 +933,9 @@ loop() {
         case Opcodes::callx:
             callx();
             break;
-#define X(index) case Opcodes:: reg_0x ## index: reg_0x ## index () ; break
-            X(58);
+#define X(index) case Opcodes:: reg_ ## index: reg_ ## index () ; break
+            X(0x58);
+            X(0x59);
 #undef X
 #if 0
             X(0); X(1); X(2); X(3); X(4); X(5); X(6); X(7); 
@@ -1129,6 +1130,33 @@ reg_0x58() noexcept {
             dest.o = (ac.arith.conditionCode & 0b010) ? setbit(src2, src1) : clrbit(src2, src1);
             break;
 
+        default:
+            /// @todo implement
+            raiseFault(0xFF);
+            break;
+    }
+}
+void 
+reg_0x59() noexcept {
+    auto src2o = unpackSrc2_REG(TreatAsOrdinal{});
+    auto src1o = unpackSrc1_REG(TreatAsOrdinal{});
+    auto src2i = unpackSrc2_REG(TreatAsInteger{});
+    auto src1i = unpackSrc1_REG(TreatAsInteger{});
+    auto& dest = getGPR(instruction.reg.srcDest);
+    switch (instruction.reg.opcodeExt) {
+
+        case 0x0: // addo
+            dest.o = src2o + src1o;
+            break;
+        case 0x1: // addi
+            dest.i = src2i + src1i;
+            break;
+        case 0x2: // subo
+            dest.o = src2o - src1o;
+            break;
+        case 0x3: // subi
+            dest.i = src2i - src1i;
+            break;
         default:
             /// @todo implement
             raiseFault(0xFF);
