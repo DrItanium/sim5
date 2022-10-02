@@ -478,8 +478,8 @@ void moveGPR(byte destIndex, byte destOffset, byte srcIndex, byte srcOffset, Tre
 void scanbyte(Ordinal src2, Ordinal src1) noexcept;
 void atadd(Register& dest, Ordinal src1, Ordinal src2) noexcept;
 void atmod(Register& dest, Ordinal src1, Ordinal src2) noexcept;
-int emul(Register& dest, Ordinal src1, Ordinal src2) noexcept;
-int ediv(Register& dest, Ordinal src1, Ordinal src2) noexcept;
+Ordinal emul(Register& dest, Ordinal src1, Ordinal src2) noexcept;
+Ordinal ediv(Register& dest, Ordinal src1, Ordinal src2) noexcept;
 void scanbit(Register& dest, Ordinal src1, Ordinal src2) noexcept;
 void spanbit(Register& dest, Ordinal src1, Ordinal src2) noexcept;
 void arithmeticWithCarryGeneric(Ordinal result, bool src2MSB, bool src1MSB, bool destMSB) noexcept;
@@ -1697,7 +1697,7 @@ atmod(Register& dest, Ordinal src1, Ordinal src2) noexcept {
     unlockBus();
 }
 
-int
+Ordinal
 emul(Register& dest, Ordinal src1, Ordinal src2) noexcept {
     union {
         LongOrdinal lord;
@@ -1717,7 +1717,7 @@ emul(Register& dest, Ordinal src1, Ordinal src2) noexcept {
     return faultCode;
 }
 
-int
+Ordinal
 ediv(Register& dest, Ordinal src1, Ordinal src2Lower) noexcept {
     union {
         LongOrdinal lord;
