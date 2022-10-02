@@ -1065,12 +1065,14 @@ unpackSrc2_REG(TreatAsInteger) noexcept {
 
 void 
 reg_0x58() noexcept {
-    // 0x58
+    auto src2 = unpackSrc2_REG(TreatAsOrdinal{});
+    auto src1 = unpackSrc1_REG(TreatAsOrdinal{});
+    auto& dest = getGPR(instruction.reg.srcDest);
     switch (instruction.reg.opcodeExt) {
         case 0x0: // notbit
             break;
         case 0x1: // and
-            getGPR(instruction.reg.srcDest).o = unpackSrc2_REG(TreatAsOrdinal{}) & unpackSrc1_REG(TreatAsOrdinal{});
+            dest.o = src2 & src1;
             break;
         case 0x2:
             break;
@@ -1078,20 +1080,19 @@ reg_0x58() noexcept {
             break;
         case 0x4:
             break;
-        case 0x5:
-            break;
         case 0x6: // xor
-            getGPR(instruction.reg.srcDest).o = unpackSrc2_REG(TreatAsOrdinal{}) ^ unpackSrc1_REG(TreatAsOrdinal{});
+            dest.o = src2 ^ src1;
             break;
         case 0x7: // or
-            getGPR(instruction.reg.srcDest).o = unpackSrc2_REG(TreatAsOrdinal{}) | unpackSrc1_REG(TreatAsOrdinal{});
+            dest.o = src2 | src1;
             break;
         case 0x8: // nor
-            getGPR(instruction.reg.srcDest).o = ~(unpackSrc2_REG(TreatAsOrdinal{}) | unpackSrc1_REG(TreatAsOrdinal{}));
+            dest.o = ~(src2 | src1);
             break;
         case 0x9:
+            dest.o = ~(src2 ^ src1);
             break;
-        case 0xa:
+        case 0xa: // not 
             break;
         case 0xb:
             break;
@@ -1099,7 +1100,8 @@ reg_0x58() noexcept {
             break;
         case 0xd:
             break;
-        case 0xe:
+        case 0xe: // nand
+            dest.o = ~(src2 & src1);
             break;
         case 0xf:
             break;
