@@ -920,6 +920,7 @@ loop() {
     auto src1IsBitPosition = false;
     auto performMultiply = false;
     auto performDivide = false;
+    auto performRemainder = false;
     
     switch (instruction.getOpcode()) {
         case Opcodes::bal: // bal
@@ -1289,6 +1290,14 @@ loop() {
             performDivide = true;
             ordinalOp = true;
             break;
+        case Opcodes::remo:
+            performRemainder = true;
+            ordinalOp = true;
+            break;
+        case Opcodes::remi:
+            performRemainder = true;
+            integerOp = true;
+            break;
 
 #if 0
         default:
@@ -1390,6 +1399,30 @@ loop() {
                 faultCode = 0xFC; // divide by zero
             } else {
                 regDest.i = src2i / src1i;
+            }
+        } else {
+            // if we got here then it means we don't have something configured
+            // correctly
+            faultCode = 0xFF; // invalid opcode
+        }
+    } else if (performRemainder) {
+        if (ordinalOp) {
+            if (src1o == 0) {
+                /// @todo fix this
+                faultCode = 0xFC; // divide by zero
+            } else {
+                // taken from the i960Sx manual
+                //dest.setOrdinal(src2 - ((src2 / src1) * src1));
+                regDest.o = src2o % src1o;
+            }
+        } else if (integerOp) {
+            if (src1i == 0) {
+                /// @todo fix this
+                faultCode = 0xFC; // divide by zero
+            } else {
+                // taken from the i960Sx manual
+                //dest.setInteger(src2 - ((src2 / src1) * src1));
+                regDest.i = src2i % src1i;
             }
         } else {
             // if we got here then it means we don't have something configured
