@@ -1157,6 +1157,34 @@ reg_0x59() noexcept {
         case 0x3: // subi
             dest.i = src2i - src1i;
             break;
+        case 0x8: // shro
+            dest.o = src1o < 32 ? src2o >> src1o : 0;
+            break;
+        case 0xa: // shrdi
+            // according to the manual, equivalent to divi value, 2 so that is what we're going to do for correctness sake
+            dest.i = src1i < 32 && src1i >= 0 ? src2i / computeBitPosition(src1i) : 0;
+            break;
+        case 0xb: // shri
+            /*
+             * if (src >= 0) {
+             *  if (len < 32) {
+             *      dest <- src/2^len
+             *  } else {
+             *      dest <- 0
+             *  }
+             * }else {
+             *  if (len < 32) {
+             *      dest <- (src - 2^len + 1)/2^len;
+             *  } else {
+             *      dest <- -1;
+             *   }
+             * }
+             *
+             */
+            /// @todo perhaps implement the extra logic if necessary
+            dest.i = src2i >> src1i;
+            break;
+
         default:
             /// @todo implement
             raiseFault(0xFF);
