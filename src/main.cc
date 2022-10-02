@@ -1060,6 +1060,10 @@ constexpr Ordinal performAndOperation(Ordinal src2, Ordinal src1, bool invertOut
     auto result = (invertSrc2 ? ~src2 : src2) & (invertSrc1 ? ~src1 : src1);
     return invertOutput ? ~result : result;
 }
+constexpr Ordinal performOrOperation(Ordinal src2, Ordinal src1, bool invertOutput, bool invertSrc2, bool invertSrc1) noexcept {
+    auto result = (invertSrc2 ? ~src2 : src2) | (invertSrc1 ? ~src1 : src1);
+    return invertOutput ? ~result : result;
+}
 constexpr Ordinal performXorOperation(Ordinal src2, Ordinal src1, bool invertOutput) noexcept {
     auto result = src2 ^ src1;
     return invertOutput ? ~result : result;
@@ -1068,7 +1072,7 @@ constexpr Ordinal notbit(Ordinal src2, Ordinal src1) noexcept {
     return performXorOperation(src2, computeBitPosition(src1), false);
 }
 constexpr Ordinal setbit(Ordinal src2, Ordinal src1) noexcept {
-    return src2 | computeBitPosition(src1);
+    return performOrOperation(src2, computeBitPosition(src1), false, false, false);
 }
 constexpr Ordinal clrbit(Ordinal src2, Ordinal src1) noexcept {
     return performAndOperation(src2, ~computeBitPosition(src1), false, false, true);
@@ -1098,10 +1102,10 @@ reg_0x58() noexcept {
             dest.o = performXorOperation(src2, src1, false);
             break;
         case 0b0111: // or
-            dest.o = src2 | src1;
+            dest.o = performOrOperation(src2, src1, false, false, false);
             break;
         case 0b1000: // nor
-            dest.o = ~(src2 | src1);
+            dest.o = performOrOperation(src2, src1, true, false, false);
             break;
         case 0b1001: // xnor
             dest.o = performXorOperation(src2, src1, true);
@@ -1110,13 +1114,13 @@ reg_0x58() noexcept {
             dest.o = ~src1;
             break;
         case 0b1011: // ornot
-            dest.o = src2 | ~src1;
+            dest.o = performOrOperation(src2, src1, false, false, true);
             break;
         case 0b1100: // clrbit
             dest.o = clrbit(src2, src1);
             break;
         case 0b1101: // notor
-            dest.o = ~src2 | src1;
+            dest.o = performOrOperation(src2, src1, false, true, false);
             break;
         case 0b1110: // nand
             dest.o = performAndOperation(src2, src1, true, false, false);
