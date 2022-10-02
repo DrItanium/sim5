@@ -58,7 +58,14 @@ configRegs() noexcept {
     return memory<ConfigRegisters>(ConfigurationAddress);
 }
 
+void
+lockBus() noexcept {
 
+}
+void
+unlockBus() noexcept {
+
+}
 void
 set328BusAddress(Address address) noexcept {
     configRegs().address = address;
@@ -753,6 +760,53 @@ bx() noexcept {
     X(0x74);
 #undef X
 
+using FunctionBody = void(*)();
+
+FunctionBody JumpTable[40] {
+#define X(index) reg_ ## index
+    X(0x58),
+    X(0x59),
+    X(0x5a),
+    X(0x5b),
+    X(0x5c),
+    X(0x5d),
+    X(0x5e),
+    X(0x5f),
+    X(0x60),
+    X(0x61),
+    nullptr,
+    nullptr,
+    X(0x64),
+    X(0x65),
+    X(0x66),
+    X(0x67),
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    X(0x70),
+    nullptr,
+    nullptr,
+    nullptr,
+    X(0x74),
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+#undef X
+};
+
 void 
 setup() {
     // cleave the address space in half via sector limits.
@@ -927,19 +981,56 @@ loop() {
         case Opcodes::callx:
             callx();
             break;
-#define X(index) case Opcodes:: reg_ ## index: reg_ ## index () ; break
-            X(0x58);
-            X(0x59);
-            X(0x5a);
-            X(0x5b);
-            X(0x5c);
-#undef X
-#if 0
+        case Opcodes:: reg_0x58:
+        case Opcodes:: reg_0x59:
+        case Opcodes:: reg_0x5a:
+        case Opcodes:: reg_0x5b:
+        case Opcodes:: reg_0x5c:
+        case Opcodes:: reg_0x5d:
+        case Opcodes:: reg_0x5e:
+        case Opcodes:: reg_0x5f:
+        case Opcodes:: reg_0x60:
+        case Opcodes:: reg_0x61:
+//        case Opcodes:: reg_0x62:
+//        case Opcodes:: reg_0x63:
+        case Opcodes:: reg_0x64:
+        case Opcodes:: reg_0x65:
+        case Opcodes:: reg_0x66:
+        case Opcodes:: reg_0x67:
+//        case Opcodes:: reg_0x68:
+//        case Opcodes:: reg_0x69:
+//        case Opcodes:: reg_0x6a:
+//        case Opcodes:: reg_0x6b:
+//        case Opcodes:: reg_0x6c:
+//        case Opcodes:: reg_0x6d:
+//        case Opcodes:: reg_0x6e:
+//        case Opcodes:: reg_0x6f:
+        case Opcodes:: reg_0x70:
+//        case Opcodes:: reg_0x71:
+//        case Opcodes:: reg_0x72:
+//        case Opcodes:: reg_0x73:
+        case Opcodes:: reg_0x74:
+//        case Opcodes:: reg_0x75:
+//        case Opcodes:: reg_0x76:
+//        case Opcodes:: reg_0x77:
+//        case Opcodes:: reg_0x78:
+//        case Opcodes:: reg_0x79:
+//        case Opcodes:: reg_0x7a:
+//        case Opcodes:: reg_0x7b:
+//        case Opcodes:: reg_0x7c:
+//        case Opcodes:: reg_0x7d:
+//        case Opcodes:: reg_0x7e:
+//        case Opcodes:: reg_0x7f:
+            if (auto op = JumpTable[static_cast<uint8_t>(instruction.getOpcode()) - 0x58]; op) {
+                op();
+            } else {
+                raiseFault(0xFD);
+            }
+            break;
         default:
             /// @todo implement properly
             raiseFault(0xFD);
             break;
-#endif
 
     }
     // okay we got here so we need to start grabbing data off of the bus and
@@ -961,18 +1052,18 @@ ISR(INT2_vect) {
 
 }
 #if 0
-    struct {
-        Ordinal src1 : 5;
-        Ordinal s1 : 1;
-        Ordinal s2 : 1;
-        Ordinal opcodeExt : 4;
-        Ordinal m1 : 1;
-        Ordinal m2 : 1;
-        Ordinal m3 : 1;
-        Ordinal src2 : 5;
-        Ordinal srcDest : 5;
-        Ordinal opcode : 8;
-    } reg;
+struct {
+    Ordinal src1 : 5;
+    Ordinal s1 : 1;
+    Ordinal s2 : 1;
+    Ordinal opcodeExt : 4;
+    Ordinal m1 : 1;
+    Ordinal m2 : 1;
+    Ordinal m3 : 1;
+    Ordinal src2 : 5;
+    Ordinal srcDest : 5;
+    Ordinal opcode : 8;
+} reg;
 #endif
 Ordinal 
 unpackSrc1_REG(TreatAsOrdinal) noexcept {
@@ -1172,7 +1263,7 @@ reg_0x59() noexcept {
             dest.o = src1o < 32 ? src2o >> src1o : 0;
             break;
         case 0xa: // shrdi
-            // according to the manual, equivalent to divi value, 2 so that is what we're going to do for correctness sake
+                  // according to the manual, equivalent to divi value, 2 so that is what we're going to do for correctness sake
             dest.i = src1i < 32 && src1i >= 0 ? src2i / computeBitPosition(src1i) : 0;
             break;
         case 0xb: // shri
@@ -1349,6 +1440,102 @@ reg_0x5c() noexcept {
         case 0xc: // mov
             getGPR(instruction.reg.srcDest).o = unpackSrc1_REG(TreatAsOrdinal{});
             break;
+        default:
+            raiseFault(0xFF);
+            break;
+    }
+}
+void
+reg_0x5d() noexcept {
+    switch (instruction.reg.opcodeExt) {
+        case 0xc: // movl
+            break;
+        default:
+            raiseFault(0xFF);
+            break;
+    }
+}
+void
+reg_0x5e() noexcept {
+    switch (instruction.reg.opcodeExt) {
+        case 0xc: // movt
+            break;
+        default:
+            raiseFault(0xFF);
+            break;
+    }
+}
+void
+reg_0x5f() noexcept {
+    switch (instruction.reg.opcodeExt) {
+        case 0xc: // movq
+            break;
+        default:
+            raiseFault(0xFF);
+            break;
+    }
+}
+void
+reg_0x60() noexcept {
+    switch (instruction.reg.opcodeExt) {
+        default:
+            raiseFault(0xFF);
+            break;
+    }
+}
+void
+reg_0x61() noexcept {
+    switch (instruction.reg.opcodeExt) {
+        default:
+            raiseFault(0xFF);
+            break;
+    }
+}
+void
+reg_0x64() noexcept {
+    switch (instruction.reg.opcodeExt) {
+        default:
+            raiseFault(0xFF);
+            break;
+    }
+}
+
+void
+reg_0x65() noexcept {
+    switch (instruction.reg.opcodeExt) {
+        default:
+            raiseFault(0xFF);
+            break;
+    }
+}
+void
+reg_0x66() noexcept {
+    switch (instruction.reg.opcodeExt) {
+        default:
+            raiseFault(0xFF);
+            break;
+    }
+}
+void
+reg_0x67() noexcept {
+    switch (instruction.reg.opcodeExt) {
+        default:
+            raiseFault(0xFF);
+            break;
+    }
+}
+
+void
+reg_0x70() noexcept {
+    switch (instruction.reg.opcodeExt) {
+        default:
+            raiseFault(0xFF);
+            break;
+    }
+}
+void
+reg_0x74() noexcept {
+    switch (instruction.reg.opcodeExt) {
         default:
             raiseFault(0xFF);
             break;
