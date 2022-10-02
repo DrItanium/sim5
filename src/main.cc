@@ -1372,71 +1372,43 @@ unpackSrc1_REG(TreatAsOrdinal) noexcept {
 }
 Ordinal 
 unpackSrc1_REG(byte offset, TreatAsOrdinal) noexcept {
-    if (offset == 0) {
-        return unpackSrc1_REG(TreatAsOrdinal{});
+    if (instruction.reg.m1) {
+        // literals should always return zero if offset is greater than zero
+        return offset == 0 ? instruction.reg.src1 : 0;
+    } else if (instruction.reg.s1) {
+        return getSFR(instruction.reg.src1, offset).o;
     } else {
-        if (instruction.reg.m1) {
-            // literals should always return zero
-            return 0;
-        } else if (instruction.reg.s1) {
-            return getSFR(instruction.reg.src1, offset).o;
-        } else {
-            return getGPR(instruction.reg.src1, offset).o;
-        }
+        return getGPR(instruction.reg.src1, offset).o;
     }
 }
 Integer 
 unpackSrc1_REG(TreatAsInteger) noexcept {
     if (instruction.reg.m1) {
-        if (instruction.reg.s1) {
-            // reserved so another complement of registers?
-            raiseFault(0xFF); // bad operand
-            return 0;
-        } else {
-            return instruction.reg.src1;
-        }
+        return instruction.reg.src1;
+    } else if (instruction.reg.s1) {
+        return getSFR(instruction.reg.src1).i;
     } else {
-        if (instruction.reg.s1) {
-            return getSFR(instruction.reg.src1).i;
-        } else {
-            return getGPR(instruction.reg.src1).i;
-        }
+        return getGPR(instruction.reg.src1).i;
     }
 }
 Ordinal 
 unpackSrc2_REG(TreatAsOrdinal) noexcept {
     if (instruction.reg.m2) {
-        if (instruction.reg.s2) {
-            // reserved so another complement of registers?
-            raiseFault(0xFF); // bad operand
-            return 0;
-        } else {
-            return instruction.reg.src2;
-        }
+        return instruction.reg.src2;
+    } else if (instruction.reg.s2) {
+        return getSFR(instruction.reg.src2).o;
     } else {
-        if (instruction.reg.s2) {
-            return getSFR(instruction.reg.src2).o;
-        } else {
-            return getGPR(instruction.reg.src2).o;
-        }
+        return getGPR(instruction.reg.src2).o;
     }
 }
 Integer 
 unpackSrc2_REG(TreatAsInteger) noexcept {
     if (instruction.reg.m2) {
-        if (instruction.reg.s2) {
-            // reserved so another complement of registers?
-            raiseFault(0xFF); // bad operand
-            return 0;
-        } else {
-            return instruction.reg.src2;
-        }
+        return instruction.reg.src2;
+    } else if (instruction.reg.s2) {
+        return getSFR(instruction.reg.src2).i;
     } else {
-        if (instruction.reg.s2) {
-            return getSFR(instruction.reg.src2).i;
-        } else {
-            return getGPR(instruction.reg.src2).i;
-        }
+        return getGPR(instruction.reg.src2).i;
     }
 }
 
