@@ -79,7 +79,6 @@ T load(Address address, TreatAs<T>) noexcept {
     SplitAddress split(address);
     return memory<T>(static_cast<size_t>(split.lower) + 0x8000);
 }
-inline Ordinal load32(Address address) noexcept { return load(address, TreatAsOrdinal{}); }
 template<typename T>
 void store(Address address, T value, TreatAs<T>) noexcept {
     set328BusAddress(address);
@@ -694,6 +693,15 @@ void
 restoreRegisterSet(Ordinal fp) noexcept {
     loadBlock(fp, 16, 16);
 }
+void 
+enterCall(Ordinal fp) noexcept {
+    if (registerSetAvailable()) {
+        allocateNewRegisterFrame();
+    } else {
+        saveRegisterSet(fp);
+        allocateNewRegisterFrame();
+    }
+}
 void
 callx() noexcept {
     // wait for any uncompleted instructions to finish
@@ -701,12 +709,7 @@ callx() noexcept {
     auto addr = computeAddress();
     auto fp = getGPR(FPIndex).o;
     getGPR(RIPIndex).o = ip.o + advanceBy;
-    if (registerSetAvailable()) {
-        allocateNewRegisterFrame();
-    } else {
-        saveRegisterSet(fp);
-        allocateNewRegisterFrame();
-    }
+    enterCall(fp);
     ip.o = addr;
     getGPR(PFPIndex).o = fp;
     getGPR(FPIndex).o = temp;
@@ -719,12 +722,7 @@ call() {
     auto temp = (getGPR(SPIndex).o + C) & NotC; // round stack pointer to next boundary
     auto fp = getGPR(FPIndex).o;
     getGPR(RIPIndex).o = ip.o + advanceBy;
-    if (registerSetAvailable()) {
-        allocateNewRegisterFrame();
-    } else {
-        saveRegisterSet(fp);
-        allocateNewRegisterFrame();
-    }
+    enterCall(fp);
     ip.i += instruction.ctrl.displacement;
     getGPR(PFPIndex).o = fp;
     getGPR(FPIndex).o = temp;
