@@ -25,6 +25,7 @@
 // Created by jwscoggins on 8/21/21.
 //
 #include <Arduino.h>
+#include <SPI.h>
 using Address = uint32_t;
 using ByteOrdinal = uint8_t;
 using ByteInteger = int8_t;
@@ -572,11 +573,13 @@ Register& getSFR(byte index, byte offset) noexcept {
 }
 void
 syncf() noexcept {
-    /// @todo implement
+    // Wait for all faults to be generated that are associated with any prior
+    // uncompleted instructions
+    /// @todo implement if it makes sense since we don't have a pipeline
 }
 void
 flushreg() noexcept {
-    /// @todo implement if it makes sense
+    /// @todo implement if it makes sense since we aren't using register frames
 }
 Ordinal
 mark() noexcept {
@@ -970,6 +973,8 @@ setup() {
     MCUCR = 0b1000'10'10; // enable XMEM, leave sleep off, and set int1 and
                           // int0 to be falling edge
     set328BusAddress(0);
+    Serial.begin(115200);
+    SPI.begin();
     // so we need to do any sort of processor setup here
     ip.clear();
     for (int i = 0; i < 32; ++i) {
