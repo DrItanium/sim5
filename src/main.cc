@@ -1038,7 +1038,9 @@ loop() {
             uint32_t performMultiply : 1;
             uint32_t performDivide : 1;
             uint32_t performRemainder : 1;
-            uint32_t unused : 12;
+            uint32_t performSyncf : 1;
+            uint32_t lockBus : 1;
+            uint32_t unused : 10;
         } bits;
     } flags;
     flags.raw = 0;
@@ -1382,7 +1384,7 @@ loop() {
             faultCode = performRegisterTransfer(0b11, 4);
             break;
         case Opcodes::syncf:
-            syncf();
+            flags.bits.performSyncf = true;
             break;
         case Opcodes::flushreg:
             flushreg();
@@ -1481,6 +1483,12 @@ loop() {
         default:
             faultCode = UnimplementedFault;
             break;
+    }
+    if (flags.bits.performSyncf) {
+        syncf();
+    }
+    if (flags.bits.lockBus) {
+        lockBus();
     }
     if (flags.bits.performLogical) {
         if (flags.bits.src1IsBitPosition) {
@@ -1613,6 +1621,9 @@ loop() {
         ///
         /// Faults are basically fallback behavior when something goes wacky!
         configRegs().faultPort = faultCode;
+    }
+    if (flags.bits.lockBus) {
+        unlockBus();
     }
     // okay we got here so we need to start grabbing data off of the bus and
     // start executing the next instruction
