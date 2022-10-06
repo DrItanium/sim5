@@ -515,6 +515,15 @@ union Register {
     void setValue(Integer value, TreatAsInteger) noexcept { i = value; }
     [[nodiscard]] Integer getValue(TreatAsInteger) const noexcept { return i; }
     [[nodiscard]] Ordinal getValue(TreatAsOrdinal) const noexcept { return o; }
+    template<typename T>
+    [[nodiscard]] T getValue() const noexcept {
+        return getValue(TreatAs<T>{});
+    }
+
+    template<typename T>
+    void setValue(T value) noexcept {
+        setValue(value, TreatAs<T>{});
+    }
 };
 static_assert(sizeof(Register) == sizeof(Ordinal));
 volatile Ordinal systemAddressTableBase = 0;
@@ -1078,8 +1087,7 @@ setup() {
 void
 performRegisterTransfer(byte mask, byte count) noexcept {
     if (((instruction.reg.srcDest & mask) != 0) || ((instruction.reg.src1 & mask) != 0)) {
-        /// @todo fix
-        faultCode.o = InvalidOperandFault; // operation.invalid operation
+        faultCode.setValue(InvalidOpcodeFault, TreatAsOrdinal{});
     }
     for (byte i = 0; i < count; ++i) {
         setGPR(instruction.reg.srcDest, i, unpackSrc1_REG(i, TreatAsOrdinal{}), TreatAsOrdinal{});
@@ -1094,8 +1102,8 @@ Register::modify(Ordinal mask, Ordinal src) noexcept {
 }
 void 
 loop() {
-    faultCode.o = NoFault;
-    instruction.o = load(ip.a, TreatAsOrdinal{});
+    faultCode.setValue(NoFault, TreatAsOrdinal{});
+    instruction.setValue(load(ip.a, TreatAsOrdinal{}), TreatAsOrdinal{});
     auto& regDest = getGPR(instruction.reg.srcDest);
     auto src2o = unpackSrc2_REG(TreatAsOrdinal{});
     auto src2i = unpackSrc2_REG(TreatAsInteger{});
@@ -1107,7 +1115,7 @@ loop() {
     
     switch (instruction.getOpcode()) {
         case Opcodes::bal: // bal
-            setGPR(LRIndex, ip.o + 4, TreatAsOrdinal{});
+            setGPR(LRIndex, ip.getValue<Ordinal>() + 4, TreatAsOrdinal{});
             // then fallthrough and take the branch
         case Opcodes::b: // b
             ip.i += instruction.cobr.displacement;
