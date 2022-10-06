@@ -501,7 +501,6 @@ union Register {
     [[nodiscard]] constexpr byte getPriority() const noexcept { return pc.priority; }
 };
 static_assert(sizeof(Register) == sizeof(Ordinal));
-Register ip, ac, pc, tc, flags, faultCode;
 volatile Ordinal systemAddressTableBase = 0;
 // On the i960 this is separated out into two parts, locals and globals
 // The idea is that globals are always available and locals are per function.
@@ -516,6 +515,12 @@ constexpr auto SPIndex = 17;
 constexpr auto RIPIndex = 18;
 Register gprs[32]; 
 Register sfrs[32];
+Register ip;
+Register ac; 
+Register pc;
+Register tc; 
+Register flags; 
+Register faultCode; 
 Register instruction;
 Register& getGPR(byte index) noexcept {
     return gprs[index];
