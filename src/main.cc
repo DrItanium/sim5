@@ -1110,14 +1110,6 @@ loop() {
         case Opcodes::testo:
             setGPR(instruction.cobr.src1, (ac.arith.conditionCode & instruction.instGeneric.mask) != 0 ? 1 : 0, TreatAsOrdinal{});
             break;
-        case Opcodes::ld: 
-            //flags2.ucode2.count = 1;
-            loadBlock(computeAddress(), instruction.mem.srcDest, 1);
-            break;
-        case Opcodes::st: 
-            //flags2.ucode2.count = 1;
-            storeBlock(computeAddress(), instruction.mem.srcDest, 1);
-            break;
         case Opcodes::lda:
             setGPR(instruction.mem.srcDest, computeAddress(), TreatAsOrdinal{});
             break;
@@ -1144,6 +1136,14 @@ loop() {
         case Opcodes::cmpible:
         case Opcodes::cmpibo: // always branches
             cmpibGeneric();
+            break;
+        case Opcodes::ld: 
+            //flags2.ucode2.count = 1;
+            loadBlock(computeAddress(), instruction.mem.srcDest, 1);
+            break;
+        case Opcodes::st: 
+            //flags2.ucode2.count = 1;
+            storeBlock(computeAddress(), instruction.mem.srcDest, 1);
             break;
         case Opcodes::ldob:
             setGPR(instruction.mem.srcDest, load(computeAddress(), TreatAs<ByteOrdinal>{}), TreatAsOrdinal{});
@@ -1201,90 +1201,90 @@ loop() {
     // in some of the opcodeExt values seem to reflect the resultant truth
     // table for the operation :). That's pretty cool
         case Opcodes::nand: // nand
-            flags.ucode.invertResult = true;
+            flags.ucode.invertResult = 1;
         case Opcodes::andOperation: // and
-            flags.ucode.performLogical = true;
-            flags.ucode.doAnd = true;
+            flags.ucode.performLogical = 1;
+            flags.ucode.doAnd = 1;
             break;
         case Opcodes::clrbit: // clrbit
                               // clrbit is src2 & ~computeBitPosition(src1)
                               // so lets use andnot
-            flags.ucode.src1IsBitPosition = true;
+            flags.ucode.src1IsBitPosition = 1;
         case Opcodes::andnot: // andnot
-            flags.ucode.doAnd = true;
-            flags.ucode.invertSrc1 = true;
-            flags.ucode.performLogical = true;
+            flags.ucode.doAnd = 1;
+            flags.ucode.invertSrc1 = 1;
+            flags.ucode.performLogical = 1;
             break;
         case Opcodes::notand: // notand
-            flags.ucode.doAnd = true;
-            flags.ucode.invertSrc2 = true;
-            flags.ucode.performLogical = true;
+            flags.ucode.doAnd = 1;
+            flags.ucode.invertSrc2 = 1;
+            flags.ucode.performLogical = 1;
             break;
         case Opcodes::notbit: // notbit
                      // notbit is src2 ^ computeBitPosition(src1)
-            flags.ucode.src1IsBitPosition = true;
+            flags.ucode.src1IsBitPosition = 1;
         case Opcodes::xorOperation: // xor
-            flags.ucode.doXor = true;
-            flags.ucode.performLogical = true;
+            flags.ucode.doXor = 1;
+            flags.ucode.performLogical = 1;
             break;
         case Opcodes::setbit: // setbit
                      // setbit is src2 | computeBitPosition(src1o)
-            flags.ucode.src1IsBitPosition = true;
+            flags.ucode.src1IsBitPosition = 1;
         case Opcodes::orOperation: // or
-            flags.ucode.doOr = true;
-            flags.ucode.performLogical = true;
+            flags.ucode.doOr = 1;
+            flags.ucode.performLogical = 1;
             break;
         case Opcodes::nor: // nor
-            flags.ucode.doOr = true;
-            flags.ucode.invertResult = true;
-            flags.ucode.performLogical = true;
+            flags.ucode.doOr = 1;
+            flags.ucode.invertResult = 1;
+            flags.ucode.performLogical = 1;
             break;
         case Opcodes::xnor: // xnor
-            flags.ucode.doXor = true;
-            flags.ucode.invertResult = true;
-            flags.ucode.performLogical = true;
+            flags.ucode.doXor = 1;
+            flags.ucode.invertResult = 1;
+            flags.ucode.performLogical = 1;
             break;
         case Opcodes::notOperation: // not 
                      // perform fallthrough to ornot with src2 set to zero
-            flags.ucode.zeroSrc2 = true;
+            flags.ucode.zeroSrc2 = 1;
         case Opcodes::ornot: // ornot
-            flags.ucode.doOr = true;
-            flags.ucode.invertSrc1 = true;
-            flags.ucode.performLogical = true;
+            flags.ucode.doOr = 1;
+            flags.ucode.invertSrc1 = 1;
+            flags.ucode.performLogical = 1;
             break;
         case Opcodes::notor: // notor
-            flags.ucode.doOr = true;
-            flags.ucode.invertSrc2 = true;
-            flags.ucode.performLogical = true;
+            flags.ucode.doOr = 1;
+            flags.ucode.invertSrc2 = 1;
+            flags.ucode.performLogical = 1;
             break;
         case Opcodes::alterbit: // alterbit
-            flags.ucode.src1IsBitPosition = true;
-            flags.ucode.performLogical = true;
+            flags.ucode.src1IsBitPosition = 1;
+            flags.ucode.performLogical = 1;
             if (ac.arith.conditionCode & 0b010) {
-                flags.ucode.doOr = true;
+                flags.ucode.doOr = 1;
             } else {
-                flags.ucode.doAnd = true;
-                flags.ucode.invertSrc1 = true;
+                flags.ucode.doAnd = 1;
+                flags.ucode.invertSrc1 = 1;
             }
             break;
         case Opcodes::addo: // addo
-            flags.ucode.performAdd = true;
-            flags.ucode.ordinalOp = true;
+            flags.ucode.performAdd = 1;
+            flags.ucode.ordinalOp = 1;
             break;
         case Opcodes::addi: // addi
-            flags.ucode.performAdd = true;
-            flags.ucode.integerOp = true;
+            flags.ucode.performAdd = 1;
+            flags.ucode.integerOp = 1;
             break;
         case Opcodes::subo: // subo
             // I remember this trick from college, subtraction is just addition
             // with a negative second argument :). I never gave it much thought
             // until now but it seems to be an effective trick to save space.
-            flags.ucode.performSubtract = true;
-            flags.ucode.ordinalOp = true;
+            flags.ucode.performSubtract = 1;
+            flags.ucode.ordinalOp = 1;
             break;
         case Opcodes::subi: // subi
-            flags.ucode.performSubtract = true;
-            flags.ucode.integerOp = true;
+            flags.ucode.performSubtract = 1;
+            flags.ucode.integerOp = 1;
             break;
         case Opcodes::shro: // shro
             regDest.o = src1o < 32 ? src2o >> src1o : 0;
@@ -1408,28 +1408,28 @@ loop() {
             mark();
             break;
         case Opcodes::mulo:
-            flags.ucode.performMultiply = true;
-            flags.ucode.ordinalOp = true;
+            flags.ucode.performMultiply = 1;
+            flags.ucode.ordinalOp = 1;
             break;
         case Opcodes::muli:
-            flags.ucode.performMultiply = true;
-            flags.ucode.integerOp = true;
+            flags.ucode.performMultiply = 1;
+            flags.ucode.integerOp = 1;
             break;
         case Opcodes::divi:
-            flags.ucode.performDivide = true;
-            flags.ucode.integerOp = true;
+            flags.ucode.performDivide = 1;
+            flags.ucode.integerOp = 1;
             break;
         case Opcodes::divo:
-            flags.ucode.performDivide = true;
-            flags.ucode.ordinalOp = true;
+            flags.ucode.performDivide = 1;
+            flags.ucode.ordinalOp = 1;
             break;
         case Opcodes::remo:
-            flags.ucode.performRemainder = true;
-            flags.ucode.ordinalOp = true;
+            flags.ucode.performRemainder = 1;
+            flags.ucode.ordinalOp = 1;
             break;
         case Opcodes::remi:
-            flags.ucode.performRemainder = true;
-            flags.ucode.integerOp = true;
+            flags.ucode.performRemainder = 1;
+            flags.ucode.integerOp = 1;
             break;
         case Opcodes::modi: 
             if (auto denominator = src1i; denominator == 0) {
