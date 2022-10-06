@@ -110,7 +110,8 @@ void store(Address address, T value, TreatAs<T>) noexcept {
     memory<T>(static_cast<size_t>(split.lower) + 0x8000) = value;
 
 }
-constexpr auto LOCKPIN = PIN_PE2;
+constexpr auto LOCKPIN = 12;
+constexpr auto FAILPIN = 13;
 void
 lockBus() noexcept {
     while (digitalRead(LOCKPIN) == LOW);
@@ -119,6 +120,10 @@ lockBus() noexcept {
 void
 unlockBus() noexcept {
     pinMode(LOCKPIN, INPUT);
+}
+void
+signalBootFailure() noexcept {
+    digitalWrite(FAILPIN, HIGH);
 }
 
     
@@ -435,40 +440,40 @@ union Register {
         Ordinal unused2 : 8;
     } trace;
     struct {
-        uint32_t invertResult : 1;
-        uint32_t invertSrc1 : 1;
-        uint32_t zeroSrc1 : 1;
-        uint32_t src1IsBitPosition : 1;
-        uint32_t invertSrc2 : 1;
-        uint32_t zeroSrc2 : 1;
-        uint32_t doXor : 1;
-        uint32_t doOr : 1;
-        uint32_t doAnd : 1;
-        uint32_t ordinalOp : 1;
-        uint32_t integerOp : 1;
-        uint32_t performIncrement : 1;
-        uint32_t performDecrement : 1;
-        uint32_t performAdd : 1;
-        uint32_t performSubtract : 1;
-        uint32_t performCarry : 1;
-        uint32_t performCompare : 1;
-        uint32_t performConditionalCompare : 1;
-        uint32_t performLogical : 1;
-        uint32_t performMultiply : 1;
-        uint32_t performDivide : 1;
-        uint32_t performRemainder : 1;
-        uint32_t performSyncf : 1;
-        uint32_t performAtomicOperation : 1;
-        uint32_t performModify : 1;
-        uint32_t dontAdvanceIP : 1;
-        uint32_t performRegisterTransfer : 1;
+        Ordinal invertResult : 1;
+        Ordinal invertSrc1 : 1;
+        Ordinal zeroSrc1 : 1;
+        Ordinal src1IsBitPosition : 1;
+        Ordinal invertSrc2 : 1;
+        Ordinal zeroSrc2 : 1;
+        Ordinal doXor : 1;
+        Ordinal doOr : 1;
+        Ordinal doAnd : 1;
+        Ordinal ordinalOp : 1;
+        Ordinal integerOp : 1;
+        Ordinal performIncrement : 1;
+        Ordinal performDecrement : 1;
+        Ordinal performAdd : 1;
+        Ordinal performSubtract : 1;
+        Ordinal performCarry : 1;
+        Ordinal performCompare : 1;
+        Ordinal performConditionalCompare : 1;
+        Ordinal performLogical : 1;
+        Ordinal performMultiply : 1;
+        Ordinal performDivide : 1;
+        Ordinal performRemainder : 1;
+        Ordinal performSyncf : 1;
+        Ordinal performAtomicOperation : 1;
+        Ordinal performModify : 1;
+        Ordinal dontAdvanceIP : 1;
+        Ordinal performRegisterTransfer : 1;
     } ucode;
     struct {
-        uint32_t mask : 8;
-        uint32_t count : 4;
-        uint32_t compareAgainst : 3;
-        uint32_t ccOnTrue : 3;
-        uint32_t ccOnFalse : 3;
+        Ordinal mask : 8;
+        Ordinal count : 4;
+        Ordinal compareAgainst : 3;
+        Ordinal ccOnTrue : 3;
+        Ordinal ccOnFalse : 3;
     } ucode2;
     bool inSupervisorMode() const noexcept { return pc.executionMode; }
     bool inUserMode() const noexcept { return !inSupervisorMode(); }
@@ -584,7 +589,6 @@ class RegisterBlock32 {
 };
 GPRBlock gpr;
 RegisterBlock32 sfrs;
-//Register sfrs[32];
 Register ip;
 Register ac; 
 Register pc;
@@ -601,16 +605,16 @@ Register& getGPR(byte index) noexcept {
 Register& getGPR(byte index, byte offset) noexcept {
     return getGPR((index + offset) & 0b11111);
 }
-void setGPR(byte index, Ordinal value, TreatAsOrdinal) noexcept { getGPR(index).o = value; }
-void setGPR(byte index, byte offset, Ordinal value, TreatAsOrdinal) noexcept { getGPR(index, offset).o = value; }
-void setGPR(byte index, Integer value, TreatAsInteger) noexcept { getGPR(index).i = value; }
-void setGPR(byte index, byte offset, Integer value, TreatAsInteger) noexcept { getGPR(index, offset).i = value; }
+void setGPR(byte index, Ordinal value, TreatAsOrdinal) noexcept { getGPR(index).setValue(value, TreatAsOrdinal{}); }
+void setGPR(byte index, byte offset, Ordinal value, TreatAsOrdinal) noexcept { getGPR(index, offset).setValue(value, TreatAsOrdinal{}); }
+void setGPR(byte index, Integer value, TreatAsInteger) noexcept { getGPR(index).setValue(value, TreatAsInteger{}); }
+void setGPR(byte index, byte offset, Integer value, TreatAsInteger) noexcept { getGPR(index, offset).setValue(value, TreatAsInteger{}); }
 Register& getSFR(byte index) noexcept;
 Register& getSFR(byte index, byte offset) noexcept;
-Ordinal getGPRValue(byte index, TreatAsOrdinal) noexcept { return getGPR(index).o; }
-Ordinal getGPRValue(byte index, byte offset, TreatAsOrdinal) noexcept { return getGPR(index, offset).o; }
-Integer getGPRValue(byte index, TreatAsInteger) noexcept { return getGPR(index).i; }
-Integer getGPRValue(byte index, byte offset, TreatAsInteger) noexcept { return getGPR(index, offset).i; }
+Ordinal getGPRValue(byte index, TreatAsOrdinal) noexcept { return getGPR(index).getValue(TreatAsOrdinal{}); }
+Ordinal getGPRValue(byte index, byte offset, TreatAsOrdinal) noexcept { return getGPR(index, offset).getValue(TreatAsOrdinal{}); }
+Integer getGPRValue(byte index, TreatAsInteger) noexcept { return getGPR(index).getValue(TreatAsInteger{}); }
+Integer getGPRValue(byte index, byte offset, TreatAsInteger) noexcept { return getGPR(index, offset).getValue(TreatAsInteger{}); }
 Ordinal unpackSrc1_REG(TreatAsOrdinal) noexcept;
 Ordinal unpackSrc1_REG(byte offset, TreatAsOrdinal) noexcept;
 Integer unpackSrc1_REG(TreatAsInteger) noexcept;
@@ -690,13 +694,13 @@ flushreg() noexcept {
 void
 mark() noexcept {
     if (pc.pc.traceEnable && tc.trace.breakpointTraceMode) {
-        faultCode.o = MarkTraceFault;
+        faultCode.setValue(MarkTraceFault, TreatAsOrdinal{});
     }
 }
 void
 fmark() noexcept {
     if (pc.pc.traceEnable) {
-        faultCode.o = MarkTraceFault;
+        faultCode.setValue(MarkTraceFault, TreatAsOrdinal{});
     }
 }
 void restoreRegisterSet(Ordinal fp) noexcept;
@@ -708,7 +712,7 @@ restoreStandardFrame() noexcept {
     // them out of the frame pointer address when using the address
     auto realAddress = getGPRValue(FPIndex, TreatAsOrdinal{}) & NotC;
     restoreRegisterSet(realAddress);
-    ip.o = getGPRValue(RIPIndex, TreatAsOrdinal{});
+    ip.setValue(getGPRValue(RIPIndex, TreatAsOrdinal{}), TreatAsOrdinal{});
     flags.ucode.dontAdvanceIP = 1;
 }
 void
@@ -725,9 +729,9 @@ ret() {
                 auto x = load(fp - 16, TreatAsOrdinal{});
                 auto y = load(fp - 12, TreatAsOrdinal{});
                 restoreStandardFrame();
-                ac.o = y;
+                ac.setValue(y, TreatAsOrdinal{});
                 if (pc.inSupervisorMode()) {
-                    pc.o = x;
+                    pc.setValue(x, TreatAsOrdinal{});
                 }
                 break;
             }
@@ -752,9 +756,9 @@ ret() {
                 auto x = load(fp - 16, TreatAsOrdinal{});
                 auto y = load(fp - 12, TreatAsOrdinal{});
                 restoreStandardFrame();
-                ac.o = y;
+                ac.setValue(y, TreatAsOrdinal{});
                 if (pc.inSupervisorMode()) {
-                    pc.o = x;
+                    pc.setValue(x, TreatAsOrdinal{});
                     checkForPendingInterrupts();
                 }
                 break;
