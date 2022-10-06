@@ -77,42 +77,6 @@ union SplitAddress {
         Address rest : 17;
     };
 };
-union MicrocodeFlags {
-    uint32_t raw;
-    struct {
-        uint32_t invertResult : 1;
-        uint32_t invertSrc1 : 1;
-        uint32_t zeroSrc1 : 1;
-        uint32_t src1IsBitPosition : 1;
-        uint32_t invertSrc2 : 1;
-        uint32_t zeroSrc2 : 1;
-        uint32_t doXor : 1;
-        uint32_t doOr : 1;
-        uint32_t doAnd : 1;
-        uint32_t ordinalOp : 1;
-        uint32_t integerOp : 1;
-        uint32_t performIncrement : 1;
-        uint32_t performDecrement : 1;
-        uint32_t performAdd : 1;
-        uint32_t performSubtract : 1;
-        uint32_t performCarry : 1;
-        uint32_t performCompare : 1;
-        uint32_t performLogical : 1;
-        uint32_t performMultiply : 1;
-        uint32_t performDivide : 1;
-        uint32_t performRemainder : 1;
-        uint32_t performSyncf : 1;
-        uint32_t lockBus : 1;
-        uint32_t performAtomicOperation : 1;
-        uint32_t performModify : 1;
-        uint32_t advanceBy : 4;
-    } bits;
-    void clearAdvanceBy() noexcept { bits.advanceBy = 0; }
-    void clear() noexcept {
-        raw = 0;
-        bits.advanceBy = 4;
-    }
-};
 template<typename T>
 volatile T& memory(size_t address) noexcept {
     return *reinterpret_cast<volatile T*>(address);
