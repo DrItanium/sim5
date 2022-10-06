@@ -528,8 +528,6 @@ void moveGPR(byte destIndex, byte destOffset, byte srcIndex, byte srcOffset, Tre
 }
 [[nodiscard]] constexpr Ordinal rotateOperation(Ordinal src, Ordinal length) noexcept;
 void scanbyte(Ordinal src2, Ordinal src1) noexcept;
-void atadd(Register& dest, Ordinal src1, Ordinal src2) noexcept;
-void atmod(Register& dest, Ordinal src1, Ordinal src2) noexcept;
 Ordinal emul(Register& dest, Ordinal src1, Ordinal src2) noexcept;
 Ordinal ediv(Register& dest, Ordinal src1, Ordinal src2) noexcept;
 void scanbit(Register& dest, Ordinal src1, Ordinal src2) noexcept;
@@ -1507,8 +1505,13 @@ loop() {
         auto temp = load(addr, TreatAsOrdinal{});
         Ordinal result = 0;
         if (flags.bits.performAdd) {
+            // adds the src (src2 internally) value to the value in memory location specified with the addr (src1 in this case) operand.
+            // The initial value from memory is stored in dst (internally src/dst).
             result = temp + src2o;
         } else if (flags.bits.performModify) {
+            // copies the src/dest value (logical version) into the memory location specifeid by src1.
+            // The bits set in the mask (src2) operand select the bits to be modified in memory. The initial
+            // value from memory is stored in src/dest
             result = modify(src2o, regDest.o, temp);
         } else {
             // if we got here then it means we don't have something configured
@@ -1775,32 +1778,6 @@ checkForPendingInterrupts() noexcept {
     /// @todo implement
 }
 
-void
-atadd(Register& dest, Ordinal src1, Ordinal src2) noexcept {
-    // adds the src (src2 internally) value to the value in memory location specified with the addr (src1 in this case) operand.
-    // The initial value from memory is stored in dst (internally src/dst).
-    syncf();
-    lockBus();
-    auto addr = src1 & 0xFFFF'FFFC;
-    auto temp = load(addr, TreatAsOrdinal{});
-    store(addr, temp + src2, TreatAsOrdinal{});
-    dest.o = temp;
-    unlockBus();
-}
-
-void
-atmod(Register& dest, Ordinal src1, Ordinal src2) noexcept {
-    // copies the src/dest value (logical version) into the memory location specifeid by src1.
-    // The bits set in the mask (src2) operand select the bits to be modified in memory. The initial
-    // value from memory is stored in src/dest
-    syncf();
-    lockBus();
-    auto addr = src1 & 0xFFFF'FFFC;
-    auto temp = load(addr, TreatAsOrdinal{});
-    store(addr, modify(src2, dest.o, temp), TreatAsOrdinal{});
-    dest.o = temp;
-    unlockBus();
-}
 
 Ordinal
 emul(Register& dest, Ordinal src1, Ordinal src2) noexcept {
