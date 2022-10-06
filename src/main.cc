@@ -462,9 +462,6 @@ union Register {
         uint32_t performModify : 1;
         uint32_t dontAdvanceIP : 1;
         uint32_t performRegisterTransfer : 1;
-        uint32_t shiftOperation : 1;
-        uint32_t leftShift : 1;
-        uint32_t rightShift : 1;
     } ucode;
     struct {
         uint32_t mask : 8;
