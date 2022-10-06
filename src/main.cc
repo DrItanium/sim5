@@ -467,6 +467,9 @@ union Register {
     struct {
         uint32_t mask : 8;
         uint32_t count : 4;
+        uint32_t compareAgainst : 3;
+        uint32_t ccOnTrue : 3;
+        uint32_t ccOnFalse : 3;
     } ucode2;
     bool inSupervisorMode() const noexcept { return pc.executionMode; }
     bool inUserMode() const noexcept { return !inSupervisorMode(); }
@@ -1108,9 +1111,11 @@ loop() {
             setGPR(instruction.cobr.src1, (ac.arith.conditionCode & instruction.instGeneric.mask) != 0 ? 1 : 0, TreatAsOrdinal{});
             break;
         case Opcodes::ld: 
+            //flags2.ucode2.count = 1;
             loadBlock(computeAddress(), instruction.mem.srcDest, 1);
             break;
         case Opcodes::st: 
+            //flags2.ucode2.count = 1;
             storeBlock(computeAddress(), instruction.mem.srcDest, 1);
             break;
         case Opcodes::lda:
