@@ -557,7 +557,7 @@ void moveGPR(byte destIndex, byte destOffset, byte srcIndex, byte srcOffset, Tre
 }
 [[nodiscard]] constexpr Ordinal rotateOperation(Ordinal src, Ordinal length) noexcept;
 void scanbyte(Ordinal src2, Ordinal src1) noexcept;
-Ordinal emul(Register& dest, Ordinal src1, Ordinal src2) noexcept;
+void emul(Register& dest, Ordinal src1, Ordinal src2) noexcept;
 void ediv(Register& dest, Ordinal src1, Ordinal src2) noexcept;
 void scanbit(Register& dest, Ordinal src1, Ordinal src2) noexcept;
 void spanbit(Register& dest, Ordinal src1, Ordinal src2) noexcept;
@@ -1469,7 +1469,7 @@ loop() {
             flags.ucode.performModify = 1;
             break;
         case Opcodes::emul:
-            faultCode.o = emul(regDest, src2o, src1o);
+            emul(regDest, src2o, src1o);
             break;
         case Opcodes::ediv:
             ediv(regDest, src2o, src1o);
@@ -1800,16 +1800,14 @@ checkForPendingInterrupts() noexcept {
 }
 
 
-Ordinal
+void
 emul(Register& dest, Ordinal src1, Ordinal src2) noexcept {
     union {
         LongOrdinal lord;
         Ordinal parts[sizeof(LongOrdinal)/sizeof(Ordinal)];
     } result;
-    auto faultCode = NoFault;
     if ((instruction.reg.srcDest & 0b1) != 0) {
-        /// @todo fix
-        faultCode = InvalidOpcodeFault;
+        faultCode.o = InvalidOpcodeFault;
     }  else {
         result.lord = static_cast<LongOrdinal>(src2) * static_cast<LongOrdinal>(src1);
     }
@@ -1817,7 +1815,6 @@ emul(Register& dest, Ordinal src1, Ordinal src2) noexcept {
     // if we hit a fault then we just give up whats on the stack :)
     dest.o = result.parts[0];
     setGPR(instruction.reg.srcDest, 1, result.parts[1], TreatAsOrdinal{});
-    return faultCode;
 }
 
 void
