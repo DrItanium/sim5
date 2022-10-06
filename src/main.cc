@@ -524,6 +524,14 @@ union Register {
     void setValue(T value) noexcept {
         setValue(value, TreatAs<T>{});
     }
+
+    void invert(TreatAsOrdinal) noexcept { o = ~o; }
+    void invert(TreatAsInteger) noexcept { i = ~i; }
+    void increment(TreatAsOrdinal) noexcept { ++o; }
+    void increment(TreatAsInteger) noexcept { ++i; }
+    void decrement(TreatAsOrdinal) noexcept { --o; }
+    void decrement(TreatAsInteger) noexcept { --i; }
+
 };
 static_assert(sizeof(Register) == sizeof(Ordinal));
 volatile Ordinal systemAddressTableBase = 0;
@@ -629,6 +637,7 @@ Ordinal unpackSrc1_REG(byte offset, TreatAsOrdinal) noexcept;
 Integer unpackSrc1_REG(TreatAsInteger) noexcept;
 Ordinal unpackSrc2_REG(TreatAsOrdinal) noexcept;
 Integer unpackSrc2_REG(TreatAsInteger) noexcept;
+void setFaultCode(Ordinal value) noexcept;
 void checkForPendingInterrupts() noexcept;
 template<typename T>
 void moveGPR(byte destIndex, byte srcIndex, TreatAs<T>) noexcept {
@@ -703,13 +712,13 @@ flushreg() noexcept {
 void
 mark() noexcept {
     if (pc.pc.traceEnable && tc.trace.breakpointTraceMode) {
-        faultCode.setValue(MarkTraceFault, TreatAsOrdinal{});
+        setFaultCode(MarkTraceFault);
     }
 }
 void
 fmark() noexcept {
     if (pc.pc.traceEnable) {
-        faultCode.setValue(MarkTraceFault, TreatAsOrdinal{});
+        setFaultCode(MarkTraceFault);
     }
 }
 void restoreRegisterSet(Ordinal fp) noexcept;
@@ -903,7 +912,7 @@ loadBlock(Ordinal baseAddress, byte baseRegister, byte count) noexcept {
 void 
 ldl() noexcept {
     if ((instruction.mem.srcDest & 0b1) != 0) {
-        faultCode.setValue(InvalidOperandFault, TreatAsOrdinal{});
+        setFaultCode(InvalidOperandFault);
     } else {
         loadBlock(computeAddress(), instruction.mem.srcDest, 2);
         // support unaligned accesses
@@ -913,7 +922,7 @@ ldl() noexcept {
 void
 stl() noexcept {
     if ((instruction.mem.srcDest & 0b1) != 0) {
-        faultCode.setValue(InvalidOperandFault, TreatAsOrdinal{});
+        setFaultCode(InvalidOperandFault);
     } else {
         storeBlock(computeAddress(), instruction.mem.srcDest, 2);
         // support unaligned accesses
@@ -922,7 +931,7 @@ stl() noexcept {
 void
 ldt() noexcept {
     if ((instruction.mem.srcDest & 0b11) != 0) {
-        faultCode.setValue(InvalidOperandFault, TreatAsOrdinal{});
+        setFaultCode(InvalidOperandFault);
     } else {
         loadBlock(computeAddress(), instruction.mem.srcDest, 3);
         // support unaligned accesses
@@ -932,7 +941,7 @@ ldt() noexcept {
 void
 stt() noexcept {
     if ((instruction.mem.srcDest & 0b11) != 0) {
-        faultCode.setValue(InvalidOperandFault, TreatAsOrdinal{});
+        setFaultCode(InvalidOperandFault);
     } else {
         storeBlock(computeAddress(), instruction.mem.srcDest, 3);
         // support unaligned accesses
@@ -942,7 +951,7 @@ stt() noexcept {
 void
 ldq() noexcept {
     if ((instruction.mem.srcDest & 0b11) != 0) {
-        faultCode.setValue(InvalidOperandFault, TreatAsOrdinal{});
+        setFaultCode(InvalidOperandFault);
     } else {
         loadBlock(computeAddress(), instruction.mem.srcDest, 4);
         // support unaligned accesses
@@ -952,7 +961,7 @@ ldq() noexcept {
 void
 stq() noexcept {
     if ((instruction.mem.srcDest & 0b11) != 0) {
-        faultCode.setValue(InvalidOperandFault, TreatAsOrdinal{});
+        setFaultCode(InvalidOperandFault);
     } else {
         storeBlock(computeAddress(), instruction.mem.srcDest, 4);
         // support unaligned accesses
@@ -1025,7 +1034,7 @@ Ordinal getSupervisorStackPointer() noexcept;
 void
 calls(Ordinal src1) noexcept {
     if (auto targ = src1; targ > 259) {
-        faultCode.setValue(ProtectionLengthFault, TreatAsOrdinal{}); // protection length fault
+        setFaultCode(ProtectionLengthFault);
     } else {
         syncf();
         auto tempPE = load(getSystemProcedureTableBase() + 48 + (4 * targ), TreatAsOrdinal{});
@@ -1087,7 +1096,7 @@ setup() {
 void
 performRegisterTransfer(byte mask, byte count) noexcept {
     if (((instruction.reg.srcDest & mask) != 0) || ((instruction.reg.src1 & mask) != 0)) {
-        faultCode.setValue(InvalidOpcodeFault, TreatAsOrdinal{});
+        setFaultCode(InvalidOpcodeFault);
     }
     for (byte i = 0; i < count; ++i) {
         setGPR(instruction.reg.srcDest, i, unpackSrc1_REG(i, TreatAsOrdinal{}), TreatAsOrdinal{});
@@ -1102,7 +1111,7 @@ Register::modify(Ordinal mask, Ordinal src) noexcept {
 }
 void 
 loop() {
-    faultCode.setValue(NoFault, TreatAsOrdinal{});
+    setFaultCode(NoFault);
     instruction.setValue(load(ip.a, TreatAsOrdinal{}), TreatAsOrdinal{});
     auto& regDest = getGPR(instruction.reg.srcDest);
     auto src2o = unpackSrc2_REG(TreatAsOrdinal{});
@@ -1149,7 +1158,7 @@ loop() {
             break;
         case Opcodes::faultno:
             if (ac.arith.conditionCode == 0) {
-                faultCode.o = ConstraintRangeFault;
+                setFaultCode(ConstraintRangeFault);
             }
             break;
         case Opcodes::faulte:
@@ -1160,7 +1169,7 @@ loop() {
         case Opcodes::faultge:
         case Opcodes::faulto:
             if ((ac.arith.conditionCode & instruction.instGeneric.mask) != 0) {
-                faultCode.o = ConstraintRangeFault; 
+                setFaultCode(ConstraintRangeFault);
             }
             break;
         case Opcodes::testno:
@@ -1498,7 +1507,7 @@ loop() {
             break;
         case Opcodes::modi: 
             if (auto denominator = src1i; denominator == 0) {
-                faultCode.o = ZeroDivideFault; // divide by zero
+                setFaultCode(ZeroDivideFault);
             } else {
                 auto numerator = src2i;
                 auto result = numerator - ((numerator / denominator) * denominator);
@@ -1524,8 +1533,7 @@ loop() {
         case Opcodes::modpc:
             if (auto mask = src1o; mask != 0) {
                 if (!pc.inSupervisorMode()) {
-                    /// @todo fix
-                    faultCode.o = TypeMismatchFault; // type mismatch
+                setFaultCode(TypeMismatchFault);
                 } else {
                     regDest.o = pc.modify(mask, src2o);
                     if (regDest.getPriority() > pc.getPriority()) {
@@ -1562,7 +1570,7 @@ loop() {
             scanbit(regDest, src2o, src1o);
             break;
         default:
-            faultCode.o = UnimplementedFault;
+                setFaultCode(UnimplementedFault);
             break;
     }
     if (flags.ucode.performSyncf) {
@@ -1585,9 +1593,9 @@ loop() {
         } else {
             // if we got here then it means we don't have something configured
             // correctly
-            faultCode.o = InvalidOpcodeFault; // invalid opcode
+                setFaultCode(InvalidOpcodeFault);
         }
-        if (faultCode.o == NoFault) {
+        if (faultCode.getValue<Ordinal>() == NoFault) {
             store(addr, result, TreatAsOrdinal{});
             regDest.o = temp;
         }
@@ -1610,14 +1618,14 @@ loop() {
             src2o = ~src2o;
         }
         if (flags.ucode.doAnd) {
-            regDest.o = src2o & src1o;
+            regDest.setValue(src2o & src1o, TreatAsOrdinal{});
         } else if (flags.ucode.doXor) {
-            regDest.o = src2o ^ src1o;
+            regDest.setValue(src2o ^ src1o, TreatAsOrdinal{});
         } else if (flags.ucode.doOr) {
-            regDest.o = src2o | src1o;
+            regDest.setValue(src2o | src1o, TreatAsOrdinal{});
         }
         if (flags.ucode.invertResult) {
-            regDest.o = ~regDest.o;
+            regDest.invert(TreatAsOrdinal{});
         }
     }
     if (flags.ucode.performCompare) {
@@ -1631,9 +1639,9 @@ loop() {
                 } else {
                     // if we got here then it means we don't have something configured
                     // correctly
-                    faultCode.o = InvalidOpcodeFault; // invalid opcode/operation
+                    setFaultCode(InvalidOpcodeFault);
                 }
-                if (faultCode.o == NoFault) {
+                if (faultCode.getValue<Ordinal>() == NoFault) {
                     ac.arith.conditionCode = cond ? 0b010 : 0b001;
                 }
             }
@@ -1657,7 +1665,7 @@ loop() {
             } else {
                 // if we got here then it means we don't have something configured
                 // correctly
-                faultCode.o = InvalidOpcodeFault; // invalid opcode/operation
+                setFaultCode(InvalidOpcodeFault);
             }
         }
     }
@@ -1670,7 +1678,7 @@ loop() {
         } else {
             // if we got here then it means we don't have something configured
             // correctly
-            faultCode.o = InvalidOpcodeFault; // invalid opcode
+                setFaultCode(InvalidOpcodeFault);
         }
         if (faultCode.o == NoFault) {
             result += (ac.getCarryBit() ? 1 : 0);
@@ -1688,7 +1696,7 @@ loop() {
         } else {
             // if we got here then it means we don't have something configured
             // correctly
-            faultCode.o = InvalidOpcodeFault; // invalid opcode
+            setFaultCode(InvalidOpcodeFault);
         }
     } else if (flags.ucode.performSubtract) {
         if (flags.ucode.ordinalOp) {
@@ -1698,7 +1706,7 @@ loop() {
         } else {
             // if we got here then it means we don't have something configured
             // correctly
-            faultCode.o = InvalidOpcodeFault; // invalid opcode
+            setFaultCode(InvalidOpcodeFault);
         }
 
     } else if (flags.ucode.performMultiply) {
@@ -1709,33 +1717,33 @@ loop() {
         } else {
             // if we got here then it means we don't have something configured
             // correctly
-            faultCode.o = InvalidOpcodeFault; // invalid opcode
+            setFaultCode(InvalidOpcodeFault);
         }
     } else if (flags.ucode.performDivide) {
         if (flags.ucode.ordinalOp) {
             if (src1o == 0) {
                 /// @todo fix this
-                faultCode.o = ZeroDivideFault; // divide by zero
+                setFaultCode(ZeroDivideFault);
             } else {
                 regDest.o = src2o / src1o;
             }
         } else if (flags.ucode.integerOp) {
             if (src1i == 0) {
                 /// @todo fix this
-                faultCode.o = ZeroDivideFault; // divide by zero
+                setFaultCode(ZeroDivideFault);
             } else {
                 regDest.i = src2i / src1i;
             }
         } else {
             // if we got here then it means we don't have something configured
             // correctly
-            faultCode.o = InvalidOpcodeFault; // invalid opcode
+            setFaultCode(InvalidOpcodeFault);
         }
     } else if (flags.ucode.performRemainder) {
         if (flags.ucode.ordinalOp) {
             if (src1o == 0) {
                 /// @todo fix this
-                faultCode.o = ZeroDivideFault; // divide by zero
+                setFaultCode(ZeroDivideFault);
             } else {
                 // taken from the i960Sx manual
                 //dest.setOrdinal(src2 - ((src2 / src1) * src1));
@@ -1744,7 +1752,7 @@ loop() {
         } else if (flags.ucode.integerOp) {
             if (src1i == 0) {
                 /// @todo fix this
-                faultCode.o = ZeroDivideFault; // divide by zero
+                setFaultCode(ZeroDivideFault);
             } else {
                 // taken from the i960Sx manual
                 //dest.setInteger(src2 - ((src2 / src1) * src1));
@@ -1753,7 +1761,7 @@ loop() {
         } else {
             // if we got here then it means we don't have something configured
             // correctly
-            faultCode.o = InvalidOpcodeFault; // invalid opcode
+            setFaultCode(InvalidOpcodeFault);
         }
     }
     if (faultCode.o != NoFault) {
@@ -1868,7 +1876,7 @@ emul(Register& dest, Ordinal src1, Ordinal src2) noexcept {
         Ordinal parts[sizeof(LongOrdinal)/sizeof(Ordinal)];
     } result;
     if ((instruction.reg.srcDest & 0b1) != 0) {
-        faultCode.o = InvalidOpcodeFault;
+        setFaultCode(InvalidOpcodeFault);
     }  else {
         result.lord = static_cast<LongOrdinal>(src2) * static_cast<LongOrdinal>(src1);
     }
@@ -1887,11 +1895,10 @@ ediv(Register& dest, Ordinal src1, Ordinal src2Lower) noexcept {
     src2.parts[0] = src2Lower;
     if ((instruction.reg.srcDest & 0b1) != 0 || (instruction.reg.src2 & 0b1) != 0) {
         /// @todo fix
-        faultCode.o = InvalidOpcodeFault;
+        setFaultCode(InvalidOpcodeFault);
     } else if (src1 == 0) {
         // divide by zero
-        /// @todo fix
-        faultCode.o = ZeroDivideFault;
+        setFaultCode(ZeroDivideFault);
     } else {
         src2.parts[1] = getGPRValue(instruction.reg.src2, 1, TreatAsOrdinal{});
         result.parts[1] = src2.lord / src1; // quotient
@@ -1944,4 +1951,9 @@ scanbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
 void 
 spanbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
     xbit<false>(dest, src1, src2);
+}
+
+void
+setFaultCode(Ordinal fault) noexcept {
+    faultCode.setValue(fault, TreatAsOrdinal{});
 }
