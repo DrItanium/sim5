@@ -1361,11 +1361,11 @@ loop() {
             flags.ucode.integerOp = 1;
             break;
         case Opcodes::shro: // shro
-            regDest.o = src1o < 32 ? src2o >> src1o : 0;
+            regDest.setValue<Ordinal>(src1o < 32 ? src2o >> src1o : 0);
             break;
         case Opcodes::shrdi: // shrdi
                   // according to the manual, equivalent to divi value, 2 so that is what we're going to do for correctness sake
-            regDest.i = src1i < 32 && src1i >= 0 ? src2i / computeBitPosition(src1i) : 0;
+            regDest.setValue<Integer>( src1i < 32 && src1i >= 0 ? src2i / computeBitPosition(src1i) : 0);
             break;
         case Opcodes::shri: // shri
             /*
@@ -1385,16 +1385,16 @@ loop() {
              *
              */
             /// @todo perhaps implement the extra logic if necessary
-            regDest.i = src2i >> src1i;
+            regDest.setValue<Integer>(src2i >> src1i);
             break;
         case Opcodes::shlo: // shlo
             regDest.o = src1o < 32 ? src2o << src1o : 0;
             break;
         case Opcodes::rotate: // rotate
-            regDest.o = rotateOperation(src2o, src1o);
+            regDest.setValue<Ordinal>(rotateOperation(src2o, src1o));
             break;
         case Opcodes::shli: // shli
-            regDest.i = src2i << src1i;
+            regDest.setValue<Integer>(src2i << src1i);
             break;
         case Opcodes::cmpo: // cmpo
             flags.ucode.performCompare = 1;
@@ -1449,7 +1449,7 @@ loop() {
             flags.ucode.performCarry = 1;
             break;
         case Opcodes::mov:
-            regDest.o = src1o;
+            regDest.setValue<Ordinal>(src1o);
             break;
         case Opcodes::movl:
             flags.ucode.performRegisterTransfer = 1;
@@ -1514,11 +1514,11 @@ loop() {
                 if (((numerator * denominator) < 0) && (result != 0)) {
                     result += denominator;
                 }
-                regDest.i = result;
+                regDest.setValue<Integer>(result);
             }
             break;
         case Opcodes::modify:
-            regDest.o = modify(src1o, src2o, regDest.o);
+            regDest.setValue<Ordinal>(modify(src1o, src2o, regDest.getValue<Ordinal>()));
             break;
         case Opcodes::extract:
             // taken from the Hx manual as it isn't insane
@@ -1882,7 +1882,7 @@ emul(Register& dest, Ordinal src1, Ordinal src2) noexcept {
     }
     // yes this can be undefined by design :)
     // if we hit a fault then we just give up whats on the stack :)
-    dest.o = result.parts[0];
+    dest.setValue(result.parts[0], TreatAsOrdinal{});
     setGPR(instruction.reg.srcDest, 1, result.parts[1], TreatAsOrdinal{});
 }
 
@@ -1906,7 +1906,7 @@ ediv(Register& dest, Ordinal src1, Ordinal src2Lower) noexcept {
     }
     // yes this can be undefined by design :)
     // if we hit a fault then we just give whats on the stack :)
-    dest.o = result.parts[0];
+    dest.setValue<Ordinal>(result.parts[0]);
     setGPR(instruction.reg.srcDest, 1, result.parts[1], TreatAsOrdinal{});
 }
 Ordinal 
