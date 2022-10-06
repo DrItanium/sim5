@@ -461,9 +461,7 @@ union Register {
         uint32_t lockBus : 1;
         uint32_t performAtomicOperation : 1;
         uint32_t performModify : 1;
-        uint32_t advanceBy : 4;
     } ucode;
-    void clearAdvanceBy() noexcept { ucode.advanceBy = 0; }
     bool inSupervisorMode() const noexcept { return pc.executionMode; }
     bool inUserMode() const noexcept { return !inSupervisorMode(); }
     bool isMEMA() const noexcept { return !mem.selector; }
@@ -522,6 +520,7 @@ Register tc;
 Register flags; 
 Register faultCode; 
 Register instruction;
+Register advanceBy;
 Register& getGPR(byte index) noexcept {
     return gprs[index];
 }
@@ -636,7 +635,7 @@ restoreStandardFrame() noexcept {
     auto realAddress = getGPRValue(FPIndex, TreatAsOrdinal{}) & NotC;
     restoreRegisterSet(realAddress);
     ip.o = getGPRValue(RIPIndex, TreatAsOrdinal{});
-    flags.clearAdvanceBy();
+    advanceBy.clear();
 }
 void
 ret() {
@@ -717,7 +716,7 @@ branchIfBitGeneric() {
         temp.alignedTransfer.important = instruction.cobr.displacement;
         ip.alignedTransfer.important = ip.alignedTransfer.important + temp.alignedTransfer.important;
         ip.alignedTransfer.aligned = 0;
-        flags.clearAdvanceBy();
+        advanceBy.clear();
     } else {
         ac.arith.conditionCode = checkClear ? 0b010 : 0b000;
     }
@@ -744,7 +743,7 @@ computeAddress() noexcept {
         if (instruction.memb.group) {
             // okay so it is going to be the displacement versions
             // load 32-bits into the optionalDisplacement field
-            flags.ucode.advanceBy += 4;
+            advanceBy.o += 4;
             Integer result = static_cast<Integer>(load(ip.a + 4, TreatAsOrdinal{})); // load the optional displacement
             if (instruction.memb_grp2.useIndex) {
                 result += (getGPRValue(instruction.memb_grp2.index, TreatAsInteger{}) << static_cast<Integer>(instruction.memb_grp2.scale));
@@ -759,7 +758,7 @@ computeAddress() noexcept {
                 case 0b00: // Register Indirect
                     return getGPRValue(instruction.memb.abase, TreatAsOrdinal{});
                 case 0b01: // IP With Displacement 
-                    flags.ucode.advanceBy += 4;
+                    advanceBy.o += 4;
                     return static_cast<Ordinal>(ip.i + load(ip.a + 4, TreatAsInteger{}) + 8);
                 case 0b11: // Register Indirect With Index
                     return getGPRValue(instruction.memb.abase, TreatAsOrdinal{}) + (getGPRValue(instruction.memb.index, TreatAsOrdinal{}) << instruction.memb.scale);
@@ -791,7 +790,7 @@ cmpxbGeneric() noexcept {
         temp.alignedTransfer.important = instruction.cobr.displacement;
         ip.alignedTransfer.important = ip.alignedTransfer.important + temp.alignedTransfer.important;
         ip.alignedTransfer.aligned = 0;
-        flags.clearAdvanceBy();
+        advanceBy.clear();
     }
 }
 void 
@@ -886,9 +885,9 @@ stq() noexcept {
 void
 balx() noexcept {
     auto address = computeAddress();
-    setGPR(instruction.mem.srcDest, ip.o + flags.ucode.advanceBy, TreatAsOrdinal{});
+    setGPR(instruction.mem.srcDest, ip.o + advanceBy.o, TreatAsOrdinal{});
     ip.o = address;
-    flags.clearAdvanceBy();
+    advanceBy.clear();
 }
 bool 
 registerSetAvailable() noexcept {
@@ -924,26 +923,26 @@ callx() noexcept {
     auto temp = (getGPRValue(SPIndex, TreatAsOrdinal{}) + C) & NotC; // round stack pointer to next boundary
     auto addr = computeAddress();
     auto fp = getGPRValue(FPIndex, TreatAsOrdinal{});
-    setGPR(RIPIndex, ip.o + flags.ucode.advanceBy, TreatAsOrdinal{});
+    setGPR(RIPIndex, ip.o + advanceBy.o, TreatAsOrdinal{});
     enterCall(fp);
     ip.o = addr;
     setGPR(PFPIndex, fp, TreatAsOrdinal{});
     setGPR(FPIndex, temp, TreatAsOrdinal{});
     setGPR(SPIndex , temp + 64, TreatAsOrdinal{});
-    flags.clearAdvanceBy();
+    advanceBy.clear();
 }
 void 
 call() {
     // wait for any uncompleted instructions to finish
     auto temp = (getGPRValue(SPIndex, TreatAsOrdinal{}) + C) & NotC; // round stack pointer to next boundary
     auto fp = getGPRValue(FPIndex, TreatAsOrdinal{});
-    setGPR(RIPIndex, ip.o + flags.ucode.advanceBy, TreatAsOrdinal{});
+    setGPR(RIPIndex, ip.o + advanceBy.o, TreatAsOrdinal{});
     enterCall(fp);
     ip.i += instruction.ctrl.displacement;
     setGPR(PFPIndex, fp, TreatAsOrdinal{});
     setGPR(FPIndex, temp, TreatAsOrdinal{});
     setGPR(SPIndex , temp + 64, TreatAsOrdinal{});
-    flags.clearAdvanceBy();
+    advanceBy.clear();
 }
 Ordinal getSupervisorStackPointer() noexcept;
 void
@@ -957,7 +956,7 @@ calls(Ordinal src1) noexcept {
         auto procedureAddress = tempPE & ~0b11;
         // read entry from system-procedure table, where spbase is address of
         // system-procedure table from Initial Memory Image
-        setGPR(RIPIndex, ip.o + flags.ucode.advanceBy, TreatAsOrdinal{});
+        setGPR(RIPIndex, ip.o + advanceBy.o, TreatAsOrdinal{});
         ip.o = procedureAddress;
         Ordinal temp = 0, tempRRR = 0;
         if ((type == 0b00) || pc.inSupervisorMode()) {
@@ -977,13 +976,13 @@ calls(Ordinal src1) noexcept {
         pfp.pfp.rt = tempRRR;
         setGPR(FPIndex, temp, TreatAsOrdinal{});
         setGPR(SPIndex, temp + 64, TreatAsOrdinal{});
-        flags.clearAdvanceBy();
+        advanceBy.clear();
     }
 }
 void
 bx() noexcept {
     ip.o = computeAddress();
-    flags.clearAdvanceBy();
+    advanceBy.clear();
 }
 
 
@@ -1035,7 +1034,7 @@ loop() {
     auto src1o = unpackSrc1_REG(TreatAsOrdinal{});
     auto src1i = unpackSrc1_REG(TreatAsInteger{});
     flags.clear();
-    flags.ucode.advanceBy = 4;
+    advanceBy.o = 4;
     
     switch (instruction.getOpcode()) {
         case Opcodes::bal: // bal
@@ -1043,7 +1042,7 @@ loop() {
             // then fallthrough and take the branch
         case Opcodes::b: // b
             ip.i += instruction.cobr.displacement;
-            flags.clearAdvanceBy();
+            advanceBy.clear();
             break;
         case Opcodes::call: // call
             call();
@@ -1054,7 +1053,7 @@ loop() {
         case Opcodes::bno:
             if (ac.arith.conditionCode == 0) {
                 ip.i += instruction.ctrl.displacement;
-                flags.clearAdvanceBy();
+                advanceBy.clear();
             }
             break;
         case Opcodes::be:
@@ -1068,7 +1067,7 @@ loop() {
             // itself so we can just use it and save a ton of space overall
             if ((ac.arith.conditionCode & instruction.instGeneric.mask) != 0) {
                 ip.i += instruction.ctrl.displacement;
-                flags.clearAdvanceBy();
+                advanceBy.clear();
             }
             break;
         case Opcodes::faultno:
@@ -1673,7 +1672,7 @@ loop() {
     }
     // okay we got here so we need to start grabbing data off of the bus and
     // start executing the next instruction
-    ip.o += flags.ucode.advanceBy; 
+    ip.o += advanceBy.o; 
 }
 
 Ordinal 
