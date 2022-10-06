@@ -66,6 +66,9 @@ constexpr Ordinal ProtectionBadAccessFault = 0x0007'0020;
 constexpr Ordinal Machine_ParityErrorFault = 0x0008'0002;
 constexpr Ordinal TypeMismatchFault = 0x000a'0001;
 constexpr Ordinal OverrideFault = 0x0010'0000;
+constexpr Ordinal modify(Ordinal mask, Ordinal src, Ordinal srcDest) noexcept {
+    return (src & mask) | (srcDest & ~mask);
+}
 union SplitAddress {
     constexpr SplitAddress(Address a) : addr(a) { }
     Address addr;
@@ -1040,7 +1043,9 @@ loop() {
             uint32_t performRemainder : 1;
             uint32_t performSyncf : 1;
             uint32_t lockBus : 1;
-            uint32_t unused : 10;
+            uint32_t performAtomicOperation : 1;
+            uint32_t performModify : 1;
+            uint32_t unused : 8;
         } bits;
     } flags;
     flags.raw = 0;
@@ -1460,10 +1465,17 @@ loop() {
             }
             break;
         case Opcodes::atadd:
-            atadd(regDest, src1o, src2o);
+            flags.bits.performSyncf = 1;
+            flags.bits.lockBus = 1;
+            flags.bits.performAtomicOperation = 1;
+            flags.bits.performAdd = 1;
+            //atadd(regDest, src1o, src2o);
             break;
         case Opcodes::atmod:
-            atmod(regDest, src1o, src2o);
+            flags.bits.performSyncf = 1;
+            flags.bits.lockBus = 1;
+            flags.bits.performAtomicOperation = 1;
+            flags.bits.performModify = 1;
             break;
         case Opcodes::emul:
             faultCode = emul(regDest, src2o, src1o);
@@ -1489,6 +1501,22 @@ loop() {
     }
     if (flags.bits.lockBus) {
         lockBus();
+    }
+    if (flags.bits.performAtomicOperation) {
+        auto addr = src1o & 0xFFFF'FFFC;
+        auto temp = load(addr, TreatAsOrdinal{});
+        Ordinal result = 0;
+        if (flags.bits.performAdd) {
+            result = temp + src2o;
+        } else if (flags.bits.performModify) {
+            result = modify(src2o, regDest.o, temp);
+        } else {
+            // if we got here then it means we don't have something configured
+            // correctly
+            faultCode = InvalidOpcodeFault; // invalid opcode
+        }
+        store(addr, result, TreatAsOrdinal{});
+        regDest.o = temp;
     }
     if (flags.bits.performLogical) {
         if (flags.bits.src1IsBitPosition) {
@@ -1760,9 +1788,6 @@ atadd(Register& dest, Ordinal src1, Ordinal src2) noexcept {
     unlockBus();
 }
 
-constexpr Ordinal modify(Ordinal mask, Ordinal src, Ordinal srcDest) noexcept {
-    return (src & mask) | (srcDest & ~mask);
-}
 void
 atmod(Register& dest, Ordinal src1, Ordinal src2) noexcept {
     // copies the src/dest value (logical version) into the memory location specifeid by src1.
