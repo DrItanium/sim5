@@ -614,7 +614,6 @@ Register flags;
 Register flags2; 
 Register faultCode; 
 Register instruction;
-Register address;
 byte advanceBy;
 Register& getGPR(byte index) noexcept {
     return gpr.get(index);
