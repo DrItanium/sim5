@@ -77,6 +77,38 @@ union SplitAddress {
         Address rest : 17;
     };
 };
+union MicrocodeFlags {
+    uint32_t raw;
+    struct {
+        uint32_t invertResult : 1;
+        uint32_t invertSrc1 : 1;
+        uint32_t zeroSrc1 : 1;
+        uint32_t src1IsBitPosition : 1;
+        uint32_t invertSrc2 : 1;
+        uint32_t zeroSrc2 : 1;
+        uint32_t doXor : 1;
+        uint32_t doOr : 1;
+        uint32_t doAnd : 1;
+        uint32_t ordinalOp : 1;
+        uint32_t integerOp : 1;
+        uint32_t performIncrement : 1;
+        uint32_t performDecrement : 1;
+        uint32_t performAdd : 1;
+        uint32_t performSubtract : 1;
+        uint32_t performCarry : 1;
+        uint32_t performCompare : 1;
+        uint32_t performLogical : 1;
+        uint32_t performMultiply : 1;
+        uint32_t performDivide : 1;
+        uint32_t performRemainder : 1;
+        uint32_t performSyncf : 1;
+        uint32_t lockBus : 1;
+        uint32_t performAtomicOperation : 1;
+        uint32_t performModify : 1;
+        uint32_t advanceBy : 4;
+    } bits;
+};
+MicrocodeFlags flags;
 template<typename T>
 volatile T& memory(size_t address) noexcept {
     return *reinterpret_cast<volatile T*>(address);
@@ -480,7 +512,6 @@ volatile bool int4Triggered = false;
 volatile bool int5Triggered = false;
 volatile bool int6Triggered = false;
 volatile bool int7Triggered = false;
-volatile byte advanceBy = 0;
 volatile Ordinal systemAddressTableBase = 0;
 // On the i960 this is separated out into two parts, locals and globals
 // The idea is that globals are always available and locals are per function.
@@ -606,7 +637,7 @@ restoreStandardFrame() noexcept {
     auto realAddress = getGPRValue(FPIndex, TreatAsOrdinal{}) & NotC;
     restoreRegisterSet(realAddress);
     ip.o = getGPRValue(RIPIndex, TreatAsOrdinal{});
-    advanceBy = 0;
+    flags.bits.advanceBy = 0;
 }
 void
 ret() {
@@ -687,7 +718,7 @@ branchIfBitGeneric() {
         temp.alignedTransfer.important = instruction.cobr.displacement;
         ip.alignedTransfer.important = ip.alignedTransfer.important + temp.alignedTransfer.important;
         ip.alignedTransfer.aligned = 0;
-        advanceBy = 0;
+        flags.bits.advanceBy = 0;
     } else {
         ac.arith.conditionCode = checkClear ? 0b010 : 0b000;
     }
@@ -714,7 +745,7 @@ computeAddress() noexcept {
         if (instruction.memb.group) {
             // okay so it is going to be the displacement versions
             // load 32-bits into the optionalDisplacement field
-            advanceBy += 4;
+            flags.bits.advanceBy += 4;
             Integer result = static_cast<Integer>(load(ip.a + 4, TreatAsOrdinal{})); // load the optional displacement
             if (instruction.memb_grp2.useIndex) {
                 result += (getGPRValue(instruction.memb_grp2.index, TreatAsInteger{}) << static_cast<Integer>(instruction.memb_grp2.scale));
@@ -729,7 +760,7 @@ computeAddress() noexcept {
                 case 0b00: // Register Indirect
                     return getGPRValue(instruction.memb.abase, TreatAsOrdinal{});
                 case 0b01: // IP With Displacement 
-                    advanceBy += 4;
+                    flags.bits.advanceBy += 4;
                     return static_cast<Ordinal>(ip.i + load(ip.a + 4, TreatAsInteger{}) + 8);
                 case 0b11: // Register Indirect With Index
                     return getGPRValue(instruction.memb.abase, TreatAsOrdinal{}) + (getGPRValue(instruction.memb.index, TreatAsOrdinal{}) << instruction.memb.scale);
@@ -761,7 +792,7 @@ cmpxbGeneric() noexcept {
         temp.alignedTransfer.important = instruction.cobr.displacement;
         ip.alignedTransfer.important = ip.alignedTransfer.important + temp.alignedTransfer.important;
         ip.alignedTransfer.aligned = 0;
-        advanceBy = 0;
+        flags.bits.advanceBy = 0;
     }
 }
 void 
@@ -862,9 +893,9 @@ stq() noexcept {
 void
 balx() noexcept {
     auto address = computeAddress();
-    setGPR(instruction.mem.srcDest, ip.o + advanceBy, TreatAsOrdinal{});
+    setGPR(instruction.mem.srcDest, ip.o + flags.bits.advanceBy, TreatAsOrdinal{});
     ip.o = address;
-    advanceBy = 0;
+    flags.bits.advanceBy = 0;
 }
 bool 
 registerSetAvailable() noexcept {
@@ -900,26 +931,26 @@ callx() noexcept {
     auto temp = (getGPRValue(SPIndex, TreatAsOrdinal{}) + C) & NotC; // round stack pointer to next boundary
     auto addr = computeAddress();
     auto fp = getGPRValue(FPIndex, TreatAsOrdinal{});
-    setGPR(RIPIndex, ip.o + advanceBy, TreatAsOrdinal{});
+    setGPR(RIPIndex, ip.o + flags.bits.advanceBy, TreatAsOrdinal{});
     enterCall(fp);
     ip.o = addr;
     setGPR(PFPIndex, fp, TreatAsOrdinal{});
     setGPR(FPIndex, temp, TreatAsOrdinal{});
     setGPR(SPIndex , temp + 64, TreatAsOrdinal{});
-    advanceBy = 0;
+    flags.bits.advanceBy = 0;
 }
 void 
 call() {
     // wait for any uncompleted instructions to finish
     auto temp = (getGPRValue(SPIndex, TreatAsOrdinal{}) + C) & NotC; // round stack pointer to next boundary
     auto fp = getGPRValue(FPIndex, TreatAsOrdinal{});
-    setGPR(RIPIndex, ip.o + advanceBy, TreatAsOrdinal{});
+    setGPR(RIPIndex, ip.o + flags.bits.advanceBy, TreatAsOrdinal{});
     enterCall(fp);
     ip.i += instruction.ctrl.displacement;
     setGPR(PFPIndex, fp, TreatAsOrdinal{});
     setGPR(FPIndex, temp, TreatAsOrdinal{});
     setGPR(SPIndex , temp + 64, TreatAsOrdinal{});
-    advanceBy = 0;
+    flags.bits.advanceBy = 0;
 }
 Ordinal getSupervisorStackPointer() noexcept;
 Ordinal
@@ -933,7 +964,7 @@ calls(Ordinal src1) noexcept {
         auto procedureAddress = tempPE & ~0b11;
         // read entry from system-procedure table, where spbase is address of
         // system-procedure table from Initial Memory Image
-        setGPR(RIPIndex, ip.o + advanceBy, TreatAsOrdinal{});
+        setGPR(RIPIndex, ip.o + flags.bits.advanceBy, TreatAsOrdinal{});
         ip.o = procedureAddress;
         Ordinal temp = 0, tempRRR = 0;
         if ((type == 0b00) || pc.inSupervisorMode()) {
@@ -953,14 +984,14 @@ calls(Ordinal src1) noexcept {
         pfp.pfp.rt = tempRRR;
         setGPR(FPIndex, temp, TreatAsOrdinal{});
         setGPR(SPIndex, temp + 64, TreatAsOrdinal{});
-        advanceBy = 0;
+        flags.bits.advanceBy = 0;
         return NoFault;
     }
 }
 void
 bx() noexcept {
     ip.o = computeAddress();
-    advanceBy = 0;
+    flags.bits.advanceBy = 0;
 }
 
 
@@ -1004,11 +1035,8 @@ Register::modify(Ordinal mask, Ordinal src) noexcept {
     o = ::modify(mask, src, o);
     return tmp;
 }
-#ifdef MEGA2560_BOARD
-#endif
 void 
 loop() {
-    advanceBy = 4;
     Ordinal faultCode = NoFault;
     instruction.o = load(ip.a, TreatAsOrdinal{});
     auto& regDest = getGPR(instruction.reg.srcDest);
@@ -1016,37 +1044,8 @@ loop() {
     auto src2i = unpackSrc2_REG(TreatAsInteger{});
     auto src1o = unpackSrc1_REG(TreatAsOrdinal{});
     auto src1i = unpackSrc1_REG(TreatAsInteger{});
-    union {
-        uint32_t raw;
-        struct {
-            uint32_t invertResult : 1;
-            uint32_t invertSrc1 : 1;
-            uint32_t invertSrc2 : 1;
-            uint32_t doXor : 1;
-            uint32_t doOr : 1;
-            uint32_t doAnd : 1;
-            uint32_t ordinalOp : 1;
-            uint32_t integerOp : 1;
-            uint32_t performIncrement : 1;
-            uint32_t performDecrement : 1;
-            uint32_t performAdd : 1;
-            uint32_t performSubtract : 1;
-            uint32_t performCarry : 1;
-            uint32_t performCompare : 1;
-            uint32_t performLogical : 1;
-            uint32_t src1IsBitPosition : 1;
-            uint32_t performMultiply : 1;
-            uint32_t performDivide : 1;
-            uint32_t performRemainder : 1;
-            uint32_t performSyncf : 1;
-            uint32_t lockBus : 1;
-            uint32_t performAtomicOperation : 1;
-            uint32_t performModify : 1;
-            uint32_t zeroSrc2 : 1;
-            uint32_t unused : 8;
-        } bits;
-    } flags;
     flags.raw = 0;
+    flags.bits.advanceBy = 4;
     
     switch (instruction.getOpcode()) {
         case Opcodes::bal: // bal
@@ -1054,7 +1053,7 @@ loop() {
             // then fallthrough and take the branch
         case Opcodes::b: // b
             ip.i += instruction.cobr.displacement;
-            advanceBy = 0;
+            flags.bits.advanceBy = 0;
             break;
         case Opcodes::call: // call
             call();
@@ -1065,7 +1064,7 @@ loop() {
         case Opcodes::bno:
             if (ac.arith.conditionCode == 0) {
                 ip.i += instruction.ctrl.displacement;
-                advanceBy = 0;
+                flags.bits.advanceBy = 0;
             }
             break;
         case Opcodes::be:
@@ -1079,7 +1078,7 @@ loop() {
             // itself so we can just use it and save a ton of space overall
             if ((ac.arith.conditionCode & instruction.instGeneric.mask) != 0) {
                 ip.i += instruction.ctrl.displacement;
-                advanceBy = 0;
+                flags.bits.advanceBy = 0;
             }
             break;
         case Opcodes::faultno:
@@ -1664,7 +1663,7 @@ loop() {
     }
     // okay we got here so we need to start grabbing data off of the bus and
     // start executing the next instruction
-    ip.o += advanceBy; 
+    ip.o += flags.bits.advanceBy; 
 }
 
 ISR(INT0_vect) {
