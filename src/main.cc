@@ -1276,13 +1276,11 @@ loop() {
             // I remember this trick from college, subtraction is just addition
             // with a negative second argument :). I never gave it much thought
             // until now but it seems to be an effective trick to save space.
-            flags.bits.performAdd = true;
-            flags.bits.invertSrc1 = true;
+            flags.bits.performSubtract = true;
             flags.bits.ordinalOp = true;
             break;
         case Opcodes::subi: // subi
-            flags.bits.performAdd = true;
-            flags.bits.invertSrc1 = true;
+            flags.bits.performSubtract = true;
             flags.bits.integerOp = true;
             break;
         case Opcodes::shro: // shro
@@ -1579,20 +1577,25 @@ loop() {
                 (regDest.o & 0x8000'0000));
     } else if (flags.bits.performAdd) {
         if (flags.bits.ordinalOp) {
-            if (flags.bits.invertSrc1) {
-                src1o = -src1o;
-            }
             regDest.o = src2o + src1o;
         } else if (flags.bits.integerOp) {
-            if (flags.bits.invertSrc1) {
-                src1i = -src1i;
-            }
             regDest.i = src2i + src1i;
         } else {
             // if we got here then it means we don't have something configured
             // correctly
             faultCode = InvalidOpcodeFault; // invalid opcode
         }
+    } else if (flags.bits.performSubtract) {
+        if (flags.bits.ordinalOp) {
+            regDest.o = src2o - src1o;
+        } else if (flags.bits.integerOp) {
+            regDest.i = src2i - src1i;
+        } else {
+            // if we got here then it means we don't have something configured
+            // correctly
+            faultCode = InvalidOpcodeFault; // invalid opcode
+        }
+
     } else if (flags.bits.performMultiply) {
         if (flags.bits.ordinalOp) {
             regDest.o = src2o * src1o;
