@@ -1014,17 +1014,15 @@ setup() {
         getGPR(i).clear();
     }
 }
-Ordinal
+void
 performRegisterTransfer(byte mask, byte count) noexcept {
-    auto result = NoFault;
     if (((instruction.reg.srcDest & mask) != 0) || ((instruction.reg.src1 & mask) != 0)) {
         /// @todo fix
-        result = InvalidOperandFault; // operation.invalid operation
+        faultCode.o = InvalidOperandFault; // operation.invalid operation
     }
     for (byte i = 0; i < count; ++i) {
         setGPR(instruction.reg.srcDest, i, unpackSrc1_REG(i, TreatAsOrdinal{}), TreatAsOrdinal{});
     }
-    return result;
 }
 constexpr Ordinal modify(Ordinal mask, Ordinal src, Ordinal srcDest) noexcept;
 Ordinal 
@@ -1373,13 +1371,13 @@ loop() {
             regDest.o = src1o;
             break;
         case Opcodes::movl:
-            faultCode.o = performRegisterTransfer(0b1, 2);
+            performRegisterTransfer(0b1, 2);
             break;
         case Opcodes::movt:
-            faultCode.o = performRegisterTransfer(0b11, 3);
+            performRegisterTransfer(0b11, 3);
             break;
         case Opcodes::movq:
-            faultCode.o = performRegisterTransfer(0b11, 4);
+            performRegisterTransfer(0b11, 4);
             break;
         case Opcodes::syncf:
             flags.ucode.performSyncf = 1;
