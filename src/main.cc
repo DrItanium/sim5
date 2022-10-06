@@ -462,7 +462,12 @@ union Register {
         uint32_t performAtomicOperation : 1;
         uint32_t performModify : 1;
         uint32_t dontAdvanceIP : 1;
+        uint32_t performRegisterTransfer : 1;
     } ucode;
+    struct {
+        uint32_t mask : 8;
+        uint32_t count : 4;
+    } ucode2;
     bool inSupervisorMode() const noexcept { return pc.executionMode; }
     bool inUserMode() const noexcept { return !inSupervisorMode(); }
     bool isMEMA() const noexcept { return !mem.selector; }
@@ -519,8 +524,10 @@ Register ac;
 Register pc;
 Register tc; 
 Register flags; 
+Register flags2; 
 Register faultCode; 
 Register instruction;
+Register address;
 byte advanceBy;
 Register& getGPR(byte index) noexcept {
     return gprs[index];
@@ -977,7 +984,7 @@ calls(Ordinal src1) noexcept {
         pfp.pfp.rt = tempRRR;
         setGPR(FPIndex, temp, TreatAsOrdinal{});
         setGPR(SPIndex, temp + 64, TreatAsOrdinal{});
-    flags.ucode.dontAdvanceIP = 1;
+        flags.ucode.dontAdvanceIP = 1;
     }
 }
 void
@@ -1035,6 +1042,7 @@ loop() {
     auto src1o = unpackSrc1_REG(TreatAsOrdinal{});
     auto src1i = unpackSrc1_REG(TreatAsInteger{});
     flags.clear();
+    flags2.clear();
     advanceBy = 4;
     
     switch (instruction.getOpcode()) {
@@ -1365,13 +1373,22 @@ loop() {
             regDest.o = src1o;
             break;
         case Opcodes::movl:
-            performRegisterTransfer(0b1, 2);
+            flags.ucode.performRegisterTransfer = 1;
+            flags2.ucode2.mask = 0b1;
+            flags2.ucode2.count = 2; 
+            //performRegisterTransfer(0b1, 2);
             break;
         case Opcodes::movt:
-            performRegisterTransfer(0b11, 3);
+            flags.ucode.performRegisterTransfer = 1;
+            flags2.ucode2.mask = 0b11;
+            flags2.ucode2.count = 3; 
+            //performRegisterTransfer(0b11, 3);
             break;
         case Opcodes::movq:
-            performRegisterTransfer(0b11, 4);
+            flags.ucode.performRegisterTransfer = 1;
+            flags2.ucode2.mask = 0b11;
+            flags2.ucode2.count = 3; 
+            //performRegisterTransfer(0b11, 4);
             break;
         case Opcodes::syncf:
             flags.ucode.performSyncf = 1;
@@ -1454,7 +1471,6 @@ loop() {
             flags.ucode.lockBus = 1;
             flags.ucode.performAtomicOperation = 1;
             flags.ucode.performAdd = 1;
-            //atadd(regDest, src1o, src2o);
             break;
         case Opcodes::atmod:
             flags.ucode.performSyncf = 1;
@@ -1509,6 +1525,9 @@ loop() {
             store(addr, result, TreatAsOrdinal{});
             regDest.o = temp;
         }
+    }
+    if (flags.ucode.performRegisterTransfer) {
+            performRegisterTransfer(flags2.ucode2.mask, flags2.ucode2.count);
     }
     if (flags.ucode.performLogical) {
         if (flags.ucode.src1IsBitPosition) {
@@ -1736,15 +1755,15 @@ constexpr Ordinal rotateOperation(Ordinal src, Ordinal length) noexcept {
 }
 void
 scanbyte(Ordinal src2, Ordinal src1) noexcept {
-    Register s2(src2);
-    Register s1(src1);
-    for (int i = 0; i < 4; ++i) {
-        if (s1.bytes[i] == s2.bytes[i]) {
-            ac.arith.conditionCode = 0b010;
-            return;
-        }
+    if (Register s2(src2), s1(src1); 
+            s1.bytes[0] == s2.bytes[0] ||
+            s1.bytes[1] == s2.bytes[1] ||
+            s1.bytes[2] == s2.bytes[2] ||
+            s1.bytes[3] == s2.bytes[3]) {
+        ac.arith.conditionCode = 0b010;
+    } else {
+        ac.arith.conditionCode = 0;
     }
-    ac.arith.conditionCode = 0;
 }
 void
 arithmeticWithCarryGeneric(Ordinal result, bool src2MSB, bool src1MSB, bool destMSB) noexcept {
