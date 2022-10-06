@@ -1526,13 +1526,13 @@ loop() {
             // correctly
             faultCode.o = InvalidOpcodeFault; // invalid opcode
         }
-        if (faultCode.o != NoFault) {
+        if (faultCode.o == NoFault) {
             store(addr, result, TreatAsOrdinal{});
             regDest.o = temp;
         }
     }
     if (flags.ucode.performRegisterTransfer) {
-            performRegisterTransfer(flags2.ucode2.mask, flags2.ucode2.count);
+        performRegisterTransfer(flags2.ucode2.mask, flags2.ucode2.count);
     }
     if (flags.ucode.performLogical) {
         if (flags.ucode.src1IsBitPosition) {
@@ -1571,7 +1571,7 @@ loop() {
                     // correctly
                     faultCode.o = InvalidOpcodeFault; // invalid opcode/operation
                 }
-                if (faultCode.o != NoFault) {
+                if (faultCode.o == NoFault) {
                     ac.arith.conditionCode = cond ? 0b010 : 0b001;
                 }
             }
@@ -1605,13 +1605,19 @@ loop() {
             result = static_cast<LongOrdinal>(src2o) + static_cast<LongOrdinal>(src1o);
         } else if (flags.ucode.performSubtract) {
             result = static_cast<LongOrdinal>(src2o) - static_cast<LongOrdinal>(src1o) - 1;
+        } else {
+            // if we got here then it means we don't have something configured
+            // correctly
+            faultCode.o = InvalidOpcodeFault; // invalid opcode
         }
-        result += (ac.getCarryBit() ? 1 : 0);
-        regDest.o = static_cast<Ordinal>(result);
-        arithmeticWithCarryGeneric(static_cast<Ordinal>(result >> 32), 
-                (src2o & 0x8000'0000), 
-                (src1o & 0x8000'0000), 
-                (regDest.o & 0x8000'0000));
+        if (faultCode.o == NoFault) {
+            result += (ac.getCarryBit() ? 1 : 0);
+            regDest.o = static_cast<Ordinal>(result);
+            arithmeticWithCarryGeneric(static_cast<Ordinal>(result >> 32), 
+                    (src2o & 0x8000'0000), 
+                    (src1o & 0x8000'0000), 
+                    (regDest.o & 0x8000'0000));
+        }
     } else if (flags.ucode.performAdd) {
         if (flags.ucode.ordinalOp) {
             regDest.o = src2o + src1o;
