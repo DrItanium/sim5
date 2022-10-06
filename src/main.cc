@@ -521,7 +521,7 @@ Register tc;
 Register flags; 
 Register faultCode; 
 Register instruction;
-Register advanceBy;
+byte advanceBy;
 Register& getGPR(byte index) noexcept {
     return gprs[index];
 }
@@ -744,7 +744,7 @@ computeAddress() noexcept {
         if (instruction.memb.group) {
             // okay so it is going to be the displacement versions
             // load 32-bits into the optionalDisplacement field
-            advanceBy.o += 4;
+            advanceBy += 4;
             Integer result = static_cast<Integer>(load(ip.a + 4, TreatAsOrdinal{})); // load the optional displacement
             if (instruction.memb_grp2.useIndex) {
                 result += (getGPRValue(instruction.memb_grp2.index, TreatAsInteger{}) << static_cast<Integer>(instruction.memb_grp2.scale));
@@ -759,7 +759,7 @@ computeAddress() noexcept {
                 case 0b00: // Register Indirect
                     return getGPRValue(instruction.memb.abase, TreatAsOrdinal{});
                 case 0b01: // IP With Displacement 
-                    advanceBy.o += 4;
+                    advanceBy += 4;
                     return static_cast<Ordinal>(ip.i + load(ip.a + 4, TreatAsInteger{}) + 8);
                 case 0b11: // Register Indirect With Index
                     return getGPRValue(instruction.memb.abase, TreatAsOrdinal{}) + (getGPRValue(instruction.memb.index, TreatAsOrdinal{}) << instruction.memb.scale);
@@ -886,7 +886,7 @@ stq() noexcept {
 void
 balx() noexcept {
     auto address = computeAddress();
-    setGPR(instruction.mem.srcDest, ip.o + advanceBy.o, TreatAsOrdinal{});
+    setGPR(instruction.mem.srcDest, ip.o + advanceBy, TreatAsOrdinal{});
     ip.o = address;
     flags.ucode.dontAdvanceIP = 1;
 }
@@ -924,7 +924,7 @@ callx() noexcept {
     auto temp = (getGPRValue(SPIndex, TreatAsOrdinal{}) + C) & NotC; // round stack pointer to next boundary
     auto addr = computeAddress();
     auto fp = getGPRValue(FPIndex, TreatAsOrdinal{});
-    setGPR(RIPIndex, ip.o + advanceBy.o, TreatAsOrdinal{});
+    setGPR(RIPIndex, ip.o + advanceBy, TreatAsOrdinal{});
     enterCall(fp);
     ip.o = addr;
     setGPR(PFPIndex, fp, TreatAsOrdinal{});
@@ -937,7 +937,7 @@ call() {
     // wait for any uncompleted instructions to finish
     auto temp = (getGPRValue(SPIndex, TreatAsOrdinal{}) + C) & NotC; // round stack pointer to next boundary
     auto fp = getGPRValue(FPIndex, TreatAsOrdinal{});
-    setGPR(RIPIndex, ip.o + advanceBy.o, TreatAsOrdinal{});
+    setGPR(RIPIndex, ip.o + advanceBy, TreatAsOrdinal{});
     enterCall(fp);
     ip.i += instruction.ctrl.displacement;
     setGPR(PFPIndex, fp, TreatAsOrdinal{});
@@ -957,7 +957,7 @@ calls(Ordinal src1) noexcept {
         auto procedureAddress = tempPE & ~0b11;
         // read entry from system-procedure table, where spbase is address of
         // system-procedure table from Initial Memory Image
-        setGPR(RIPIndex, ip.o + advanceBy.o, TreatAsOrdinal{});
+        setGPR(RIPIndex, ip.o + advanceBy, TreatAsOrdinal{});
         ip.o = procedureAddress;
         Ordinal temp = 0, tempRRR = 0;
         if ((type == 0b00) || pc.inSupervisorMode()) {
@@ -1035,7 +1035,7 @@ loop() {
     auto src1o = unpackSrc1_REG(TreatAsOrdinal{});
     auto src1i = unpackSrc1_REG(TreatAsInteger{});
     flags.clear();
-    advanceBy.o = 4;
+    advanceBy = 4;
     
     switch (instruction.getOpcode()) {
         case Opcodes::bal: // bal
@@ -1674,7 +1674,7 @@ loop() {
     // okay we got here so we need to start grabbing data off of the bus and
     // start executing the next instruction
     if (!flags.ucode.dontAdvanceIP) {
-        ip.o += advanceBy.o; 
+        ip.o += advanceBy; 
     }
 }
 
