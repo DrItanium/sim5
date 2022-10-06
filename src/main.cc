@@ -519,9 +519,50 @@ constexpr auto FPIndex = 15;
 constexpr auto PFPIndex = 16;
 constexpr auto SPIndex = 17;
 constexpr auto RIPIndex = 18;
-Register globals[16]; 
-Register locals[16];
-Register sfrs[32];
+class RegisterFrame {
+    public:
+        RegisterFrame() = default;
+        Register& get(byte index) noexcept { return registers[index & 0b1111]; }
+        const Register& get(byte index) const noexcept { return registers[index & 0b1111]; }
+    private:
+        Register registers[16];
+};
+/** 
+ * @brief Holds onto two separate register frames
+ */ 
+class GPRBlock {
+    public:
+        GPRBlock() = default;
+        Register& get(byte index) noexcept { 
+            if (index < 16) {
+                return globals.get(index);
+            } else {
+                return locals.get(index);
+            }
+        }
+        const Register& get(byte index) const noexcept { 
+            if (index < 16) {
+                return globals.get(index);
+            } else {
+                return locals.get(index);
+            }
+        }
+    private:
+        RegisterFrame globals;
+        RegisterFrame locals;
+};
+
+class RegisterBlock32 {
+    public:
+        RegisterBlock32() = default;
+        Register& get(byte index) noexcept { return registers_[index & 0b11111]; }
+        const Register& get(byte index) const noexcept { return registers_[index & 0b11111]; }
+    private:
+        Register registers_[32];
+};
+GPRBlock gpr;
+RegisterBlock32 sfrs;
+//Register sfrs[32];
 Register ip;
 Register ac; 
 Register pc;
@@ -533,11 +574,7 @@ Register instruction;
 Register address;
 byte advanceBy;
 Register& getGPR(byte index) noexcept {
-    if (index < 16) {
-        return globals[index & 0b1111];
-    } else {
-        return locals[index & 0b1111];
-    }
+    return gpr.get(index);
 }
 Register& getGPR(byte index, byte offset) noexcept {
     return getGPR((index + offset) & 0b11111);
@@ -613,7 +650,7 @@ unpackSrc2_COBR(TreatAsInteger) noexcept {
     }
 }
 Register& getSFR(byte index) noexcept {
-    return sfrs[index];
+    return sfrs.get(index);
 }
 Register& getSFR(byte index, byte offset) noexcept {
     return getSFR((index + offset) & 0b11111);
