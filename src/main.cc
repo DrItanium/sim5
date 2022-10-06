@@ -66,6 +66,14 @@ constexpr Ordinal ProtectionBadAccessFault = 0x0007'0020;
 constexpr Ordinal Machine_ParityErrorFault = 0x0008'0002;
 constexpr Ordinal TypeMismatchFault = 0x000a'0001;
 constexpr Ordinal OverrideFault = 0x0010'0000;
+union SplitAddress {
+    constexpr SplitAddress(Address a) : addr(a) { }
+    Address addr;
+    struct {
+        Address lower : 15;
+        Address rest : 17;
+    };
+};
 template<typename T>
 volatile T& memory(size_t address) noexcept {
     return *reinterpret_cast<volatile T*>(address);
@@ -82,30 +90,10 @@ volatile ConfigRegisters&
 configRegs() noexcept {
     return memory<ConfigRegisters>(ConfigurationAddress);
 }
-constexpr auto LOCKPIN = PIN_PE2;
-void
-lockBus() noexcept {
-    while (digitalRead(LOCKPIN) == LOW);
-    pinMode(LOCKPIN, OUTPUT);
-}
-void
-unlockBus() noexcept {
-    pinMode(LOCKPIN, INPUT);
-}
 void
 set328BusAddress(Address address) noexcept {
     configRegs().address = address;
 }
-
-union SplitAddress {
-    constexpr SplitAddress(Address a) : addr(a) { }
-    Address addr;
-    struct {
-        Address lower : 15;
-        Address rest : 17;
-    };
-};
-    
 template<typename T>
 T load(Address address, TreatAs<T>) noexcept {
     set328BusAddress(address);
@@ -117,7 +105,20 @@ void store(Address address, T value, TreatAs<T>) noexcept {
     set328BusAddress(address);
     SplitAddress split(address);
     memory<T>(static_cast<size_t>(split.lower) + 0x8000) = value;
+
 }
+constexpr auto LOCKPIN = PIN_PE2;
+void
+lockBus() noexcept {
+    while (digitalRead(LOCKPIN) == LOW);
+    pinMode(LOCKPIN, OUTPUT);
+}
+void
+unlockBus() noexcept {
+    pinMode(LOCKPIN, INPUT);
+}
+
+    
 enum class Opcodes : uint16_t {
     b = 0x08,
     call,
@@ -965,20 +966,13 @@ setup() {
     // cleave the address space in half via sector limits.
     // lower half is io space for the implementation
     // upper half is the window into the 32/8 bus
-#ifndef ARDUINO_AVR_ATmega2560
-    SFIOR = 0; // this will setup the full 64k space, no pullup disable, no bus
-               // keeper and leaving PSR10 alone
-    EMCUCR = 0b0'100'00'0'0; // INT2 is falling edge, carve XMEM into two 32k
-                             // sectors, no wait states, and make sure INT2 is
-                             // falling edge
-    MCUCR = 0b1000'10'10; // enable XMEM, leave sleep off, and set int1 and
-                          // int0 to be falling edge
-#else
-    // setup for the 2560
-#endif
+    XMCRB = 0;           // No external memory bus keeper and full 64k address
+                         // space
+    XMCRA = 0b1100'0000; // Divide the 64k address space in half at 0x8000, no
+                         // wait states activated either. Also turn on the EBI
     set328BusAddress(0);
-    //Serial.begin(115200);
-    //SPI.begin();
+    Serial.begin(115200);
+    SPI.begin();
     // so we need to do any sort of processor setup here
     ip.clear();
     for (int i = 0; i < 32; ++i) {
@@ -1004,7 +998,8 @@ Register::modify(Ordinal mask, Ordinal src) noexcept {
     o = ::modify(mask, src, o);
     return tmp;
 }
-
+#ifdef MEGA2560_BOARD
+#endif
 void 
 loop() {
     advanceBy = 4;
@@ -1612,7 +1607,11 @@ loop() {
         /// happens
         ///
         /// Faults are basically fallback behavior when something goes wacky!
+#ifdef HAVE_EBI
         configRegs().faultPort = faultCode;
+#else
+        // do something else
+#endif
     }
     // okay we got here so we need to start grabbing data off of the bus and
     // start executing the next instruction
