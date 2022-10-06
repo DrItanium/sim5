@@ -1042,6 +1042,7 @@ loop() {
     auto src1o = unpackSrc1_REG(TreatAsOrdinal{});
     auto src1i = unpackSrc1_REG(TreatAsInteger{});
     flags.clear();
+    flags.ucode.advanceBy = 4;
     
     switch (instruction.getOpcode()) {
         case Opcodes::bal: // bal
