@@ -452,6 +452,7 @@ union Register {
         uint32_t performSubtract : 1;
         uint32_t performCarry : 1;
         uint32_t performCompare : 1;
+        uint32_t performConditionalCompare : 1;
         uint32_t performLogical : 1;
         uint32_t performMultiply : 1;
         uint32_t performDivide : 1;
@@ -1317,22 +1318,22 @@ loop() {
             regDest.i = src2i << src1i;
             break;
         case Opcodes::cmpo: // cmpo
-            flags.ucode.performCompare = true;
-            flags.ucode.ordinalOp = true;
+            flags.ucode.performCompare = 1;
+            flags.ucode.ordinalOp = 1;
             break;
         case Opcodes::cmpi: // cmpi
-            flags.ucode.performCompare = true;
-            flags.ucode.integerOp = true;
+            flags.ucode.performCompare = 1;
+            flags.ucode.integerOp = 1;
             break;
         case Opcodes::concmpo: // concmpo
-            if ((ac.arith.conditionCode & 0b100) == 0) {
-                ac.arith.conditionCode = src1o <= src2o ? 0b010 : 0b001;
-            }
+            flags.ucode.performConditionalCompare = 1;
+            flags.ucode.ordinalOp = 1;
+            flags.ucode.performCompare = 1;
             break;
         case Opcodes::concmpi: // concmpi
-            if ((ac.arith.conditionCode & 0b100) == 0) {
-                ac.arith.conditionCode = src1i <= src2i ? 0b010 : 0b001;
-            }
+            flags.ucode.performConditionalCompare = 1;
+            flags.ucode.integerOp = 1;
+            flags.ucode.performCompare = 1;
             break;
         case Opcodes::cmpinco: // cmpinco
             flags.ucode.performCompare = 1;
@@ -1512,8 +1513,10 @@ loop() {
             // correctly
             faultCode.o = InvalidOpcodeFault; // invalid opcode
         }
-        store(addr, result, TreatAsOrdinal{});
-        regDest.o = temp;
+        if (faultCode.o != NoFault) {
+            store(addr, result, TreatAsOrdinal{});
+            regDest.o = temp;
+        }
     }
     if (flags.ucode.performLogical) {
         if (flags.ucode.src1IsBitPosition) {
@@ -1540,26 +1543,44 @@ loop() {
         }
     }
     if (flags.ucode.performCompare) {
-        if (flags.ucode.ordinalOp) {
-            cmpGeneric(src1o, src2o);
-            if (flags.ucode.performIncrement) {
-                regDest.o = src2o + 1;
-            }
-            if (flags.ucode.performDecrement) {
-                regDest.o = src2o - 1;
-            }
-        } else if (flags.ucode.integerOp) {
-            cmpGeneric(src1i, src2i);
-            if (flags.ucode.performIncrement) {
-                regDest.i = src2i + 1;
-            }
-            if (flags.ucode.performDecrement) {
-                regDest.i = src2i - 1;
+        if (flags.ucode.performConditionalCompare) {
+            if ((ac.arith.conditionCode & 0b100) == 0) {
+                bool cond = false;
+                if (flags.ucode.ordinalOp) {
+                    cond = src1o <= src2o;
+                } else if (flags.ucode.integerOp) {
+                    cond = src1i <= src2i;
+                } else {
+                    // if we got here then it means we don't have something configured
+                    // correctly
+                    faultCode.o = InvalidOpcodeFault; // invalid opcode/operation
+                }
+                if (faultCode.o != NoFault) {
+                    ac.arith.conditionCode = cond ? 0b010 : 0b001;
+                }
             }
         } else {
-            // if we got here then it means we don't have something configured
-            // correctly
-            faultCode.o = InvalidOpcodeFault; // invalid opcode/operation
+            if (flags.ucode.ordinalOp) {
+                cmpGeneric(src1o, src2o);
+                if (flags.ucode.performIncrement) {
+                    regDest.o = src2o + 1;
+                }
+                if (flags.ucode.performDecrement) {
+                    regDest.o = src2o - 1;
+                }
+            } else if (flags.ucode.integerOp) {
+                cmpGeneric(src1i, src2i);
+                if (flags.ucode.performIncrement) {
+                    regDest.i = src2i + 1;
+                }
+                if (flags.ucode.performDecrement) {
+                    regDest.i = src2i - 1;
+                }
+            } else {
+                // if we got here then it means we don't have something configured
+                // correctly
+                faultCode.o = InvalidOpcodeFault; // invalid opcode/operation
+            }
         }
     }
     if (flags.ucode.performCarry) {
