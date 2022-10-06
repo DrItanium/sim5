@@ -462,6 +462,9 @@ union Register {
         uint32_t performModify : 1;
         uint32_t dontAdvanceIP : 1;
         uint32_t performRegisterTransfer : 1;
+        uint32_t shiftOperation : 1;
+        uint32_t leftShift : 1;
+        uint32_t rightShift : 1;
     } ucode;
     struct {
         uint32_t mask : 8;
@@ -1073,8 +1076,8 @@ setup() {
     XMCRA = 0b1100'0000; // Divide the 64k address space in half at 0x8000, no
                          // wait states activated either. Also turn on the EBI
     set328BusAddress(0);
-    Serial.begin(115200);
-    SPI.begin();
+    //Serial.begin(115200);
+    //SPI.begin();
     // so we need to do any sort of processor setup here
     ip.clear();
     for (int i = 0; i < 32; ++i) {
