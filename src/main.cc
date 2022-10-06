@@ -461,6 +461,7 @@ union Register {
         uint32_t lockBus : 1;
         uint32_t performAtomicOperation : 1;
         uint32_t performModify : 1;
+        uint32_t dontAdvanceIP : 1;
     } ucode;
     bool inSupervisorMode() const noexcept { return pc.executionMode; }
     bool inUserMode() const noexcept { return !inSupervisorMode(); }
@@ -635,7 +636,7 @@ restoreStandardFrame() noexcept {
     auto realAddress = getGPRValue(FPIndex, TreatAsOrdinal{}) & NotC;
     restoreRegisterSet(realAddress);
     ip.o = getGPRValue(RIPIndex, TreatAsOrdinal{});
-    advanceBy.clear();
+    flags.ucode.dontAdvanceIP = 1;
 }
 void
 ret() {
@@ -716,7 +717,7 @@ branchIfBitGeneric() {
         temp.alignedTransfer.important = instruction.cobr.displacement;
         ip.alignedTransfer.important = ip.alignedTransfer.important + temp.alignedTransfer.important;
         ip.alignedTransfer.aligned = 0;
-        advanceBy.clear();
+    flags.ucode.dontAdvanceIP = 1;
     } else {
         ac.arith.conditionCode = checkClear ? 0b010 : 0b000;
     }
@@ -790,7 +791,7 @@ cmpxbGeneric() noexcept {
         temp.alignedTransfer.important = instruction.cobr.displacement;
         ip.alignedTransfer.important = ip.alignedTransfer.important + temp.alignedTransfer.important;
         ip.alignedTransfer.aligned = 0;
-        advanceBy.clear();
+    flags.ucode.dontAdvanceIP = 1;
     }
 }
 void 
@@ -887,7 +888,7 @@ balx() noexcept {
     auto address = computeAddress();
     setGPR(instruction.mem.srcDest, ip.o + advanceBy.o, TreatAsOrdinal{});
     ip.o = address;
-    advanceBy.clear();
+    flags.ucode.dontAdvanceIP = 1;
 }
 bool 
 registerSetAvailable() noexcept {
@@ -929,7 +930,7 @@ callx() noexcept {
     setGPR(PFPIndex, fp, TreatAsOrdinal{});
     setGPR(FPIndex, temp, TreatAsOrdinal{});
     setGPR(SPIndex , temp + 64, TreatAsOrdinal{});
-    advanceBy.clear();
+    flags.ucode.dontAdvanceIP = 1;
 }
 void 
 call() {
@@ -942,7 +943,7 @@ call() {
     setGPR(PFPIndex, fp, TreatAsOrdinal{});
     setGPR(FPIndex, temp, TreatAsOrdinal{});
     setGPR(SPIndex , temp + 64, TreatAsOrdinal{});
-    advanceBy.clear();
+    flags.ucode.dontAdvanceIP = 1;
 }
 Ordinal getSupervisorStackPointer() noexcept;
 void
@@ -976,13 +977,13 @@ calls(Ordinal src1) noexcept {
         pfp.pfp.rt = tempRRR;
         setGPR(FPIndex, temp, TreatAsOrdinal{});
         setGPR(SPIndex, temp + 64, TreatAsOrdinal{});
-        advanceBy.clear();
+    flags.ucode.dontAdvanceIP = 1;
     }
 }
 void
 bx() noexcept {
     ip.o = computeAddress();
-    advanceBy.clear();
+    flags.ucode.dontAdvanceIP = 1;
 }
 
 
@@ -1042,7 +1043,7 @@ loop() {
             // then fallthrough and take the branch
         case Opcodes::b: // b
             ip.i += instruction.cobr.displacement;
-            advanceBy.clear();
+            flags.ucode.dontAdvanceIP = 1;
             break;
         case Opcodes::call: // call
             call();
@@ -1053,7 +1054,7 @@ loop() {
         case Opcodes::bno:
             if (ac.arith.conditionCode == 0) {
                 ip.i += instruction.ctrl.displacement;
-                advanceBy.clear();
+                flags.ucode.dontAdvanceIP = 1;
             }
             break;
         case Opcodes::be:
@@ -1067,7 +1068,7 @@ loop() {
             // itself so we can just use it and save a ton of space overall
             if ((ac.arith.conditionCode & instruction.instGeneric.mask) != 0) {
                 ip.i += instruction.ctrl.displacement;
-                advanceBy.clear();
+                flags.ucode.dontAdvanceIP = 1;
             }
             break;
         case Opcodes::faultno:
@@ -1672,7 +1673,9 @@ loop() {
     }
     // okay we got here so we need to start grabbing data off of the bus and
     // start executing the next instruction
-    ip.o += advanceBy.o; 
+    if (!flags.ucode.dontAdvanceIP) {
+        ip.o += advanceBy.o; 
+    }
 }
 
 Ordinal 
