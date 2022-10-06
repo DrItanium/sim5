@@ -458,7 +458,6 @@ union Register {
         uint32_t performDivide : 1;
         uint32_t performRemainder : 1;
         uint32_t performSyncf : 1;
-        uint32_t lockBus : 1;
         uint32_t performAtomicOperation : 1;
         uint32_t performModify : 1;
         uint32_t dontAdvanceIP : 1;
@@ -1473,13 +1472,11 @@ loop() {
             break;
         case Opcodes::atadd:
             flags.ucode.performSyncf = 1;
-            flags.ucode.lockBus = 1;
             flags.ucode.performAtomicOperation = 1;
             flags.ucode.performAdd = 1;
             break;
         case Opcodes::atmod:
             flags.ucode.performSyncf = 1;
-            flags.ucode.lockBus = 1;
             flags.ucode.performAtomicOperation = 1;
             flags.ucode.performModify = 1;
             break;
@@ -1505,10 +1502,8 @@ loop() {
     if (flags.ucode.performSyncf) {
         syncf();
     }
-    if (flags.ucode.lockBus) {
-        lockBus();
-    }
     if (flags.ucode.performAtomicOperation) {
+        lockBus();
         auto addr = src1o & 0xFFFF'FFFC;
         auto temp = load(addr, TreatAsOrdinal{});
         Ordinal result = 0;
@@ -1530,6 +1525,7 @@ loop() {
             store(addr, result, TreatAsOrdinal{});
             regDest.o = temp;
         }
+        unlockBus();
     }
     if (flags.ucode.performRegisterTransfer) {
         performRegisterTransfer(flags2.ucode2.mask, flags2.ucode2.count);
@@ -1644,6 +1640,10 @@ loop() {
             regDest.o = src2o * src1o;
         } else if (flags.ucode.integerOp) {
             regDest.i = src2i * src1i;
+        } else {
+            // if we got here then it means we don't have something configured
+            // correctly
+            faultCode.o = InvalidOpcodeFault; // invalid opcode
         }
     } else if (flags.ucode.performDivide) {
         if (flags.ucode.ordinalOp) {
@@ -1690,16 +1690,12 @@ loop() {
             faultCode.o = InvalidOpcodeFault; // invalid opcode
         }
     }
-
     if (faultCode.o != NoFault) {
         /// @todo implement this as the fallback operation when something bad
         /// happens
         ///
         /// Faults are basically fallback behavior when something goes wacky!
         configRegs().faultPort = faultCode.o;
-    }
-    if (flags.ucode.lockBus) {
-        unlockBus();
     }
     // okay we got here so we need to start grabbing data off of the bus and
     // start executing the next instruction
