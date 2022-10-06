@@ -941,10 +941,10 @@ call() {
     flags.clearAdvanceBy();
 }
 Ordinal getSupervisorStackPointer() noexcept;
-Ordinal
+void
 calls(Ordinal src1) noexcept {
     if (auto targ = src1; targ > 259) {
-        return ProtectionLengthFault; // protection length fault
+        faultCode.o = ProtectionLengthFault; // protection length fault
     } else {
         syncf();
         auto tempPE = load(getSystemProcedureTableBase() + 48 + (4 * targ), TreatAsOrdinal{});
@@ -973,7 +973,6 @@ calls(Ordinal src1) noexcept {
         setGPR(FPIndex, temp, TreatAsOrdinal{});
         setGPR(SPIndex, temp + 64, TreatAsOrdinal{});
         flags.clearAdvanceBy();
-        return NoFault;
     }
 }
 void
@@ -1465,7 +1464,7 @@ loop() {
             ediv(regDest, src2o, src1o);
             break;
         case Opcodes::calls:
-            faultCode.o = calls(src1o);
+            calls(src1o);
             break;
         case Opcodes::spanbit:
             spanbit(regDest, src2o, src1o);
