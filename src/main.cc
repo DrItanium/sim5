@@ -500,7 +500,7 @@ union Register {
     [[nodiscard]] constexpr byte getPriority() const noexcept { return pc.priority; }
 };
 static_assert(sizeof(Register) == sizeof(Ordinal));
-Register ip, ac, pc, tc, flags;
+Register ip, ac, pc, tc, flags, faultCode;
 volatile bool int0Triggered = false;
 volatile bool int1Triggered = false;
 volatile bool int2Triggered = false;
@@ -1034,7 +1034,7 @@ Register::modify(Ordinal mask, Ordinal src) noexcept {
 }
 void 
 loop() {
-    Ordinal faultCode = NoFault;
+    faultCode.o = NoFault;
     instruction.o = load(ip.a, TreatAsOrdinal{});
     auto& regDest = getGPR(instruction.reg.srcDest);
     auto src2o = unpackSrc2_REG(TreatAsOrdinal{});
@@ -1080,7 +1080,7 @@ loop() {
             break;
         case Opcodes::faultno:
             if (ac.arith.conditionCode == 0) {
-                faultCode = ConstraintRangeFault;
+                faultCode.o = ConstraintRangeFault;
             }
             break;
         case Opcodes::faulte:
@@ -1091,7 +1091,7 @@ loop() {
         case Opcodes::faultge:
         case Opcodes::faulto:
             if ((ac.arith.conditionCode & instruction.instGeneric.mask) != 0) {
-                faultCode = ConstraintRangeFault; 
+                faultCode.o = ConstraintRangeFault; 
             }
             break;
         case Opcodes::testno:
@@ -1166,22 +1166,22 @@ loop() {
             store<ShortInteger>(computeAddress(), getGPRValue(instruction.mem.srcDest, TreatAsInteger{}), TreatAs<ShortInteger>{});
             break;
         case Opcodes::ldl:
-            faultCode = ldl();
+            faultCode.o = ldl();
             break;
         case Opcodes::stl:
-            faultCode = stl();
+            faultCode.o = stl();
             break;
         case Opcodes::ldt:
-            faultCode = ldt();
+            faultCode.o = ldt();
             break;
         case Opcodes::stt:
-            faultCode = stt();
+            faultCode.o = stt();
             break;
         case Opcodes::ldq:
-            faultCode = ldq();
+            faultCode.o = ldq();
             break;
         case Opcodes::stq:
-            faultCode = stq();
+            faultCode.o = stq();
             break;
         case Opcodes::bx:
             bx();
@@ -1372,13 +1372,13 @@ loop() {
             regDest.o = src1o;
             break;
         case Opcodes::movl:
-            faultCode = performRegisterTransfer(0b1, 2);
+            faultCode.o = performRegisterTransfer(0b1, 2);
             break;
         case Opcodes::movt:
-            faultCode = performRegisterTransfer(0b11, 3);
+            faultCode.o = performRegisterTransfer(0b11, 3);
             break;
         case Opcodes::movq:
-            faultCode = performRegisterTransfer(0b11, 4);
+            faultCode.o = performRegisterTransfer(0b11, 4);
             break;
         case Opcodes::syncf:
             flags.ucode.performSyncf = 1;
@@ -1387,10 +1387,10 @@ loop() {
             flushreg();
             break;
         case Opcodes::fmark:
-            faultCode = fmark();
+            faultCode.o = fmark();
             break;
         case Opcodes::mark:
-            faultCode = mark();
+            faultCode.o = mark();
             break;
         case Opcodes::mulo:
             flags.ucode.performMultiply = true;
@@ -1418,7 +1418,7 @@ loop() {
             break;
         case Opcodes::modi: 
             if (auto denominator = src1i; denominator == 0) {
-                faultCode = ZeroDivideFault; // divide by zero
+                faultCode.o = ZeroDivideFault; // divide by zero
             } else {
                 auto numerator = src2i;
                 auto result = numerator - ((numerator / denominator) * denominator);
@@ -1445,7 +1445,7 @@ loop() {
             if (auto mask = src1o; mask != 0) {
                 if (!pc.inSupervisorMode()) {
                     /// @todo fix
-                    faultCode = TypeMismatchFault; // type mismatch
+                    faultCode.o = TypeMismatchFault; // type mismatch
                 } else {
                     regDest.o = pc.modify(mask, src2o);
                     if (regDest.getPriority() > pc.getPriority()) {
@@ -1470,13 +1470,13 @@ loop() {
             flags.ucode.performModify = 1;
             break;
         case Opcodes::emul:
-            faultCode = emul(regDest, src2o, src1o);
+            faultCode.o = emul(regDest, src2o, src1o);
             break;
         case Opcodes::ediv:
-            faultCode = ediv(regDest, src2o, src1o);
+            faultCode.o = ediv(regDest, src2o, src1o);
             break;
         case Opcodes::calls:
-            faultCode = calls(src1o);
+            faultCode.o = calls(src1o);
             break;
         case Opcodes::spanbit:
             spanbit(regDest, src2o, src1o);
@@ -1485,7 +1485,7 @@ loop() {
             scanbit(regDest, src2o, src1o);
             break;
         default:
-            faultCode = UnimplementedFault;
+            faultCode.o = UnimplementedFault;
             break;
     }
     if (flags.ucode.performSyncf) {
@@ -1510,7 +1510,7 @@ loop() {
         } else {
             // if we got here then it means we don't have something configured
             // correctly
-            faultCode = InvalidOpcodeFault; // invalid opcode
+            faultCode.o = InvalidOpcodeFault; // invalid opcode
         }
         store(addr, result, TreatAsOrdinal{});
         regDest.o = temp;
@@ -1559,7 +1559,7 @@ loop() {
         } else {
             // if we got here then it means we don't have something configured
             // correctly
-            faultCode = InvalidOpcodeFault; // invalid opcode/operation
+            faultCode.o = InvalidOpcodeFault; // invalid opcode/operation
         }
     }
     if (flags.ucode.performCarry) {
@@ -1583,7 +1583,7 @@ loop() {
         } else {
             // if we got here then it means we don't have something configured
             // correctly
-            faultCode = InvalidOpcodeFault; // invalid opcode
+            faultCode.o = InvalidOpcodeFault; // invalid opcode
         }
     } else if (flags.ucode.performSubtract) {
         if (flags.ucode.ordinalOp) {
@@ -1593,7 +1593,7 @@ loop() {
         } else {
             // if we got here then it means we don't have something configured
             // correctly
-            faultCode = InvalidOpcodeFault; // invalid opcode
+            faultCode.o = InvalidOpcodeFault; // invalid opcode
         }
 
     } else if (flags.ucode.performMultiply) {
@@ -1606,27 +1606,27 @@ loop() {
         if (flags.ucode.ordinalOp) {
             if (src1o == 0) {
                 /// @todo fix this
-                faultCode = ZeroDivideFault; // divide by zero
+                faultCode.o = ZeroDivideFault; // divide by zero
             } else {
                 regDest.o = src2o / src1o;
             }
         } else if (flags.ucode.integerOp) {
             if (src1i == 0) {
                 /// @todo fix this
-                faultCode = ZeroDivideFault; // divide by zero
+                faultCode.o = ZeroDivideFault; // divide by zero
             } else {
                 regDest.i = src2i / src1i;
             }
         } else {
             // if we got here then it means we don't have something configured
             // correctly
-            faultCode = InvalidOpcodeFault; // invalid opcode
+            faultCode.o = InvalidOpcodeFault; // invalid opcode
         }
     } else if (flags.ucode.performRemainder) {
         if (flags.ucode.ordinalOp) {
             if (src1o == 0) {
                 /// @todo fix this
-                faultCode = ZeroDivideFault; // divide by zero
+                faultCode.o = ZeroDivideFault; // divide by zero
             } else {
                 // taken from the i960Sx manual
                 //dest.setOrdinal(src2 - ((src2 / src1) * src1));
@@ -1635,7 +1635,7 @@ loop() {
         } else if (flags.ucode.integerOp) {
             if (src1i == 0) {
                 /// @todo fix this
-                faultCode = ZeroDivideFault; // divide by zero
+                faultCode.o = ZeroDivideFault; // divide by zero
             } else {
                 // taken from the i960Sx manual
                 //dest.setInteger(src2 - ((src2 / src1) * src1));
@@ -1644,16 +1644,16 @@ loop() {
         } else {
             // if we got here then it means we don't have something configured
             // correctly
-            faultCode = InvalidOpcodeFault; // invalid opcode
+            faultCode.o = InvalidOpcodeFault; // invalid opcode
         }
     }
 
-    if (faultCode != NoFault) {
+    if (faultCode.o != NoFault) {
         /// @todo implement this as the fallback operation when something bad
         /// happens
         ///
         /// Faults are basically fallback behavior when something goes wacky!
-        configRegs().faultPort = faultCode;
+        configRegs().faultPort = faultCode.o;
     }
     if (flags.ucode.lockBus) {
         unlockBus();
