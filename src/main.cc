@@ -502,14 +502,6 @@ union Register {
 };
 static_assert(sizeof(Register) == sizeof(Ordinal));
 Register ip, ac, pc, tc, flags, faultCode;
-volatile bool int0Triggered = false;
-volatile bool int1Triggered = false;
-volatile bool int2Triggered = false;
-volatile bool int3Triggered = false;
-volatile bool int4Triggered = false;
-volatile bool int5Triggered = false;
-volatile bool int6Triggered = false;
-volatile bool int7Triggered = false;
 volatile Ordinal systemAddressTableBase = 0;
 // On the i960 this is separated out into two parts, locals and globals
 // The idea is that globals are always available and locals are per function.
@@ -617,13 +609,17 @@ void
 flushreg() noexcept {
     /// @todo implement if it makes sense since we aren't using register frames
 }
-Ordinal
+void
 mark() noexcept {
-    return pc.pc.traceEnable && tc.trace.breakpointTraceMode ? MarkTraceFault : NoFault;
+    if (pc.pc.traceEnable && tc.trace.breakpointTraceMode) {
+        faultCode.o = MarkTraceFault;
+    }
 }
-Ordinal
+void
 fmark() noexcept {
-    return pc.pc.traceEnable ? MarkTraceFault : NoFault;
+    if (pc.pc.traceEnable) {
+        faultCode.o = MarkTraceFault;
+    }
 }
 void restoreRegisterSet(Ordinal fp) noexcept;
 void
@@ -1380,10 +1376,10 @@ loop() {
             flushreg();
             break;
         case Opcodes::fmark:
-            faultCode.o = fmark();
+            fmark();
             break;
         case Opcodes::mark:
-            faultCode.o = mark();
+            mark();
             break;
         case Opcodes::mulo:
             flags.ucode.performMultiply = true;
@@ -1676,33 +1672,6 @@ loop() {
     ip.o += flags.ucode.advanceBy; 
 }
 
-ISR(INT0_vect) {
-    int0Triggered = true;
-}
-
-
-ISR(INT1_vect) {
-    int1Triggered = true;
-
-}
-ISR(INT2_vect) {
-    int2Triggered = true;
-}
-ISR(INT3_vect) {
-    int3Triggered = true;
-}
-ISR(INT4_vect) {
-    int4Triggered = true;
-}
-ISR(INT5_vect) {
-    int5Triggered = true;
-}
-ISR(INT6_vect) {
-    int6Triggered = true;
-}
-ISR(INT7_vect) {
-    int7Triggered = true;
-}
 Ordinal 
 unpackSrc1_REG(TreatAsOrdinal) noexcept {
     if (instruction.reg.m1) {
