@@ -113,7 +113,6 @@ union MicrocodeFlags {
         bits.advanceBy = 4;
     }
 };
-MicrocodeFlags flags;
 template<typename T>
 volatile T& memory(size_t address) noexcept {
     return *reinterpret_cast<volatile T*>(address);
@@ -471,6 +470,35 @@ union Register {
         Ordinal breakpointTraceEvent : 1; // 23
         Ordinal unused2 : 8;
     } trace;
+    struct {
+        uint32_t invertResult : 1;
+        uint32_t invertSrc1 : 1;
+        uint32_t zeroSrc1 : 1;
+        uint32_t src1IsBitPosition : 1;
+        uint32_t invertSrc2 : 1;
+        uint32_t zeroSrc2 : 1;
+        uint32_t doXor : 1;
+        uint32_t doOr : 1;
+        uint32_t doAnd : 1;
+        uint32_t ordinalOp : 1;
+        uint32_t integerOp : 1;
+        uint32_t performIncrement : 1;
+        uint32_t performDecrement : 1;
+        uint32_t performAdd : 1;
+        uint32_t performSubtract : 1;
+        uint32_t performCarry : 1;
+        uint32_t performCompare : 1;
+        uint32_t performLogical : 1;
+        uint32_t performMultiply : 1;
+        uint32_t performDivide : 1;
+        uint32_t performRemainder : 1;
+        uint32_t performSyncf : 1;
+        uint32_t lockBus : 1;
+        uint32_t performAtomicOperation : 1;
+        uint32_t performModify : 1;
+        uint32_t advanceBy : 4;
+    } ucode;
+    void clearAdvanceBy() noexcept { ucode.advanceBy = 0; }
     bool inSupervisorMode() const noexcept { return pc.executionMode; }
     bool inUserMode() const noexcept { return !inSupervisorMode(); }
     bool isMEMA() const noexcept { return !mem.selector; }
@@ -508,7 +536,7 @@ union Register {
     [[nodiscard]] constexpr byte getPriority() const noexcept { return pc.priority; }
 };
 static_assert(sizeof(Register) == sizeof(Ordinal));
-Register ip, ac, pc, tc;
+Register ip, ac, pc, tc, flags;
 volatile bool int0Triggered = false;
 volatile bool int1Triggered = false;
 volatile bool int2Triggered = false;
@@ -750,7 +778,7 @@ computeAddress() noexcept {
         if (instruction.memb.group) {
             // okay so it is going to be the displacement versions
             // load 32-bits into the optionalDisplacement field
-            flags.bits.advanceBy += 4;
+            flags.ucode.advanceBy += 4;
             Integer result = static_cast<Integer>(load(ip.a + 4, TreatAsOrdinal{})); // load the optional displacement
             if (instruction.memb_grp2.useIndex) {
                 result += (getGPRValue(instruction.memb_grp2.index, TreatAsInteger{}) << static_cast<Integer>(instruction.memb_grp2.scale));
@@ -765,7 +793,7 @@ computeAddress() noexcept {
                 case 0b00: // Register Indirect
                     return getGPRValue(instruction.memb.abase, TreatAsOrdinal{});
                 case 0b01: // IP With Displacement 
-                    flags.bits.advanceBy += 4;
+                    flags.ucode.advanceBy += 4;
                     return static_cast<Ordinal>(ip.i + load(ip.a + 4, TreatAsInteger{}) + 8);
                 case 0b11: // Register Indirect With Index
                     return getGPRValue(instruction.memb.abase, TreatAsOrdinal{}) + (getGPRValue(instruction.memb.index, TreatAsOrdinal{}) << instruction.memb.scale);
@@ -898,7 +926,7 @@ stq() noexcept {
 void
 balx() noexcept {
     auto address = computeAddress();
-    setGPR(instruction.mem.srcDest, ip.o + flags.bits.advanceBy, TreatAsOrdinal{});
+    setGPR(instruction.mem.srcDest, ip.o + flags.ucode.advanceBy, TreatAsOrdinal{});
     ip.o = address;
     flags.clearAdvanceBy();
 }
@@ -936,7 +964,7 @@ callx() noexcept {
     auto temp = (getGPRValue(SPIndex, TreatAsOrdinal{}) + C) & NotC; // round stack pointer to next boundary
     auto addr = computeAddress();
     auto fp = getGPRValue(FPIndex, TreatAsOrdinal{});
-    setGPR(RIPIndex, ip.o + flags.bits.advanceBy, TreatAsOrdinal{});
+    setGPR(RIPIndex, ip.o + flags.ucode.advanceBy, TreatAsOrdinal{});
     enterCall(fp);
     ip.o = addr;
     setGPR(PFPIndex, fp, TreatAsOrdinal{});
@@ -949,7 +977,7 @@ call() {
     // wait for any uncompleted instructions to finish
     auto temp = (getGPRValue(SPIndex, TreatAsOrdinal{}) + C) & NotC; // round stack pointer to next boundary
     auto fp = getGPRValue(FPIndex, TreatAsOrdinal{});
-    setGPR(RIPIndex, ip.o + flags.bits.advanceBy, TreatAsOrdinal{});
+    setGPR(RIPIndex, ip.o + flags.ucode.advanceBy, TreatAsOrdinal{});
     enterCall(fp);
     ip.i += instruction.ctrl.displacement;
     setGPR(PFPIndex, fp, TreatAsOrdinal{});
@@ -969,7 +997,7 @@ calls(Ordinal src1) noexcept {
         auto procedureAddress = tempPE & ~0b11;
         // read entry from system-procedure table, where spbase is address of
         // system-procedure table from Initial Memory Image
-        setGPR(RIPIndex, ip.o + flags.bits.advanceBy, TreatAsOrdinal{});
+        setGPR(RIPIndex, ip.o + flags.ucode.advanceBy, TreatAsOrdinal{});
         ip.o = procedureAddress;
         Ordinal temp = 0, tempRRR = 0;
         if ((type == 0b00) || pc.inSupervisorMode()) {
@@ -1049,8 +1077,7 @@ loop() {
     auto src2i = unpackSrc2_REG(TreatAsInteger{});
     auto src1o = unpackSrc1_REG(TreatAsOrdinal{});
     auto src1i = unpackSrc1_REG(TreatAsInteger{});
-    flags.raw = 0;
-    flags.bits.advanceBy = 4;
+    flags.clear();
     
     switch (instruction.getOpcode()) {
         case Opcodes::bal: // bal
@@ -1058,7 +1085,7 @@ loop() {
             // then fallthrough and take the branch
         case Opcodes::b: // b
             ip.i += instruction.cobr.displacement;
-            flags.bits.advanceBy = 0;
+            flags.clearAdvanceBy();
             break;
         case Opcodes::call: // call
             call();
@@ -1069,7 +1096,7 @@ loop() {
         case Opcodes::bno:
             if (ac.arith.conditionCode == 0) {
                 ip.i += instruction.ctrl.displacement;
-                flags.bits.advanceBy = 0;
+                flags.clearAdvanceBy();
             }
             break;
         case Opcodes::be:
@@ -1083,7 +1110,7 @@ loop() {
             // itself so we can just use it and save a ton of space overall
             if ((ac.arith.conditionCode & instruction.instGeneric.mask) != 0) {
                 ip.i += instruction.ctrl.displacement;
-                flags.bits.advanceBy = 0;
+                flags.clearAdvanceBy();
             }
             break;
         case Opcodes::faultno:
@@ -1203,90 +1230,90 @@ loop() {
     // in some of the opcodeExt values seem to reflect the resultant truth
     // table for the operation :). That's pretty cool
         case Opcodes::nand: // nand
-            flags.bits.invertResult = true;
+            flags.ucode.invertResult = true;
         case Opcodes::andOperation: // and
-            flags.bits.performLogical = true;
-            flags.bits.doAnd = true;
+            flags.ucode.performLogical = true;
+            flags.ucode.doAnd = true;
             break;
         case Opcodes::clrbit: // clrbit
                               // clrbit is src2 & ~computeBitPosition(src1)
                               // so lets use andnot
-            flags.bits.src1IsBitPosition = true;
+            flags.ucode.src1IsBitPosition = true;
         case Opcodes::andnot: // andnot
-            flags.bits.doAnd = true;
-            flags.bits.invertSrc1 = true;
-            flags.bits.performLogical = true;
+            flags.ucode.doAnd = true;
+            flags.ucode.invertSrc1 = true;
+            flags.ucode.performLogical = true;
             break;
         case Opcodes::notand: // notand
-            flags.bits.doAnd = true;
-            flags.bits.invertSrc2 = true;
-            flags.bits.performLogical = true;
+            flags.ucode.doAnd = true;
+            flags.ucode.invertSrc2 = true;
+            flags.ucode.performLogical = true;
             break;
         case Opcodes::notbit: // notbit
                      // notbit is src2 ^ computeBitPosition(src1)
-            flags.bits.src1IsBitPosition = true;
+            flags.ucode.src1IsBitPosition = true;
         case Opcodes::xorOperation: // xor
-            flags.bits.doXor = true;
-            flags.bits.performLogical = true;
+            flags.ucode.doXor = true;
+            flags.ucode.performLogical = true;
             break;
         case Opcodes::setbit: // setbit
                      // setbit is src2 | computeBitPosition(src1o)
-            flags.bits.src1IsBitPosition = true;
+            flags.ucode.src1IsBitPosition = true;
         case Opcodes::orOperation: // or
-            flags.bits.doOr = true;
-            flags.bits.performLogical = true;
+            flags.ucode.doOr = true;
+            flags.ucode.performLogical = true;
             break;
         case Opcodes::nor: // nor
-            flags.bits.doOr = true;
-            flags.bits.invertResult = true;
-            flags.bits.performLogical = true;
+            flags.ucode.doOr = true;
+            flags.ucode.invertResult = true;
+            flags.ucode.performLogical = true;
             break;
         case Opcodes::xnor: // xnor
-            flags.bits.doXor = true;
-            flags.bits.invertResult = true;
-            flags.bits.performLogical = true;
+            flags.ucode.doXor = true;
+            flags.ucode.invertResult = true;
+            flags.ucode.performLogical = true;
             break;
         case Opcodes::notOperation: // not 
                      // perform fallthrough to ornot with src2 set to zero
-            flags.bits.zeroSrc2 = true;
+            flags.ucode.zeroSrc2 = true;
         case Opcodes::ornot: // ornot
-            flags.bits.doOr = true;
-            flags.bits.invertSrc1 = true;
-            flags.bits.performLogical = true;
+            flags.ucode.doOr = true;
+            flags.ucode.invertSrc1 = true;
+            flags.ucode.performLogical = true;
             break;
         case Opcodes::notor: // notor
-            flags.bits.doOr = true;
-            flags.bits.invertSrc2 = true;
-            flags.bits.performLogical = true;
+            flags.ucode.doOr = true;
+            flags.ucode.invertSrc2 = true;
+            flags.ucode.performLogical = true;
             break;
         case Opcodes::alterbit: // alterbit
-            flags.bits.src1IsBitPosition = true;
-            flags.bits.performLogical = true;
+            flags.ucode.src1IsBitPosition = true;
+            flags.ucode.performLogical = true;
             if (ac.arith.conditionCode & 0b010) {
-                flags.bits.doOr = true;
+                flags.ucode.doOr = true;
             } else {
-                flags.bits.doAnd = true;
-                flags.bits.invertSrc1 = true;
+                flags.ucode.doAnd = true;
+                flags.ucode.invertSrc1 = true;
             }
             break;
         case Opcodes::addo: // addo
-            flags.bits.performAdd = true;
-            flags.bits.ordinalOp = true;
+            flags.ucode.performAdd = true;
+            flags.ucode.ordinalOp = true;
             break;
         case Opcodes::addi: // addi
-            flags.bits.performAdd = true;
-            flags.bits.integerOp = true;
+            flags.ucode.performAdd = true;
+            flags.ucode.integerOp = true;
             break;
         case Opcodes::subo: // subo
             // I remember this trick from college, subtraction is just addition
             // with a negative second argument :). I never gave it much thought
             // until now but it seems to be an effective trick to save space.
-            flags.bits.performSubtract = true;
-            flags.bits.ordinalOp = true;
+            flags.ucode.performSubtract = true;
+            flags.ucode.ordinalOp = true;
             break;
         case Opcodes::subi: // subi
-            flags.bits.performSubtract = true;
-            flags.bits.integerOp = true;
+            flags.ucode.performSubtract = true;
+            flags.ucode.integerOp = true;
             break;
         case Opcodes::shro: // shro
             regDest.o = src1o < 32 ? src2o >> src1o : 0;
@@ -1325,12 +1352,12 @@ loop() {
             regDest.i = src2i << src1i;
             break;
         case Opcodes::cmpo: // cmpo
-            flags.bits.performCompare = true;
-            flags.bits.ordinalOp = true;
+            flags.ucode.performCompare = true;
+            flags.ucode.ordinalOp = true;
             break;
         case Opcodes::cmpi: // cmpi
-            flags.bits.performCompare = true;
-            flags.bits.integerOp = true;
+            flags.ucode.performCompare = true;
+            flags.ucode.integerOp = true;
             break;
         case Opcodes::concmpo: // concmpo
             if ((ac.arith.conditionCode & 0b100) == 0) {
@@ -1343,24 +1370,24 @@ loop() {
             }
             break;
         case Opcodes::cmpinco: // cmpinco
-            flags.bits.performCompare = 1;
-            flags.bits.ordinalOp = 1;
-            flags.bits.performIncrement = 1;
+            flags.ucode.performCompare = 1;
+            flags.ucode.ordinalOp = 1;
+            flags.ucode.performIncrement = 1;
             break;
         case Opcodes::cmpinci: // cmpinci
-            flags.bits.performCompare = 1;
-            flags.bits.integerOp = 1;
-            flags.bits.performIncrement = 1;
+            flags.ucode.performCompare = 1;
+            flags.ucode.integerOp = 1;
+            flags.ucode.performIncrement = 1;
             break;
         case Opcodes::cmpdeco: // cmpdeco
-            flags.bits.performCompare = 1;
-            flags.bits.ordinalOp = 1;
-            flags.bits.performDecrement = 1;
+            flags.ucode.performCompare = 1;
+            flags.ucode.ordinalOp = 1;
+            flags.ucode.performDecrement = 1;
             break;
         case Opcodes::cmpdeci: // cmpdeci
-            flags.bits.performCompare = 1;
-            flags.bits.integerOp = 1;
-            flags.bits.performDecrement = 1;
+            flags.ucode.performCompare = 1;
+            flags.ucode.integerOp = 1;
+            flags.ucode.performDecrement = 1;
             break;
         case Opcodes::scanbyte: // scanbyte
             scanbyte(src2o, src1o);
@@ -1369,12 +1396,12 @@ loop() {
             ac.arith.conditionCode = ((src2o & computeBitPosition(src1o)) == 0 ? 0b000 : 0b010);
             break;
         case Opcodes::addc: 
-            flags.bits.performAdd = 1;
-            flags.bits.performCarry = 1;
+            flags.ucode.performAdd = 1;
+            flags.ucode.performCarry = 1;
             break;
         case Opcodes::subc:
-            flags.bits.performSubtract = 1;
-            flags.bits.performCarry = 1;
+            flags.ucode.performSubtract = 1;
+            flags.ucode.performCarry = 1;
             break;
         case Opcodes::mov:
             regDest.o = src1o;
@@ -1389,7 +1416,7 @@ loop() {
             faultCode = performRegisterTransfer(0b11, 4);
             break;
         case Opcodes::syncf:
-            flags.bits.performSyncf = 1;
+            flags.ucode.performSyncf = 1;
             break;
         case Opcodes::flushreg:
             flushreg();
@@ -1401,28 +1428,28 @@ loop() {
             faultCode = mark();
             break;
         case Opcodes::mulo:
-            flags.bits.performMultiply = true;
-            flags.bits.ordinalOp = true;
+            flags.ucode.performMultiply = true;
+            flags.ucode.ordinalOp = true;
             break;
         case Opcodes::muli:
-            flags.bits.performMultiply = true;
-            flags.bits.integerOp = true;
+            flags.ucode.performMultiply = true;
+            flags.ucode.integerOp = true;
             break;
         case Opcodes::divi:
-            flags.bits.performDivide = true;
-            flags.bits.integerOp = true;
+            flags.ucode.performDivide = true;
+            flags.ucode.integerOp = true;
             break;
         case Opcodes::divo:
-            flags.bits.performDivide = true;
-            flags.bits.ordinalOp = true;
+            flags.ucode.performDivide = true;
+            flags.ucode.ordinalOp = true;
             break;
         case Opcodes::remo:
-            flags.bits.performRemainder = true;
-            flags.bits.ordinalOp = true;
+            flags.ucode.performRemainder = true;
+            flags.ucode.ordinalOp = true;
             break;
         case Opcodes::remi:
-            flags.bits.performRemainder = true;
-            flags.bits.integerOp = true;
+            flags.ucode.performRemainder = true;
+            flags.ucode.integerOp = true;
             break;
         case Opcodes::modi: 
             if (auto denominator = src1i; denominator == 0) {
@@ -1465,17 +1492,17 @@ loop() {
             }
             break;
         case Opcodes::atadd:
-            flags.bits.performSyncf = 1;
-            flags.bits.lockBus = 1;
-            flags.bits.performAtomicOperation = 1;
-            flags.bits.performAdd = 1;
+            flags.ucode.performSyncf = 1;
+            flags.ucode.lockBus = 1;
+            flags.ucode.performAtomicOperation = 1;
+            flags.ucode.performAdd = 1;
             //atadd(regDest, src1o, src2o);
             break;
         case Opcodes::atmod:
-            flags.bits.performSyncf = 1;
-            flags.bits.lockBus = 1;
-            flags.bits.performAtomicOperation = 1;
-            flags.bits.performModify = 1;
+            flags.ucode.performSyncf = 1;
+            flags.ucode.lockBus = 1;
+            flags.ucode.performAtomicOperation = 1;
+            flags.ucode.performModify = 1;
             break;
         case Opcodes::emul:
             faultCode = emul(regDest, src2o, src1o);
@@ -1496,21 +1523,21 @@ loop() {
             faultCode = UnimplementedFault;
             break;
     }
-    if (flags.bits.performSyncf) {
+    if (flags.ucode.performSyncf) {
         syncf();
     }
-    if (flags.bits.lockBus) {
+    if (flags.ucode.lockBus) {
         lockBus();
     }
-    if (flags.bits.performAtomicOperation) {
+    if (flags.ucode.performAtomicOperation) {
         auto addr = src1o & 0xFFFF'FFFC;
         auto temp = load(addr, TreatAsOrdinal{});
         Ordinal result = 0;
-        if (flags.bits.performAdd) {
+        if (flags.ucode.performAdd) {
             // adds the src (src2 internally) value to the value in memory location specified with the addr (src1 in this case) operand.
             // The initial value from memory is stored in dst (internally src/dst).
             result = temp + src2o;
-        } else if (flags.bits.performModify) {
+        } else if (flags.ucode.performModify) {
             // copies the src/dest value (logical version) into the memory location specifeid by src1.
             // The bits set in the mask (src2) operand select the bits to be modified in memory. The initial
             // value from memory is stored in src/dest
@@ -1523,45 +1550,45 @@ loop() {
         store(addr, result, TreatAsOrdinal{});
         regDest.o = temp;
     }
-    if (flags.bits.performLogical) {
-        if (flags.bits.src1IsBitPosition) {
+    if (flags.ucode.performLogical) {
+        if (flags.ucode.src1IsBitPosition) {
             src1o = computeBitPosition(src1o);
         }
-        if (flags.bits.invertSrc1) {
+        if (flags.ucode.invertSrc1) {
             src1o = ~src1o;
         }
-        if (flags.bits.zeroSrc2) {
+        if (flags.ucode.zeroSrc2) {
             src2o = 0;
         }
-        if (flags.bits.invertSrc2) {
+        if (flags.ucode.invertSrc2) {
             src2o = ~src2o;
         }
-        if (flags.bits.doAnd) {
+        if (flags.ucode.doAnd) {
             regDest.o = src2o & src1o;
-        } else if (flags.bits.doXor) {
+        } else if (flags.ucode.doXor) {
             regDest.o = src2o ^ src1o;
-        } else if (flags.bits.doOr) {
+        } else if (flags.ucode.doOr) {
             regDest.o = src2o | src1o;
         }
-        if (flags.bits.invertResult) {
+        if (flags.ucode.invertResult) {
             regDest.o = ~regDest.o;
         }
     }
-    if (flags.bits.performCompare) {
-        if (flags.bits.ordinalOp) {
+    if (flags.ucode.performCompare) {
+        if (flags.ucode.ordinalOp) {
             cmpGeneric(src1o, src2o);
-            if (flags.bits.performIncrement) {
+            if (flags.ucode.performIncrement) {
                 regDest.o = src2o + 1;
             }
-            if (flags.bits.performDecrement) {
+            if (flags.ucode.performDecrement) {
                 regDest.o = src2o - 1;
             }
-        } else if (flags.bits.integerOp) {
+        } else if (flags.ucode.integerOp) {
             cmpGeneric(src1i, src2i);
-            if (flags.bits.performIncrement) {
+            if (flags.ucode.performIncrement) {
                 regDest.i = src2i + 1;
             }
-            if (flags.bits.performDecrement) {
+            if (flags.ucode.performDecrement) {
                 regDest.i = src2i - 1;
             }
         } else {
@@ -1570,11 +1597,11 @@ loop() {
             faultCode = InvalidOpcodeFault; // invalid opcode/operation
         }
     }
-    if (flags.bits.performCarry) {
+    if (flags.ucode.performCarry) {
         LongOrdinal result = 0;
-        if (flags.bits.performAdd) {
+        if (flags.ucode.performAdd) {
             result = static_cast<LongOrdinal>(src2o) + static_cast<LongOrdinal>(src1o);
-        } else if (flags.bits.performSubtract) {
+        } else if (flags.ucode.performSubtract) {
             result = static_cast<LongOrdinal>(src2o) - static_cast<LongOrdinal>(src1o) - 1;
         }
         result += (ac.getCarryBit() ? 1 : 0);
@@ -1583,20 +1610,20 @@ loop() {
                 (src2o & 0x8000'0000), 
                 (src1o & 0x8000'0000), 
                 (regDest.o & 0x8000'0000));
-    } else if (flags.bits.performAdd) {
-        if (flags.bits.ordinalOp) {
+    } else if (flags.ucode.performAdd) {
+        if (flags.ucode.ordinalOp) {
             regDest.o = src2o + src1o;
-        } else if (flags.bits.integerOp) {
+        } else if (flags.ucode.integerOp) {
             regDest.i = src2i + src1i;
         } else {
             // if we got here then it means we don't have something configured
             // correctly
             faultCode = InvalidOpcodeFault; // invalid opcode
         }
-    } else if (flags.bits.performSubtract) {
-        if (flags.bits.ordinalOp) {
+    } else if (flags.ucode.performSubtract) {
+        if (flags.ucode.ordinalOp) {
             regDest.o = src2o - src1o;
-        } else if (flags.bits.integerOp) {
+        } else if (flags.ucode.integerOp) {
             regDest.i = src2i - src1i;
         } else {
             // if we got here then it means we don't have something configured
@@ -1604,21 +1631,21 @@ loop() {
             faultCode = InvalidOpcodeFault; // invalid opcode
         }
 
-    } else if (flags.bits.performMultiply) {
-        if (flags.bits.ordinalOp) {
+    } else if (flags.ucode.performMultiply) {
+        if (flags.ucode.ordinalOp) {
             regDest.o = src2o * src1o;
-        } else if (flags.bits.integerOp) {
+        } else if (flags.ucode.integerOp) {
             regDest.i = src2i * src1i;
         }
-    } else if (flags.bits.performDivide) {
-        if (flags.bits.ordinalOp) {
+    } else if (flags.ucode.performDivide) {
+        if (flags.ucode.ordinalOp) {
             if (src1o == 0) {
                 /// @todo fix this
                 faultCode = ZeroDivideFault; // divide by zero
             } else {
                 regDest.o = src2o / src1o;
             }
-        } else if (flags.bits.integerOp) {
+        } else if (flags.ucode.integerOp) {
             if (src1i == 0) {
                 /// @todo fix this
                 faultCode = ZeroDivideFault; // divide by zero
@@ -1630,8 +1657,8 @@ loop() {
             // correctly
             faultCode = InvalidOpcodeFault; // invalid opcode
         }
-    } else if (flags.bits.performRemainder) {
-        if (flags.bits.ordinalOp) {
+    } else if (flags.ucode.performRemainder) {
+        if (flags.ucode.ordinalOp) {
             if (src1o == 0) {
                 /// @todo fix this
                 faultCode = ZeroDivideFault; // divide by zero
@@ -1640,7 +1667,7 @@ loop() {
                 //dest.setOrdinal(src2 - ((src2 / src1) * src1));
                 regDest.o = src2o % src1o;
             }
-        } else if (flags.bits.integerOp) {
+        } else if (flags.ucode.integerOp) {
             if (src1i == 0) {
                 /// @todo fix this
                 faultCode = ZeroDivideFault; // divide by zero
@@ -1663,12 +1690,12 @@ loop() {
         /// Faults are basically fallback behavior when something goes wacky!
         configRegs().faultPort = faultCode;
     }
-    if (flags.bits.lockBus) {
+    if (flags.ucode.lockBus) {
         unlockBus();
     }
     // okay we got here so we need to start grabbing data off of the bus and
     // start executing the next instruction
-    ip.o += flags.bits.advanceBy; 
+    ip.o += flags.ucode.advanceBy; 
 }
 
 ISR(INT0_vect) {
