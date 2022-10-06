@@ -1033,7 +1033,6 @@ loop() {
             uint32_t performSubtract : 1;
             uint32_t performCarry : 1;
             uint32_t performCompare : 1;
-            uint32_t makeSrc1Negative : 1;
             uint32_t performLogical : 1;
             uint32_t src1IsBitPosition : 1;
             uint32_t performMultiply : 1;
@@ -1043,7 +1042,7 @@ loop() {
             uint32_t lockBus : 1;
             uint32_t performAtomicOperation : 1;
             uint32_t performModify : 1;
-            uint32_t unused : 8;
+            uint32_t unused : 9;
         } bits;
     } flags;
     flags.raw = 0;
@@ -1278,12 +1277,12 @@ loop() {
             // with a negative second argument :). I never gave it much thought
             // until now but it seems to be an effective trick to save space.
             flags.bits.performAdd = true;
-            flags.bits.makeSrc1Negative = true;
+            flags.bits.invertSrc1 = true;
             flags.bits.ordinalOp = true;
             break;
         case Opcodes::subi: // subi
             flags.bits.performAdd = true;
-            flags.bits.makeSrc1Negative = true;
+            flags.bits.invertSrc1 = true;
             flags.bits.integerOp = true;
             break;
         case Opcodes::shro: // shro
@@ -1580,12 +1579,12 @@ loop() {
                 (regDest.o & 0x8000'0000));
     } else if (flags.bits.performAdd) {
         if (flags.bits.ordinalOp) {
-            if (flags.bits.makeSrc1Negative) {
+            if (flags.bits.invertSrc1) {
                 src1o = -src1o;
             }
             regDest.o = src2o + src1o;
         } else if (flags.bits.integerOp) {
-            if (flags.bits.makeSrc1Negative) {
+            if (flags.bits.invertSrc1) {
                 src1i = -src1i;
             }
             regDest.i = src2i + src1i;
