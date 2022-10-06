@@ -1340,24 +1340,24 @@ loop() {
             }
             break;
         case Opcodes::cmpinco: // cmpinco
-            flags.bits.performCompare = true;
-            flags.bits.ordinalOp = true;
-            flags.bits.performIncrement = true;
+            flags.bits.performCompare = 1;
+            flags.bits.ordinalOp = 1;
+            flags.bits.performIncrement = 1;
             break;
         case Opcodes::cmpinci: // cmpinci
-            flags.bits.performCompare = true;
-            flags.bits.integerOp = true;
-            flags.bits.performIncrement = true;
+            flags.bits.performCompare = 1;
+            flags.bits.integerOp = 1;
+            flags.bits.performIncrement = 1;
             break;
         case Opcodes::cmpdeco: // cmpdeco
-            flags.bits.performCompare = true;
-            flags.bits.ordinalOp = true;
-            flags.bits.performDecrement = true;
+            flags.bits.performCompare = 1;
+            flags.bits.ordinalOp = 1;
+            flags.bits.performDecrement = 1;
             break;
         case Opcodes::cmpdeci: // cmpdeci
-            flags.bits.performCompare = true;
-            flags.bits.integerOp = true;
-            flags.bits.performDecrement = true;
+            flags.bits.performCompare = 1;
+            flags.bits.integerOp = 1;
+            flags.bits.performDecrement = 1;
             break;
         case Opcodes::scanbyte: // scanbyte
             scanbyte(src2o, src1o);
@@ -1366,12 +1366,12 @@ loop() {
             ac.arith.conditionCode = ((src2o & computeBitPosition(src1o)) == 0 ? 0b000 : 0b010);
             break;
         case Opcodes::addc: 
-            flags.bits.performAdd = true;
-            flags.bits.performCarry = true;
+            flags.bits.performAdd = 1;
+            flags.bits.performCarry = 1;
             break;
         case Opcodes::subc:
-            flags.bits.performSubtract = true;
-            flags.bits.performCarry = true;
+            flags.bits.performSubtract = 1;
+            flags.bits.performCarry = 1;
             break;
         case Opcodes::mov:
             regDest.o = src1o;
@@ -1386,7 +1386,7 @@ loop() {
             faultCode = performRegisterTransfer(0b11, 4);
             break;
         case Opcodes::syncf:
-            flags.bits.performSyncf = true;
+            flags.bits.performSyncf = 1;
             break;
         case Opcodes::flushreg:
             flushreg();
