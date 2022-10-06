@@ -859,6 +859,13 @@ stq() noexcept {
     }
 }
 
+void
+balx() noexcept {
+    auto address = computeAddress();
+    setGPR(instruction.mem.srcDest, ip.o + advanceBy, TreatAsOrdinal{});
+    ip.o = address;
+    advanceBy = 0;
+}
 bool 
 registerSetAvailable() noexcept {
     /// @todo implement this properly when we implement support for register
@@ -1035,8 +1042,7 @@ loop() {
             uint32_t lockBus : 1;
             uint32_t performAtomicOperation : 1;
             uint32_t performModify : 1;
-            uint32_t dontAdvance: 1;
-            uint32_t unused : 8;
+            uint32_t unused : 9;
         } bits;
     } flags;
     flags.raw = 0;
@@ -1047,7 +1053,7 @@ loop() {
             // then fallthrough and take the branch
         case Opcodes::b: // b
             ip.i += instruction.cobr.displacement;
-            flags.bits.dontAdvance = 1;
+            advanceBy = 0;
             break;
         case Opcodes::call: // call
             call();
@@ -1058,7 +1064,7 @@ loop() {
         case Opcodes::bno:
             if (ac.arith.conditionCode == 0) {
                 ip.i += instruction.ctrl.displacement;
-                flags.bits.dontAdvance = 1;
+                advanceBy = 0;
             }
             break;
         case Opcodes::be:
@@ -1183,13 +1189,8 @@ loop() {
         case Opcodes::bx:
             bx();
             break;
-        case Opcodes::balx: 
-            {
-                auto address = computeAddress();
-                setGPR(instruction.mem.srcDest, ip.o + advanceBy, TreatAsOrdinal{});
-                ip.o = address;
-                flags.bits.dontAdvance = 1;
-            }
+        case Opcodes::balx:
+            balx();
             break;
         case Opcodes::callx:
             callx();
@@ -1659,9 +1660,7 @@ loop() {
     }
     // okay we got here so we need to start grabbing data off of the bus and
     // start executing the next instruction
-    if (!flags.bits.dontAdvance) {
-        ip.o += advanceBy; 
-    }
+    ip.o += advanceBy; 
 }
 
 ISR(INT0_vect) {
