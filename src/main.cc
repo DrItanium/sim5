@@ -1042,7 +1042,8 @@ loop() {
             uint32_t lockBus : 1;
             uint32_t performAtomicOperation : 1;
             uint32_t performModify : 1;
-            uint32_t unused : 9;
+            uint32_t zeroSrc2 : 1;
+            uint32_t unused : 8;
         } bits;
     } flags;
     flags.raw = 0;
@@ -1243,7 +1244,7 @@ loop() {
             break;
         case Opcodes::notOperation: // not 
                      // perform fallthrough to ornot with src2 set to zero
-            src2o = 0;
+            flags.bits.zeroSrc2 = true;
         case Opcodes::ornot: // ornot
             flags.bits.doOr = true;
             flags.bits.invertSrc1 = true;
@@ -1524,6 +1525,9 @@ loop() {
         }
         if (flags.bits.invertSrc1) {
             src1o = ~src1o;
+        }
+        if (flags.bits.zeroSrc2) {
+            src2o = 0;
         }
         if (flags.bits.invertSrc2) {
             src2o = ~src2o;
