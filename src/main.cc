@@ -472,6 +472,11 @@ Register ip, ac, pc, tc;
 volatile bool int0Triggered = false;
 volatile bool int1Triggered = false;
 volatile bool int2Triggered = false;
+volatile bool int3Triggered = false;
+volatile bool int4Triggered = false;
+volatile bool int5Triggered = false;
+volatile bool int6Triggered = false;
+volatile bool int7Triggered = false;
 volatile byte advanceBy = 0;
 volatile Ordinal systemAddressTableBase = 0;
 // On the i960 this is separated out into two parts, locals and globals
@@ -1607,11 +1612,7 @@ loop() {
         /// happens
         ///
         /// Faults are basically fallback behavior when something goes wacky!
-#ifdef HAVE_EBI
         configRegs().faultPort = faultCode;
-#else
-        // do something else
-#endif
     }
     // okay we got here so we need to start grabbing data off of the bus and
     // start executing the next instruction
@@ -1629,7 +1630,21 @@ ISR(INT1_vect) {
 }
 ISR(INT2_vect) {
     int2Triggered = true;
-
+}
+ISR(INT3_vect) {
+    int3Triggered = true;
+}
+ISR(INT4_vect) {
+    int4Triggered = true;
+}
+ISR(INT5_vect) {
+    int5Triggered = true;
+}
+ISR(INT6_vect) {
+    int6Triggered = true;
+}
+ISR(INT7_vect) {
+    int7Triggered = true;
 }
 Ordinal 
 unpackSrc1_REG(TreatAsOrdinal) noexcept {
