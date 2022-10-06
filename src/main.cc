@@ -107,6 +107,11 @@ union MicrocodeFlags {
         uint32_t performModify : 1;
         uint32_t advanceBy : 4;
     } bits;
+    void clearAdvanceBy() noexcept { bits.advanceBy = 0; }
+    void clear() noexcept {
+        raw = 0;
+        bits.advanceBy = 4;
+    }
 };
 MicrocodeFlags flags;
 template<typename T>
@@ -637,7 +642,7 @@ restoreStandardFrame() noexcept {
     auto realAddress = getGPRValue(FPIndex, TreatAsOrdinal{}) & NotC;
     restoreRegisterSet(realAddress);
     ip.o = getGPRValue(RIPIndex, TreatAsOrdinal{});
-    flags.bits.advanceBy = 0;
+    flags.clearAdvanceBy();
 }
 void
 ret() {
@@ -718,7 +723,7 @@ branchIfBitGeneric() {
         temp.alignedTransfer.important = instruction.cobr.displacement;
         ip.alignedTransfer.important = ip.alignedTransfer.important + temp.alignedTransfer.important;
         ip.alignedTransfer.aligned = 0;
-        flags.bits.advanceBy = 0;
+        flags.clearAdvanceBy();
     } else {
         ac.arith.conditionCode = checkClear ? 0b010 : 0b000;
     }
@@ -792,7 +797,7 @@ cmpxbGeneric() noexcept {
         temp.alignedTransfer.important = instruction.cobr.displacement;
         ip.alignedTransfer.important = ip.alignedTransfer.important + temp.alignedTransfer.important;
         ip.alignedTransfer.aligned = 0;
-        flags.bits.advanceBy = 0;
+        flags.clearAdvanceBy();
     }
 }
 void 
@@ -895,7 +900,7 @@ balx() noexcept {
     auto address = computeAddress();
     setGPR(instruction.mem.srcDest, ip.o + flags.bits.advanceBy, TreatAsOrdinal{});
     ip.o = address;
-    flags.bits.advanceBy = 0;
+    flags.clearAdvanceBy();
 }
 bool 
 registerSetAvailable() noexcept {
@@ -937,7 +942,7 @@ callx() noexcept {
     setGPR(PFPIndex, fp, TreatAsOrdinal{});
     setGPR(FPIndex, temp, TreatAsOrdinal{});
     setGPR(SPIndex , temp + 64, TreatAsOrdinal{});
-    flags.bits.advanceBy = 0;
+    flags.clearAdvanceBy();
 }
 void 
 call() {
@@ -950,7 +955,7 @@ call() {
     setGPR(PFPIndex, fp, TreatAsOrdinal{});
     setGPR(FPIndex, temp, TreatAsOrdinal{});
     setGPR(SPIndex , temp + 64, TreatAsOrdinal{});
-    flags.bits.advanceBy = 0;
+    flags.clearAdvanceBy();
 }
 Ordinal getSupervisorStackPointer() noexcept;
 Ordinal
@@ -984,14 +989,14 @@ calls(Ordinal src1) noexcept {
         pfp.pfp.rt = tempRRR;
         setGPR(FPIndex, temp, TreatAsOrdinal{});
         setGPR(SPIndex, temp + 64, TreatAsOrdinal{});
-        flags.bits.advanceBy = 0;
+        flags.clearAdvanceBy();
         return NoFault;
     }
 }
 void
 bx() noexcept {
     ip.o = computeAddress();
-    flags.bits.advanceBy = 0;
+    flags.clearAdvanceBy();
 }
 
 
