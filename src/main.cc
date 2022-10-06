@@ -557,7 +557,7 @@ void moveGPR(byte destIndex, byte destOffset, byte srcIndex, byte srcOffset, Tre
 [[nodiscard]] constexpr Ordinal rotateOperation(Ordinal src, Ordinal length) noexcept;
 void scanbyte(Ordinal src2, Ordinal src1) noexcept;
 Ordinal emul(Register& dest, Ordinal src1, Ordinal src2) noexcept;
-Ordinal ediv(Register& dest, Ordinal src1, Ordinal src2) noexcept;
+void ediv(Register& dest, Ordinal src1, Ordinal src2) noexcept;
 void scanbit(Register& dest, Ordinal src1, Ordinal src2) noexcept;
 void spanbit(Register& dest, Ordinal src1, Ordinal src2) noexcept;
 void arithmeticWithCarryGeneric(Ordinal result, bool src2MSB, bool src1MSB, bool destMSB) noexcept;
@@ -1473,7 +1473,7 @@ loop() {
             faultCode.o = emul(regDest, src2o, src1o);
             break;
         case Opcodes::ediv:
-            faultCode.o = ediv(regDest, src2o, src1o);
+            ediv(regDest, src2o, src1o);
             break;
         case Opcodes::calls:
             faultCode.o = calls(src1o);
@@ -1801,21 +1801,20 @@ emul(Register& dest, Ordinal src1, Ordinal src2) noexcept {
     return faultCode;
 }
 
-Ordinal
+void
 ediv(Register& dest, Ordinal src1, Ordinal src2Lower) noexcept {
     union {
         LongOrdinal lord;
         Ordinal parts[sizeof(LongOrdinal)/sizeof(Ordinal)];
     } result, src2;
     src2.parts[0] = src2Lower;
-    auto faultCode = NoFault;
     if ((instruction.reg.srcDest & 0b1) != 0 || (instruction.reg.src2 & 0b1) != 0) {
         /// @todo fix
-        faultCode = InvalidOpcodeFault;
+        faultCode.o = InvalidOpcodeFault;
     } else if (src1 == 0) {
         // divide by zero
         /// @todo fix
-        faultCode = ZeroDivideFault;
+        faultCode.o = ZeroDivideFault;
     } else {
         src2.parts[1] = getGPRValue(instruction.reg.src2, 1, TreatAsOrdinal{});
         result.parts[1] = src2.lord / src1; // quotient
@@ -1825,7 +1824,6 @@ ediv(Register& dest, Ordinal src1, Ordinal src2Lower) noexcept {
     // if we hit a fault then we just give whats on the stack :)
     dest.o = result.parts[0];
     setGPR(instruction.reg.srcDest, 1, result.parts[1], TreatAsOrdinal{});
-    return faultCode;
 }
 Ordinal 
 getSystemAddressTableBase() noexcept { 
