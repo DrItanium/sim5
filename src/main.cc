@@ -894,8 +894,7 @@ loadBlock(Ordinal baseAddress, byte baseRegister, byte count) noexcept {
 void 
 ldl() noexcept {
     if ((instruction.mem.srcDest & 0b1) != 0) {
-        /// @todo fix
-        faultCode.o = InvalidOperandFault;
+        faultCode.setValue(InvalidOperandFault, TreatAsOrdinal{});
     } else {
         loadBlock(computeAddress(), instruction.mem.srcDest, 2);
         // support unaligned accesses
@@ -905,8 +904,7 @@ ldl() noexcept {
 void
 stl() noexcept {
     if ((instruction.mem.srcDest & 0b1) != 0) {
-        /// @todo fix
-        faultCode.o = InvalidOperandFault;
+        faultCode.setValue(InvalidOperandFault, TreatAsOrdinal{});
     } else {
         storeBlock(computeAddress(), instruction.mem.srcDest, 2);
         // support unaligned accesses
@@ -915,9 +913,7 @@ stl() noexcept {
 void
 ldt() noexcept {
     if ((instruction.mem.srcDest & 0b11) != 0) {
-        /// @todo fix
-        faultCode.o = InvalidOperandFault;
-        /// @note the hx manual shows that destination is modified o_O
+        faultCode.setValue(InvalidOperandFault, TreatAsOrdinal{});
     } else {
         loadBlock(computeAddress(), instruction.mem.srcDest, 3);
         // support unaligned accesses
@@ -927,9 +923,7 @@ ldt() noexcept {
 void
 stt() noexcept {
     if ((instruction.mem.srcDest & 0b11) != 0) {
-        /// @todo fix
-        faultCode.o = InvalidOperandFault;
-        /// @note the hx manual shows that destination is modified o_O
+        faultCode.setValue(InvalidOperandFault, TreatAsOrdinal{});
     } else {
         storeBlock(computeAddress(), instruction.mem.srcDest, 3);
         // support unaligned accesses
@@ -939,9 +933,7 @@ stt() noexcept {
 void
 ldq() noexcept {
     if ((instruction.mem.srcDest & 0b11) != 0) {
-        /// @todo fix
-        faultCode.o = InvalidOperandFault;
-        /// @note the hx manual shows that destination is modified o_O
+        faultCode.setValue(InvalidOperandFault, TreatAsOrdinal{});
     } else {
         loadBlock(computeAddress(), instruction.mem.srcDest, 4);
         // support unaligned accesses
@@ -951,9 +943,7 @@ ldq() noexcept {
 void
 stq() noexcept {
     if ((instruction.mem.srcDest & 0b11) != 0) {
-        /// @todo fix
-        faultCode.o = UnalignedFault;
-        /// @note the hx manual shows that destination is modified o_O
+        faultCode.setValue(InvalidOperandFault, TreatAsOrdinal{});
     } else {
         storeBlock(computeAddress(), instruction.mem.srcDest, 4);
         // support unaligned accesses
@@ -963,8 +953,8 @@ stq() noexcept {
 void
 balx() noexcept {
     auto address = computeAddress();
-    setGPR(instruction.mem.srcDest, ip.o + advanceBy, TreatAsOrdinal{});
-    ip.o = address;
+    setGPR(instruction.mem.srcDest, ip.getValue(TreatAsOrdinal{}) + advanceBy, TreatAsOrdinal{});
+    ip.setValue(address, TreatAsOrdinal{});
     flags.ucode.dontAdvanceIP = 1;
 }
 bool 
@@ -1001,9 +991,9 @@ callx() noexcept {
     auto temp = (getGPRValue(SPIndex, TreatAsOrdinal{}) + C) & NotC; // round stack pointer to next boundary
     auto addr = computeAddress();
     auto fp = getGPRValue(FPIndex, TreatAsOrdinal{});
-    setGPR(RIPIndex, ip.o + advanceBy, TreatAsOrdinal{});
+    setGPR(RIPIndex, ip.getValue(TreatAsOrdinal{}) + advanceBy, TreatAsOrdinal{});
     enterCall(fp);
-    ip.o = addr;
+    ip.setValue(addr, TreatAsOrdinal{});
     setGPR(PFPIndex, fp, TreatAsOrdinal{});
     setGPR(FPIndex, temp, TreatAsOrdinal{});
     setGPR(SPIndex , temp + 64, TreatAsOrdinal{});
@@ -1014,7 +1004,7 @@ call() {
     // wait for any uncompleted instructions to finish
     auto temp = (getGPRValue(SPIndex, TreatAsOrdinal{}) + C) & NotC; // round stack pointer to next boundary
     auto fp = getGPRValue(FPIndex, TreatAsOrdinal{});
-    setGPR(RIPIndex, ip.o + advanceBy, TreatAsOrdinal{});
+    setGPR(RIPIndex, ip.getValue(TreatAsOrdinal{}) + advanceBy, TreatAsOrdinal{});
     enterCall(fp);
     ip.i += instruction.ctrl.displacement;
     setGPR(PFPIndex, fp, TreatAsOrdinal{});
@@ -1026,7 +1016,7 @@ Ordinal getSupervisorStackPointer() noexcept;
 void
 calls(Ordinal src1) noexcept {
     if (auto targ = src1; targ > 259) {
-        faultCode.o = ProtectionLengthFault; // protection length fault
+        faultCode.setValue(ProtectionLengthFault, TreatAsOrdinal{}); // protection length fault
     } else {
         syncf();
         auto tempPE = load(getSystemProcedureTableBase() + 48 + (4 * targ), TreatAsOrdinal{});
@@ -1034,8 +1024,8 @@ calls(Ordinal src1) noexcept {
         auto procedureAddress = tempPE & ~0b11;
         // read entry from system-procedure table, where spbase is address of
         // system-procedure table from Initial Memory Image
-        setGPR(RIPIndex, ip.o + advanceBy, TreatAsOrdinal{});
-        ip.o = procedureAddress;
+        setGPR(RIPIndex, ip.getValue(TreatAsOrdinal{}) + advanceBy, TreatAsOrdinal{});
+        ip.setValue(procedureAddress, TreatAsOrdinal{});
         Ordinal temp = 0, tempRRR = 0;
         if ((type == 0b00) || pc.inSupervisorMode()) {
             temp = (getGPRValue(SPIndex, TreatAsOrdinal{}) + C) & NotC;
@@ -1050,7 +1040,7 @@ calls(Ordinal src1) noexcept {
         /// @todo expand pfp and fp to accurately model how this works
         auto& pfp = getGPR(PFPIndex);
         // lowest six bits are ignored
-        pfp.o = getGPRValue(FPIndex, TreatAsOrdinal{}) & ~0b1'111;
+        pfp.setValue(getGPRValue(FPIndex, TreatAsOrdinal{}) & ~0b1'111, TreatAsOrdinal{});
         pfp.pfp.rt = tempRRR;
         setGPR(FPIndex, temp, TreatAsOrdinal{});
         setGPR(SPIndex, temp + 64, TreatAsOrdinal{});
@@ -1059,7 +1049,7 @@ calls(Ordinal src1) noexcept {
 }
 void
 bx() noexcept {
-    ip.o = computeAddress();
+    ip.setValue(computeAddress(), TreatAsOrdinal{});
     flags.ucode.dontAdvanceIP = 1;
 }
 
