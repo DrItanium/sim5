@@ -813,78 +813,72 @@ loadBlock(Ordinal baseAddress, byte baseRegister, byte count) noexcept {
         setGPR(baseRegister, i, load(baseAddress, TreatAsOrdinal{}), TreatAsOrdinal{});
     }
 }
-Ordinal
+void 
 ldl() noexcept {
     if ((instruction.mem.srcDest & 0b1) != 0) {
         /// @todo fix
-        return InvalidOperandFault;
+        faultCode.o = InvalidOperandFault;
     } else {
         loadBlock(computeAddress(), instruction.mem.srcDest, 2);
         // support unaligned accesses
-        return NoFault;
     }
 }
 
-Ordinal
+void
 stl() noexcept {
     if ((instruction.mem.srcDest & 0b1) != 0) {
         /// @todo fix
-        return InvalidOperandFault;
+        faultCode.o = InvalidOperandFault;
     } else {
         storeBlock(computeAddress(), instruction.mem.srcDest, 2);
         // support unaligned accesses
-        return NoFault;
     }
 }
-Ordinal
+void
 ldt() noexcept {
     if ((instruction.mem.srcDest & 0b11) != 0) {
         /// @todo fix
-        return InvalidOperandFault;
+        faultCode.o = InvalidOperandFault;
         /// @note the hx manual shows that destination is modified o_O
     } else {
         loadBlock(computeAddress(), instruction.mem.srcDest, 3);
         // support unaligned accesses
-        return NoFault;
     }
 }
 
-Ordinal
+void
 stt() noexcept {
     if ((instruction.mem.srcDest & 0b11) != 0) {
         /// @todo fix
-        return InvalidOperandFault;
+        faultCode.o = InvalidOperandFault;
         /// @note the hx manual shows that destination is modified o_O
     } else {
         storeBlock(computeAddress(), instruction.mem.srcDest, 3);
         // support unaligned accesses
-        return NoFault;
     }
 }
 
-Ordinal
+void
 ldq() noexcept {
     if ((instruction.mem.srcDest & 0b11) != 0) {
         /// @todo fix
-        return InvalidOperandFault;
+        faultCode.o = InvalidOperandFault;
         /// @note the hx manual shows that destination is modified o_O
     } else {
         loadBlock(computeAddress(), instruction.mem.srcDest, 4);
         // support unaligned accesses
-        return NoFault;
     }
 }
 
-Ordinal
+void
 stq() noexcept {
     if ((instruction.mem.srcDest & 0b11) != 0) {
         /// @todo fix
-        return UnalignedFault;
+        faultCode.o = UnalignedFault;
         /// @note the hx manual shows that destination is modified o_O
     } else {
         storeBlock(computeAddress(), instruction.mem.srcDest, 4);
         // support unaligned accesses
-        return NoFault;
     }
 }
 
@@ -1165,22 +1159,22 @@ loop() {
             store<ShortInteger>(computeAddress(), getGPRValue(instruction.mem.srcDest, TreatAsInteger{}), TreatAs<ShortInteger>{});
             break;
         case Opcodes::ldl:
-            faultCode.o = ldl();
+            ldl();
             break;
         case Opcodes::stl:
-            faultCode.o = stl();
+            stl();
             break;
         case Opcodes::ldt:
-            faultCode.o = ldt();
+            ldt();
             break;
         case Opcodes::stt:
-            faultCode.o = stt();
+            stt();
             break;
         case Opcodes::ldq:
-            faultCode.o = ldq();
+            ldq();
             break;
         case Opcodes::stq:
-            faultCode.o = stq();
+            stq();
             break;
         case Opcodes::bx:
             bx();
