@@ -1388,7 +1388,7 @@ loop() {
             regDest.setValue<Integer>(src2i >> src1i);
             break;
         case Opcodes::shlo: // shlo
-            regDest.o = src1o < 32 ? src2o << src1o : 0;
+            regDest.setValue<Ordinal>(src1o < 32 ? src2o << src1o : 0);
             break;
         case Opcodes::rotate: // rotate
             regDest.setValue<Ordinal>(rotateOperation(src2o, src1o));
@@ -1522,26 +1522,26 @@ loop() {
             break;
         case Opcodes::extract:
             // taken from the Hx manual as it isn't insane
-            regDest.o = (regDest.o >> (src1o > 32 ? 32 : src1o)) & ~(0xFFFF'FFFF << src2o);
+            regDest.setValue<Ordinal>((regDest.o >> (src1o > 32 ? 32 : src1o)) & ~(0xFFFF'FFFF << src2o));
             break;
         case Opcodes::modac: 
-            regDest.o = ac.modify(src1o, src2o); 
+            regDest.setValue<Ordinal>(ac.modify(src1o, src2o));
             break;
         case Opcodes::modtc: 
-            regDest.o = tc.modify(src1o, src2o); 
+            regDest.setValue<Ordinal>(tc.modify(src1o, src2o));
             break;
         case Opcodes::modpc:
             if (auto mask = src1o; mask != 0) {
                 if (!pc.inSupervisorMode()) {
-                setFaultCode(TypeMismatchFault);
+                    setFaultCode(TypeMismatchFault);
                 } else {
-                    regDest.o = pc.modify(mask, src2o);
+                    regDest.setValue<Ordinal>(pc.modify(mask, src2o));
                     if (regDest.getPriority() > pc.getPriority()) {
                         checkForPendingInterrupts();
                     }
                 }
             } else {
-                regDest.o = pc.o;
+                regDest.setValue<Ordinal>(pc.getValue<Ordinal>());
             }
             break;
         case Opcodes::atadd:
