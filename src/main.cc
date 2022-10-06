@@ -965,6 +965,7 @@ setup() {
     // cleave the address space in half via sector limits.
     // lower half is io space for the implementation
     // upper half is the window into the 32/8 bus
+#ifndef ARDUINO_AVR_ATmega2560
     SFIOR = 0; // this will setup the full 64k space, no pullup disable, no bus
                // keeper and leaving PSR10 alone
     EMCUCR = 0b0'100'00'0'0; // INT2 is falling edge, carve XMEM into two 32k
@@ -972,6 +973,9 @@ setup() {
                              // falling edge
     MCUCR = 0b1000'10'10; // enable XMEM, leave sleep off, and set int1 and
                           // int0 to be falling edge
+#else
+    // setup for the 2560
+#endif
     set328BusAddress(0);
     //Serial.begin(115200);
     //SPI.begin();
@@ -1034,6 +1038,7 @@ loop() {
             uint32_t performMultiply : 1;
             uint32_t performDivide : 1;
             uint32_t performRemainder : 1;
+            uint32_t unused : 12;
         } bits;
     } flags;
     flags.raw = 0;
@@ -1518,7 +1523,7 @@ loop() {
         } else {
             // if we got here then it means we don't have something configured
             // correctly
-            faultCode = 0xFF; // invalid opcode/operation
+            faultCode = InvalidOpcodeFault; // invalid opcode/operation
         }
     }
     if (flags.bits.performCarry) {
@@ -1548,7 +1553,7 @@ loop() {
         } else {
             // if we got here then it means we don't have something configured
             // correctly
-            faultCode = 0xFF; // invalid opcode
+            faultCode = InvalidOpcodeFault; // invalid opcode
         }
     } else if (flags.bits.performMultiply) {
         if (flags.bits.ordinalOp) {
