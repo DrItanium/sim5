@@ -638,6 +638,7 @@ Integer unpackSrc1_REG(TreatAsInteger) noexcept;
 Ordinal unpackSrc2_REG(TreatAsOrdinal) noexcept;
 Integer unpackSrc2_REG(TreatAsInteger) noexcept;
 void setFaultCode(Ordinal value) noexcept;
+bool faultHappened() noexcept;
 void checkForPendingInterrupts() noexcept;
 template<typename T>
 void moveGPR(byte destIndex, byte srcIndex, TreatAs<T>) noexcept {
@@ -1595,7 +1596,7 @@ loop() {
             // correctly
                 setFaultCode(InvalidOpcodeFault);
         }
-        if (faultCode.getValue<Ordinal>() == NoFault) {
+        if (!faultHappened()) {
             store(addr, result, TreatAsOrdinal{});
             regDest.o = temp;
         }
@@ -1641,7 +1642,7 @@ loop() {
                     // correctly
                     setFaultCode(InvalidOpcodeFault);
                 }
-                if (faultCode.getValue<Ordinal>() == NoFault) {
+                if (!faultHappened()) {
                     ac.arith.conditionCode = cond ? 0b010 : 0b001;
                 }
             }
@@ -1680,7 +1681,7 @@ loop() {
             // correctly
                 setFaultCode(InvalidOpcodeFault);
         }
-        if (faultCode.o == NoFault) {
+        if (!faultHappened()) {
             result += (ac.getCarryBit() ? 1 : 0);
             regDest.o = static_cast<Ordinal>(result);
             arithmeticWithCarryGeneric(static_cast<Ordinal>(result >> 32), 
@@ -1764,7 +1765,7 @@ loop() {
             setFaultCode(InvalidOpcodeFault);
         }
     }
-    if (faultCode.o != NoFault) {
+    if (faultHappened()) {
         /// @todo implement this as the fallback operation when something bad
         /// happens
         ///
@@ -1956,4 +1957,8 @@ spanbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
 void
 setFaultCode(Ordinal fault) noexcept {
     faultCode.setValue(fault, TreatAsOrdinal{});
+}
+bool 
+faultHappened() noexcept {
+    return faultCode.getValue(TreatAsOrdinal{}) != NoFault;
 }
