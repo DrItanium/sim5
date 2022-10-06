@@ -519,7 +519,8 @@ constexpr auto FPIndex = 15;
 constexpr auto PFPIndex = 16;
 constexpr auto SPIndex = 17;
 constexpr auto RIPIndex = 18;
-Register gprs[32]; 
+Register globals[16]; 
+Register locals[16];
 Register sfrs[32];
 Register ip;
 Register ac; 
@@ -532,7 +533,11 @@ Register instruction;
 Register address;
 byte advanceBy;
 Register& getGPR(byte index) noexcept {
-    return gprs[index];
+    if (index < 16) {
+        return globals[index & 0b1111];
+    } else {
+        return locals[index & 0b1111];
+    }
 }
 Register& getGPR(byte index, byte offset) noexcept {
     return getGPR((index + offset) & 0b11111);
