@@ -505,6 +505,11 @@ union Register {
     bool getCarryBit() const noexcept { return arith.conditionCode & 0b001; }
     [[nodiscard]] Ordinal modify(Ordinal mask, Ordinal src) noexcept;
     [[nodiscard]] constexpr byte getPriority() const noexcept { return pc.priority; }
+
+    void setValue(Ordinal value, TreatAsOrdinal) noexcept { o = value; }
+    void setValue(Integer value, TreatAsInteger) noexcept { i = value; }
+    [[nodiscard]] Integer getValue(TreatAsInteger) const noexcept { return i; }
+    [[nodiscard]] Ordinal getValue(TreatAsOrdinal) const noexcept { return o; }
 };
 static_assert(sizeof(Register) == sizeof(Ordinal));
 volatile Ordinal systemAddressTableBase = 0;
@@ -547,6 +552,15 @@ class GPRBlock {
                 return locals.get(index);
             }
         }
+        template<typename T>
+        void setValue(byte index, T value) noexcept {
+            get(index).setValue(value, TreatAs<T>{});
+        }
+        template<typename T>
+        T getValue(byte index) const noexcept {
+            return get(index).getValue(TreatAs<T>{});
+        }
+
     private:
         RegisterFrame globals;
         RegisterFrame locals;
@@ -557,6 +571,14 @@ class RegisterBlock32 {
         RegisterBlock32() = default;
         Register& get(byte index) noexcept { return registers_[index & 0b11111]; }
         const Register& get(byte index) const noexcept { return registers_[index & 0b11111]; }
+        template<typename T>
+        void setValue(byte index, T value) noexcept {
+            get(index).setValue(value, TreatAs<T>{});
+        }
+        template<typename T>
+        T getValue(byte index) const noexcept {
+            return get(index).getValue(TreatAs<T>{});
+        }
     private:
         Register registers_[32];
 };
