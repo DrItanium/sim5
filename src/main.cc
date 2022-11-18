@@ -26,6 +26,7 @@
 //
 #include <Arduino.h>
 #include <SPI.h>
+#include <Wire.h>
 using Address = uint32_t;
 using ByteOrdinal = uint8_t;
 using ByteInteger = int8_t;
@@ -393,18 +394,13 @@ union Register {
     } memb_grp2;
     struct {
         Ordinal conditionCode : 3;
-#ifdef NUMERICS_ARCHITECTURE
         Ordinal arithmeticStatus : 4;
         Ordinal unused0 : 1;
-#else
-        Ordinal unused0 : 5;
-#endif // end defined(NUMERICS_ARCHITECTURE)
         Ordinal integerOverflowFlag : 1;
         Ordinal unused1 : 3;
         Ordinal integerOverflowMask : 1;
         Ordinal unused2 : 2;
         Ordinal noImpreciseFaults : 1;
-#ifdef NUMERICS_ARCHITECTURE
         Ordinal floatingOverflowFlag : 1;
         Ordinal floatingUnderflowFlag : 1;
         Ordinal floatingInvalidOpFlag : 1;
@@ -418,9 +414,6 @@ union Register {
         Ordinal floatingInexactMask : 1;
         Ordinal floatingPointNormalizingMode : 1;
         Ordinal floatingPointRoundingControl : 2;
-#else
-        Ordinal unused3 : 16;
-#endif // end defined(NUMERICS_ARCHITECTURE)
     } arith;
     struct {
         Ordinal rt : 3;
@@ -1099,6 +1092,9 @@ bx() noexcept {
 
 void 
 setup() {
+    Serial.begin(115200);
+    SPI.begin();
+    Wire.begin();
     pinMode(LOCKPIN, OUTPUT);
     digitalWrite(LOCKPIN, LOW);
     pinMode(LOCKPIN, INPUT);
@@ -1110,12 +1106,10 @@ setup() {
                          // space
     XMCRA = 0b1100'0000; // Divide the 64k address space in half at 0x8000, no
                          // wait states activated either. Also turn on the EBI
-    set328BusAddress(0);
 #else
     /// @todo setup PSRAM
 #endif
-    //Serial.begin(115200);
-    //SPI.begin();
+    set328BusAddress(0);
     // so we need to do any sort of processor setup here
     ip.clear();
     for (int i = 0; i < 32; ++i) {
@@ -1139,7 +1133,7 @@ Register::modify(Ordinal mask, Ordinal src) noexcept {
     return tmp;
 }
 void 
-loop() {
+invokeCore() noexcept {
     setFaultCode(NoFault);
     instruction.setValue(load(ip.a, TreatAsOrdinal{}), TreatAsOrdinal{});
     auto& regDest = getGPR(instruction.reg.srcDest);
@@ -1805,6 +1799,10 @@ loop() {
     if (!flags.ucode.dontAdvanceIP) {
         ip.o += advanceBy; 
     }
+}
+void 
+loop() {
+    invokeCore();
 }
 
 Ordinal 
