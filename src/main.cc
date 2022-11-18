@@ -86,12 +86,31 @@ struct ConfigRegisters {
     Ordinal faultPort; /// @todo remove this when we do this right, this is here
                     /// to make sure the optimizer doesn't get dumb
 };
-
 static_assert(sizeof(ConfigRegisters) <= 256);
+ConfigRegisters cfg;
+
+constexpr bool onFeatherESP32S2() noexcept {
+#if defined(ESP32) && (defined(ARDUINO_ADAFRUIT_FEATHER_ESP32S2_NOPSRAM) || defined(ARDUINO_ADAFRUIT_FEATHER_ESP32S2))
+    return true;
+#else
+    return false;
+#endif
+}
+constexpr bool onAtmega2560() noexcept {
+#if defined(__AVR_ATmega2560__)
+    return true;
+#else
+    return false;
+#endif
+}
 
 volatile ConfigRegisters& 
 configRegs() noexcept {
+if constexpr (onAtmega2560()) {
     return memory<ConfigRegisters>(ConfigurationAddress);
+} else {
+    return cfg;
+}
 }
 void
 set328BusAddress(Address address) noexcept {
@@ -101,13 +120,17 @@ template<typename T>
 T load(Address address, TreatAs<T>) noexcept {
     set328BusAddress(address);
     SplitAddress split(address);
-    return memory<T>(static_cast<size_t>(split.lower) + 0x8000);
+    if constexpr (onAtmega2560()) {
+        return memory<T>(static_cast<size_t>(split.lower) + 0x8000);
+    }
 }
 template<typename T>
 void store(Address address, T value, TreatAs<T>) noexcept {
     set328BusAddress(address);
     SplitAddress split(address);
-    memory<T>(static_cast<size_t>(split.lower) + 0x8000) = value;
+    if constexpr (onAtmega2560()) {
+        memory<T>(static_cast<size_t>(split.lower) + 0x8000) = value;
+    }
 
 }
 constexpr auto LOCKPIN = 12;
@@ -1077,6 +1100,7 @@ setup() {
     pinMode(LOCKPIN, OUTPUT);
     digitalWrite(LOCKPIN, LOW);
     pinMode(LOCKPIN, INPUT);
+#if defined(__AVR_ATmega2560__)
     // cleave the address space in half via sector limits.
     // lower half is io space for the implementation
     // upper half is the window into the 32/8 bus
@@ -1085,6 +1109,8 @@ setup() {
     XMCRA = 0b1100'0000; // Divide the 64k address space in half at 0x8000, no
                          // wait states activated either. Also turn on the EBI
     set328BusAddress(0);
+#else
+#endif
     //Serial.begin(115200);
     //SPI.begin();
     // so we need to do any sort of processor setup here
