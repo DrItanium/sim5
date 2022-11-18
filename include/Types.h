@@ -39,21 +39,6 @@ template<typename T> struct TreatAs { };
 using TreatAsOrdinal = TreatAs<Ordinal>;
 using TreatAsInteger = TreatAs<Integer>;
 
-constexpr bool onFeatherM4() noexcept {
-#if defined(ARDUINO_ADAFRUIT_FEATHER_M4) 
-    return true;
-#else
-    return false;
-#endif
-}
-constexpr bool onAtmega2560() noexcept {
-#if defined(__AVR_ATmega2560__)
-    return true;
-#else
-    return false;
-#endif
-}
-
 union SplitWord32 {
     constexpr SplitWord32 (Ordinal a) : whole(a) { }
     Ordinal whole;
