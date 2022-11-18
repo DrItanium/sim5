@@ -28,6 +28,10 @@
 #include <SPI.h>
 #include <Wire.h>
 #include <SD.h>
+#include <RTClib.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_ILI9341.h>
+#include <Adafruit_FT6206.h>
 #include "Types.h"
 #include "BinaryOperations.h"
 constexpr size_t ConfigurationAddress = 0x7F00;
@@ -82,6 +86,8 @@ constexpr auto BANK0 = 45;
 constexpr auto SDPin = 4;
 constexpr auto TFTCS = 10;
 constexpr auto TFTDC = 9;
+Adafruit_FT6206 touchScreen;
+Adafruit_ILI9341 tft(TFTCS, TFTDC);
 void
 setInternalBusAddress(const SplitWord32& address) noexcept {
     digitalWrite(BANK0, address.internalBankAddress.bank0);
@@ -89,6 +95,7 @@ setInternalBusAddress(const SplitWord32& address) noexcept {
     digitalWrite(BANK2, address.internalBankAddress.bank2);
     digitalWrite(BANK3, address.internalBankAddress.bank3);
 }
+
 void
 set328BusAddress(const SplitWord32& address) noexcept {
     // set the upper
@@ -1068,14 +1075,25 @@ setup() {
     Serial.print(F("Configuring SPI..."));
     SPI.begin();
     Serial.println(F("DONE"));
+    Serial.print(F("Configuring ILI9341..."));
+    tft.begin();
+    tft.fillScreen(ILI9341_BLACK);
+    Serial.println(F("DONE"));
     Serial.print(F("Configuring TWI..."));
     Wire.begin();
     Serial.println(F("DONE"));
+    Serial.print(F("Configuring FT6206..."));
+    if (!ts.begin(40)) {
+        Serial.println(F("FAILED"));
+    } else {
+        Serial.println(F("DONE"));
+    }
     Serial.print(F("Configuring GPIOs..."));
     pinMode(BANK0, OUTPUT);
     pinMode(BANK1, OUTPUT);
     pinMode(BANK2, OUTPUT);
     pinMode(BANK3, OUTPUT);
+    /// @todo configure ports f and k
     pinMode(FAILPIN, OUTPUT);
     digitalWrite(FAILPIN, LOW);
 
