@@ -1083,7 +1083,7 @@ setup() {
     Wire.begin();
     Serial.println(F("DONE"));
     Serial.print(F("Configuring FT6206..."));
-    if (!ts.begin(40)) {
+    if (!touchScreen.begin(40)) {
         Serial.println(F("FAILED"));
     } else {
         Serial.println(F("DONE"));

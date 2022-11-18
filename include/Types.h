@@ -71,6 +71,11 @@ union SplitWord32 {
         Ordinal bank3 : 1;
         Ordinal rest : 13;
     } internalBankAddress;
+    struct {
+        Ordinal offest : 28;
+        Ordinal space : 4;
+    } addressKind;
+    [[nodiscard]] constexpr bool inIOSpace() const noexcept { return addressKind.space == 0b1111; }
 };
 union SplitWord64 {
     LongOrdinal whole;
