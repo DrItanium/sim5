@@ -87,10 +87,9 @@ struct ConfigRegisters {
                     /// to make sure the optimizer doesn't get dumb
 };
 static_assert(sizeof(ConfigRegisters) <= 256);
-ConfigRegisters cfg;
 
-constexpr bool onFeatherESP32S2() noexcept {
-#if defined(ESP32) && (defined(ARDUINO_ADAFRUIT_FEATHER_ESP32S2_NOPSRAM) || defined(ARDUINO_ADAFRUIT_FEATHER_ESP32S2))
+constexpr bool onFeatherM4() noexcept {
+#if defined(ARDUINO_ADAFRUIT_FEATHER_M4) 
     return true;
 #else
     return false;
@@ -106,15 +105,13 @@ constexpr bool onAtmega2560() noexcept {
 
 volatile ConfigRegisters& 
 configRegs() noexcept {
-if constexpr (onAtmega2560()) {
     return memory<ConfigRegisters>(ConfigurationAddress);
-} else {
-    return cfg;
-}
 }
 void
 set328BusAddress(Address address) noexcept {
-    configRegs().address = address;
+    if constexpr (onAtmega2560()) {
+        configRegs().address = address;
+    }
 }
 template<typename T>
 T load(Address address, TreatAs<T>) noexcept {
@@ -122,6 +119,9 @@ T load(Address address, TreatAs<T>) noexcept {
     SplitAddress split(address);
     if constexpr (onAtmega2560()) {
         return memory<T>(static_cast<size_t>(split.lower) + 0x8000);
+    } else {
+        /// @todo implement load operations
+        return 0;
     }
 }
 template<typename T>
@@ -130,6 +130,8 @@ void store(Address address, T value, TreatAs<T>) noexcept {
     SplitAddress split(address);
     if constexpr (onAtmega2560()) {
         memory<T>(static_cast<size_t>(split.lower) + 0x8000) = value;
+    } else {
+        /// @todo implement store operations
     }
 
 }
@@ -1109,7 +1111,7 @@ setup() {
     XMCRA = 0b1100'0000; // Divide the 64k address space in half at 0x8000, no
                          // wait states activated either. Also turn on the EBI
     set328BusAddress(0);
-#elif defined(ESP32) && defined(ARDUINO_ADAFRUIT_FEATHER_ESP32S2_NOPSRAM)
+#else
     /// @todo setup PSRAM
 #endif
     //Serial.begin(115200);
@@ -1919,6 +1921,8 @@ ediv(Register& dest, Ordinal src1, Ordinal src2Lower) noexcept {
         LongOrdinal lord;
         Ordinal parts[sizeof(LongOrdinal)/sizeof(Ordinal)];
     } result, src2;
+    result.parts[0] = 0;
+    result.parts[1] = 0;
     src2.parts[0] = src2Lower;
     if ((instruction.reg.srcDest & 0b1) != 0 || (instruction.reg.src2 & 0b1) != 0) {
         /// @todo fix
@@ -1933,6 +1937,8 @@ ediv(Register& dest, Ordinal src1, Ordinal src2Lower) noexcept {
     }
     // yes this can be undefined by design :)
     // if we hit a fault then we just give whats on the stack :)
+    // however, to get the compiler to shut up, I am zeroing out the result
+    // field
     dest.setValue<Ordinal>(result.parts[0]);
     setGPR(instruction.reg.srcDest, 1, result.parts[1], TreatAsOrdinal{});
 }
