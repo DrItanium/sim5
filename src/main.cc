@@ -57,14 +57,6 @@ constexpr Ordinal ProtectionBadAccessFault = 0x0007'0020;
 constexpr Ordinal Machine_ParityErrorFault = 0x0008'0002;
 constexpr Ordinal TypeMismatchFault = 0x000a'0001;
 constexpr Ordinal OverrideFault = 0x0010'0000;
-union SplitAddress {
-    constexpr SplitAddress(Address a) : addr(a) { }
-    Address addr;
-    struct {
-        Address lower : 15;
-        Address rest : 17;
-    };
-};
 template<typename T>
 volatile T& memory(size_t address) noexcept {
     return *reinterpret_cast<volatile T*>(address);
@@ -83,30 +75,19 @@ configRegs() noexcept {
 }
 void
 set328BusAddress(Address address) noexcept {
-    if constexpr (onAtmega2560()) {
-        configRegs().address = address;
-    }
+    configRegs().address = address;
 }
 template<typename T>
 T load(Address address, TreatAs<T>) noexcept {
     set328BusAddress(address);
     SplitAddress split(address);
-    if constexpr (onAtmega2560()) {
-        return memory<T>(static_cast<size_t>(split.lower) + 0x8000);
-    } else {
-        /// @todo implement load operations
-        return 0;
-    }
+    return memory<T>(static_cast<size_t>(split.lower) + 0x8000);
 }
 template<typename T>
 void store(Address address, T value, TreatAs<T>) noexcept {
     set328BusAddress(address);
     SplitAddress split(address);
-    if constexpr (onAtmega2560()) {
-        memory<T>(static_cast<size_t>(split.lower) + 0x8000) = value;
-    } else {
-        /// @todo implement store operations
-    }
+    memory<T>(static_cast<size_t>(split.lower) + 0x8000) = value;
 
 }
 constexpr auto LOCKPIN = 12;
@@ -1066,7 +1047,8 @@ setup() {
     pinMode(LOCKPIN, OUTPUT);
     digitalWrite(LOCKPIN, LOW);
     pinMode(LOCKPIN, INPUT);
-#if defined(__AVR_ATmega2560__)
+    pinMode(FAILPIN, OUTPUT);
+    digitalWrite(FAILPIN, LOW);
     // cleave the address space in half via sector limits.
     // lower half is io space for the implementation
     // upper half is the window into the 32/8 bus
@@ -1074,9 +1056,6 @@ setup() {
                          // space
     XMCRA = 0b1100'0000; // Divide the 64k address space in half at 0x8000, no
                          // wait states activated either. Also turn on the EBI
-#else
-    /// @todo setup PSRAM
-#endif
     set328BusAddress(0);
     // so we need to do any sort of processor setup here
     ip.clear();
@@ -1862,14 +1841,11 @@ checkForPendingInterrupts() noexcept {
 
 void
 emul(Register& dest, Ordinal src1, Ordinal src2) noexcept {
-    union {
-        LongOrdinal lord;
-        Ordinal parts[sizeof(LongOrdinal)/sizeof(Ordinal)];
-    } result;
+    SplitWord64 result;
     if ((instruction.reg.srcDest & 0b1) != 0) {
         setFaultCode(InvalidOpcodeFault);
     }  else {
-        result.lord = static_cast<LongOrdinal>(src2) * static_cast<LongOrdinal>(src1);
+        result.whole = static_cast<LongOrdinal>(src2) * static_cast<LongOrdinal>(src1);
     }
     // yes this can be undefined by design :)
     // if we hit a fault then we just give up whats on the stack :)
@@ -1879,12 +1855,8 @@ emul(Register& dest, Ordinal src1, Ordinal src2) noexcept {
 
 void
 ediv(Register& dest, Ordinal src1, Ordinal src2Lower) noexcept {
-    union {
-        LongOrdinal lord;
-        Ordinal parts[sizeof(LongOrdinal)/sizeof(Ordinal)];
-    } result, src2;
-    result.parts[0] = 0;
-    result.parts[1] = 0;
+    SplitWord64 result, src2;
+    result.whole = 0;
     src2.parts[0] = src2Lower;
     if ((instruction.reg.srcDest & 0b1) != 0 || (instruction.reg.src2 & 0b1) != 0) {
         /// @todo fix
@@ -1894,8 +1866,8 @@ ediv(Register& dest, Ordinal src1, Ordinal src2Lower) noexcept {
         setFaultCode(ZeroDivideFault);
     } else {
         src2.parts[1] = getGPRValue(instruction.reg.src2, 1, TreatAsOrdinal{});
-        result.parts[1] = src2.lord / src1; // quotient
-        result.parts[0] = static_cast<Ordinal>(src2.lord - (src2.lord / src1) * src1); // remainder
+        result.parts[1] = src2.whole / src1; // quotient
+        result.parts[0] = static_cast<Ordinal>(src2.whole - (src2.whole / src1) * src1); // remainder
     }
     // yes this can be undefined by design :)
     // if we hit a fault then we just give whats on the stack :)

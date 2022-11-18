@@ -53,4 +53,17 @@ constexpr bool onAtmega2560() noexcept {
     return false;
 #endif
 }
+
+union SplitAddress {
+    constexpr SplitAddress(Address a) : addr(a) { }
+    Address addr;
+    struct {
+        Address lower : 15;
+        Address rest : 17;
+    };
+};
+union SplitWord64 {
+    LongOrdinal whole;
+    Ordinal parts[sizeof(LongOrdinal) / sizeof(Ordinal)];
+};
 #endif // end SIM5_TYPES_H__
