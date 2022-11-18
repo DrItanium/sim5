@@ -63,6 +63,14 @@ union SplitWord32 {
         Ordinal a16_23 : 8;
         Ordinal a24_31 : 8;
     } splitAddress;
+    struct {
+        Ordinal lower : 15;
+        Ordinal bank0 : 1;
+        Ordinal bank1 : 1;
+        Ordinal bank2 : 1;
+        Ordinal bank3 : 1;
+        Ordinal rest : 13;
+    } internalBankAddress;
 };
 union SplitWord64 {
     LongOrdinal whole;

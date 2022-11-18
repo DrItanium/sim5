@@ -27,6 +27,7 @@
 #include <Arduino.h>
 #include <SPI.h>
 #include <Wire.h>
+#include <SD.h>
 #include "Types.h"
 #include "BinaryOperations.h"
 constexpr size_t ConfigurationAddress = 0x7F00;
@@ -61,11 +62,33 @@ template<typename T>
 volatile T& memory(size_t address) noexcept {
     return *reinterpret_cast<volatile T*>(address);
 }
+Ordinal faultPortValue;
 void 
 setFaultPort(Ordinal value) noexcept {
-
+    faultPortValue = value;
 }
-
+ 
+Ordinal getFaultPort() noexcept { 
+    return faultPortValue;
+}
+constexpr auto LOCKPIN = 12;
+constexpr auto FAILPIN = 13;
+constexpr auto INTPIN = 2;
+constexpr auto BUSYPIN = 3;
+constexpr auto BANK3 = 42;
+constexpr auto BANK2 = 43;
+constexpr auto BANK1 = 44;
+constexpr auto BANK0 = 45;
+constexpr auto SDPin = 4;
+constexpr auto TFTCS = 10;
+constexpr auto TFTDC = 9;
+void
+setInternalBusAddress(const SplitWord32& address) noexcept {
+    digitalWrite(BANK0, address.internalBankAddress.bank0);
+    digitalWrite(BANK1, address.internalBankAddress.bank1);
+    digitalWrite(BANK2, address.internalBankAddress.bank2);
+    digitalWrite(BANK3, address.internalBankAddress.bank3);
+}
 void
 set328BusAddress(const SplitWord32& address) noexcept {
     // set the upper
@@ -86,14 +109,6 @@ void store(Address address, T value, TreatAs<T>) noexcept {
     memory<T>(static_cast<size_t>(split.splitAddress.lower) + 0x8000) = value;
 
 }
-constexpr auto LOCKPIN = 12;
-constexpr auto FAILPIN = 13;
-constexpr auto INTPIN = 2;
-constexpr auto BUSYPIN = 3;
-constexpr auto BANK3 = 42;
-constexpr auto BANK2 = 43;
-constexpr auto BANK1 = 44;
-constexpr auto BANK0 = 45;
 void
 lockBus() noexcept {
     while (digitalRead(LOCKPIN) == LOW);
@@ -1040,25 +1055,38 @@ bx() noexcept {
     flags.ucode.dontAdvanceIP = 1;
 }
 
-
+volatile bool HasSDCard = false;
 void 
 setup() {
     Serial.begin(115200);
+    Serial.println(F("i960 Simulator (C) 2022 and beyond Joshua Scoggins"));
+    Serial.println(F("This software is open source software"));
+    Serial.println(F("Base Platform: Arduino Mega2560"));
+    Serial.println(F("Bringing up peripherals"));
+    Serial.println();
+
+    Serial.print(F("Configuring SPI..."));
     SPI.begin();
+    Serial.println(F("DONE"));
+    Serial.print(F("Configuring TWI..."));
     Wire.begin();
+    Serial.println(F("DONE"));
+    Serial.print(F("Configuring GPIOs..."));
     pinMode(BANK0, OUTPUT);
-    digitalWrite(BANK0, LOW);
     pinMode(BANK1, OUTPUT);
-    digitalWrite(BANK1, LOW);
     pinMode(BANK2, OUTPUT);
-    digitalWrite(BANK2, LOW);
     pinMode(BANK3, OUTPUT);
-    digitalWrite(BANK3, LOW);
     pinMode(FAILPIN, OUTPUT);
     digitalWrite(FAILPIN, LOW);
+
+    pinMode(INTPIN, INPUT);
+    pinMode(BUSYPIN, INPUT);
+
     pinMode(LOCKPIN, OUTPUT);
     digitalWrite(LOCKPIN, LOW);
     pinMode(LOCKPIN, INPUT);
+    Serial.println(F("DONE"));
+    Serial.print(F("Setting up EBI..."));
     // cleave the address space in half via sector limits.
     // lower half is io space for the implementation
     // upper half is the window into the 32/8 bus
@@ -1067,11 +1095,23 @@ setup() {
     XMCRA = 0b1100'0000; // Divide the 64k address space in half at 0x8000, no
                          // wait states activated either. Also turn on the EBI
     set328BusAddress(0);
+    setInternalBusAddress(0);
+    Serial.println(F("DONE"));
+
+    HasSDCard = SD.begin(SDPin);
+    if (!HasSDCard) {
+        Serial.println(F("NO SD CARD"));
+    } else {
+        Serial.println(F("FOUND SD CARD"));
+    }
+    Serial.print(F("Configuring simulator structures..."));
     // so we need to do any sort of processor setup here
     ip.clear();
     for (int i = 0; i < 32; ++i) {
         getGPR(i).clear();
     }
+    Serial.println(F("DONE"));
+    Serial.println(F("BOOT COMPLETE!!"));
 }
 void
 performRegisterTransfer(byte mask, byte count) noexcept {
