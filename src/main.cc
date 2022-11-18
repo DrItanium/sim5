@@ -1109,7 +1109,8 @@ setup() {
     XMCRA = 0b1100'0000; // Divide the 64k address space in half at 0x8000, no
                          // wait states activated either. Also turn on the EBI
     set328BusAddress(0);
-#else
+#elif defined(ESP32) && defined(ARDUINO_ADAFRUIT_FEATHER_ESP32S2_NOPSRAM)
+    /// @todo setup PSRAM
 #endif
     //Serial.begin(115200);
     //SPI.begin();
