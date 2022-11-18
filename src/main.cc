@@ -57,9 +57,6 @@ constexpr Ordinal ProtectionBadAccessFault = 0x0007'0020;
 constexpr Ordinal Machine_ParityErrorFault = 0x0008'0002;
 constexpr Ordinal TypeMismatchFault = 0x000a'0001;
 constexpr Ordinal OverrideFault = 0x0010'0000;
-constexpr Ordinal modify(Ordinal mask, Ordinal src, Ordinal srcDest) noexcept {
-    return (src & mask) | (srcDest & ~mask);
-}
 union SplitAddress {
     constexpr SplitAddress(Address a) : addr(a) { }
     Address addr;
@@ -79,20 +76,6 @@ struct ConfigRegisters {
 };
 static_assert(sizeof(ConfigRegisters) <= 256);
 
-constexpr bool onFeatherM4() noexcept {
-#if defined(ARDUINO_ADAFRUIT_FEATHER_M4) 
-    return true;
-#else
-    return false;
-#endif
-}
-constexpr bool onAtmega2560() noexcept {
-#if defined(__AVR_ATmega2560__)
-    return true;
-#else
-    return false;
-#endif
-}
 
 volatile ConfigRegisters& 
 configRegs() noexcept {
@@ -655,7 +638,6 @@ template<typename T>
 void moveGPR(byte destIndex, byte destOffset, byte srcIndex, byte srcOffset, TreatAs<T>) noexcept {
     setGPR(destIndex, destOffset, getGPRValue(srcIndex, srcOffset, TreatAs<T>{}), TreatAs<T>{});
 }
-[[nodiscard]] constexpr Ordinal rotateOperation(Ordinal src, Ordinal length) noexcept;
 void scanbyte(Ordinal src2, Ordinal src1) noexcept;
 void emul(Register& dest, Ordinal src1, Ordinal src2) noexcept;
 void ediv(Register& dest, Ordinal src1, Ordinal src2) noexcept;
@@ -796,10 +778,6 @@ ret() {
             /// @todo raise a fault?
             break;
     }
-}
-constexpr Ordinal 
-computeBitPosition(Ordinal value) noexcept {
-    return static_cast<Ordinal>(1u) << static_cast<Ordinal>(value);
 }
 
 template<bool checkClear>
@@ -1115,7 +1093,6 @@ performRegisterTransfer(byte mask, byte count) noexcept {
         setGPR(instruction.reg.srcDest, i, unpackSrc1_REG(i, TreatAsOrdinal{}), TreatAsOrdinal{});
     }
 }
-constexpr Ordinal modify(Ordinal mask, Ordinal src, Ordinal srcDest) noexcept;
 Ordinal 
 Register::modify(Ordinal mask, Ordinal src) noexcept {
     auto tmp = o;
@@ -1848,9 +1825,6 @@ unpackSrc2_REG(TreatAsInteger) noexcept {
     }
 }
 
-constexpr Ordinal rotateOperation(Ordinal src, Ordinal length) noexcept {
-    return (src << length)  | (src >> ((-length) & 31u));
-}
 void
 scanbyte(Ordinal src2, Ordinal src1) noexcept {
     if (Register s2(src2), s1(src1); 

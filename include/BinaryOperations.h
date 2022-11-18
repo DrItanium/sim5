@@ -26,8 +26,16 @@
 
 #include <Arduino.h>
 #include "Types.h"
-namespace i960 {
+constexpr Ordinal rotateOperation(Ordinal src, Ordinal length) noexcept {
+    return (src << length)  | (src >> ((-length) & 31u));
+}
 
+constexpr Ordinal computeBitPosition(Ordinal value) noexcept {
+    return static_cast<Ordinal>(1u) << static_cast<Ordinal>(value);
+}
+
+constexpr Ordinal modify(Ordinal mask, Ordinal src, Ordinal srcDest) noexcept {
+    return (src & mask) | (srcDest & ~mask);
 }
 
 #endif // end SIM5_BINARY_OPERATIONS_H__
