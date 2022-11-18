@@ -1,5 +1,5 @@
 // sim
-// Copyright (c) 2021, Joshua Scoggins
+// Copyright (c) 2022, Joshua Scoggins
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -27,18 +27,8 @@
 #include <Arduino.h>
 #include <SPI.h>
 #include <Wire.h>
-using Address = uint32_t;
-using ByteOrdinal = uint8_t;
-using ByteInteger = int8_t;
-using ShortOrdinal = uint16_t;
-using ShortInteger = int16_t;
-using Ordinal = uint32_t;
-using Integer = int32_t;
-using LongOrdinal = uint64_t;
-using LongInteger = int64_t;
-template<typename T> struct TreatAs { };
-using TreatAsOrdinal = TreatAs<Ordinal>;
-using TreatAsInteger = TreatAs<Integer>;
+#include "Types.h"
+#include "BinaryOperations.h"
 constexpr size_t ConfigurationAddress = 0x7F00;
 constexpr Ordinal SALIGN = 4;
 constexpr Ordinal C = (SALIGN * 16) - 1;
