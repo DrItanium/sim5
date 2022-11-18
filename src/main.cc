@@ -61,37 +61,39 @@ template<typename T>
 volatile T& memory(size_t address) noexcept {
     return *reinterpret_cast<volatile T*>(address);
 }
-struct ConfigRegisters {
-    Address address;
-    Ordinal faultPort; /// @todo remove this when we do this right, this is here
-                    /// to make sure the optimizer doesn't get dumb
-};
-static_assert(sizeof(ConfigRegisters) <= 256);
+void 
+setFaultPort(Ordinal value) noexcept {
 
-
-volatile ConfigRegisters& 
-configRegs() noexcept {
-    return memory<ConfigRegisters>(ConfigurationAddress);
 }
+
 void
-set328BusAddress(Address address) noexcept {
-    configRegs().address = address;
+set328BusAddress(const SplitWord32& address) noexcept {
+    // set the upper
+    PORTF = address.splitAddress.a24_31;
+    PORTK = address.splitAddress.a16_23;
+    digitalWrite(38, address.splitAddress.a15);
 }
 template<typename T>
 T load(Address address, TreatAs<T>) noexcept {
-    set328BusAddress(address);
-    SplitAddress split(address);
-    return memory<T>(static_cast<size_t>(split.lower) + 0x8000);
+    SplitWord32 split(address);
+    set328BusAddress(split);
+    return memory<T>(static_cast<size_t>(split.splitAddress.lower) + 0x8000);
 }
 template<typename T>
 void store(Address address, T value, TreatAs<T>) noexcept {
-    set328BusAddress(address);
-    SplitAddress split(address);
-    memory<T>(static_cast<size_t>(split.lower) + 0x8000) = value;
+    SplitWord32 split(address);
+    set328BusAddress(split);
+    memory<T>(static_cast<size_t>(split.splitAddress.lower) + 0x8000) = value;
 
 }
 constexpr auto LOCKPIN = 12;
 constexpr auto FAILPIN = 13;
+constexpr auto INTPIN = 2;
+constexpr auto BUSYPIN = 3;
+constexpr auto BANK3 = 42;
+constexpr auto BANK2 = 43;
+constexpr auto BANK1 = 44;
+constexpr auto BANK0 = 45;
 void
 lockBus() noexcept {
     while (digitalRead(LOCKPIN) == LOW);
@@ -1044,11 +1046,19 @@ setup() {
     Serial.begin(115200);
     SPI.begin();
     Wire.begin();
+    pinMode(BANK0, OUTPUT);
+    digitalWrite(BANK0, LOW);
+    pinMode(BANK1, OUTPUT);
+    digitalWrite(BANK1, LOW);
+    pinMode(BANK2, OUTPUT);
+    digitalWrite(BANK2, LOW);
+    pinMode(BANK3, OUTPUT);
+    digitalWrite(BANK3, LOW);
+    pinMode(FAILPIN, OUTPUT);
+    digitalWrite(FAILPIN, LOW);
     pinMode(LOCKPIN, OUTPUT);
     digitalWrite(LOCKPIN, LOW);
     pinMode(LOCKPIN, INPUT);
-    pinMode(FAILPIN, OUTPUT);
-    digitalWrite(FAILPIN, LOW);
     // cleave the address space in half via sector limits.
     // lower half is io space for the implementation
     // upper half is the window into the 32/8 bus
@@ -1738,7 +1748,7 @@ invokeCore() noexcept {
         /// happens
         ///
         /// Faults are basically fallback behavior when something goes wacky!
-        configRegs().faultPort = faultCode.o;
+        setFaultPort(faultCode.o);
     }
     // okay we got here so we need to start grabbing data off of the bus and
     // start executing the next instruction

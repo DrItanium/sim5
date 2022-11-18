@@ -54,13 +54,15 @@ constexpr bool onAtmega2560() noexcept {
 #endif
 }
 
-union SplitAddress {
-    constexpr SplitAddress(Address a) : addr(a) { }
-    Address addr;
+union SplitWord32 {
+    constexpr SplitWord32 (Ordinal a) : whole(a) { }
+    Ordinal whole;
     struct {
-        Address lower : 15;
-        Address rest : 17;
-    };
+        Ordinal lower : 15;
+        Ordinal a15 : 1;
+        Ordinal a16_23 : 8;
+        Ordinal a24_31 : 8;
+    } splitAddress;
 };
 union SplitWord64 {
     LongOrdinal whole;
