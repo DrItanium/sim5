@@ -1063,6 +1063,24 @@ bx() noexcept {
 }
 
 volatile bool HasSDCard = false;
+volatile bool HasTouchScreen = false;
+void 
+setupDisplay() noexcept {
+    Serial.print(F("Configuring ILI9341..."));
+    tft.begin();
+    tft.fillScreen(ILI9341_BLACK);
+    Serial.println(F("DONE"));
+}
+void
+setupTouchScreen() noexcept {
+    Serial.print(F("Configuring FT6206..."));
+    HasTouchScreen = touchScreen.begin(40);
+    if (!HasTouchScreen) {
+        Serial.println(F("FAILED"));
+    } else {
+        Serial.println(F("DONE"));
+    }
+}
 void 
 setup() {
     Serial.begin(115200);
@@ -1075,19 +1093,11 @@ setup() {
     Serial.print(F("Configuring SPI..."));
     SPI.begin();
     Serial.println(F("DONE"));
-    Serial.print(F("Configuring ILI9341..."));
-    tft.begin();
-    tft.fillScreen(ILI9341_BLACK);
-    Serial.println(F("DONE"));
+    setupDisplay();
     Serial.print(F("Configuring TWI..."));
     Wire.begin();
     Serial.println(F("DONE"));
-    Serial.print(F("Configuring FT6206..."));
-    if (!touchScreen.begin(40)) {
-        Serial.println(F("FAILED"));
-    } else {
-        Serial.println(F("DONE"));
-    }
+    setupTouchScreen();
     Serial.print(F("Configuring GPIOs..."));
     pinMode(BANK0, OUTPUT);
     pinMode(BANK1, OUTPUT);
