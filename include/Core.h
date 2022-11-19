@@ -25,6 +25,7 @@
 #define SIM5_CORE_H__
 
 #include "Types.h"
+#include "BinaryOperations.h"
 
 constexpr Ordinal SALIGN = 4;
 constexpr Ordinal C = (SALIGN * 16) - 1;
@@ -453,4 +454,73 @@ union Register {
 
 };
 static_assert(sizeof(Register) == sizeof(Ordinal));
+// On the i960 this is separated out into two parts, locals and globals
+// The idea is that globals are always available and locals are per function.
+// You are supposed to have multiple local frames on chip to accelerate
+// operations. However, to simplify things I am not keeping any extra sets on
+// chip for the time being so there is just a single register block to work
+// with
+constexpr auto LRIndex = 14;
+constexpr auto FPIndex = 15;
+constexpr auto PFPIndex = 16;
+constexpr auto SPIndex = 17;
+constexpr auto RIPIndex = 18;
+class RegisterFrame {
+    public:
+        RegisterFrame() = default;
+        Register& get(byte index) noexcept { return registers[index & 0b1111]; }
+        const Register& get(byte index) const noexcept { return registers[index & 0b1111]; }
+    private:
+        Register registers[16];
+};
+/** 
+ * @brief Holds onto two separate register frames
+ */ 
+class GPRBlock {
+    public:
+        GPRBlock() = default;
+        Register& get(byte index) noexcept { 
+            if (index < 16) {
+                return globals.get(index);
+            } else {
+                return locals.get(index);
+            }
+        }
+        const Register& get(byte index) const noexcept { 
+            if (index < 16) {
+                return globals.get(index);
+            } else {
+                return locals.get(index);
+            }
+        }
+        template<typename T>
+        void setValue(byte index, T value) noexcept {
+            get(index).setValue(value, TreatAs<T>{});
+        }
+        template<typename T>
+        T getValue(byte index) const noexcept {
+            return get(index).getValue(TreatAs<T>{});
+        }
+
+    private:
+        RegisterFrame globals;
+        RegisterFrame locals;
+};
+
+class RegisterBlock32 {
+    public:
+        RegisterBlock32() = default;
+        Register& get(byte index) noexcept { return registers_[index & 0b11111]; }
+        const Register& get(byte index) const noexcept { return registers_[index & 0b11111]; }
+        template<typename T>
+        void setValue(byte index, T value) noexcept {
+            get(index).setValue(value, TreatAs<T>{});
+        }
+        template<typename T>
+        T getValue(byte index) const noexcept {
+            return get(index).getValue(TreatAs<T>{});
+        }
+    private:
+        Register registers_[32];
+};
 #endif // end SIM5_CORE_H__
