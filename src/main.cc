@@ -32,36 +32,10 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_ILI9341.h>
 #include <Adafruit_FT6206.h>
+#include <Adafruit_SI5351.h>
 #include "Types.h"
 #include "BinaryOperations.h"
-constexpr size_t ConfigurationAddress = 0x7F00;
-constexpr Ordinal SALIGN = 4;
-constexpr Ordinal C = (SALIGN * 16) - 1;
-constexpr Ordinal NotC = ~C;
-/// faults
-constexpr Ordinal NoFault = 0xFFFF'FFFF;
-constexpr Ordinal ParallelFault = 0;
-constexpr Ordinal TraceFaultBase = 0x00010000;
-constexpr Ordinal InstructionTraceFault = TraceFaultBase | 0b00000010;
-constexpr Ordinal BranchTraceFault = TraceFaultBase      | 0b00000100;
-constexpr Ordinal CallTraceFault = TraceFaultBase        | 0b00001000;
-constexpr Ordinal ReturnTraceFault = TraceFaultBase      | 0b00010000;
-constexpr Ordinal PrereturnTraceFault = TraceFaultBase   | 0b00100000;
-constexpr Ordinal SupervisorTraceFault = TraceFaultBase  | 0b01000000;
-constexpr Ordinal MarkTraceFault = TraceFaultBase        | 0b10000000;
-constexpr Ordinal InvalidOpcodeFault = 0x00020001;
-constexpr Ordinal UnimplementedFault = 0x00020002;
-constexpr Ordinal UnalignedFault = 0x00020003;
-constexpr Ordinal InvalidOperandFault = 0x00020004;
-constexpr Ordinal ArithmeticOverflowFault = 0x0003'0001;
-constexpr Ordinal ZeroDivideFault = 0x0003'0002;
-constexpr Ordinal ConstraintRangeFault = 0x0005'0001;
-constexpr Ordinal ProtectionLengthFault = 0x0007'0002;
-constexpr Ordinal ProtectionBadAccessFault = 0x0007'0020;
-
-constexpr Ordinal Machine_ParityErrorFault = 0x0008'0002;
-constexpr Ordinal TypeMismatchFault = 0x000a'0001;
-constexpr Ordinal OverrideFault = 0x0010'0000;
+#include "Core.h"
 template<typename T>
 volatile T& memory(size_t address) noexcept {
     return *reinterpret_cast<volatile T*>(address);
@@ -88,6 +62,7 @@ constexpr auto TFTCS = 10;
 constexpr auto TFTDC = 9;
 Adafruit_FT6206 touchScreen;
 Adafruit_ILI9341 tft(TFTCS, TFTDC);
+Adafruit_SI5351 clockgen;
 void
 setInternalBusAddress(const SplitWord32& address) noexcept {
     digitalWrite(BANK0, address.internalBankAddress.bank0);
@@ -114,7 +89,6 @@ void store(Address address, T value, TreatAs<T>) noexcept {
     SplitWord32 split(address);
     set328BusAddress(split);
     memory<T>(static_cast<size_t>(split.splitAddress.lower) + 0x8000) = value;
-
 }
 void
 lockBus() noexcept {
@@ -1065,7 +1039,20 @@ bx() noexcept {
 volatile bool HasSDCard = false;
 volatile bool HasTouchScreen = false;
 volatile bool HasRTC = false;
+volatile bool HasClockGen = false;
 RTC_PCF8523 rtc;
+void 
+setupClockGenerator() noexcept {
+    Serial.print(F("Configuring Si5351..."));
+    HasClockGen = clockgen.begin() == ERROR_NONE;
+    if (HasClockGen) {
+        /// @todo configure clocks for default speeds here
+        clockgen.enableOutputs(true);
+        Serial.println(F("DONE"));
+    } else {
+        Serial.println(F("FAILED"));
+    }
+}
 void 
 setupDisplay() noexcept {
     Serial.print(F("Configuring ILI9341..."));
@@ -1147,6 +1134,7 @@ setup() {
     setupDisplay();
     setupTouchScreen();
     setupRTC();
+    setupClockGenerator();
     Serial.print(F("Configuring GPIOs..."));
     pinMode(BANK0, OUTPUT);
     pinMode(BANK1, OUTPUT);
