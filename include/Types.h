@@ -85,4 +85,5 @@ volatile T& memory(size_t address) noexcept {
     return *reinterpret_cast<volatile T*>(address);
 }
 void set328BusAddress(const SplitWord32& address) noexcept;
+void setInternalBusAddress(const SplitWord32& address) noexcept;
 #endif // end SIM5_TYPES_H__
