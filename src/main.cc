@@ -36,6 +36,7 @@
 #include "Types.h"
 #include "BinaryOperations.h"
 #include "Core.h"
+#include "ArduinoJson.h"
 Adafruit_FT6206 touchScreen;
 Adafruit_ILI9341 tft(TFTCS, TFTDC);
 Adafruit_SI5351 clockgen;
