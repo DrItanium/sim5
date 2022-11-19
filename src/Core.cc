@@ -24,666 +24,664 @@
 #include <Arduino.h>
 #include "Types.h"
 #include "Core.h"
-namespace {
-    Ordinal faultPortValue;
-    volatile Ordinal systemAddressTableBase = 0;
-    GPRBlock gpr;
-    RegisterBlock32 sfrs;
-    Register ip;
-    Register ac; 
-    Register pc;
-    Register tc; 
-    Register flags; 
-    Register flags2; 
-    Register faultCode; 
-    Register instruction;
-    byte advanceBy;
+Ordinal faultPortValue;
+volatile Ordinal systemAddressTableBase = 0;
+GPRBlock gpr;
+RegisterBlock32 sfrs;
+Register ip;
+Register ac; 
+Register pc;
+Register tc; 
+Register flags; 
+Register flags2; 
+Register faultCode; 
+Register instruction;
+byte advanceBy;
 
-    template<typename T>
-    T load(Address address, TreatAs<T>) noexcept {
-        SplitWord32 split(address);
-        set328BusAddress(split);
-        return memory<T>(static_cast<size_t>(split.splitAddress.lower) + 0x8000);
+template<typename T>
+T load(Address address, TreatAs<T>) noexcept {
+    SplitWord32 split(address);
+    set328BusAddress(split);
+    return memory<T>(static_cast<size_t>(split.splitAddress.lower) + 0x8000);
+}
+template<typename T>
+void store(Address address, T value, TreatAs<T>) noexcept {
+    SplitWord32 split(address);
+    set328BusAddress(split);
+    memory<T>(static_cast<size_t>(split.splitAddress.lower) + 0x8000) = value;
+}
+Register& getGPR(byte index) noexcept {
+    return gpr.get(index);
+}
+Register& getGPR(byte index, byte offset) noexcept {
+    return getGPR((index + offset) & 0b11111);
+}
+void setGPR(byte index, Ordinal value, TreatAsOrdinal) noexcept { getGPR(index).setValue(value, TreatAsOrdinal{}); }
+void setGPR(byte index, byte offset, Ordinal value, TreatAsOrdinal) noexcept { getGPR(index, offset).setValue(value, TreatAsOrdinal{}); }
+void setGPR(byte index, Integer value, TreatAsInteger) noexcept { getGPR(index).setValue(value, TreatAsInteger{}); }
+Register& getSFR(byte index) noexcept;
+Register& getSFR(byte index, byte offset) noexcept;
+Ordinal getGPRValue(byte index, TreatAsOrdinal) noexcept { return getGPR(index).getValue(TreatAsOrdinal{}); }
+Ordinal getGPRValue(byte index, byte offset, TreatAsOrdinal) noexcept { return getGPR(index, offset).getValue(TreatAsOrdinal{}); }
+Integer getGPRValue(byte index, TreatAsInteger) noexcept { return getGPR(index).getValue(TreatAsInteger{}); }
+Ordinal unpackSrc1_REG(TreatAsOrdinal) noexcept;
+Ordinal unpackSrc1_REG(byte offset, TreatAsOrdinal) noexcept;
+Integer unpackSrc1_REG(TreatAsInteger) noexcept;
+Ordinal unpackSrc2_REG(TreatAsOrdinal) noexcept;
+Integer unpackSrc2_REG(TreatAsInteger) noexcept;
+void setFaultCode(Ordinal value) noexcept;
+bool faultHappened() noexcept;
+void checkForPendingInterrupts() noexcept;
+Ordinal 
+unpackSrc1_REG(TreatAsOrdinal) noexcept {
+    if (instruction.reg.m1) {
+        /// @todo what to do if s1 is also set?
+        return instruction.reg.src1;
+    } else if (instruction.reg.s1) {
+        return getSFR(instruction.reg.src1).o;
+    } else {
+        return getGPRValue(instruction.reg.src1, TreatAsOrdinal{});
     }
-    template<typename T>
-    void store(Address address, T value, TreatAs<T>) noexcept {
-        SplitWord32 split(address);
-        set328BusAddress(split);
-        memory<T>(static_cast<size_t>(split.splitAddress.lower) + 0x8000) = value;
+}
+Ordinal 
+unpackSrc1_REG(byte offset, TreatAsOrdinal) noexcept {
+    if (instruction.reg.m1) {
+        // literals should always return zero if offset is greater than zero
+        return offset == 0 ? instruction.reg.src1 : 0;
+    } else if (instruction.reg.s1) {
+        return getSFR(instruction.reg.src1, offset).o;
+    } else {
+        return getGPRValue(instruction.reg.src1, offset, TreatAsOrdinal{});
     }
-    Register& getGPR(byte index) noexcept {
-        return gpr.get(index);
+}
+Integer 
+unpackSrc1_REG(TreatAsInteger) noexcept {
+    if (instruction.reg.m1) {
+        return instruction.reg.src1;
+    } else if (instruction.reg.s1) {
+        return getSFR(instruction.reg.src1).i;
+    } else {
+        return getGPRValue(instruction.reg.src1, TreatAsInteger{});
     }
-    Register& getGPR(byte index, byte offset) noexcept {
-        return getGPR((index + offset) & 0b11111);
+}
+Ordinal 
+unpackSrc2_REG(TreatAsOrdinal) noexcept {
+    if (instruction.reg.m2) {
+        return instruction.reg.src2;
+    } else if (instruction.reg.s2) {
+        return getSFR(instruction.reg.src2).o;
+    } else {
+        return getGPRValue(instruction.reg.src2, TreatAsOrdinal{});
     }
-    void setGPR(byte index, Ordinal value, TreatAsOrdinal) noexcept { getGPR(index).setValue(value, TreatAsOrdinal{}); }
-    void setGPR(byte index, byte offset, Ordinal value, TreatAsOrdinal) noexcept { getGPR(index, offset).setValue(value, TreatAsOrdinal{}); }
-    void setGPR(byte index, Integer value, TreatAsInteger) noexcept { getGPR(index).setValue(value, TreatAsInteger{}); }
-    Register& getSFR(byte index) noexcept;
-    Register& getSFR(byte index, byte offset) noexcept;
-    Ordinal getGPRValue(byte index, TreatAsOrdinal) noexcept { return getGPR(index).getValue(TreatAsOrdinal{}); }
-    Ordinal getGPRValue(byte index, byte offset, TreatAsOrdinal) noexcept { return getGPR(index, offset).getValue(TreatAsOrdinal{}); }
-    Integer getGPRValue(byte index, TreatAsInteger) noexcept { return getGPR(index).getValue(TreatAsInteger{}); }
-    Ordinal unpackSrc1_REG(TreatAsOrdinal) noexcept;
-    Ordinal unpackSrc1_REG(byte offset, TreatAsOrdinal) noexcept;
-    Integer unpackSrc1_REG(TreatAsInteger) noexcept;
-    Ordinal unpackSrc2_REG(TreatAsOrdinal) noexcept;
-    Integer unpackSrc2_REG(TreatAsInteger) noexcept;
-    void setFaultCode(Ordinal value) noexcept;
-    bool faultHappened() noexcept;
-    void checkForPendingInterrupts() noexcept;
-    Ordinal 
-    unpackSrc1_REG(TreatAsOrdinal) noexcept {
-        if (instruction.reg.m1) {
-            /// @todo what to do if s1 is also set?
-            return instruction.reg.src1;
-        } else if (instruction.reg.s1) {
-            return getSFR(instruction.reg.src1).o;
-        } else {
-            return getGPRValue(instruction.reg.src1, TreatAsOrdinal{});
-        }
+}
+Integer 
+unpackSrc2_REG(TreatAsInteger) noexcept {
+    if (instruction.reg.m2) {
+        return instruction.reg.src2;
+    } else if (instruction.reg.s2) {
+        return getSFR(instruction.reg.src2).i;
+    } else {
+        return getGPRValue(instruction.reg.src2, TreatAsInteger{});
     }
-    Ordinal 
-    unpackSrc1_REG(byte offset, TreatAsOrdinal) noexcept {
-        if (instruction.reg.m1) {
-            // literals should always return zero if offset is greater than zero
-            return offset == 0 ? instruction.reg.src1 : 0;
-        } else if (instruction.reg.s1) {
-            return getSFR(instruction.reg.src1, offset).o;
-        } else {
-            return getGPRValue(instruction.reg.src1, offset, TreatAsOrdinal{});
-        }
-    }
-    Integer 
-    unpackSrc1_REG(TreatAsInteger) noexcept {
-        if (instruction.reg.m1) {
-            return instruction.reg.src1;
-        } else if (instruction.reg.s1) {
-            return getSFR(instruction.reg.src1).i;
-        } else {
-            return getGPRValue(instruction.reg.src1, TreatAsInteger{});
-        }
-    }
-    Ordinal 
-    unpackSrc2_REG(TreatAsOrdinal) noexcept {
-        if (instruction.reg.m2) {
-            return instruction.reg.src2;
-        } else if (instruction.reg.s2) {
-            return getSFR(instruction.reg.src2).o;
-        } else {
-            return getGPRValue(instruction.reg.src2, TreatAsOrdinal{});
-        }
-    }
-    Integer 
-    unpackSrc2_REG(TreatAsInteger) noexcept {
-        if (instruction.reg.m2) {
-            return instruction.reg.src2;
-        } else if (instruction.reg.s2) {
-            return getSFR(instruction.reg.src2).i;
-        } else {
-            return getGPRValue(instruction.reg.src2, TreatAsInteger{});
-        }
-    }
-    
-    void
-    scanbyte(Ordinal src2, Ordinal src1) noexcept {
-        if (Register s2(src2), s1(src1); 
-                s1.bytes[0] == s2.bytes[0] ||
-                s1.bytes[1] == s2.bytes[1] ||
-                s1.bytes[2] == s2.bytes[2] ||
-                s1.bytes[3] == s2.bytes[3]) {
-            ac.arith.conditionCode = 0b010;
-        } else {
-            ac.arith.conditionCode = 0;
-        }
-    }
-    void
-    arithmeticWithCarryGeneric(Ordinal result, bool src2MSB, bool src1MSB, bool destMSB) noexcept {
-        // set the carry bit
+}
+
+void
+scanbyte(Ordinal src2, Ordinal src1) noexcept {
+    if (Register s2(src2), s1(src1); 
+            s1.bytes[0] == s2.bytes[0] ||
+            s1.bytes[1] == s2.bytes[1] ||
+            s1.bytes[2] == s2.bytes[2] ||
+            s1.bytes[3] == s2.bytes[3]) {
+        ac.arith.conditionCode = 0b010;
+    } else {
         ac.arith.conditionCode = 0;
-        // set the overflow bit
-        if ((src2MSB == src1MSB) && (src2MSB != destMSB)) {
-            ac.arith.conditionCode |= 0b001;
+    }
+}
+void
+arithmeticWithCarryGeneric(Ordinal result, bool src2MSB, bool src1MSB, bool destMSB) noexcept {
+    // set the carry bit
+    ac.arith.conditionCode = 0;
+    // set the overflow bit
+    if ((src2MSB == src1MSB) && (src2MSB != destMSB)) {
+        ac.arith.conditionCode |= 0b001;
+    } else {
+        ac.arith.conditionCode &= 0b110;
+    }
+    if (result != 0) {
+        ac.arith.conditionCode |= 0b010;
+    } else {
+        ac.arith.conditionCode &= 0b101;
+    }
+}
+
+void
+checkForPendingInterrupts() noexcept {
+    /// @todo implement
+}
+
+
+void
+emul(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+    SplitWord64 result;
+    if ((instruction.reg.srcDest & 0b1) != 0) {
+        setFaultCode(InvalidOpcodeFault);
+    }  else {
+        result.whole = static_cast<LongOrdinal>(src2) * static_cast<LongOrdinal>(src1);
+    }
+    // yes this can be undefined by design :)
+    // if we hit a fault then we just give up whats on the stack :)
+    dest.setValue(result.parts[0], TreatAsOrdinal{});
+    setGPR(instruction.reg.srcDest, 1, result.parts[1], TreatAsOrdinal{});
+}
+
+void
+ediv(Register& dest, Ordinal src1, Ordinal src2Lower) noexcept {
+    SplitWord64 result, src2;
+    result.whole = 0;
+    src2.parts[0] = src2Lower;
+    if ((instruction.reg.srcDest & 0b1) != 0 || (instruction.reg.src2 & 0b1) != 0) {
+        /// @todo fix
+        setFaultCode(InvalidOpcodeFault);
+    } else if (src1 == 0) {
+        // divide by zero
+        setFaultCode(ZeroDivideFault);
+    } else {
+        src2.parts[1] = getGPRValue(instruction.reg.src2, 1, TreatAsOrdinal{});
+        result.parts[1] = src2.whole / src1; // quotient
+        result.parts[0] = static_cast<Ordinal>(src2.whole - (src2.whole / src1) * src1); // remainder
+    }
+    // yes this can be undefined by design :)
+    // if we hit a fault then we just give whats on the stack :)
+    // however, to get the compiler to shut up, I am zeroing out the result
+    // field
+    dest.setValue<Ordinal>(result.parts[0]);
+    setGPR(instruction.reg.srcDest, 1, result.parts[1], TreatAsOrdinal{});
+}
+inline Ordinal 
+getSystemAddressTableBase() noexcept { 
+    return systemAddressTableBase; 
+}
+
+inline Ordinal
+getSystemProcedureTableBase() noexcept {
+    return load(getSystemAddressTableBase() + 120, TreatAsOrdinal{});
+}
+
+inline Ordinal
+getSupervisorStackPointer() noexcept {
+    return load((getSystemProcedureTableBase() + 12), TreatAsOrdinal{});
+}
+template<bool doScan>
+inline void
+xbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+    for (Ordinal index = 0; index < 32; ++index) {
+        if ((src1 & computeBitPosition(31 - index)) != 0) {
+            if constexpr (doScan) {
+                dest.o = (31 - index);
+                ac.arith.conditionCode = 0b010;
+                return;
+            }
         } else {
-            ac.arith.conditionCode &= 0b110;
-        }
-        if (result != 0) {
-            ac.arith.conditionCode |= 0b010;
-        } else {
-            ac.arith.conditionCode &= 0b101;
-        }
-    }
-    
-    void
-    checkForPendingInterrupts() noexcept {
-        /// @todo implement
-    }
-    
-    
-    void
-    emul(Register& dest, Ordinal src1, Ordinal src2) noexcept {
-        SplitWord64 result;
-        if ((instruction.reg.srcDest & 0b1) != 0) {
-            setFaultCode(InvalidOpcodeFault);
-        }  else {
-            result.whole = static_cast<LongOrdinal>(src2) * static_cast<LongOrdinal>(src1);
-        }
-        // yes this can be undefined by design :)
-        // if we hit a fault then we just give up whats on the stack :)
-        dest.setValue(result.parts[0], TreatAsOrdinal{});
-        setGPR(instruction.reg.srcDest, 1, result.parts[1], TreatAsOrdinal{});
-    }
-    
-    void
-    ediv(Register& dest, Ordinal src1, Ordinal src2Lower) noexcept {
-        SplitWord64 result, src2;
-        result.whole = 0;
-        src2.parts[0] = src2Lower;
-        if ((instruction.reg.srcDest & 0b1) != 0 || (instruction.reg.src2 & 0b1) != 0) {
-            /// @todo fix
-            setFaultCode(InvalidOpcodeFault);
-        } else if (src1 == 0) {
-            // divide by zero
-            setFaultCode(ZeroDivideFault);
-        } else {
-            src2.parts[1] = getGPRValue(instruction.reg.src2, 1, TreatAsOrdinal{});
-            result.parts[1] = src2.whole / src1; // quotient
-            result.parts[0] = static_cast<Ordinal>(src2.whole - (src2.whole / src1) * src1); // remainder
-        }
-        // yes this can be undefined by design :)
-        // if we hit a fault then we just give whats on the stack :)
-        // however, to get the compiler to shut up, I am zeroing out the result
-        // field
-        dest.setValue<Ordinal>(result.parts[0]);
-        setGPR(instruction.reg.srcDest, 1, result.parts[1], TreatAsOrdinal{});
-    }
-    Ordinal 
-    getSystemAddressTableBase() noexcept { 
-        return systemAddressTableBase; 
-    }
-    
-    Ordinal
-    getSystemProcedureTableBase() noexcept {
-        return load(getSystemAddressTableBase() + 120, TreatAsOrdinal{});
-    }
-    
-    Ordinal
-    getSupervisorStackPointer() noexcept {
-        return load((getSystemProcedureTableBase() + 12), TreatAsOrdinal{});
-    }
-    template<bool doScan>
-    void
-    xbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
-        for (Ordinal index = 0; index < 32; ++index) {
-            if ((src1 & computeBitPosition(31 - index)) != 0) {
-                if constexpr (doScan) {
-                    dest.o = (31 - index);
-                    ac.arith.conditionCode = 0b010;
-                    return;
-                }
-            } else {
-                if constexpr (!doScan) {
-                    dest.o = (31 - index);
-                    ac.arith.conditionCode = 0b010;
-                    return;
-                }
+            if constexpr (!doScan) {
+                dest.o = (31 - index);
+                ac.arith.conditionCode = 0b010;
+                return;
             }
         }
-        dest.o = 0xFFFF'FFFF;
-        ac.arith.conditionCode = 0;
     }
-    void 
-    scanbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
-        xbit<true>(dest, src1, src2);
+    dest.o = 0xFFFF'FFFF;
+    ac.arith.conditionCode = 0;
+}
+inline void 
+scanbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+    xbit<true>(dest, src1, src2);
+}
+inline void 
+spanbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+    xbit<false>(dest, src1, src2);
+}
+
+inline void
+setFaultCode(Ordinal fault) noexcept {
+    faultCode.setValue(fault, TreatAsOrdinal{});
+}
+inline bool 
+faultHappened() noexcept {
+    return faultCode.getValue(TreatAsOrdinal{}) != NoFault;
+}
+template<typename T>
+void moveGPR(byte destIndex, byte srcIndex, TreatAs<T>) noexcept {
+    setGPR(destIndex, getGPRValue(srcIndex, TreatAs<T>{}), TreatAs<T>{});
+}
+template<typename T>
+void moveGPR(byte destIndex, byte destOffset, byte srcIndex, byte srcOffset, TreatAs<T>) noexcept {
+    setGPR(destIndex, destOffset, getGPRValue(srcIndex, srcOffset, TreatAs<T>{}), TreatAs<T>{});
+}
+void scanbyte(Ordinal src2, Ordinal src1) noexcept;
+void emul(Register& dest, Ordinal src1, Ordinal src2) noexcept;
+void ediv(Register& dest, Ordinal src1, Ordinal src2) noexcept;
+void scanbit(Register& dest, Ordinal src1, Ordinal src2) noexcept;
+void spanbit(Register& dest, Ordinal src1, Ordinal src2) noexcept;
+void arithmeticWithCarryGeneric(Ordinal result, bool src2MSB, bool src1MSB, bool destMSB) noexcept;
+Ordinal getSystemProcedureTableBase() noexcept;
+inline Ordinal 
+unpackSrc1_COBR(TreatAsOrdinal) noexcept {
+    if (instruction.cobr.m1) {
+        // treat src1 as a literal
+        return instruction.cobr.src1;
+    } else {
+        return getGPRValue(instruction.cobr.src1, TreatAsOrdinal{});
     }
-    void 
-    spanbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
-        xbit<false>(dest, src1, src2);
+}
+inline Ordinal
+unpackSrc2_COBR(TreatAsOrdinal) noexcept {
+    if (instruction.cobr.s2) {
+        // access the contents of the sfrs
+        // at this point it is just a simple extra set of 32 registers
+        return getSFR(instruction.cobr.src2).o;
+    } else {
+        return getGPRValue(instruction.cobr.src2, TreatAsOrdinal{});
     }
-    
-    void
-    setFaultCode(Ordinal fault) noexcept {
-        faultCode.setValue(fault, TreatAsOrdinal{});
+}
+inline Integer
+unpackSrc1_COBR(TreatAsInteger) noexcept {
+    if (instruction.cobr.m1) {
+        // treat src1 as a literal
+        return instruction.cobr.src1;
+    } else {
+        return getGPRValue(instruction.cobr.src1, TreatAsInteger{});
     }
-    bool 
-    faultHappened() noexcept {
-        return faultCode.getValue(TreatAsOrdinal{}) != NoFault;
+}
+inline Integer
+unpackSrc2_COBR(TreatAsInteger) noexcept {
+    if (instruction.cobr.s2) {
+        // access the contents of the sfrs
+        // at this point it is just a simple extra set of 32 registers
+        return getSFR(instruction.cobr.src2).i;
+    } else {
+        return getGPRValue(instruction.cobr.src2, TreatAsInteger{});
     }
-    template<typename T>
-    void moveGPR(byte destIndex, byte srcIndex, TreatAs<T>) noexcept {
-        setGPR(destIndex, getGPRValue(srcIndex, TreatAs<T>{}), TreatAs<T>{});
+}
+inline Register& getSFR(byte index) noexcept {
+    return sfrs.get(index);
+}
+inline Register& getSFR(byte index, byte offset) noexcept {
+    return getSFR((index + offset) & 0b11111);
+}
+inline void
+syncf() noexcept {
+    // Wait for all faults to be generated that are associated with any prior
+    // uncompleted instructions
+    /// @todo implement if it makes sense since we don't have a pipeline
+}
+void
+flushreg() noexcept {
+    /// @todo implement if it makes sense since we aren't using register frames
+}
+void
+mark() noexcept {
+    if (pc.pc.traceEnable && tc.trace.breakpointTraceMode) {
+        setFaultCode(MarkTraceFault);
     }
-    template<typename T>
-    void moveGPR(byte destIndex, byte destOffset, byte srcIndex, byte srcOffset, TreatAs<T>) noexcept {
-        setGPR(destIndex, destOffset, getGPRValue(srcIndex, srcOffset, TreatAs<T>{}), TreatAs<T>{});
+}
+void
+fmark() noexcept {
+    if (pc.pc.traceEnable) {
+        setFaultCode(MarkTraceFault);
     }
-    void scanbyte(Ordinal src2, Ordinal src1) noexcept;
-    void emul(Register& dest, Ordinal src1, Ordinal src2) noexcept;
-    void ediv(Register& dest, Ordinal src1, Ordinal src2) noexcept;
-    void scanbit(Register& dest, Ordinal src1, Ordinal src2) noexcept;
-    void spanbit(Register& dest, Ordinal src1, Ordinal src2) noexcept;
-    void arithmeticWithCarryGeneric(Ordinal result, bool src2MSB, bool src1MSB, bool destMSB) noexcept;
-    Ordinal getSystemProcedureTableBase() noexcept;
-    Ordinal 
-    unpackSrc1_COBR(TreatAsOrdinal) noexcept {
-        if (instruction.cobr.m1) {
-            // treat src1 as a literal
-            return instruction.cobr.src1;
+}
+void restoreRegisterSet(Ordinal fp) noexcept;
+void
+restoreStandardFrame() noexcept {
+    // need to leave the current call
+    moveGPR(FPIndex, PFPIndex, TreatAsOrdinal{});
+    // remember that the lowest 6 bits are ignored so it is important to mask
+    // them out of the frame pointer address when using the address
+    auto realAddress = getGPRValue(FPIndex, TreatAsOrdinal{}) & NotC;
+    restoreRegisterSet(realAddress);
+    ip.setValue(getGPRValue(RIPIndex, TreatAsOrdinal{}), TreatAsOrdinal{});
+    flags.ucode.dontAdvanceIP = 1;
+}
+void
+ret() {
+    syncf();
+    auto& pfp = getGPR(PFPIndex);
+    switch (pfp.pfp.rt) {
+        case 0b000: 
+            restoreStandardFrame();
+            break;
+        case 0b001:
+            {
+                auto fp = getGPRValue(FPIndex, TreatAsOrdinal{});
+                auto x = load(fp - 16, TreatAsOrdinal{});
+                auto y = load(fp - 12, TreatAsOrdinal{});
+                restoreStandardFrame();
+                ac.setValue(y, TreatAsOrdinal{});
+                if (pc.inSupervisorMode()) {
+                    pc.setValue(x, TreatAsOrdinal{});
+                }
+                break;
+            }
+        case 0b010: 
+            if (pc.inSupervisorMode()) {
+                pc.pc.traceEnable = 0;
+                pc.pc.executionMode = 0;
+            }
+            restoreStandardFrame();
+            break;
+        case 0b011: 
+            if (pc.inSupervisorMode()) {
+                pc.pc.traceEnable = 1;
+                pc.pc.executionMode = 0;
+            }
+            restoreStandardFrame();
+            break;
+        case 0b111: 
+            {
+                // interrupt return
+                auto fp = getGPRValue(FPIndex, TreatAsOrdinal{});
+                auto x = load(fp - 16, TreatAsOrdinal{});
+                auto y = load(fp - 12, TreatAsOrdinal{});
+                restoreStandardFrame();
+                ac.setValue(y, TreatAsOrdinal{});
+                if (pc.inSupervisorMode()) {
+                    pc.setValue(x, TreatAsOrdinal{});
+                    checkForPendingInterrupts();
+                }
+                break;
+            }
+
+            break;
+        default: 
+            // undefined!
+            /// @todo raise a fault?
+            break;
+    }
+}
+
+template<bool checkClear>
+void 
+branchIfBitGeneric() {
+    Ordinal bitpos = computeBitPosition(unpackSrc1_COBR(TreatAsOrdinal{}));
+    Ordinal against = unpackSrc2_COBR(TreatAsOrdinal{});
+    bool condition = false;
+    // Branch if bit set
+    if constexpr (checkClear) {
+        condition = (bitpos & against) == 0;
+    } else {
+        condition = (bitpos & against) != 0;
+    }
+    if (condition) {
+        ac.arith.conditionCode = checkClear ? 0b000 : 0b010;
+        Register temp;
+        temp.alignedTransfer.important = instruction.cobr.displacement;
+        ip.alignedTransfer.important = ip.alignedTransfer.important + temp.alignedTransfer.important;
+        ip.alignedTransfer.aligned = 0;
+    flags.ucode.dontAdvanceIP = 1;
+    } else {
+        ac.arith.conditionCode = checkClear ? 0b010 : 0b000;
+    }
+}
+void
+bbc() {
+    branchIfBitGeneric<true>();
+}
+void
+bbs() {
+    branchIfBitGeneric<false>();
+}
+Ordinal
+computeAddress() noexcept {
+    if (instruction.isMEMA()) {
+        Ordinal result = instruction.mem.offset;
+        if (instruction.mema.action) {
+            result += getGPRValue(instruction.mem.abase, TreatAsOrdinal{});
+        }
+        return result;
+    } else {
+        // okay so we need to figure out the minor mode after figuring out if
+        // it is a double wide operation or not
+        if (instruction.memb.group) {
+            // okay so it is going to be the displacement versions
+            // load 32-bits into the optionalDisplacement field
+            advanceBy += 4;
+            Integer result = static_cast<Integer>(load(ip.a + 4, TreatAsOrdinal{})); // load the optional displacement
+            if (instruction.memb_grp2.useIndex) {
+                result += (getGPRValue(instruction.memb_grp2.index, TreatAsInteger{}) << static_cast<Integer>(instruction.memb_grp2.scale));
+            }
+            if (instruction.memb_grp2.registerIndirect) {
+                result += getGPRValue(instruction.memb_grp2.abase, TreatAsInteger{});
+            }
+            return static_cast<Ordinal>(result);
         } else {
-            return getGPRValue(instruction.cobr.src1, TreatAsOrdinal{});
+            // okay so the other group isn't as cleanly designed
+            switch (instruction.memb.modeMinor) {
+                case 0b00: // Register Indirect
+                    return getGPRValue(instruction.memb.abase, TreatAsOrdinal{});
+                case 0b01: // IP With Displacement 
+                    advanceBy += 4;
+                    return static_cast<Ordinal>(ip.i + load(ip.a + 4, TreatAsInteger{}) + 8);
+                case 0b11: // Register Indirect With Index
+                    return getGPRValue(instruction.memb.abase, TreatAsOrdinal{}) + (getGPRValue(instruction.memb.index, TreatAsOrdinal{}) << instruction.memb.scale);
+                default:
+                    return -1;
+            }
         }
     }
-    Ordinal
-    unpackSrc2_COBR(TreatAsOrdinal) noexcept {
-        if (instruction.cobr.s2) {
-            // access the contents of the sfrs
-            // at this point it is just a simple extra set of 32 registers
-            return getSFR(instruction.cobr.src2).o;
-        } else {
-            return getGPRValue(instruction.cobr.src2, TreatAsOrdinal{});
-        }
+}
+template<typename T>
+void
+cmpGeneric(T src1, T src2) noexcept {
+    if (src1 < src2) {
+        ac.arith.conditionCode = 0b100;
+    } else if (src1 == src2) {
+        ac.arith.conditionCode = 0b010;
+    } else {
+        ac.arith.conditionCode = 0b001;
     }
-    Integer
-    unpackSrc1_COBR(TreatAsInteger) noexcept {
-        if (instruction.cobr.m1) {
-            // treat src1 as a literal
-            return instruction.cobr.src1;
-        } else {
-            return getGPRValue(instruction.cobr.src1, TreatAsInteger{});
-        }
+}
+template<typename T>
+void
+cmpxbGeneric() noexcept {
+    auto src1 = unpackSrc1_COBR(TreatAs<T>{});
+    auto src2 = unpackSrc2_COBR(TreatAs<T>{});
+    cmpGeneric(src1, src2);
+    if ((instruction.instGeneric.mask & ac.arith.conditionCode) != 0) {
+        Register temp;
+        temp.alignedTransfer.important = instruction.cobr.displacement;
+        ip.alignedTransfer.important = ip.alignedTransfer.important + temp.alignedTransfer.important;
+        ip.alignedTransfer.aligned = 0;
+    flags.ucode.dontAdvanceIP = 1;
     }
-    Integer
-    unpackSrc2_COBR(TreatAsInteger) noexcept {
-        if (instruction.cobr.s2) {
-            // access the contents of the sfrs
-            // at this point it is just a simple extra set of 32 registers
-            return getSFR(instruction.cobr.src2).i;
-        } else {
-            return getGPRValue(instruction.cobr.src2, TreatAsInteger{});
-        }
+}
+void 
+cmpobGeneric() noexcept {
+    cmpxbGeneric<Ordinal>();
+}
+void
+cmpibGeneric() noexcept {
+    cmpxbGeneric<Integer>();
+}
+void
+storeBlock(Ordinal baseAddress, byte baseRegister, byte count) noexcept {
+    for (byte i = 0; i < count; ++i, baseAddress += 4) {
+        store(baseAddress, getGPRValue(baseRegister, i, TreatAsOrdinal{}), TreatAsOrdinal{});
     }
-    Register& getSFR(byte index) noexcept {
-        return sfrs.get(index);
+}
+void
+loadBlock(Ordinal baseAddress, byte baseRegister, byte count) noexcept {
+    for (byte i = 0; i < count; ++i, baseAddress += 4) {
+        setGPR(baseRegister, i, load(baseAddress, TreatAsOrdinal{}), TreatAsOrdinal{});
     }
-    Register& getSFR(byte index, byte offset) noexcept {
-        return getSFR((index + offset) & 0b11111);
+}
+void 
+ldl() noexcept {
+    if ((instruction.mem.srcDest & 0b1) != 0) {
+        setFaultCode(InvalidOperandFault);
+    } else {
+        loadBlock(computeAddress(), instruction.mem.srcDest, 2);
+        // support unaligned accesses
     }
-    void
-    syncf() noexcept {
-        // Wait for all faults to be generated that are associated with any prior
-        // uncompleted instructions
-        /// @todo implement if it makes sense since we don't have a pipeline
+}
+
+void
+stl() noexcept {
+    if ((instruction.mem.srcDest & 0b1) != 0) {
+        setFaultCode(InvalidOperandFault);
+    } else {
+        storeBlock(computeAddress(), instruction.mem.srcDest, 2);
+        // support unaligned accesses
     }
-    void
-    flushreg() noexcept {
-        /// @todo implement if it makes sense since we aren't using register frames
+}
+void
+ldt() noexcept {
+    if ((instruction.mem.srcDest & 0b11) != 0) {
+        setFaultCode(InvalidOperandFault);
+    } else {
+        loadBlock(computeAddress(), instruction.mem.srcDest, 3);
+        // support unaligned accesses
     }
-    void
-    mark() noexcept {
-        if (pc.pc.traceEnable && tc.trace.breakpointTraceMode) {
-            setFaultCode(MarkTraceFault);
-        }
+}
+
+void
+stt() noexcept {
+    if ((instruction.mem.srcDest & 0b11) != 0) {
+        setFaultCode(InvalidOperandFault);
+    } else {
+        storeBlock(computeAddress(), instruction.mem.srcDest, 3);
+        // support unaligned accesses
     }
-    void
-    fmark() noexcept {
-        if (pc.pc.traceEnable) {
-            setFaultCode(MarkTraceFault);
-        }
+}
+
+void
+ldq() noexcept {
+    if ((instruction.mem.srcDest & 0b11) != 0) {
+        setFaultCode(InvalidOperandFault);
+    } else {
+        loadBlock(computeAddress(), instruction.mem.srcDest, 4);
+        // support unaligned accesses
     }
-    void restoreRegisterSet(Ordinal fp) noexcept;
-    void
-    restoreStandardFrame() noexcept {
-        // need to leave the current call
-        moveGPR(FPIndex, PFPIndex, TreatAsOrdinal{});
-        // remember that the lowest 6 bits are ignored so it is important to mask
-        // them out of the frame pointer address when using the address
-        auto realAddress = getGPRValue(FPIndex, TreatAsOrdinal{}) & NotC;
-        restoreRegisterSet(realAddress);
-        ip.setValue(getGPRValue(RIPIndex, TreatAsOrdinal{}), TreatAsOrdinal{});
-        flags.ucode.dontAdvanceIP = 1;
+}
+
+void
+stq() noexcept {
+    if ((instruction.mem.srcDest & 0b11) != 0) {
+        setFaultCode(InvalidOperandFault);
+    } else {
+        storeBlock(computeAddress(), instruction.mem.srcDest, 4);
+        // support unaligned accesses
     }
-    void
-    ret() {
+}
+
+void
+balx() noexcept {
+    auto address = computeAddress();
+    setGPR(instruction.mem.srcDest, ip.getValue(TreatAsOrdinal{}) + advanceBy, TreatAsOrdinal{});
+    ip.setValue(address, TreatAsOrdinal{});
+    flags.ucode.dontAdvanceIP = 1;
+}
+bool 
+registerSetAvailable() noexcept {
+    /// @todo implement this properly when we implement support for register
+    /// sets
+    return false;
+}
+void
+allocateNewRegisterFrame() noexcept {
+    // do nothing right now
+}
+void 
+saveRegisterSet(Ordinal fp) noexcept {
+    // save the "next" register frame to main memory to reclaim it
+    storeBlock(fp, 16, 16);
+}
+void
+restoreRegisterSet(Ordinal fp) noexcept {
+    loadBlock(fp, 16, 16);
+}
+void 
+enterCall(Ordinal fp) noexcept {
+    if (registerSetAvailable()) {
+        allocateNewRegisterFrame();
+    } else {
+        saveRegisterSet(fp);
+        allocateNewRegisterFrame();
+    }
+}
+void
+callx() noexcept {
+    // wait for any uncompleted instructions to finish
+    auto temp = (getGPRValue(SPIndex, TreatAsOrdinal{}) + C) & NotC; // round stack pointer to next boundary
+    auto addr = computeAddress();
+    auto fp = getGPRValue(FPIndex, TreatAsOrdinal{});
+    setGPR(RIPIndex, ip.getValue(TreatAsOrdinal{}) + advanceBy, TreatAsOrdinal{});
+    enterCall(fp);
+    ip.setValue(addr, TreatAsOrdinal{});
+    setGPR(PFPIndex, fp, TreatAsOrdinal{});
+    setGPR(FPIndex, temp, TreatAsOrdinal{});
+    setGPR(SPIndex , temp + 64, TreatAsOrdinal{});
+    flags.ucode.dontAdvanceIP = 1;
+}
+void 
+call() {
+    // wait for any uncompleted instructions to finish
+    auto temp = (getGPRValue(SPIndex, TreatAsOrdinal{}) + C) & NotC; // round stack pointer to next boundary
+    auto fp = getGPRValue(FPIndex, TreatAsOrdinal{});
+    setGPR(RIPIndex, ip.getValue(TreatAsOrdinal{}) + advanceBy, TreatAsOrdinal{});
+    enterCall(fp);
+    ip.i += instruction.ctrl.displacement;
+    setGPR(PFPIndex, fp, TreatAsOrdinal{});
+    setGPR(FPIndex, temp, TreatAsOrdinal{});
+    setGPR(SPIndex , temp + 64, TreatAsOrdinal{});
+    flags.ucode.dontAdvanceIP = 1;
+}
+Ordinal getSupervisorStackPointer() noexcept;
+void
+calls(Ordinal src1) noexcept {
+    if (auto targ = src1; targ > 259) {
+        setFaultCode(ProtectionLengthFault);
+    } else {
         syncf();
+        auto tempPE = load(getSystemProcedureTableBase() + 48 + (4 * targ), TreatAsOrdinal{});
+        auto type = tempPE & 0b11;
+        auto procedureAddress = tempPE & ~0b11;
+        // read entry from system-procedure table, where spbase is address of
+        // system-procedure table from Initial Memory Image
+        setGPR(RIPIndex, ip.getValue(TreatAsOrdinal{}) + advanceBy, TreatAsOrdinal{});
+        ip.setValue(procedureAddress, TreatAsOrdinal{});
+        Ordinal temp = 0, tempRRR = 0;
+        if ((type == 0b00) || pc.inSupervisorMode()) {
+            temp = (getGPRValue(SPIndex, TreatAsOrdinal{}) + C) & NotC;
+            tempRRR = 0;
+        } else {
+            temp = getSupervisorStackPointer();
+            tempRRR = 0b010 | (pc.pc.traceEnable ? 0b001 : 0);
+            pc.pc.executionMode = 1;
+            pc.pc.traceEnable = temp & 0b1;
+        }
+        enterCall(temp);
+        /// @todo expand pfp and fp to accurately model how this works
         auto& pfp = getGPR(PFPIndex);
-        switch (pfp.pfp.rt) {
-            case 0b000: 
-                restoreStandardFrame();
-                break;
-            case 0b001:
-                {
-                    auto fp = getGPRValue(FPIndex, TreatAsOrdinal{});
-                    auto x = load(fp - 16, TreatAsOrdinal{});
-                    auto y = load(fp - 12, TreatAsOrdinal{});
-                    restoreStandardFrame();
-                    ac.setValue(y, TreatAsOrdinal{});
-                    if (pc.inSupervisorMode()) {
-                        pc.setValue(x, TreatAsOrdinal{});
-                    }
-                    break;
-                }
-            case 0b010: 
-                if (pc.inSupervisorMode()) {
-                    pc.pc.traceEnable = 0;
-                    pc.pc.executionMode = 0;
-                }
-                restoreStandardFrame();
-                break;
-            case 0b011: 
-                if (pc.inSupervisorMode()) {
-                    pc.pc.traceEnable = 1;
-                    pc.pc.executionMode = 0;
-                }
-                restoreStandardFrame();
-                break;
-            case 0b111: 
-                {
-                    // interrupt return
-                    auto fp = getGPRValue(FPIndex, TreatAsOrdinal{});
-                    auto x = load(fp - 16, TreatAsOrdinal{});
-                    auto y = load(fp - 12, TreatAsOrdinal{});
-                    restoreStandardFrame();
-                    ac.setValue(y, TreatAsOrdinal{});
-                    if (pc.inSupervisorMode()) {
-                        pc.setValue(x, TreatAsOrdinal{});
-                        checkForPendingInterrupts();
-                    }
-                    break;
-                }
-    
-                break;
-            default: 
-                // undefined!
-                /// @todo raise a fault?
-                break;
-        }
-    }
-    
-    template<bool checkClear>
-    void 
-    branchIfBitGeneric() {
-        Ordinal bitpos = computeBitPosition(unpackSrc1_COBR(TreatAsOrdinal{}));
-        Ordinal against = unpackSrc2_COBR(TreatAsOrdinal{});
-        bool condition = false;
-        // Branch if bit set
-        if constexpr (checkClear) {
-            condition = (bitpos & against) == 0;
-        } else {
-            condition = (bitpos & against) != 0;
-        }
-        if (condition) {
-            ac.arith.conditionCode = checkClear ? 0b000 : 0b010;
-            Register temp;
-            temp.alignedTransfer.important = instruction.cobr.displacement;
-            ip.alignedTransfer.important = ip.alignedTransfer.important + temp.alignedTransfer.important;
-            ip.alignedTransfer.aligned = 0;
-        flags.ucode.dontAdvanceIP = 1;
-        } else {
-            ac.arith.conditionCode = checkClear ? 0b010 : 0b000;
-        }
-    }
-    void
-    bbc() {
-        branchIfBitGeneric<true>();
-    }
-    void
-    bbs() {
-        branchIfBitGeneric<false>();
-    }
-    Ordinal
-    computeAddress() noexcept {
-        if (instruction.isMEMA()) {
-            Ordinal result = instruction.mem.offset;
-            if (instruction.mema.action) {
-                result += getGPRValue(instruction.mem.abase, TreatAsOrdinal{});
-            }
-            return result;
-        } else {
-            // okay so we need to figure out the minor mode after figuring out if
-            // it is a double wide operation or not
-            if (instruction.memb.group) {
-                // okay so it is going to be the displacement versions
-                // load 32-bits into the optionalDisplacement field
-                advanceBy += 4;
-                Integer result = static_cast<Integer>(load(ip.a + 4, TreatAsOrdinal{})); // load the optional displacement
-                if (instruction.memb_grp2.useIndex) {
-                    result += (getGPRValue(instruction.memb_grp2.index, TreatAsInteger{}) << static_cast<Integer>(instruction.memb_grp2.scale));
-                }
-                if (instruction.memb_grp2.registerIndirect) {
-                    result += getGPRValue(instruction.memb_grp2.abase, TreatAsInteger{});
-                }
-                return static_cast<Ordinal>(result);
-            } else {
-                // okay so the other group isn't as cleanly designed
-                switch (instruction.memb.modeMinor) {
-                    case 0b00: // Register Indirect
-                        return getGPRValue(instruction.memb.abase, TreatAsOrdinal{});
-                    case 0b01: // IP With Displacement 
-                        advanceBy += 4;
-                        return static_cast<Ordinal>(ip.i + load(ip.a + 4, TreatAsInteger{}) + 8);
-                    case 0b11: // Register Indirect With Index
-                        return getGPRValue(instruction.memb.abase, TreatAsOrdinal{}) + (getGPRValue(instruction.memb.index, TreatAsOrdinal{}) << instruction.memb.scale);
-                    default:
-                        return -1;
-                }
-            }
-        }
-    }
-    template<typename T>
-    void
-    cmpGeneric(T src1, T src2) noexcept {
-        if (src1 < src2) {
-            ac.arith.conditionCode = 0b100;
-        } else if (src1 == src2) {
-            ac.arith.conditionCode = 0b010;
-        } else {
-            ac.arith.conditionCode = 0b001;
-        }
-    }
-    template<typename T>
-    void
-    cmpxbGeneric() noexcept {
-        auto src1 = unpackSrc1_COBR(TreatAs<T>{});
-        auto src2 = unpackSrc2_COBR(TreatAs<T>{});
-        cmpGeneric(src1, src2);
-        if ((instruction.instGeneric.mask & ac.arith.conditionCode) != 0) {
-            Register temp;
-            temp.alignedTransfer.important = instruction.cobr.displacement;
-            ip.alignedTransfer.important = ip.alignedTransfer.important + temp.alignedTransfer.important;
-            ip.alignedTransfer.aligned = 0;
-        flags.ucode.dontAdvanceIP = 1;
-        }
-    }
-    void 
-    cmpobGeneric() noexcept {
-        cmpxbGeneric<Ordinal>();
-    }
-    void
-    cmpibGeneric() noexcept {
-        cmpxbGeneric<Integer>();
-    }
-    void
-    storeBlock(Ordinal baseAddress, byte baseRegister, byte count) noexcept {
-        for (byte i = 0; i < count; ++i, baseAddress += 4) {
-            store(baseAddress, getGPRValue(baseRegister, i, TreatAsOrdinal{}), TreatAsOrdinal{});
-        }
-    }
-    void
-    loadBlock(Ordinal baseAddress, byte baseRegister, byte count) noexcept {
-        for (byte i = 0; i < count; ++i, baseAddress += 4) {
-            setGPR(baseRegister, i, load(baseAddress, TreatAsOrdinal{}), TreatAsOrdinal{});
-        }
-    }
-    void 
-    ldl() noexcept {
-        if ((instruction.mem.srcDest & 0b1) != 0) {
-            setFaultCode(InvalidOperandFault);
-        } else {
-            loadBlock(computeAddress(), instruction.mem.srcDest, 2);
-            // support unaligned accesses
-        }
-    }
-    
-    void
-    stl() noexcept {
-        if ((instruction.mem.srcDest & 0b1) != 0) {
-            setFaultCode(InvalidOperandFault);
-        } else {
-            storeBlock(computeAddress(), instruction.mem.srcDest, 2);
-            // support unaligned accesses
-        }
-    }
-    void
-    ldt() noexcept {
-        if ((instruction.mem.srcDest & 0b11) != 0) {
-            setFaultCode(InvalidOperandFault);
-        } else {
-            loadBlock(computeAddress(), instruction.mem.srcDest, 3);
-            // support unaligned accesses
-        }
-    }
-    
-    void
-    stt() noexcept {
-        if ((instruction.mem.srcDest & 0b11) != 0) {
-            setFaultCode(InvalidOperandFault);
-        } else {
-            storeBlock(computeAddress(), instruction.mem.srcDest, 3);
-            // support unaligned accesses
-        }
-    }
-    
-    void
-    ldq() noexcept {
-        if ((instruction.mem.srcDest & 0b11) != 0) {
-            setFaultCode(InvalidOperandFault);
-        } else {
-            loadBlock(computeAddress(), instruction.mem.srcDest, 4);
-            // support unaligned accesses
-        }
-    }
-    
-    void
-    stq() noexcept {
-        if ((instruction.mem.srcDest & 0b11) != 0) {
-            setFaultCode(InvalidOperandFault);
-        } else {
-            storeBlock(computeAddress(), instruction.mem.srcDest, 4);
-            // support unaligned accesses
-        }
-    }
-    
-    void
-    balx() noexcept {
-        auto address = computeAddress();
-        setGPR(instruction.mem.srcDest, ip.getValue(TreatAsOrdinal{}) + advanceBy, TreatAsOrdinal{});
-        ip.setValue(address, TreatAsOrdinal{});
-        flags.ucode.dontAdvanceIP = 1;
-    }
-    bool 
-    registerSetAvailable() noexcept {
-        /// @todo implement this properly when we implement support for register
-        /// sets
-        return false;
-    }
-    void
-    allocateNewRegisterFrame() noexcept {
-        // do nothing right now
-    }
-    void 
-    saveRegisterSet(Ordinal fp) noexcept {
-        // save the "next" register frame to main memory to reclaim it
-        storeBlock(fp, 16, 16);
-    }
-    void
-    restoreRegisterSet(Ordinal fp) noexcept {
-        loadBlock(fp, 16, 16);
-    }
-    void 
-    enterCall(Ordinal fp) noexcept {
-        if (registerSetAvailable()) {
-            allocateNewRegisterFrame();
-        } else {
-            saveRegisterSet(fp);
-            allocateNewRegisterFrame();
-        }
-    }
-    void
-    callx() noexcept {
-        // wait for any uncompleted instructions to finish
-        auto temp = (getGPRValue(SPIndex, TreatAsOrdinal{}) + C) & NotC; // round stack pointer to next boundary
-        auto addr = computeAddress();
-        auto fp = getGPRValue(FPIndex, TreatAsOrdinal{});
-        setGPR(RIPIndex, ip.getValue(TreatAsOrdinal{}) + advanceBy, TreatAsOrdinal{});
-        enterCall(fp);
-        ip.setValue(addr, TreatAsOrdinal{});
-        setGPR(PFPIndex, fp, TreatAsOrdinal{});
+        // lowest six bits are ignored
+        pfp.setValue(getGPRValue(FPIndex, TreatAsOrdinal{}) & ~0b1'111, TreatAsOrdinal{});
+        pfp.pfp.rt = tempRRR;
         setGPR(FPIndex, temp, TreatAsOrdinal{});
-        setGPR(SPIndex , temp + 64, TreatAsOrdinal{});
+        setGPR(SPIndex, temp + 64, TreatAsOrdinal{});
         flags.ucode.dontAdvanceIP = 1;
     }
-    void 
-    call() {
-        // wait for any uncompleted instructions to finish
-        auto temp = (getGPRValue(SPIndex, TreatAsOrdinal{}) + C) & NotC; // round stack pointer to next boundary
-        auto fp = getGPRValue(FPIndex, TreatAsOrdinal{});
-        setGPR(RIPIndex, ip.getValue(TreatAsOrdinal{}) + advanceBy, TreatAsOrdinal{});
-        enterCall(fp);
-        ip.i += instruction.ctrl.displacement;
-        setGPR(PFPIndex, fp, TreatAsOrdinal{});
-        setGPR(FPIndex, temp, TreatAsOrdinal{});
-        setGPR(SPIndex , temp + 64, TreatAsOrdinal{});
-        flags.ucode.dontAdvanceIP = 1;
+}
+void
+bx() noexcept {
+    ip.setValue(computeAddress(), TreatAsOrdinal{});
+    flags.ucode.dontAdvanceIP = 1;
+}
+void
+performRegisterTransfer(byte mask, byte count) noexcept {
+    if (((instruction.reg.srcDest & mask) != 0) || ((instruction.reg.src1 & mask) != 0)) {
+        setFaultCode(InvalidOpcodeFault);
     }
-    Ordinal getSupervisorStackPointer() noexcept;
-    void
-    calls(Ordinal src1) noexcept {
-        if (auto targ = src1; targ > 259) {
-            setFaultCode(ProtectionLengthFault);
-        } else {
-            syncf();
-            auto tempPE = load(getSystemProcedureTableBase() + 48 + (4 * targ), TreatAsOrdinal{});
-            auto type = tempPE & 0b11;
-            auto procedureAddress = tempPE & ~0b11;
-            // read entry from system-procedure table, where spbase is address of
-            // system-procedure table from Initial Memory Image
-            setGPR(RIPIndex, ip.getValue(TreatAsOrdinal{}) + advanceBy, TreatAsOrdinal{});
-            ip.setValue(procedureAddress, TreatAsOrdinal{});
-            Ordinal temp = 0, tempRRR = 0;
-            if ((type == 0b00) || pc.inSupervisorMode()) {
-                temp = (getGPRValue(SPIndex, TreatAsOrdinal{}) + C) & NotC;
-                tempRRR = 0;
-            } else {
-                temp = getSupervisorStackPointer();
-                tempRRR = 0b010 | (pc.pc.traceEnable ? 0b001 : 0);
-                pc.pc.executionMode = 1;
-                pc.pc.traceEnable = temp & 0b1;
-            }
-            enterCall(temp);
-            /// @todo expand pfp and fp to accurately model how this works
-            auto& pfp = getGPR(PFPIndex);
-            // lowest six bits are ignored
-            pfp.setValue(getGPRValue(FPIndex, TreatAsOrdinal{}) & ~0b1'111, TreatAsOrdinal{});
-            pfp.pfp.rt = tempRRR;
-            setGPR(FPIndex, temp, TreatAsOrdinal{});
-            setGPR(SPIndex, temp + 64, TreatAsOrdinal{});
-            flags.ucode.dontAdvanceIP = 1;
-        }
-    }
-    void
-    bx() noexcept {
-        ip.setValue(computeAddress(), TreatAsOrdinal{});
-        flags.ucode.dontAdvanceIP = 1;
-    }
-    void
-    performRegisterTransfer(byte mask, byte count) noexcept {
-        if (((instruction.reg.srcDest & mask) != 0) || ((instruction.reg.src1 & mask) != 0)) {
-            setFaultCode(InvalidOpcodeFault);
-        }
-        for (byte i = 0; i < count; ++i) {
-            setGPR(instruction.reg.srcDest, i, unpackSrc1_REG(i, TreatAsOrdinal{}), TreatAsOrdinal{});
-        }
+    for (byte i = 0; i < count; ++i) {
+        setGPR(instruction.reg.srcDest, i, unpackSrc1_REG(i, TreatAsOrdinal{}), TreatAsOrdinal{});
     }
 }
 
