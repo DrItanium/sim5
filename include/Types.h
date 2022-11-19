@@ -66,4 +66,23 @@ union SplitWord64 {
     LongOrdinal whole;
     Ordinal parts[sizeof(LongOrdinal) / sizeof(Ordinal)];
 };
+
+// Pins
+constexpr auto LOCKPIN = 12;
+constexpr auto FAILPIN = 13;
+constexpr auto INTPIN = 2;
+constexpr auto BUSYPIN = 3;
+constexpr auto BANK3 = 42;
+constexpr auto BANK2 = 43;
+constexpr auto BANK1 = 44;
+constexpr auto BANK0 = 45;
+constexpr auto SDPin = 4;
+constexpr auto TFTCS = 10;
+constexpr auto TFTDC = 9;
+
+template<typename T>
+volatile T& memory(size_t address) noexcept {
+    return *reinterpret_cast<volatile T*>(address);
+}
+void set328BusAddress(const SplitWord32& address) noexcept;
 #endif // end SIM5_TYPES_H__

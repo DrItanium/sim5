@@ -523,4 +523,11 @@ class RegisterBlock32 {
     private:
         Register registers_[32];
 };
+void setFaultPort(Ordinal value) noexcept;
+Ordinal getFaultPort() noexcept;
+void lockBus() noexcept;
+void unlockBus() noexcept;
+void signalBootFailure() noexcept;
+void invokeCore() noexcept;
+void configureSimulatorStructures() noexcept;
 #endif // end SIM5_CORE_H__
