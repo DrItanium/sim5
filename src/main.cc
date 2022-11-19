@@ -27,16 +27,11 @@
 #include <Arduino.h>
 #include <SPI.h>
 #include <Wire.h>
-#include <SD.h>
-#include <RTClib.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_ILI9341.h>
-#include <Adafruit_FT6206.h>
-#include <Adafruit_SI5351.h>
 #include "Types.h"
 #include "BinaryOperations.h"
 #include "Core.h"
 #include "ArduinoJson.h"
+#include "Peripherals.h"
 Adafruit_FT6206 touchScreen;
 Adafruit_ILI9341 tft(TFTCS, TFTDC);
 Adafruit_SI5351 clockgen;
@@ -55,13 +50,16 @@ set328BusAddress(const SplitWord32& address) noexcept {
     PORTK = address.splitAddress.a16_23;
     digitalWrite(38, address.splitAddress.a15);
 }
-
-    
-
 volatile bool HasSDCard = false;
 volatile bool HasTouchScreen = false;
 volatile bool HasRTC = false;
 volatile bool HasClockGen = false;
+bool haveRTC() noexcept { return HasRTC; }
+bool haveClockGenerator() noexcept { return HasClockGen; }
+bool haveTouchScreen() noexcept { return HasTouchScreen; }
+bool haveSDCard() noexcept { return HasSDCard; }
+    
+
 RTC_PCF8523 rtc;
 void 
 setupClockGenerator() noexcept {
