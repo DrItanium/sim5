@@ -1479,12 +1479,8 @@ struct IAC {
     uint32_t field5;
 };
 void 
-systemRequest(const IAC& message) noexcept {
+sendIAC(const IAC& message) noexcept {
     /// @todo implement
-}
-void 
-sendIAC(Ordinal f0, Ordinal f3, Ordinal f4, Ordinal f5) noexcept {
-    systemRequest(IAC{f0, f3, f4, f5});
 }
 void 
 synmovq(Register& dest, Ordinal src) noexcept {
@@ -1495,8 +1491,7 @@ synmovq(Register& dest, Ordinal src) noexcept {
     auto temp2 = load(src+8, TreatAsOrdinal{});
     auto temp3 = load(src+12, TreatAsOrdinal{});
     if (auto tempa = dest.getValue(TreatAsOrdinal{}) & 0xFFFF'FFF0; tempa == 0xFF00'0010) {
-        /// @todo send an IAC message using the loaded contents
-        sendIAC(temp0, temp1, temp2, temp3);
+        sendIAC(IAC{temp0, temp1, temp2, temp3});
         ac.arith.conditionCode = 0b010;
     } else {
         store(tempa, temp0, TreatAsOrdinal{});
