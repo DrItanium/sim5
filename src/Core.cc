@@ -1496,6 +1496,7 @@ void flushTLB() noexcept;
 void flushTLBPageTableEntry(Ordinal offsetFromSegmentBase, Ordinal ssofSegmentThatContainsPage) noexcept;
 void flushTLBPhysicalPage(Ordinal basePhysicalAddressOfPage) noexcept;
 void flushTLBSegmentEntry(Ordinal ssForSegment) noexcept;
+void modifyProcessControls(Ordinal newProcessorControlWords, Ordinal mask) noexcept;
 
 void 
 sendIAC(const IAC& message) noexcept {
@@ -1512,6 +1513,7 @@ sendIAC(const IAC& message) noexcept {
         case 0x8A: flushTLB(); break;
         case 0x8B: flushTLBSegmentEntry(message.field3); break;
         case 0x8C: flushTLBPageTableEntry(message.field3, message.field4); break;
+        case 0x8D: modifyProcessControls(message.field3, message.field4); break;
         case 0x8F: setBreakpointRegister(message.field3, message.field4); break;
         case 0x90: checkProcessNotice(message.field3); break;
         case 0x91: freeze(); break;
@@ -1576,4 +1578,46 @@ void
 testPendingInterrupts() noexcept {
     /// @todo implement
     // perhaps call checkForPendingInterrupts?
+}
+void 
+checkProcessNotice(Ordinal processSegmentSelectorBase) noexcept {
+
+    /// @todo implement
+}
+void 
+flushLocalRegisters(Ordinal physicalStackPageAddress) noexcept { 
+    /// @todo implement
+}
+void 
+flushProcess() noexcept { 
+    /// @todo implement
+}
+void 
+flushTLB() noexcept { 
+    /// @todo implement
+}
+void 
+flushTLBPageTableEntry(Ordinal offsetFromSegmentBase, Ordinal ssofSegmentThatContainsPage) noexcept { 
+    /// @todo implement
+}
+void 
+flushTLBPhysicalPage(Ordinal basePhysicalAddressOfPage) noexcept { 
+    /// @todo implement
+}
+void 
+flushTLBSegmentEntry(Ordinal ssForSegment) noexcept { 
+    /// @todo implement
+}
+void 
+modifyProcessControls(Ordinal newProcessorControlWords, Ordinal mask) noexcept { 
+    /// @todo implement
+}
+
+void 
+freeze() noexcept {
+    /// @todo implement
+}
+void 
+continueInitialization() noexcept {
+    /// @todo implement
 }
