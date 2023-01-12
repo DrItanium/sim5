@@ -36,6 +36,7 @@ Register flags;
 Register flags2; 
 Register faultCode; 
 Register instruction;
+Register ictl;
 byte advanceBy;
 
 template<typename T>
@@ -709,8 +710,8 @@ signalBootFailure() noexcept {
 }
 void
 branch() noexcept {
-        ip.i += instruction.ctrl.displacement;
-        flags.ucode.dontAdvanceIP = 1;
+    ip.i += instruction.ctrl.displacement;
+    flags.ucode.dontAdvanceIP = 1;
 }
 void
 branchConditional(bool condition) noexcept {
@@ -724,6 +725,19 @@ setFaultCode(Ordinal value, bool cond) noexcept {
         setFaultCode(value);
     }
 }
+
+/**
+ * @brief And the condition code with the consistent mask found in the
+ * instruction encoding; returns true if the value returned is not zero
+ */
+bool
+getMaskedConditionCode() noexcept {
+    return (ac.getConditionCode() & instruction.instGeneric.mask) != 0;
+}
+void synld(Register& dest, Ordinal src) noexcept;
+void synmovl(Register& dest, Ordinal src) noexcept;
+void synmov(Register& dest, Ordinal src) noexcept;
+void synmovq(Register& dest, Ordinal src) noexcept;
 void 
 invokeCore() noexcept {
     setFaultCode(NoFault);
@@ -762,7 +776,7 @@ invokeCore() noexcept {
         case Opcodes::bo:
             // the branch instructions have the mask encoded into the opcode
             // itself so we can just use it and save a ton of space overall
-            branchConditional((ac.getConditionCode() & instruction.instGeneric.mask) != 0);
+            branchConditional(getMaskedConditionCode());
             break;
         case Opcodes::faultno:
             setFaultCode(ConstraintRangeFault, ac.getConditionCode() == 0);
@@ -774,7 +788,7 @@ invokeCore() noexcept {
         case Opcodes::faultg:
         case Opcodes::faultge:
         case Opcodes::faulto:
-            setFaultCode(ConstraintRangeFault, (ac.getConditionCode() & instruction.instGeneric.mask) != 0);
+            setFaultCode(ConstraintRangeFault, getMaskedConditionCode());
             break;
         case Opcodes::testno:
             setGPR(instruction.cobr.src1, ac.getConditionCode() == 0 ? 1 : 0, TreatAsOrdinal{});
@@ -786,7 +800,7 @@ invokeCore() noexcept {
         case Opcodes::testne:
         case Opcodes::testle:
         case Opcodes::testo:
-            setGPR(instruction.cobr.src1, (ac.getConditionCode() & instruction.instGeneric.mask) != 0 ? 1 : 0, TreatAsOrdinal{});
+            setGPR(instruction.cobr.src1, getMaskedConditionCode() ? 1 : 0, TreatAsOrdinal{});
             break;
         case Opcodes::lda:
             setGPR(instruction.mem.srcDest, computeAddress(), TreatAsOrdinal{});
@@ -1173,8 +1187,20 @@ invokeCore() noexcept {
         case Opcodes::scanbit:
             scanbit(regDest, src2o, src1o);
             break;
+        case Opcodes::synld:
+            synld(regDest, src1o);
+            break;
+        case Opcodes::synmov:
+            synmov(getGPR(instruction.reg.src1), src2o);
+            break;
+        case Opcodes::synmovl:
+            synmovl(getGPR(instruction.reg.src1), src2o);
+            break;
+        case Opcodes::synmovq:
+            synmovq(getGPR(instruction.reg.src1), src2o);
+            break;
         default:
-                setFaultCode(UnimplementedFault);
+            setFaultCode(UnimplementedFault);
             break;
     }
     if (flags.ucode.performSyncf) {
@@ -1398,4 +1424,31 @@ configureSimulatorStructures() noexcept {
         getGPR(i).clear();
     }
     Serial.println(F("DONE"));
+}
+
+void 
+synld(Register& dest, Ordinal src) noexcept {
+    ac.arith.conditionCode = 0b000;
+    if (auto tempa = src & 0xFFFF'FFFC; tempa == 0xFF00'0004) {
+        // interrupt control register needs to be read through this
+        ac.arith.conditionCode = 0b010;
+        // copy the contents of the interrupt control register to a target
+        // register
+        dest.setValue(ictl.o, TreatAsOrdinal{});
+    } else {
+        ac.arith.conditionCode = 0b010;
+        dest.setValue(load(tempa, TreatAsOrdinal{}), TreatAsOrdinal{});
+    }
+}
+void 
+synmovl(Register& dest, Ordinal src) noexcept {
+
+}
+void 
+synmov(Register& dest, Ordinal src) noexcept {
+
+}
+void 
+synmovq(Register& dest, Ordinal src) noexcept {
+
 }

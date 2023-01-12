@@ -100,26 +100,6 @@ enum class Opcodes : uint16_t {
     cmpibne,
     cmpible,
     cmpibo,
-#if 0
-#define X(value) reg_ ## value = value
-    X(0x58),
-    X(0x59),
-    X(0x5a),
-    X(0x5b),
-    X(0x5c),
-    X(0x5d),
-    X(0x5e),
-    X(0x5f),
-    X(0x60),
-    X(0x61),
-    X(0x64),
-    X(0x65),
-    X(0x66),
-    X(0x67),
-    X(0x70),
-    X(0x74),
-#undef X
-#endif
     ldob = 0x80,
     stob = 0x82,
     bx = 0x84,
@@ -181,16 +161,12 @@ enum class Opcodes : uint16_t {
     movl = 0x5dc,
     movt = 0x5ec,
     movq = 0x5fc,
-#ifdef SxKxInstructions
     synmov = 0x600,
     synmovl,
     synmovq,
-#endif
     atmod = 0x610,
     atadd = 0x612,
-#ifdef SxKxInstructions
     synld = 0x615,
-#endif
     spanbit = 0x640,
     scanbit,
     modac = 0x645,
@@ -212,7 +188,6 @@ enum class Opcodes : uint16_t {
     remi = 0x718,
     modi,
     divi = 0x71b,
-
 };
 union Register {
     constexpr explicit Register(Ordinal value = 0) : o(value) { }
@@ -397,6 +372,12 @@ union Register {
         Ordinal ccOnTrue : 3;
         Ordinal ccOnFalse : 3;
     } ucode2;
+    struct {
+        Ordinal int0Vector : 8;
+        Ordinal int1Vector : 8;
+        Ordinal int2Vector : 8;
+        Ordinal int3Vector : 8;
+    } interruptControl;
     bool inSupervisorMode() const noexcept { return pc.executionMode; }
     bool inUserMode() const noexcept { return !inSupervisorMode(); }
     bool isMEMA() const noexcept { return !mem.selector; }
