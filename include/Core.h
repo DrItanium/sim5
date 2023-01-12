@@ -894,6 +894,15 @@ class Core {
             // notbit is src2 ^ computeBitPosition(src1)
             xorOperation(destination, computeBitPosition(src1), src2);
         }
+        template<typename T>
+        void add(Register& destination, T src1, T src2, TreatAs<T>) noexcept {
+            destination.setValue(src2 + src1, TreatAs<T>{});
+        }
+        template<typename T>
+        void sub(Register& destination, T src1, T src2, TreatAs<T>) noexcept {
+            destination.setValue(src2 - src1, TreatAs<T>{});
+        }
+
     private:
         Ordinal faultPortValue_;
         Ordinal systemAddressTableBase_ = 0;

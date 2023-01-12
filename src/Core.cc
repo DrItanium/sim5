@@ -806,24 +806,20 @@ Core::cycle() noexcept {
                 flags_.ucode.invertSrc1 = 1;
             }
             break;
-        case Opcodes::addo: // addo
-            flags_.ucode.performAdd = 1;
-            flags_.ucode.ordinalOp = 1;
+        case Opcodes::addo:
+            add<Ordinal>(regDest, src1o, src2o, TreatAsOrdinal{});
             break;
         case Opcodes::addi: // addi
-            flags_.ucode.performAdd = 1;
-            flags_.ucode.integerOp = 1;
+            add<Integer>(regDest, src1i, src2i, TreatAsInteger{});
             break;
         case Opcodes::subo: // subo
             // I remember this trick from college, subtraction is just addition
             // with a negative second argument :). I never gave it much thought
             // until now but it seems to be an effective trick to save space.
-            flags_.ucode.performSubtract = 1;
-            flags_.ucode.ordinalOp = 1;
+            sub<Ordinal>(regDest, src1o, src2o, TreatAsOrdinal{});
             break;
         case Opcodes::subi: // subi
-            flags_.ucode.performSubtract = 1;
-            flags_.ucode.integerOp = 1;
+            sub<Integer>(regDest, src1i, src2i, TreatAsInteger{});
             break;
         case Opcodes::shro: // shro
             regDest.setValue<Ordinal>(src1o < 32 ? src2o >> src1o : 0);
