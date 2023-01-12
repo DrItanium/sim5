@@ -752,18 +752,13 @@ Core::cycle() noexcept {
             andOperation(regDest, src1o, src2o);
             break;
         case Opcodes::clrbit: // clrbit
-                              // clrbit is src2 & ~computeBitPosition(src1)
-                              // so lets use andnot
-            flags_.ucode.src1IsBitPosition = 1;
+            clrbit(regDest, src1o, src2o);
+            break;
         case Opcodes::andnot: // andnot
-            flags_.ucode.doAnd = 1;
-            flags_.ucode.invertSrc1 = 1;
-            flags_.ucode.performLogical = 1;
+            andnot(regDest, src1o, src2o);
             break;
         case Opcodes::notand: // notand
-            flags_.ucode.doAnd = 1;
-            flags_.ucode.invertSrc2 = 1;
-            flags_.ucode.performLogical = 1;
+            notand(regDest, src1o, src2o);
             break;
         case Opcodes::notbit: // notbit
             notbit(regDest, src1o, src2o);

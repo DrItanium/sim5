@@ -913,6 +913,18 @@ class Core {
             ornot(destination, src, 0);
         }
 
+        void andnot(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+            dest.setValue(src2 & ~src1, TreatAsOrdinal{});
+        }
+        void notand(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+            dest.setValue(~src2 & src1, TreatAsOrdinal{});
+        }
+        void clrbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+            // clrbit is src2 & ~computeBitPosition(src1)
+            // so lets use andnot
+            andnot(dest, computeBitPosition(src1), src2);
+        }
+
     private:
         Ordinal faultPortValue_;
         Ordinal systemAddressTableBase_ = 0;
