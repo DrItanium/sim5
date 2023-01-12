@@ -24,20 +24,6 @@
 #include <Arduino.h>
 #include "Types.h"
 #include "Core.h"
-Ordinal faultPortValue;
-volatile Ordinal systemAddressTableBase = 0;
-GPRBlock gpr;
-RegisterBlock32 sfrs;
-Register ip;
-Register ac; 
-Register pc;
-Register tc; 
-Register flags; 
-Register flags2; 
-Register faultCode; 
-Register instruction;
-Register ictl;
-byte advanceBy;
 
 template<typename T>
 T load(Address address, TreatAs<T>) noexcept {
@@ -59,54 +45,54 @@ Register& Core::getGPR(byte index, byte offset) noexcept {
 }
 Ordinal 
 Core::unpackSrc1_REG(TreatAsOrdinal) noexcept {
-    if (instruction.reg.m1) {
+    if (instruction_.reg.m1) {
         /// @todo what to do if s1 is also set?
-        return instruction.reg.src1;
-    } else if (instruction.reg.s1) {
-        return getSFR(instruction.reg.src1).o;
+        return instruction_.reg.src1;
+    } else if (instruction_.reg.s1) {
+        return getSFR(instruction_.reg.src1).o;
     } else {
-        return getGPRValue(instruction.reg.src1, TreatAsOrdinal{});
+        return getGPRValue(instruction_.reg.src1, TreatAsOrdinal{});
     }
 }
 Ordinal 
 Core::unpackSrc1_REG(byte offset, TreatAsOrdinal) noexcept {
-    if (instruction.reg.m1) {
+    if (instruction_.reg.m1) {
         // literals should always return zero if offset is greater than zero
-        return offset == 0 ? instruction.reg.src1 : 0;
-    } else if (instruction.reg.s1) {
-        return getSFR(instruction.reg.src1, offset).o;
+        return offset == 0 ? instruction_.reg.src1 : 0;
+    } else if (instruction_.reg.s1) {
+        return getSFR(instruction_.reg.src1, offset).o;
     } else {
-        return getGPRValue(instruction.reg.src1, offset, TreatAsOrdinal{});
+        return getGPRValue(instruction_.reg.src1, offset, TreatAsOrdinal{});
     }
 }
 Integer 
 Core::unpackSrc1_REG(TreatAsInteger) noexcept {
-    if (instruction.reg.m1) {
-        return instruction.reg.src1;
-    } else if (instruction.reg.s1) {
-        return getSFR(instruction.reg.src1).i;
+    if (instruction_.reg.m1) {
+        return instruction_.reg.src1;
+    } else if (instruction_.reg.s1) {
+        return getSFR(instruction_.reg.src1).i;
     } else {
-        return getGPRValue(instruction.reg.src1, TreatAsInteger{});
+        return getGPRValue(instruction_.reg.src1, TreatAsInteger{});
     }
 }
 Ordinal 
 Core::unpackSrc2_REG(TreatAsOrdinal) noexcept {
-    if (instruction.reg.m2) {
-        return instruction.reg.src2;
-    } else if (instruction.reg.s2) {
-        return getSFR(instruction.reg.src2).o;
+    if (instruction_.reg.m2) {
+        return instruction_.reg.src2;
+    } else if (instruction_.reg.s2) {
+        return getSFR(instruction_.reg.src2).o;
     } else {
-        return getGPRValue(instruction.reg.src2, TreatAsOrdinal{});
+        return getGPRValue(instruction_.reg.src2, TreatAsOrdinal{});
     }
 }
 Integer 
 Core::unpackSrc2_REG(TreatAsInteger) noexcept {
-    if (instruction.reg.m2) {
-        return instruction.reg.src2;
-    } else if (instruction.reg.s2) {
-        return getSFR(instruction.reg.src2).i;
+    if (instruction_.reg.m2) {
+        return instruction_.reg.src2;
+    } else if (instruction_.reg.s2) {
+        return getSFR(instruction_.reg.src2).i;
     } else {
-        return getGPRValue(instruction.reg.src2, TreatAsInteger{});
+        return getGPRValue(instruction_.reg.src2, TreatAsInteger{});
     }
 }
 
@@ -117,25 +103,25 @@ Core::scanbyte(Ordinal src2, Ordinal src1) noexcept {
             s1.bytes[1] == s2.bytes[1] ||
             s1.bytes[2] == s2.bytes[2] ||
             s1.bytes[3] == s2.bytes[3]) {
-        ac.arith.conditionCode = 0b010;
+        ac_.arith.conditionCode = 0b010;
     } else {
-        ac.arith.conditionCode = 0;
+        ac_.arith.conditionCode = 0;
     }
 }
 void
 Core::arithmeticWithCarryGeneric(Ordinal result, bool src2MSB, bool src1MSB, bool destMSB) noexcept {
     // set the carry bit
-    ac.arith.conditionCode = 0;
+    ac_.arith.conditionCode = 0;
     // set the overflow bit
     if ((src2MSB == src1MSB) && (src2MSB != destMSB)) {
-        ac.arith.conditionCode |= 0b001;
+        ac_.arith.conditionCode |= 0b001;
     } else {
-        ac.arith.conditionCode &= 0b110;
+        ac_.arith.conditionCode &= 0b110;
     }
     if (result != 0) {
-        ac.arith.conditionCode |= 0b010;
+        ac_.arith.conditionCode |= 0b010;
     } else {
-        ac.arith.conditionCode &= 0b101;
+        ac_.arith.conditionCode &= 0b101;
     }
 }
 
@@ -148,7 +134,7 @@ Core::checkForPendingInterrupts() noexcept {
 void
 Core::emul(Register& dest, Ordinal src1, Ordinal src2) noexcept {
     SplitWord64 result;
-    if ((instruction.reg.srcDest & 0b1) != 0) {
+    if ((instruction_.reg.srcDest & 0b1) != 0) {
         setFaultCode(InvalidOpcodeFault);
     }  else {
         result.whole = static_cast<LongOrdinal>(src2) * static_cast<LongOrdinal>(src1);
@@ -156,7 +142,7 @@ Core::emul(Register& dest, Ordinal src1, Ordinal src2) noexcept {
     // yes this can be undefined by design :)
     // if we hit a fault then we just give up whats on the stack :)
     dest.setValue(result.parts[0], TreatAsOrdinal{});
-    setGPR(instruction.reg.srcDest, 1, result.parts[1], TreatAsOrdinal{});
+    setGPR(instruction_.reg.srcDest, 1, result.parts[1], TreatAsOrdinal{});
 }
 
 void
@@ -164,14 +150,14 @@ Core::ediv(Register& dest, Ordinal src1, Ordinal src2Lower) noexcept {
     SplitWord64 result, src2;
     result.whole = 0;
     src2.parts[0] = src2Lower;
-    if ((instruction.reg.srcDest & 0b1) != 0 || (instruction.reg.src2 & 0b1) != 0) {
+    if ((instruction_.reg.srcDest & 0b1) != 0 || (instruction_.reg.src2 & 0b1) != 0) {
         /// @todo fix
         setFaultCode(InvalidOpcodeFault);
     } else if (src1 == 0) {
         // divide by zero
         setFaultCode(ZeroDivideFault);
     } else {
-        src2.parts[1] = getGPRValue(instruction.reg.src2, 1, TreatAsOrdinal{});
+        src2.parts[1] = getGPRValue(instruction_.reg.src2, 1, TreatAsOrdinal{});
         result.parts[1] = src2.whole / src1; // quotient
         result.parts[0] = static_cast<Ordinal>(src2.whole - (src2.whole / src1) * src1); // remainder
     }
@@ -180,7 +166,7 @@ Core::ediv(Register& dest, Ordinal src1, Ordinal src2Lower) noexcept {
     // however, to get the compiler to shut up, I am zeroing out the result
     // field
     dest.setValue<Ordinal>(result.parts[0]);
-    setGPR(instruction.reg.srcDest, 1, result.parts[1], TreatAsOrdinal{});
+    setGPR(instruction_.reg.srcDest, 1, result.parts[1], TreatAsOrdinal{});
 }
 
 Ordinal
@@ -195,51 +181,52 @@ Core::getSupervisorStackPointer() const noexcept {
 
 void
 Core::setFaultCode(Ordinal fault) noexcept {
-    faultCode.setValue(fault, TreatAsOrdinal{});
+    faultCode_.setValue(fault, TreatAsOrdinal{});
 }
 bool 
 Core::faultHappened() noexcept {
-    return faultCode.getValue(TreatAsOrdinal{}) != NoFault;
+    return faultCode_.getValue(TreatAsOrdinal{}) != NoFault;
 }
 Ordinal 
 Core::unpackSrc1_COBR(TreatAsOrdinal) noexcept {
-    if (instruction.cobr.m1) {
+    if (instruction_.cobr.m1) {
         // treat src1 as a literal
-        return instruction.cobr.src1;
+        return instruction_.cobr.src1;
     } else {
-        return getGPRValue(instruction.cobr.src1, TreatAsOrdinal{});
+        return getGPRValue(instruction_.cobr.src1, TreatAsOrdinal{});
     }
 }
 Ordinal
 Core::unpackSrc2_COBR(TreatAsOrdinal) noexcept {
-    if (instruction.cobr.s2) {
+    if (instruction_.cobr.s2) {
         // access the contents of the sfrs
         // at this point it is just a simple extra set of 32 registers
-        return getSFR(instruction.cobr.src2).o;
+        return getSFR(instruction_.cobr.src2).o;
     } else {
-        return getGPRValue(instruction.cobr.src2, TreatAsOrdinal{});
+        return getGPRValue(instruction_.cobr.src2, TreatAsOrdinal{});
     }
 }
 Integer
 Core::unpackSrc1_COBR(TreatAsInteger) noexcept {
-    if (instruction.cobr.m1) {
+    if (instruction_.cobr.m1) {
         // treat src1 as a literal
-        return instruction.cobr.src1;
+        return instruction_.cobr.src1;
     } else {
-        return getGPRValue(instruction.cobr.src1, TreatAsInteger{});
+        return getGPRValue(instruction_.cobr.src1, TreatAsInteger{});
     }
 }
 Integer
 Core::unpackSrc2_COBR(TreatAsInteger) noexcept {
-    if (instruction.cobr.s2) {
+    if (instruction_.cobr.s2) {
         // access the contents of the sfrs
         // at this point it is just a simple extra set of 32 registers
-        return getSFR(instruction.cobr.src2).i;
+        return getSFR(instruction_.cobr.src2).i;
     } else {
-        return getGPRValue(instruction.cobr.src2, TreatAsInteger{});
+        return getGPRValue(instruction_.cobr.src2, TreatAsInteger{});
     }
 }
-Register& Core::getSFR(byte index) noexcept {
+Register& 
+Core::getSFR(byte index) noexcept {
     return sfrs.get(index);
 }
 Register& Core::getSFR(byte index, byte offset) noexcept {
@@ -292,23 +279,23 @@ Core::ret() {
                 auto x = load(fp - 16, TreatAsOrdinal{});
                 auto y = load(fp - 12, TreatAsOrdinal{});
                 restoreStandardFrame();
-                ac.setValue(y, TreatAsOrdinal{});
-                if (pc.inSupervisorMode()) {
-                    pc.setValue(x, TreatAsOrdinal{});
+                ac_.setValue(y, TreatAsOrdinal{});
+                if (pc_.inSupervisorMode()) {
+                    pc_.setValue(x, TreatAsOrdinal{});
                 }
                 break;
             }
         case 0b010: 
-            if (pc.inSupervisorMode()) {
-                pc.pc.traceEnable = 0;
-                pc.pc.executionMode = 0;
+            if (pc_.inSupervisorMode()) {
+                pc_.pc.traceEnable = 0;
+                pc_.pc.executionMode = 0;
             }
             restoreStandardFrame();
             break;
         case 0b011: 
-            if (pc.inSupervisorMode()) {
-                pc.pc.traceEnable = 1;
-                pc.pc.executionMode = 0;
+            if (pc_.inSupervisorMode()) {
+                pc_.pc.traceEnable = 1;
+                pc_.pc.executionMode = 0;
             }
             restoreStandardFrame();
             break;
@@ -319,9 +306,9 @@ Core::ret() {
                 auto x = load(fp - 16, TreatAsOrdinal{});
                 auto y = load(fp - 12, TreatAsOrdinal{});
                 restoreStandardFrame();
-                ac.setValue(y, TreatAsOrdinal{});
-                if (pc.inSupervisorMode()) {
-                    pc.setValue(x, TreatAsOrdinal{});
+                ac_.setValue(y, TreatAsOrdinal{});
+                if (pc_.inSupervisorMode()) {
+                    pc_.setValue(x, TreatAsOrdinal{});
                     checkForPendingInterrupts();
                 }
                 break;
@@ -345,37 +332,37 @@ Core::bbs() {
 }
 Ordinal
 Core::computeAddress() noexcept {
-    if (instruction.isMEMA()) {
-        Ordinal result = instruction.mem.offset;
-        if (instruction.mema.action) {
-            result += getGPRValue(instruction.mem.abase, TreatAsOrdinal{});
+    if (instruction_.isMEMA()) {
+        Ordinal result = instruction_.mem.offset;
+        if (instruction_.mema.action) {
+            result += getGPRValue(instruction_.mem.abase, TreatAsOrdinal{});
         }
         return result;
     } else {
         // okay so we need to figure out the minor mode after figuring out if
         // it is a double wide operation or not
-        if (instruction.memb.group) {
+        if (instruction_.memb.group) {
             // okay so it is going to be the displacement versions
             // load 32-bits into the optionalDisplacement field
             advanceBy += 4;
             Integer result = static_cast<Integer>(load(ip.a + 4, TreatAsOrdinal{})); // load the optional displacement
-            if (instruction.memb_grp2.useIndex) {
-                result += (getGPRValue(instruction.memb_grp2.index, TreatAsInteger{}) << static_cast<Integer>(instruction.memb_grp2.scale));
+            if (instruction_.memb_grp2.useIndex) {
+                result += (getGPRValue(instruction_.memb_grp2.index, TreatAsInteger{}) << static_cast<Integer>(instruction_.memb_grp2.scale));
             }
-            if (instruction.memb_grp2.registerIndirect) {
-                result += getGPRValue(instruction.memb_grp2.abase, TreatAsInteger{});
+            if (instruction_.memb_grp2.registerIndirect) {
+                result += getGPRValue(instruction_.memb_grp2.abase, TreatAsInteger{});
             }
             return static_cast<Ordinal>(result);
         } else {
             // okay so the other group isn't as cleanly designed
-            switch (instruction.memb.modeMinor) {
+            switch (instruction_.memb.modeMinor) {
                 case 0b00: // Register Indirect
-                    return getGPRValue(instruction.memb.abase, TreatAsOrdinal{});
+                    return getGPRValue(instruction_.memb.abase, TreatAsOrdinal{});
                 case 0b01: // IP With Displacement 
                     advanceBy += 4;
                     return static_cast<Ordinal>(ip.i + load(ip.a + 4, TreatAsInteger{}) + 8);
                 case 0b11: // Register Indirect With Index
-                    return getGPRValue(instruction.memb.abase, TreatAsOrdinal{}) + (getGPRValue(instruction.memb.index, TreatAsOrdinal{}) << instruction.memb.scale);
+                    return getGPRValue(instruction_.memb.abase, TreatAsOrdinal{}) + (getGPRValue(instruction_.memb.index, TreatAsOrdinal{}) << instruction_.memb.scale);
                 default:
                     return -1;
             }
@@ -396,59 +383,59 @@ Core::loadBlock(Ordinal baseAddress, byte baseRegister, byte count) noexcept {
 }
 void 
 Core::ldl() noexcept {
-    if ((instruction.mem.srcDest & 0b1) != 0) {
+    if ((instruction_.mem.srcDest & 0b1) != 0) {
         setFaultCode(InvalidOperandFault);
     } else {
-        loadBlock(computeAddress(), instruction.mem.srcDest, 2);
+        loadBlock(computeAddress(), instruction_.mem.srcDest, 2);
         // support unaligned accesses
     }
 }
 
 void
 Core::stl() noexcept {
-    if ((instruction.mem.srcDest & 0b1) != 0) {
+    if ((instruction_.mem.srcDest & 0b1) != 0) {
         setFaultCode(InvalidOperandFault);
     } else {
-        storeBlock(computeAddress(), instruction.mem.srcDest, 2);
+        storeBlock(computeAddress(), instruction_.mem.srcDest, 2);
         // support unaligned accesses
     }
 }
 void
 Core::ldt() noexcept {
-    if ((instruction.mem.srcDest & 0b11) != 0) {
+    if ((instruction_.mem.srcDest & 0b11) != 0) {
         setFaultCode(InvalidOperandFault);
     } else {
-        loadBlock(computeAddress(), instruction.mem.srcDest, 3);
+        loadBlock(computeAddress(), instruction_.mem.srcDest, 3);
         // support unaligned accesses
     }
 }
 
 void
 Core::stt() noexcept {
-    if ((instruction.mem.srcDest & 0b11) != 0) {
+    if ((instruction_.mem.srcDest & 0b11) != 0) {
         setFaultCode(InvalidOperandFault);
     } else {
-        storeBlock(computeAddress(), instruction.mem.srcDest, 3);
+        storeBlock(computeAddress(), instruction_.mem.srcDest, 3);
         // support unaligned accesses
     }
 }
 
 void
 Core::ldq() noexcept {
-    if ((instruction.mem.srcDest & 0b11) != 0) {
+    if ((instruction_.mem.srcDest & 0b11) != 0) {
         setFaultCode(InvalidOperandFault);
     } else {
-        loadBlock(computeAddress(), instruction.mem.srcDest, 4);
+        loadBlock(computeAddress(), instruction_.mem.srcDest, 4);
         // support unaligned accesses
     }
 }
 
 void
 Core::stq() noexcept {
-    if ((instruction.mem.srcDest & 0b11) != 0) {
+    if ((instruction_.mem.srcDest & 0b11) != 0) {
         setFaultCode(InvalidOperandFault);
     } else {
-        storeBlock(computeAddress(), instruction.mem.srcDest, 4);
+        storeBlock(computeAddress(), instruction_.mem.srcDest, 4);
         // support unaligned accesses
     }
 }
@@ -456,7 +443,7 @@ Core::stq() noexcept {
 void
 Core::balx() noexcept {
     auto address = computeAddress();
-    setGPR(instruction.mem.srcDest, ip.getValue(TreatAsOrdinal{}) + advanceBy, TreatAsOrdinal{});
+    setGPR(instruction_.mem.srcDest, ip.getValue(TreatAsOrdinal{}) + advanceBy, TreatAsOrdinal{});
     ip.setValue(address, TreatAsOrdinal{});
     flags.ucode.dontAdvanceIP = 1;
 }
@@ -509,7 +496,7 @@ Core::call() {
     auto fp = getGPRValue(FPIndex, TreatAsOrdinal{});
     setGPR(RIPIndex, ip.getValue(TreatAsOrdinal{}) + advanceBy, TreatAsOrdinal{});
     enterCall(fp);
-    ip.i += instruction.ctrl.displacement;
+    ip.i += instruction_.ctrl.displacement;
     setGPR(PFPIndex, fp, TreatAsOrdinal{});
     setGPR(FPIndex, temp, TreatAsOrdinal{});
     setGPR(SPIndex , temp + 64, TreatAsOrdinal{});
@@ -529,12 +516,12 @@ Core::calls(Ordinal src1) noexcept {
         setGPR(RIPIndex, ip.getValue(TreatAsOrdinal{}) + advanceBy, TreatAsOrdinal{});
         ip_.setValue(procedureAddress, TreatAsOrdinal{});
         Ordinal temp = 0, tempRRR = 0;
-        if ((type == 0b00) || pc.inSupervisorMode()) {
+        if ((type == 0b00) || pc_.inSupervisorMode()) {
             temp = (getGPRValue(SPIndex, TreatAsOrdinal{}) + C) & NotC;
             tempRRR = 0;
         } else {
             temp = getSupervisorStackPointer();
-            tempRRR = 0b010 | (pc.pc.traceEnable ? 0b001 : 0);
+            tempRRR = 0b010 | (pc_.pc.traceEnable ? 0b001 : 0);
             pc_.pc.executionMode = 1;
             pc_.pc.traceEnable = temp & 0b1;
         }
@@ -589,7 +576,7 @@ Core::signalBootFailure() noexcept {
 }
 void
 Core::branch() noexcept {
-    ip.i += instruction.ctrl.displacement;
+    ip.i += instruction_.ctrl.displacement;
     flags.ucode.dontAdvanceIP = 1;
 }
 void
@@ -611,12 +598,12 @@ Core::setFaultCode(Ordinal value, bool cond) noexcept {
  */
 bool
 Core::getMaskedConditionCode() noexcept {
-    return (ac.getConditionCode() & instruction.instGeneric.mask) != 0;
+    return (ac_.getConditionCode() & instruction_.instGeneric.mask) != 0;
 }
 
 bool
 Core::conditionCodeEqualsMask() noexcept {
-    return ac.getConditionCode() == instruction.instGeneric.mask;
+    return ac_.getConditionCode() == instruction_.instGeneric.mask;
 }
 bool
 Core::fullConditionCodeCheck() noexcept {
@@ -628,27 +615,22 @@ Core::fullConditionCodeCheck() noexcept {
     // masked condition code will be non zero.
     return getMaskedConditionCode() || conditionCodeEqualsMask();
 }
-void performSelect(Register& dest, Ordinal src1, Ordinal src2, bool condition) noexcept;
-void performConditionalSubtract(Register& dest, Integer src1, Integer src2, bool condition, TreatAsInteger) noexcept;
-void performConditionalSubtract(Register& dest, Ordinal src1, Ordinal src2, bool condition, TreatAsOrdinal) noexcept;
-void performConditionalAdd(Register& dest, Integer src1, Integer src2, bool condition, TreatAsInteger) noexcept;
-void performConditionalAdd(Register& dest, Ordinal src1, Ordinal src2, bool condition, TreatAsOrdinal) noexcept;
 bool
 Core::cycle() noexcept {
     setFaultCode(NoFault);
-    instruction.setValue(load(ip.a, TreatAsOrdinal{}), TreatAsOrdinal{});
-    auto& regDest = getGPR(instruction.reg.srcDest);
+    instruction_.setValue(load(ip.a, TreatAsOrdinal{}), TreatAsOrdinal{});
+    auto& regDest = getGPR(instruction_.reg.srcDest);
     auto src2o = unpackSrc2_REG(TreatAsOrdinal{});
     auto src2i = unpackSrc2_REG(TreatAsInteger{});
     auto src1o = unpackSrc1_REG(TreatAsOrdinal{});
     auto src1i = unpackSrc1_REG(TreatAsInteger{});
-    flags.clear();
-    flags2.clear();
-    advanceBy = 4;
+    flags_.clear();
+    flags2_.clear();
+    advanceBy_ = 4;
     
-    switch (instruction.getOpcode()) {
+    switch (instruction_.getOpcode()) {
         case Opcodes::bal: // bal
-            setGPR(LRIndex, ip.getValue<Ordinal>() + 4, TreatAsOrdinal{});
+            setGPR(LRIndex, ip_.getValue<Ordinal>() + 4, TreatAsOrdinal{});
             // then fallthrough and take the branch
         case Opcodes::b: // b
             branch();
@@ -689,10 +671,10 @@ Core::cycle() noexcept {
         case Opcodes::testne:
         case Opcodes::testle:
         case Opcodes::testo:
-            setGPR(instruction.cobr.src1, (fullConditionCodeCheck()) ? 1 : 0, TreatAsOrdinal{});
+            setGPR(instruction_.cobr.src1, (fullConditionCodeCheck()) ? 1 : 0, TreatAsOrdinal{});
             break;
         case Opcodes::lda:
-            setGPR(instruction.mem.srcDest, computeAddress(), TreatAsOrdinal{});
+            setGPR(instruction_.mem.srcDest, computeAddress(), TreatAsOrdinal{});
             break;
         case Opcodes::bbc:
             bbc();
@@ -720,37 +702,37 @@ Core::cycle() noexcept {
             break;
         case Opcodes::ld: 
             //flags2.ucode2.count = 1;
-            loadBlock(computeAddress(), instruction.mem.srcDest, 1);
+            loadBlock(computeAddress(), instruction_.mem.srcDest, 1);
             break;
         case Opcodes::st: 
             //flags2.ucode2.count = 1;
-            storeBlock(computeAddress(), instruction.mem.srcDest, 1);
+            storeBlock(computeAddress(), instruction_.mem.srcDest, 1);
             break;
         case Opcodes::ldob:
-            setGPR(instruction.mem.srcDest, load(computeAddress(), TreatAs<ByteOrdinal>{}), TreatAsOrdinal{});
+            setGPR(instruction_.mem.srcDest, load(computeAddress(), TreatAs<ByteOrdinal>{}), TreatAsOrdinal{});
             break;
         case Opcodes::stob:
-            store<ByteOrdinal>(computeAddress(), getGPRValue(instruction.mem.srcDest, TreatAs<Ordinal>{}), TreatAs<ByteOrdinal>{});
+            store<ByteOrdinal>(computeAddress(), getGPRValue(instruction_.mem.srcDest, TreatAs<Ordinal>{}), TreatAs<ByteOrdinal>{});
             break;
         case Opcodes::ldos:
-            setGPR(instruction.mem.srcDest, load(computeAddress(), TreatAs<ShortOrdinal>{}), TreatAsOrdinal{});
+            setGPR(instruction_.mem.srcDest, load(computeAddress(), TreatAs<ShortOrdinal>{}), TreatAsOrdinal{});
             break;
         case Opcodes::stos:
-            store<ShortOrdinal>(computeAddress(), getGPRValue(instruction.mem.srcDest, TreatAsOrdinal{}), TreatAs<ShortOrdinal>{});
+            store<ShortOrdinal>(computeAddress(), getGPRValue(instruction_.mem.srcDest, TreatAsOrdinal{}), TreatAs<ShortOrdinal>{});
             break;
         case Opcodes::ldib:
-            setGPR(instruction.mem.srcDest, load(computeAddress(), TreatAs<ByteInteger>{}), TreatAsInteger{});
+            setGPR(instruction_.mem.srcDest, load(computeAddress(), TreatAs<ByteInteger>{}), TreatAsInteger{});
             break;
         case Opcodes::stib:
             /// @todo fully implement fault detection
-            store<ByteInteger>(computeAddress(), getGPRValue(instruction.mem.srcDest, TreatAsInteger{}), TreatAs<ByteInteger>{});
+            store<ByteInteger>(computeAddress(), getGPRValue(instruction_.mem.srcDest, TreatAsInteger{}), TreatAs<ByteInteger>{});
             break;
         case Opcodes::ldis:
-            setGPR(instruction.mem.srcDest, load(computeAddress(), TreatAs<ShortInteger>{}), TreatAsInteger{});
+            setGPR(instruction_.mem.srcDest, load(computeAddress(), TreatAs<ShortInteger>{}), TreatAsInteger{});
             break;
         case Opcodes::stis:
             /// @todo fully implement fault detection
-            store<ShortInteger>(computeAddress(), getGPRValue(instruction.mem.srcDest, TreatAsInteger{}), TreatAs<ShortInteger>{});
+            store<ShortInteger>(computeAddress(), getGPRValue(instruction_.mem.srcDest, TreatAsInteger{}), TreatAs<ShortInteger>{});
             break;
         case Opcodes::ldl:
             ldl();
@@ -782,90 +764,90 @@ Core::cycle() noexcept {
     // in some of the opcodeExt values seem to reflect the resultant truth
     // table for the operation :). That's pretty cool
         case Opcodes::nand: // nand
-            flags.ucode.invertResult = 1;
+            flags_.ucode.invertResult = 1;
         case Opcodes::andOperation: // and
-            flags.ucode.performLogical = 1;
-            flags.ucode.doAnd = 1;
+            flags_.ucode.performLogical = 1;
+            flags_.ucode.doAnd = 1;
             break;
         case Opcodes::clrbit: // clrbit
                               // clrbit is src2 & ~computeBitPosition(src1)
                               // so lets use andnot
-            flags.ucode.src1IsBitPosition = 1;
+            flags_.ucode.src1IsBitPosition = 1;
         case Opcodes::andnot: // andnot
-            flags.ucode.doAnd = 1;
-            flags.ucode.invertSrc1 = 1;
-            flags.ucode.performLogical = 1;
+            flags_.ucode.doAnd = 1;
+            flags_.ucode.invertSrc1 = 1;
+            flags_.ucode.performLogical = 1;
             break;
         case Opcodes::notand: // notand
-            flags.ucode.doAnd = 1;
-            flags.ucode.invertSrc2 = 1;
-            flags.ucode.performLogical = 1;
+            flags_.ucode.doAnd = 1;
+            flags_.ucode.invertSrc2 = 1;
+            flags_.ucode.performLogical = 1;
             break;
         case Opcodes::notbit: // notbit
                      // notbit is src2 ^ computeBitPosition(src1)
-            flags.ucode.src1IsBitPosition = 1;
+            flags_.ucode.src1IsBitPosition = 1;
         case Opcodes::xorOperation: // xor
-            flags.ucode.doXor = 1;
-            flags.ucode.performLogical = 1;
+            flags_.ucode.doXor = 1;
+            flags_.ucode.performLogical = 1;
             break;
         case Opcodes::setbit: // setbit
                      // setbit is src2 | computeBitPosition(src1o)
-            flags.ucode.src1IsBitPosition = 1;
+            flags_.ucode.src1IsBitPosition = 1;
         case Opcodes::orOperation: // or
-            flags.ucode.doOr = 1;
-            flags.ucode.performLogical = 1;
+            flags_.ucode.doOr = 1;
+            flags_.ucode.performLogical = 1;
             break;
         case Opcodes::nor: // nor
-            flags.ucode.doOr = 1;
-            flags.ucode.invertResult = 1;
-            flags.ucode.performLogical = 1;
+            flags_.ucode.doOr = 1;
+            flags_.ucode.invertResult = 1;
+            flags_.ucode.performLogical = 1;
             break;
         case Opcodes::xnor: // xnor
-            flags.ucode.doXor = 1;
-            flags.ucode.invertResult = 1;
-            flags.ucode.performLogical = 1;
+            flags_.ucode.doXor = 1;
+            flags_.ucode.invertResult = 1;
+            flags_.ucode.performLogical = 1;
             break;
         case Opcodes::notOperation: // not 
                      // perform fallthrough to ornot with src2 set to zero
-            flags.ucode.zeroSrc2 = 1;
+            flags_.ucode.zeroSrc2 = 1;
         case Opcodes::ornot: // ornot
-            flags.ucode.doOr = 1;
-            flags.ucode.invertSrc1 = 1;
-            flags.ucode.performLogical = 1;
+            flags_.ucode.doOr = 1;
+            flags_.ucode.invertSrc1 = 1;
+            flags_.ucode.performLogical = 1;
             break;
         case Opcodes::notor: // notor
-            flags.ucode.doOr = 1;
-            flags.ucode.invertSrc2 = 1;
-            flags.ucode.performLogical = 1;
+            flags_.ucode.doOr = 1;
+            flags_.ucode.invertSrc2 = 1;
+            flags_.ucode.performLogical = 1;
             break;
         case Opcodes::alterbit: // alterbit
-            flags.ucode.src1IsBitPosition = 1;
-            flags.ucode.performLogical = 1;
-            if (ac.getConditionCode() & 0b010) {
-                flags.ucode.doOr = 1;
+            flags_.ucode.src1IsBitPosition = 1;
+            flags_.ucode.performLogical = 1;
+            if (ac_.getConditionCode() & 0b010) {
+                flags_.ucode.doOr = 1;
             } else {
-                flags.ucode.doAnd = 1;
-                flags.ucode.invertSrc1 = 1;
+                flags_.ucode.doAnd = 1;
+                flags_.ucode.invertSrc1 = 1;
             }
             break;
         case Opcodes::addo: // addo
-            flags.ucode.performAdd = 1;
-            flags.ucode.ordinalOp = 1;
+            flags_.ucode.performAdd = 1;
+            flags_.ucode.ordinalOp = 1;
             break;
         case Opcodes::addi: // addi
-            flags.ucode.performAdd = 1;
-            flags.ucode.integerOp = 1;
+            flags_.ucode.performAdd = 1;
+            flags_.ucode.integerOp = 1;
             break;
         case Opcodes::subo: // subo
             // I remember this trick from college, subtraction is just addition
             // with a negative second argument :). I never gave it much thought
             // until now but it seems to be an effective trick to save space.
-            flags.ucode.performSubtract = 1;
-            flags.ucode.ordinalOp = 1;
+            flags_.ucode.performSubtract = 1;
+            flags_.ucode.ordinalOp = 1;
             break;
         case Opcodes::subi: // subi
-            flags.ucode.performSubtract = 1;
-            flags.ucode.integerOp = 1;
+            flags_.ucode.performSubtract = 1;
+            flags_.ucode.integerOp = 1;
             break;
         case Opcodes::shro: // shro
             regDest.setValue<Ordinal>(src1o < 32 ? src2o >> src1o : 0);
@@ -904,80 +886,80 @@ Core::cycle() noexcept {
             regDest.setValue<Integer>(src2i << src1i);
             break;
         case Opcodes::cmpo: // cmpo
-            flags.ucode.performCompare = 1;
-            flags.ucode.ordinalOp = 1;
+            flags_.ucode.performCompare = 1;
+            flags_.ucode.ordinalOp = 1;
             break;
         case Opcodes::cmpi: // cmpi
-            flags.ucode.performCompare = 1;
-            flags.ucode.integerOp = 1;
+            flags_.ucode.performCompare = 1;
+            flags_.ucode.integerOp = 1;
             break;
         case Opcodes::concmpo: // concmpo
-            flags.ucode.performConditionalCompare = 1;
-            flags.ucode.ordinalOp = 1;
-            flags.ucode.performCompare = 1;
+            flags_.ucode.performConditionalCompare = 1;
+            flags_.ucode.ordinalOp = 1;
+            flags_.ucode.performCompare = 1;
             break;
         case Opcodes::concmpi: // concmpi
-            flags.ucode.performConditionalCompare = 1;
-            flags.ucode.integerOp = 1;
-            flags.ucode.performCompare = 1;
+            flags_.ucode.performConditionalCompare = 1;
+            flags_.ucode.integerOp = 1;
+            flags_.ucode.performCompare = 1;
             break;
         case Opcodes::cmpinco: // cmpinco
-            flags.ucode.performCompare = 1;
-            flags.ucode.ordinalOp = 1;
-            flags.ucode.performIncrement = 1;
+            flags_.ucode.performCompare = 1;
+            flags_.ucode.ordinalOp = 1;
+            flags_.ucode.performIncrement = 1;
             break;
         case Opcodes::cmpinci: // cmpinci
-            flags.ucode.performCompare = 1;
-            flags.ucode.integerOp = 1;
-            flags.ucode.performIncrement = 1;
+            flags_.ucode.performCompare = 1;
+            flags_.ucode.integerOp = 1;
+            flags_.ucode.performIncrement = 1;
             break;
         case Opcodes::cmpdeco: // cmpdeco
-            flags.ucode.performCompare = 1;
-            flags.ucode.ordinalOp = 1;
-            flags.ucode.performDecrement = 1;
+            flags_.ucode.performCompare = 1;
+            flags_.ucode.ordinalOp = 1;
+            flags_.ucode.performDecrement = 1;
             break;
         case Opcodes::cmpdeci: // cmpdeci
-            flags.ucode.performCompare = 1;
-            flags.ucode.integerOp = 1;
-            flags.ucode.performDecrement = 1;
+            flags_.ucode.performCompare = 1;
+            flags_.ucode.integerOp = 1;
+            flags_.ucode.performDecrement = 1;
             break;
         case Opcodes::scanbyte: // scanbyte
             scanbyte(src2o, src1o);
             break;
         case Opcodes::chkbit: // chkbit
-            ac.arith.conditionCode = ((src2o & computeBitPosition(src1o)) == 0 ? 0b000 : 0b010);
+            ac_.arith.conditionCode = ((src2o & computeBitPosition(src1o)) == 0 ? 0b000 : 0b010);
             break;
         case Opcodes::addc: 
-            flags.ucode.performAdd = 1;
-            flags.ucode.performCarry = 1;
+            flags_.ucode.performAdd = 1;
+            flags_.ucode.performCarry = 1;
             break;
         case Opcodes::subc:
-            flags.ucode.performSubtract = 1;
-            flags.ucode.performCarry = 1;
+            flags_.ucode.performSubtract = 1;
+            flags_.ucode.performCarry = 1;
             break;
         case Opcodes::mov:
             regDest.setValue<Ordinal>(src1o);
             break;
         case Opcodes::movl:
-            flags.ucode.performRegisterTransfer = 1;
+            flags_.ucode.performRegisterTransfer = 1;
             flags2.ucode2.mask = 0b1;
             flags2.ucode2.count = 2; 
             //performRegisterTransfer(0b1, 2);
             break;
         case Opcodes::movt:
-            flags.ucode.performRegisterTransfer = 1;
+            flags_.ucode.performRegisterTransfer = 1;
             flags2.ucode2.mask = 0b11;
             flags2.ucode2.count = 3; 
             //performRegisterTransfer(0b11, 3);
             break;
         case Opcodes::movq:
-            flags.ucode.performRegisterTransfer = 1;
+            flags_.ucode.performRegisterTransfer = 1;
             flags2.ucode2.mask = 0b11;
             flags2.ucode2.count = 3; 
             //performRegisterTransfer(0b11, 4);
             break;
         case Opcodes::syncf:
-            flags.ucode.performSyncf = 1;
+            flags_.ucode.performSyncf = 1;
             break;
         case Opcodes::flushreg:
             flushreg();
@@ -989,28 +971,28 @@ Core::cycle() noexcept {
             mark();
             break;
         case Opcodes::mulo:
-            flags.ucode.performMultiply = 1;
-            flags.ucode.ordinalOp = 1;
+            flags_.ucode.performMultiply = 1;
+            flags_.ucode.ordinalOp = 1;
             break;
         case Opcodes::muli:
-            flags.ucode.performMultiply = 1;
-            flags.ucode.integerOp = 1;
+            flags_.ucode.performMultiply = 1;
+            flags_.ucode.integerOp = 1;
             break;
         case Opcodes::divi:
-            flags.ucode.performDivide = 1;
-            flags.ucode.integerOp = 1;
+            flags_.ucode.performDivide = 1;
+            flags_.ucode.integerOp = 1;
             break;
         case Opcodes::divo:
-            flags.ucode.performDivide = 1;
-            flags.ucode.ordinalOp = 1;
+            flags_.ucode.performDivide = 1;
+            flags_.ucode.ordinalOp = 1;
             break;
         case Opcodes::remo:
-            flags.ucode.performRemainder = 1;
-            flags.ucode.ordinalOp = 1;
+            flags_.ucode.performRemainder = 1;
+            flags_.ucode.ordinalOp = 1;
             break;
         case Opcodes::remi:
-            flags.ucode.performRemainder = 1;
-            flags.ucode.integerOp = 1;
+            flags_.ucode.performRemainder = 1;
+            flags_.ucode.integerOp = 1;
             break;
         case Opcodes::modi: 
             if (auto denominator = src1i; denominator == 0) {
@@ -1032,34 +1014,34 @@ Core::cycle() noexcept {
             regDest.setValue<Ordinal>((regDest.o >> (src1o > 32 ? 32 : src1o)) & ~(0xFFFF'FFFF << src2o));
             break;
         case Opcodes::modac: 
-            regDest.setValue<Ordinal>(ac.modify(src1o, src2o));
+            regDest.setValue<Ordinal>(ac_.modify(src1o, src2o));
             break;
         case Opcodes::modtc: 
-            regDest.setValue<Ordinal>(tc.modify(src1o, src2o));
+            regDest.setValue<Ordinal>(tc_.modify(src1o, src2o));
             break;
         case Opcodes::modpc:
             if (auto mask = src1o; mask != 0) {
-                if (!pc.inSupervisorMode()) {
+                if (!pc_.inSupervisorMode()) {
                     setFaultCode(TypeMismatchFault);
                 } else {
-                    regDest.setValue<Ordinal>(pc.modify(mask, src2o));
-                    if (regDest.getPriority() > pc.getPriority()) {
+                    regDest.setValue<Ordinal>(pc_.modify(mask, src2o));
+                    if (regDest.getPriority() > pc_.getPriority()) {
                         checkForPendingInterrupts();
                     }
                 }
             } else {
-                regDest.setValue<Ordinal>(pc.getValue<Ordinal>());
+                regDest.setValue<Ordinal>(pc_.getValue<Ordinal>());
             }
             break;
         case Opcodes::atadd:
-            flags.ucode.performSyncf = 1;
-            flags.ucode.performAtomicOperation = 1;
-            flags.ucode.performAdd = 1;
+            flags_.ucode.performSyncf = 1;
+            flags_.ucode.performAtomicOperation = 1;
+            flags_.ucode.performAdd = 1;
             break;
         case Opcodes::atmod:
-            flags.ucode.performSyncf = 1;
-            flags.ucode.performAtomicOperation = 1;
-            flags.ucode.performModify = 1;
+            flags_.ucode.performSyncf = 1;
+            flags_.ucode.performAtomicOperation = 1;
+            flags_.ucode.performModify = 1;
             break;
         case Opcodes::emul:
             emul(regDest, src2o, src1o);
@@ -1080,13 +1062,13 @@ Core::cycle() noexcept {
             synld(regDest, src1o);
             break;
         case Opcodes::synmov:
-            synmov(getGPR(instruction.reg.src1), src2o);
+            synmov(getGPR(instruction_.reg.src1), src2o);
             break;
         case Opcodes::synmovl:
-            synmovl(getGPR(instruction.reg.src1), src2o);
+            synmovl(getGPR(instruction_.reg.src1), src2o);
             break;
         case Opcodes::synmovq:
-            synmovq(getGPR(instruction.reg.src1), src2o);
+            synmovq(getGPR(instruction_.reg.src1), src2o);
             break;
         case Opcodes::sysctl:
             sysctl(regDest, src1o, src2o);
@@ -1147,19 +1129,19 @@ Core::cycle() noexcept {
             setFaultCode(UnimplementedFault);
             break;
     }
-    if (flags.ucode.performSyncf) {
+    if (flags_.ucode.performSyncf) {
         syncf();
     }
-    if (flags.ucode.performAtomicOperation) {
+    if (flags_.ucode.performAtomicOperation) {
         lockBus();
         auto addr = src1o & 0xFFFF'FFFC;
         auto temp = load(addr, TreatAsOrdinal{});
         Ordinal result = 0;
-        if (flags.ucode.performAdd) {
+        if (flags_.ucode.performAdd) {
             // adds the src (src2 internally) value to the value in memory location specified with the addr (src1 in this case) operand.
             // The initial value from memory is stored in dst (internally src/dst).
             result = temp + src2o;
-        } else if (flags.ucode.performModify) {
+        } else if (flags_.ucode.performModify) {
             // copies the src/dest value (logical version) into the memory location specifeid by src1.
             // The bits set in the mask (src2) operand select the bits to be modified in memory. The initial
             // value from memory is stored in src/dest
@@ -1175,40 +1157,40 @@ Core::cycle() noexcept {
         }
         unlockBus();
     }
-    if (flags.ucode.performRegisterTransfer) {
+    if (flags_.ucode.performRegisterTransfer) {
         performRegisterTransfer(flags2.ucode2.mask, flags2.ucode2.count);
     }
-    if (flags.ucode.performLogical) {
-        if (flags.ucode.src1IsBitPosition) {
+    if (flags_.ucode.performLogical) {
+        if (flags_.ucode.src1IsBitPosition) {
             src1o = computeBitPosition(src1o);
         }
-        if (flags.ucode.invertSrc1) {
+        if (flags_.ucode.invertSrc1) {
             src1o = ~src1o;
         }
-        if (flags.ucode.zeroSrc2) {
+        if (flags_.ucode.zeroSrc2) {
             src2o = 0;
         }
-        if (flags.ucode.invertSrc2) {
+        if (flags_.ucode.invertSrc2) {
             src2o = ~src2o;
         }
-        if (flags.ucode.doAnd) {
+        if (flags_.ucode.doAnd) {
             regDest.setValue(src2o & src1o, TreatAsOrdinal{});
-        } else if (flags.ucode.doXor) {
+        } else if (flags_.ucode.doXor) {
             regDest.setValue(src2o ^ src1o, TreatAsOrdinal{});
-        } else if (flags.ucode.doOr) {
+        } else if (flags_.ucode.doOr) {
             regDest.setValue(src2o | src1o, TreatAsOrdinal{});
         }
-        if (flags.ucode.invertResult) {
+        if (flags_.ucode.invertResult) {
             regDest.invert(TreatAsOrdinal{});
         }
     }
-    if (flags.ucode.performCompare) {
-        if (flags.ucode.performConditionalCompare) {
-            if ((ac.getConditionCode() & 0b100) == 0) {
+    if (flags_.ucode.performCompare) {
+        if (flags_.ucode.performConditionalCompare) {
+            if ((ac_.getConditionCode() & 0b100) == 0) {
                 bool cond = false;
-                if (flags.ucode.ordinalOp) {
+                if (flags_.ucode.ordinalOp) {
                     cond = src1o <= src2o;
-                } else if (flags.ucode.integerOp) {
+                } else if (flags_.ucode.integerOp) {
                     cond = src1i <= src2i;
                 } else {
                     // if we got here then it means we don't have something configured
@@ -1216,24 +1198,24 @@ Core::cycle() noexcept {
                     setFaultCode(InvalidOpcodeFault);
                 }
                 if (!faultHappened()) {
-                    ac.arith.conditionCode = cond ? 0b010 : 0b001;
+                    ac_.arith.conditionCode = cond ? 0b010 : 0b001;
                 }
             }
         } else {
-            if (flags.ucode.ordinalOp) {
+            if (flags_.ucode.ordinalOp) {
                 cmpGeneric(src1o, src2o);
-                if (flags.ucode.performIncrement) {
+                if (flags_.ucode.performIncrement) {
                     regDest.o = src2o + 1;
                 }
-                if (flags.ucode.performDecrement) {
+                if (flags_.ucode.performDecrement) {
                     regDest.o = src2o - 1;
                 }
-            } else if (flags.ucode.integerOp) {
+            } else if (flags_.ucode.integerOp) {
                 cmpGeneric(src1i, src2i);
-                if (flags.ucode.performIncrement) {
+                if (flags_.ucode.performIncrement) {
                     regDest.i = src2i + 1;
                 }
-                if (flags.ucode.performDecrement) {
+                if (flags_.ucode.performDecrement) {
                     regDest.i = src2i - 1;
                 }
             } else {
@@ -1243,11 +1225,11 @@ Core::cycle() noexcept {
             }
         }
     }
-    if (flags.ucode.performCarry) {
+    if (flags_.ucode.performCarry) {
         LongOrdinal result = 0;
-        if (flags.ucode.performAdd) {
+        if (flags_.ucode.performAdd) {
             result = static_cast<LongOrdinal>(src2o) + static_cast<LongOrdinal>(src1o);
-        } else if (flags.ucode.performSubtract) {
+        } else if (flags_.ucode.performSubtract) {
             result = static_cast<LongOrdinal>(src2o) - static_cast<LongOrdinal>(src1o) - 1;
         } else {
             // if we got here then it means we don't have something configured
@@ -1255,27 +1237,27 @@ Core::cycle() noexcept {
                 setFaultCode(InvalidOpcodeFault);
         }
         if (!faultHappened()) {
-            result += (ac.getCarryBit() ? 1 : 0);
+            result += (ac_.getCarryBit() ? 1 : 0);
             regDest.o = static_cast<Ordinal>(result);
             arithmeticWithCarryGeneric(static_cast<Ordinal>(result >> 32), 
                     (src2o & 0x8000'0000), 
                     (src1o & 0x8000'0000), 
                     (regDest.o & 0x8000'0000));
         }
-    } else if (flags.ucode.performAdd) {
-        if (flags.ucode.ordinalOp) {
+    } else if (flags_.ucode.performAdd) {
+        if (flags_.ucode.ordinalOp) {
             regDest.o = src2o + src1o;
-        } else if (flags.ucode.integerOp) {
+        } else if (flags_.ucode.integerOp) {
             regDest.i = src2i + src1i;
         } else {
             // if we got here then it means we don't have something configured
             // correctly
             setFaultCode(InvalidOpcodeFault);
         }
-    } else if (flags.ucode.performSubtract) {
-        if (flags.ucode.ordinalOp) {
+    } else if (flags_.ucode.performSubtract) {
+        if (flags_.ucode.ordinalOp) {
             regDest.o = src2o - src1o;
-        } else if (flags.ucode.integerOp) {
+        } else if (flags_.ucode.integerOp) {
             regDest.i = src2i - src1i;
         } else {
             // if we got here then it means we don't have something configured
@@ -1283,25 +1265,25 @@ Core::cycle() noexcept {
             setFaultCode(InvalidOpcodeFault);
         }
 
-    } else if (flags.ucode.performMultiply) {
-        if (flags.ucode.ordinalOp) {
+    } else if (flags_.ucode.performMultiply) {
+        if (flags_.ucode.ordinalOp) {
             regDest.o = src2o * src1o;
-        } else if (flags.ucode.integerOp) {
+        } else if (flags_.ucode.integerOp) {
             regDest.i = src2i * src1i;
         } else {
             // if we got here then it means we don't have something configured
             // correctly
             setFaultCode(InvalidOpcodeFault);
         }
-    } else if (flags.ucode.performDivide) {
-        if (flags.ucode.ordinalOp) {
+    } else if (flags_.ucode.performDivide) {
+        if (flags_.ucode.ordinalOp) {
             if (src1o == 0) {
                 /// @todo fix this
                 setFaultCode(ZeroDivideFault);
             } else {
                 regDest.o = src2o / src1o;
             }
-        } else if (flags.ucode.integerOp) {
+        } else if (flags_.ucode.integerOp) {
             if (src1i == 0) {
                 /// @todo fix this
                 setFaultCode(ZeroDivideFault);
@@ -1313,8 +1295,8 @@ Core::cycle() noexcept {
             // correctly
             setFaultCode(InvalidOpcodeFault);
         }
-    } else if (flags.ucode.performRemainder) {
-        if (flags.ucode.ordinalOp) {
+    } else if (flags_.ucode.performRemainder) {
+        if (flags_.ucode.ordinalOp) {
             if (src1o == 0) {
                 /// @todo fix this
                 setFaultCode(ZeroDivideFault);
@@ -1323,7 +1305,7 @@ Core::cycle() noexcept {
                 //dest.setOrdinal(src2 - ((src2 / src1) * src1));
                 regDest.o = src2o % src1o;
             }
-        } else if (flags.ucode.integerOp) {
+        } else if (flags_.ucode.integerOp) {
             if (src1i == 0) {
                 /// @todo fix this
                 setFaultCode(ZeroDivideFault);
@@ -1343,12 +1325,12 @@ Core::cycle() noexcept {
         /// happens
         ///
         /// Faults are basically fallback behavior when something goes wacky!
-        setFaultPort(faultCode.o);
+        setFaultPort(faultCode_.o);
     }
     // okay we got here so we need to start grabbing data off of the bus and
     // start executing the next instruction
-    if (!flags.ucode.dontAdvanceIP) {
-        ip.o += advanceBy; 
+    if (!flags_.ucode.dontAdvanceIP) {
+        ip_.o += advanceBy; 
     }
     return true;
 }
@@ -1364,7 +1346,7 @@ void
 Core::begin() noexcept {
     //Serial.print(F("Configuring simulator structures..."));
     // so we need to do any sort of processor setup here
-    ip.clear();
+    ip_.clear();
     for (int i = 0; i < 32; ++i) {
         getGPR(i).clear();
     }
@@ -1373,61 +1355,61 @@ Core::begin() noexcept {
 
 void 
 Core::synld(Register& dest, Ordinal src) noexcept {
-    ac.arith.conditionCode = 0b000;
+    ac_.arith.conditionCode = 0b000;
     if (auto tempa = src & 0xFFFF'FFFC; tempa == 0xFF00'0004) {
         // interrupt control register needs to be read through this
-        ac.arith.conditionCode = 0b010;
+        ac_.arith.conditionCode = 0b010;
         // copy the contents of the interrupt control register to a target
         // register
-        dest.setValue(ictl.o, TreatAsOrdinal{});
+        dest.setValue(ictl_.o, TreatAsOrdinal{});
     } else {
-        ac.arith.conditionCode = 0b010;
+        ac_.arith.conditionCode = 0b010;
         dest.setValue(load(tempa, TreatAsOrdinal{}), TreatAsOrdinal{});
     }
 }
 void 
 Core::synmov(Register& dest, Ordinal src) noexcept {
-    ac.arith.conditionCode = 0b000;
+    ac_.arith.conditionCode = 0b000;
     if (auto tempa = dest.getValue(TreatAsOrdinal{}) & 0xFFFF'FFFC; tempa == 0xFF00'0004) {
-        ictl.o = load(src, TreatAsOrdinal{});
-        ac.arith.conditionCode = 0b010;
+        ictl_.o = load(src, TreatAsOrdinal{});
+        ac_.arith.conditionCode = 0b010;
     } else {
         auto temp = load(src, TreatAsOrdinal{});
         store(tempa, temp, TreatAsOrdinal{});
         // wait for completion
-        ac.arith.conditionCode = 0b010;
+        ac_.arith.conditionCode = 0b010;
     }
 }
 void 
 Core::synmovl(Register& dest, Ordinal src) noexcept {
-    ac.arith.conditionCode = 0b000;
+    ac_.arith.conditionCode = 0b000;
     auto tempa = dest.getValue(TreatAsOrdinal{}) & 0xFFFF'FFF8; 
     auto tempLower = load(src, TreatAsOrdinal{});
     auto tempUpper = load(src + 4, TreatAsOrdinal{});
     store(tempa, tempLower, TreatAsOrdinal{});
     store(tempa + 4, tempUpper, TreatAsOrdinal{});
     // wait for completion
-    ac.arith.conditionCode = 0b010;
+    ac_.arith.conditionCode = 0b010;
 
 }
 void 
 Core::synmovq(Register& dest, Ordinal src) noexcept {
 
-    ac.arith.conditionCode = 0b000;
+    ac_.arith.conditionCode = 0b000;
     auto temp0 = load(src, TreatAsOrdinal{});
     auto temp1 = load(src+4, TreatAsOrdinal{});
     auto temp2 = load(src+8, TreatAsOrdinal{});
     auto temp3 = load(src+12, TreatAsOrdinal{});
     if (auto tempa = dest.getValue(TreatAsOrdinal{}) & 0xFFFF'FFF0; tempa == 0xFF00'0010) {
         sendIAC(iac::Message{temp0, temp1, temp2, temp3});
-        ac.arith.conditionCode = 0b010;
+        ac_.arith.conditionCode = 0b010;
     } else {
         store(tempa, temp0, TreatAsOrdinal{});
         store(tempa+4, temp1, TreatAsOrdinal{});
         store(tempa+8, temp2, TreatAsOrdinal{});
         store(tempa+12, temp3, TreatAsOrdinal{});
         // wait for completion
-        ac.arith.conditionCode = 0b010;
+        ac_.arith.conditionCode = 0b010;
     }
 }
 void
@@ -1441,7 +1423,7 @@ Core::sysctl(Register& dest, Ordinal src1, Ordinal src2) noexcept {
 }
 
 void 
-performSelect(Register& dest, Ordinal src1, Ordinal src2, bool condition) noexcept {
+Core::performSelect(Register& dest, Ordinal src1, Ordinal src2, bool condition) noexcept {
     if (condition) {
         dest.setValue(src2, TreatAsOrdinal{});
     } else {
@@ -1449,24 +1431,24 @@ performSelect(Register& dest, Ordinal src1, Ordinal src2, bool condition) noexce
     }
 }
 void
-performConditionalSubtract(Register& dest, Integer src1, Integer src2, bool condition, TreatAsInteger) noexcept {
+Core::performConditionalSubtract(Register& dest, Integer src1, Integer src2, bool condition, TreatAsInteger) noexcept {
     /// @todo implement
 }
 
 void
-performConditionalSubtract(Register& dest, Ordinal src1, Ordinal src2, bool condition, TreatAsOrdinal) noexcept {
+Core::performConditionalSubtract(Register& dest, Ordinal src1, Ordinal src2, bool condition, TreatAsOrdinal) noexcept {
     if (condition) {
         dest.setValue(src2 - src1, TreatAsOrdinal{});
     }
 }
 
 void
-performConditionalAdd(Register& dest, Integer src1, Integer src2, bool condition, TreatAsInteger) noexcept {
+Core::performConditionalAdd(Register& dest, Integer src1, Integer src2, bool condition, TreatAsInteger) noexcept {
     /// @todo implement
 }
 
 void
-performConditionalAdd(Register& dest, Ordinal src1, Ordinal src2, bool condition, TreatAsOrdinal) noexcept {
+Core::performConditionalAdd(Register& dest, Ordinal src1, Ordinal src2, bool condition, TreatAsOrdinal) noexcept {
     if (condition) {
         dest.setValue(src1 + src2, TreatAsOrdinal{});
     }
