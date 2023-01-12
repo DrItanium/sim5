@@ -428,7 +428,6 @@ union Register {
         Ordinal floatingPointNormalizingMode : 1;
         Ordinal floatingPointRoundingControl : 2;
     } arith;
-    constexpr auto getConditionCode() const noexcept { return arith.conditionCode; }
 
     struct {
         Ordinal rt : 3;
@@ -453,7 +452,6 @@ union Register {
         Ordinal priority : 5;
         Ordinal internalState : 11;
     } processControls;
-    void setPriority(Ordinal value) noexcept { processControls.priority = value; }
     struct {
         Ordinal unused0 : 1; // 0
         Ordinal instructionTraceMode : 1; // 1
@@ -515,6 +513,8 @@ union Register {
         Ordinal int2Vector : 8;
         Ordinal int3Vector : 8;
     } interruptControl;
+    constexpr auto getConditionCode() const noexcept { return arith.conditionCode; }
+    void setPriority(Ordinal value) noexcept { processControls.priority = value; }
     bool inSupervisorMode() const noexcept { return processControls.executionMode; }
     bool inUserMode() const noexcept { return !inSupervisorMode(); }
     bool isMEMA() const noexcept { return !mem.selector; }
@@ -864,6 +864,14 @@ class Core {
         X(ShortInteger);
         X(ShortOrdinal);
 #undef X
+    protected:
+        void andOperation(Register& destination, Ordinal src1, Ordinal src2) noexcept {
+            destination.setValue(src2 & src1, TreatAsOrdinal{});
+        }
+        void nand(Register& destination, Ordinal src1, Ordinal src2) noexcept {
+            andOperation(destination, src1, src2);
+            destination.invert(TreatAsOrdinal{});
+        }
     private:
         Ordinal faultPortValue_;
         Ordinal systemAddressTableBase_ = 0;

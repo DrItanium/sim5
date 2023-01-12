@@ -746,10 +746,10 @@ Core::cycle() noexcept {
     // in some of the opcodeExt values seem to reflect the resultant truth
     // table for the operation :). That's pretty cool
         case Opcodes::nand: // nand
-            flags_.ucode.invertResult = 1;
+            nand(regDest, src1o, src2o);
+            break;
         case Opcodes::andOperation: // and
-            flags_.ucode.performLogical = 1;
-            flags_.ucode.doAnd = 1;
+            andOperation(regDest, src1o, src2o);
             break;
         case Opcodes::clrbit: // clrbit
                               // clrbit is src2 & ~computeBitPosition(src1)
