@@ -755,6 +755,10 @@ void synmov(Register& dest, Ordinal src) noexcept;
 void synmovq(Register& dest, Ordinal src) noexcept;
 void sysctl(Register& dest, Ordinal src1, Ordinal src2) noexcept;
 void performSelect(Register& dest, Ordinal src1, Ordinal src2, bool condition) noexcept;
+void performConditionalSubtract(Register& dest, Integer src1, Integer src2, bool condition, TreatAsInteger) noexcept;
+void performConditionalSubtract(Register& dest, Ordinal src1, Ordinal src2, bool condition, TreatAsOrdinal) noexcept;
+void performConditionalAdd(Register& dest, Integer src1, Integer src2, bool condition, TreatAsInteger) noexcept;
+void performConditionalAdd(Register& dest, Ordinal src1, Ordinal src2, bool condition, TreatAsOrdinal) noexcept;
 void 
 invokeCore() noexcept {
     setFaultCode(NoFault);
@@ -1223,6 +1227,48 @@ invokeCore() noexcept {
         case Opcodes::selo:
             performSelect(regDest, src1o, src2o, fullConditionCodeCheck());
             break;
+        case Opcodes::addono:
+        case Opcodes::addoe:
+        case Opcodes::addog:
+        case Opcodes::addoge:
+        case Opcodes::addol:
+        case Opcodes::addone:
+        case Opcodes::addole:
+        case Opcodes::addoo:
+            performConditionalAdd(regDest, src1o, src2o, fullConditionCodeCheck(), TreatAsOrdinal{});
+            break;
+
+        case Opcodes::addino:
+        case Opcodes::addie:
+        case Opcodes::addig:
+        case Opcodes::addige:
+        case Opcodes::addil:
+        case Opcodes::addine:
+        case Opcodes::addile:
+        case Opcodes::addio:
+            performConditionalAdd(regDest, src1i, src2i, fullConditionCodeCheck(), TreatAsInteger{});
+            break;
+        case Opcodes::subono:
+        case Opcodes::suboe:
+        case Opcodes::subog:
+        case Opcodes::suboge:
+        case Opcodes::subol:
+        case Opcodes::subone:
+        case Opcodes::subole:
+        case Opcodes::suboo:
+            performConditionalSubtract(regDest, src1o, src2o, fullConditionCodeCheck(), TreatAsOrdinal{});
+            break;
+
+        case Opcodes::subino:
+        case Opcodes::subie:
+        case Opcodes::subig:
+        case Opcodes::subige:
+        case Opcodes::subil:
+        case Opcodes::subine:
+        case Opcodes::subile:
+        case Opcodes::subio:
+            performConditionalSubtract(regDest, src1i, src2i, fullConditionCodeCheck(), TreatAsInteger{});
+            break;
         default:
             setFaultCode(UnimplementedFault);
             break;
@@ -1680,5 +1726,28 @@ performSelect(Register& dest, Ordinal src1, Ordinal src2, bool condition) noexce
         dest.setValue(src2, TreatAsOrdinal{});
     } else {
         dest.setValue(src1, TreatAsOrdinal{});
+    }
+}
+void
+performConditionalSubtract(Register& dest, Integer src1, Integer src2, bool condition, TreatAsInteger) noexcept {
+    /// @todo implement
+}
+
+void
+performConditionalSubtract(Register& dest, Ordinal src1, Ordinal src2, bool condition, TreatAsOrdinal) noexcept {
+    if (condition) {
+        dest.setValue(src2 - src1, TreatAsOrdinal{});
+    }
+}
+
+void
+performConditionalAdd(Register& dest, Integer src1, Integer src2, bool condition, TreatAsInteger) noexcept {
+    /// @todo implement
+}
+
+void
+performConditionalAdd(Register& dest, Ordinal src1, Ordinal src2, bool condition, TreatAsOrdinal) noexcept {
+    if (condition) {
+        dest.setValue(src1 + src2, TreatAsOrdinal{});
     }
 }
