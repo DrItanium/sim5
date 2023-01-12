@@ -649,4 +649,28 @@ void unlockBus() noexcept;
 void signalBootFailure() noexcept;
 void invokeCore() noexcept;
 void configureSimulatorStructures() noexcept;
+class Core {
+    public:
+        void begin() noexcept;
+        void lockBus();
+        void unlockBus();
+        void signalBootFailure();
+        void setFaultPort(Ordinal value) noexcept;
+        Ordinal getFaultPort() const noexcept;
+    private:
+        Ordinal faultPortValue_;
+        Ordinal systemAddressTableBase_ = 0;
+        GPRBlock gpr_;
+        RegisterBlock32 sfrs_;
+        Register ip_;
+        Register ac_; 
+        Register pc_;
+        Register tc_; 
+        Register flags_; 
+        Register flags2_; 
+        Register faultCode_; 
+        Register instruction_;
+        Register ictl_;
+        byte advanceBy_;
+};
 #endif // end SIM5_CORE_H__
