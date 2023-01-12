@@ -1487,14 +1487,14 @@ Register::modify(Ordinal mask, Ordinal src) noexcept {
 }
 
 void
-configureSimulatorStructures() noexcept {
-    Serial.print(F("Configuring simulator structures..."));
+Core::begin() noexcept {
+    //Serial.print(F("Configuring simulator structures..."));
     // so we need to do any sort of processor setup here
     ip.clear();
     for (int i = 0; i < 32; ++i) {
         getGPR(i).clear();
     }
-    Serial.println(F("DONE"));
+    //Serial.println(F("DONE"));
 }
 
 void 
