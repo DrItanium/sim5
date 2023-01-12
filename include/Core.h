@@ -668,10 +668,31 @@ class Core {
         [[nodiscard]] constexpr Ordinal getSystemAddressTableBase() const noexcept { return systemAddressTableBase_; }
         Ordinal getSystemProcedureTableBase() const noexcept;
         Ordinal getSupervisorStackPointer() const noexcept;
-        void syncf() noexcept;
-        void mark() noexcept;
-        void fmark() noexcept;
         void restoreRegisterSet() noexcept;
+        void setGPR(byte index, Ordinal value, TreatAsOrdinal) noexcept { getGPR(index).setValue(value, TreatAsOrdinal{}); }
+        void setGPR(byte index, byte offset, Ordinal value, TreatAsOrdinal) noexcept { getGPR(index, offset).setValue(value, TreatAsOrdinal{}); }
+        void setGPR(byte index, Integer value, TreatAsInteger) noexcept { getGPR(index).setValue(value, TreatAsInteger{}); }
+        Register& getSFR(byte index) noexcept;
+        Register& getSFR(byte index, byte offset) noexcept;
+        Ordinal getGPRValue(byte index, TreatAsOrdinal) noexcept { return getGPR(index).getValue(TreatAsOrdinal{}); }
+        Ordinal getGPRValue(byte index, byte offset, TreatAsOrdinal) noexcept { return getGPR(index, offset).getValue(TreatAsOrdinal{}); }
+        Integer getGPRValue(byte index, TreatAsInteger) noexcept { return getGPR(index).getValue(TreatAsInteger{}); }
+        Ordinal unpackSrc1_REG(TreatAsOrdinal) noexcept;
+        Ordinal unpackSrc1_REG(byte offset, TreatAsOrdinal) noexcept;
+        Integer unpackSrc1_REG(TreatAsInteger) noexcept;
+        Ordinal unpackSrc2_REG(TreatAsOrdinal) noexcept;
+        Integer unpackSrc2_REG(TreatAsInteger) noexcept;
+        void setFaultCode(Ordinal value) noexcept;
+        bool faultHappened() noexcept;
+        void checkForPendingInterrupts() noexcept;
+        template<typename T>
+        void moveGPR(byte destIndex, byte srcIndex, TreatAs<T>) noexcept {
+            setGPR(destIndex, getGPRValue(srcIndex, TreatAs<T>{}), TreatAs<T>{});
+        }
+        template<typename T>
+        void moveGPR(byte destIndex, byte destOffset, byte srcIndex, byte srcOffset, TreatAs<T>) noexcept {
+            setGPR(destIndex, destOffset, getGPRValue(srcIndex, srcOffset, TreatAs<T>{}), TreatAs<T>{});
+        }
     protected:
         void sendIAC(const iac::Message& msg) noexcept;
         void dispatchInterrupt(uint8_t vector) noexcept;
@@ -698,6 +719,16 @@ class Core {
         void stopProcessor() noexcept;
         void storeProcessor() noexcept;
         void warmstartProcessor(Ordinal segmentTableBase, Ordinal prcbBase) noexcept;
+    protected:
+        // instructions
+        void syncf() noexcept;
+        void mark() noexcept;
+        void fmark() noexcept;
+        void synld(Register& dest, Ordinal src) noexcept;
+        void synmov(Register& dest, Ordinal src) noexcept;
+        void synmovl(Register& dest, Ordinal src) noexcept;
+        void synmovq(Register& dest, Ordinal src) noexcept;
+        void sysctl(Register& dest, Ordinal src1, Ordinal src2) noexcept;
     private:
         Ordinal faultPortValue_;
         Ordinal systemAddressTableBase_ = 0;

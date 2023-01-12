@@ -51,30 +51,30 @@ void store(Address address, T value, TreatAs<T>) noexcept {
     set328BusAddress(split);
     memory<T>(static_cast<size_t>(split.splitAddress.lower) + 0x8000) = value;
 }
-Register& getGPR(byte index) noexcept {
+Register& Core::getGPR(byte index) noexcept {
     return gpr.get(index);
 }
-Register& getGPR(byte index, byte offset) noexcept {
+Register& Core::getGPR(byte index, byte offset) noexcept {
     return getGPR((index + offset) & 0b11111);
 }
-void setGPR(byte index, Ordinal value, TreatAsOrdinal) noexcept { getGPR(index).setValue(value, TreatAsOrdinal{}); }
-void setGPR(byte index, byte offset, Ordinal value, TreatAsOrdinal) noexcept { getGPR(index, offset).setValue(value, TreatAsOrdinal{}); }
-void setGPR(byte index, Integer value, TreatAsInteger) noexcept { getGPR(index).setValue(value, TreatAsInteger{}); }
-Register& getSFR(byte index) noexcept;
-Register& getSFR(byte index, byte offset) noexcept;
-Ordinal getGPRValue(byte index, TreatAsOrdinal) noexcept { return getGPR(index).getValue(TreatAsOrdinal{}); }
-Ordinal getGPRValue(byte index, byte offset, TreatAsOrdinal) noexcept { return getGPR(index, offset).getValue(TreatAsOrdinal{}); }
-Integer getGPRValue(byte index, TreatAsInteger) noexcept { return getGPR(index).getValue(TreatAsInteger{}); }
-Ordinal unpackSrc1_REG(TreatAsOrdinal) noexcept;
-Ordinal unpackSrc1_REG(byte offset, TreatAsOrdinal) noexcept;
-Integer unpackSrc1_REG(TreatAsInteger) noexcept;
-Ordinal unpackSrc2_REG(TreatAsOrdinal) noexcept;
-Integer unpackSrc2_REG(TreatAsInteger) noexcept;
-void setFaultCode(Ordinal value) noexcept;
-bool faultHappened() noexcept;
-void checkForPendingInterrupts() noexcept;
+//void setGPR(byte index, Ordinal value, TreatAsOrdinal) noexcept { getGPR(index).setValue(value, TreatAsOrdinal{}); }
+//void setGPR(byte index, byte offset, Ordinal value, TreatAsOrdinal) noexcept { getGPR(index, offset).setValue(value, TreatAsOrdinal{}); }
+//void setGPR(byte index, Integer value, TreatAsInteger) noexcept { getGPR(index).setValue(value, TreatAsInteger{}); }
+//Register& getSFR(byte index) noexcept;
+//Register& getSFR(byte index, byte offset) noexcept;
+//Ordinal getGPRValue(byte index, TreatAsOrdinal) noexcept { return getGPR(index).getValue(TreatAsOrdinal{}); }
+//Ordinal getGPRValue(byte index, byte offset, TreatAsOrdinal) noexcept { return getGPR(index, offset).getValue(TreatAsOrdinal{}); }
+//Integer getGPRValue(byte index, TreatAsInteger) noexcept { return getGPR(index).getValue(TreatAsInteger{}); }
+//Ordinal unpackSrc1_REG(TreatAsOrdinal) noexcept;
+//Ordinal unpackSrc1_REG(byte offset, TreatAsOrdinal) noexcept;
+//Integer unpackSrc1_REG(TreatAsInteger) noexcept;
+//Ordinal unpackSrc2_REG(TreatAsOrdinal) noexcept;
+//Integer unpackSrc2_REG(TreatAsInteger) noexcept;
+//void setFaultCode(Ordinal value) noexcept;
+//bool faultHappened() noexcept;
+//void checkForPendingInterrupts() noexcept;
 Ordinal 
-unpackSrc1_REG(TreatAsOrdinal) noexcept {
+Core::unpackSrc1_REG(TreatAsOrdinal) noexcept {
     if (instruction.reg.m1) {
         /// @todo what to do if s1 is also set?
         return instruction.reg.src1;
@@ -85,7 +85,7 @@ unpackSrc1_REG(TreatAsOrdinal) noexcept {
     }
 }
 Ordinal 
-unpackSrc1_REG(byte offset, TreatAsOrdinal) noexcept {
+Core::unpackSrc1_REG(byte offset, TreatAsOrdinal) noexcept {
     if (instruction.reg.m1) {
         // literals should always return zero if offset is greater than zero
         return offset == 0 ? instruction.reg.src1 : 0;
@@ -96,7 +96,7 @@ unpackSrc1_REG(byte offset, TreatAsOrdinal) noexcept {
     }
 }
 Integer 
-unpackSrc1_REG(TreatAsInteger) noexcept {
+Core::unpackSrc1_REG(TreatAsInteger) noexcept {
     if (instruction.reg.m1) {
         return instruction.reg.src1;
     } else if (instruction.reg.s1) {
@@ -106,7 +106,7 @@ unpackSrc1_REG(TreatAsInteger) noexcept {
     }
 }
 Ordinal 
-unpackSrc2_REG(TreatAsOrdinal) noexcept {
+Core::unpackSrc2_REG(TreatAsOrdinal) noexcept {
     if (instruction.reg.m2) {
         return instruction.reg.src2;
     } else if (instruction.reg.s2) {
@@ -116,7 +116,7 @@ unpackSrc2_REG(TreatAsOrdinal) noexcept {
     }
 }
 Integer 
-unpackSrc2_REG(TreatAsInteger) noexcept {
+Core::unpackSrc2_REG(TreatAsInteger) noexcept {
     if (instruction.reg.m2) {
         return instruction.reg.src2;
     } else if (instruction.reg.s2) {
@@ -127,7 +127,7 @@ unpackSrc2_REG(TreatAsInteger) noexcept {
 }
 
 void
-scanbyte(Ordinal src2, Ordinal src1) noexcept {
+Core::scanbyte(Ordinal src2, Ordinal src1) noexcept {
     if (Register s2(src2), s1(src1); 
             s1.bytes[0] == s2.bytes[0] ||
             s1.bytes[1] == s2.bytes[1] ||
@@ -139,7 +139,7 @@ scanbyte(Ordinal src2, Ordinal src1) noexcept {
     }
 }
 void
-arithmeticWithCarryGeneric(Ordinal result, bool src2MSB, bool src1MSB, bool destMSB) noexcept {
+Core::arithmeticWithCarryGeneric(Ordinal result, bool src2MSB, bool src1MSB, bool destMSB) noexcept {
     // set the carry bit
     ac.arith.conditionCode = 0;
     // set the overflow bit
@@ -156,13 +156,13 @@ arithmeticWithCarryGeneric(Ordinal result, bool src2MSB, bool src1MSB, bool dest
 }
 
 void
-checkForPendingInterrupts() noexcept {
+Core::checkForPendingInterrupts() noexcept {
     /// @todo implement
 }
 
 
 void
-emul(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+Core::emul(Register& dest, Ordinal src1, Ordinal src2) noexcept {
     SplitWord64 result;
     if ((instruction.reg.srcDest & 0b1) != 0) {
         setFaultCode(InvalidOpcodeFault);
@@ -176,7 +176,7 @@ emul(Register& dest, Ordinal src1, Ordinal src2) noexcept {
 }
 
 void
-ediv(Register& dest, Ordinal src1, Ordinal src2Lower) noexcept {
+Core::ediv(Register& dest, Ordinal src1, Ordinal src2Lower) noexcept {
     SplitWord64 result, src2;
     result.whole = 0;
     src2.parts[0] = src2Lower;
@@ -198,18 +198,18 @@ ediv(Register& dest, Ordinal src1, Ordinal src2Lower) noexcept {
     dest.setValue<Ordinal>(result.parts[0]);
     setGPR(instruction.reg.srcDest, 1, result.parts[1], TreatAsOrdinal{});
 }
-inline Ordinal 
-getSystemAddressTableBase() noexcept { 
+Ordinal 
+Core::getSystemAddressTableBase() noexcept { 
     return systemAddressTableBase; 
 }
 
 inline Ordinal
-getSystemProcedureTableBase() noexcept {
+Core::getSystemProcedureTableBase() noexcept {
     return load(getSystemAddressTableBase() + 120, TreatAsOrdinal{});
 }
 
 inline Ordinal
-getSupervisorStackPointer() noexcept {
+Core::getSupervisorStackPointer() noexcept {
     return load((getSystemProcedureTableBase() + 12), TreatAsOrdinal{});
 }
 template<bool doScan>
@@ -249,14 +249,6 @@ setFaultCode(Ordinal fault) noexcept {
 inline bool 
 faultHappened() noexcept {
     return faultCode.getValue(TreatAsOrdinal{}) != NoFault;
-}
-template<typename T>
-void moveGPR(byte destIndex, byte srcIndex, TreatAs<T>) noexcept {
-    setGPR(destIndex, getGPRValue(srcIndex, TreatAs<T>{}), TreatAs<T>{});
-}
-template<typename T>
-void moveGPR(byte destIndex, byte destOffset, byte srcIndex, byte srcOffset, TreatAs<T>) noexcept {
-    setGPR(destIndex, destOffset, getGPRValue(srcIndex, srcOffset, TreatAs<T>{}), TreatAs<T>{});
 }
 void scanbyte(Ordinal src2, Ordinal src1) noexcept;
 void emul(Register& dest, Ordinal src1, Ordinal src2) noexcept;
@@ -1498,7 +1490,7 @@ Core::begin() noexcept {
 }
 
 void 
-synld(Register& dest, Ordinal src) noexcept {
+Core::synld(Register& dest, Ordinal src) noexcept {
     ac.arith.conditionCode = 0b000;
     if (auto tempa = src & 0xFFFF'FFFC; tempa == 0xFF00'0004) {
         // interrupt control register needs to be read through this
@@ -1512,7 +1504,7 @@ synld(Register& dest, Ordinal src) noexcept {
     }
 }
 void 
-synmov(Register& dest, Ordinal src) noexcept {
+Core::synmov(Register& dest, Ordinal src) noexcept {
     ac.arith.conditionCode = 0b000;
     if (auto tempa = dest.getValue(TreatAsOrdinal{}) & 0xFFFF'FFFC; tempa == 0xFF00'0004) {
         ictl.o = load(src, TreatAsOrdinal{});
@@ -1525,7 +1517,7 @@ synmov(Register& dest, Ordinal src) noexcept {
     }
 }
 void 
-synmovl(Register& dest, Ordinal src) noexcept {
+Core::synmovl(Register& dest, Ordinal src) noexcept {
     ac.arith.conditionCode = 0b000;
     auto tempa = dest.getValue(TreatAsOrdinal{}) & 0xFFFF'FFF8; 
     auto tempLower = load(src, TreatAsOrdinal{});
@@ -1537,7 +1529,7 @@ synmovl(Register& dest, Ordinal src) noexcept {
 
 }
 void 
-synmovq(Register& dest, Ordinal src) noexcept {
+Core::synmovq(Register& dest, Ordinal src) noexcept {
 
     ac.arith.conditionCode = 0b000;
     auto temp0 = load(src, TreatAsOrdinal{});
@@ -1557,7 +1549,7 @@ synmovq(Register& dest, Ordinal src) noexcept {
     }
 }
 void
-sysctl(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+Core::sysctl(Register& dest, Ordinal src1, Ordinal src2) noexcept {
     ByteOrdinal type = src1 >> 8;
     ByteOrdinal field1 = src1;
     ShortOrdinal field2 = static_cast<ShortOrdinal>(src1 >> 16);
