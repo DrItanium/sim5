@@ -925,12 +925,10 @@ Core::cycle() noexcept {
             mark();
             break;
         case Opcodes::mulo:
-            flags_.ucode.performMultiply = 1;
-            flags_.ucode.ordinalOp = 1;
+            mult<Ordinal>(regDest, src1o, src2o, TreatAsOrdinal{});
             break;
         case Opcodes::muli:
-            flags_.ucode.performMultiply = 1;
-            flags_.ucode.integerOp = 1;
+            mult<Integer>(regDest, src1i, src2i, TreatAsInteger{});
             break;
         case Opcodes::divi:
             flags_.ucode.performDivide = 1;
