@@ -23,11 +23,10 @@
 //
 
 #include "IAC.h"
-
-namespace iac {
+#include "Core.h"
 
 void 
-send(const Message& message) noexcept {
+Core::sendIAC(const iac::Message& message) noexcept {
     noInterrupts();
     /// @todo implement
     switch (message.messageType) {
@@ -57,94 +56,93 @@ send(const Message& message) noexcept {
     interrupts();
 }
 void 
-dispatchInterrupt(uint8_t vector) noexcept {
+Core::dispatchInterrupt(uint8_t vector) noexcept {
     /// @todo implement
 }
 
 void 
-purgeInstructionCache() noexcept {
+Core::purgeInstructionCache() noexcept {
     // do nothing right now
 }
 void 
-reinitializeProcessor(Ordinal satBase, Ordinal prcbBase, Ordinal startIP) noexcept {
+Core::reinitializeProcessor(Ordinal satBase, Ordinal prcbBase, Ordinal startIP) noexcept {
     /// @todo implement
 }
 void 
-setBreakpointRegister(Ordinal breakpointIp0, Ordinal breakpointIp1) noexcept {
+Core::setBreakpointRegister(Ordinal breakpointIp0, Ordinal breakpointIp1) noexcept {
     /// @todo implement
 }
 void 
-storeSystemBase(Ordinal destinationAddress) noexcept {
+Core::storeSystemBase(Ordinal destinationAddress) noexcept {
     /// @todo implement
 }
 void 
-testPendingInterrupts() noexcept {
+Core::testPendingInterrupts() noexcept {
     /// @todo implement
     // perhaps call checkForPendingInterrupts?
 }
 void 
-checkProcessNotice(Ordinal processSegmentSelectorBase) noexcept {
+Core::checkProcessNotice(Ordinal processSegmentSelectorBase) noexcept {
 
     /// @todo implement
 }
 void 
-flushLocalRegisters(Ordinal physicalStackPageAddress) noexcept { 
+Core::flushLocalRegisters(Ordinal physicalStackPageAddress) noexcept { 
     /// @todo implement
 }
 void 
-flushProcess() noexcept { 
+Core::flushProcess() noexcept { 
     /// @todo implement
 }
 void 
-flushTLB() noexcept { 
+Core::flushTLB() noexcept { 
     /// @todo implement
 }
 void 
-flushTLBPageTableEntry(Ordinal offsetFromSegmentBase, Ordinal ssofSegmentThatContainsPage) noexcept { 
+Core::flushTLBPageTableEntry(Ordinal offsetFromSegmentBase, Ordinal ssofSegmentThatContainsPage) noexcept { 
     /// @todo implement
 }
 void 
-flushTLBPhysicalPage(Ordinal basePhysicalAddressOfPage) noexcept { 
+Core::flushTLBPhysicalPage(Ordinal basePhysicalAddressOfPage) noexcept { 
     /// @todo implement
 }
 void 
-flushTLBSegmentEntry(Ordinal ssForSegment) noexcept { 
+Core::flushTLBSegmentEntry(Ordinal ssForSegment) noexcept { 
     /// @todo implement
 }
 void 
-modifyProcessControls(Ordinal newProcessorControlWords, Ordinal mask) noexcept { 
+Core::modifyProcessControls(Ordinal newProcessorControlWords, Ordinal mask) noexcept { 
     /// @todo implement
 }
 
 void 
-freeze() noexcept {
+Core::freeze() noexcept {
     /// @todo implement
 }
 void 
-continueInitialization() noexcept {
+Core::continueInitialization() noexcept {
     /// @todo implement
 }
 
 void
-preemptProcess() noexcept {
+Core::preemptProcess() noexcept {
     /// @todo implement
 }
 
 void 
-restartProcessor(Ordinal segmentTableBase, Ordinal prcbBase) noexcept {
+Core::restartProcessor(Ordinal segmentTableBase, Ordinal prcbBase) noexcept {
     /// @todo implement
 }
 
 void 
-stopProcessor() noexcept {
+Core::stopProcessor() noexcept {
 
 }
 void 
-storeProcessor() noexcept {
+Core::storeProcessor() noexcept {
 
 }
 void 
-warmstartProcessor(Ordinal segmentTableBase, Ordinal prcbBase) noexcept {
+Core::warmstartProcessor(Ordinal segmentTableBase, Ordinal prcbBase) noexcept {
 
 }
-} // end namespace iac

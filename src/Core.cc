@@ -1419,7 +1419,7 @@ Core::synmovq(Register& dest, Ordinal src) noexcept {
     auto temp2 = load(src+8, TreatAsOrdinal{});
     auto temp3 = load(src+12, TreatAsOrdinal{});
     if (auto tempa = dest.getValue(TreatAsOrdinal{}) & 0xFFFF'FFF0; tempa == 0xFF00'0010) {
-        iac::send(iac::Message{temp0, temp1, temp2, temp3});
+        sendIAC(iac::Message{temp0, temp1, temp2, temp3});
         ac.arith.conditionCode = 0b010;
     } else {
         store(tempa, temp0, TreatAsOrdinal{});
