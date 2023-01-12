@@ -184,12 +184,12 @@ Core::ediv(Register& dest, Ordinal src1, Ordinal src2Lower) noexcept {
 }
 
 Ordinal
-Core::getSystemProcedureTableBase() noexcept {
+Core::getSystemProcedureTableBase() const noexcept {
     return load(getSystemAddressTableBase() + 120, TreatAsOrdinal{});
 }
 
 Ordinal
-Core::getSupervisorStackPointer() noexcept {
+Core::getSupervisorStackPointer() const noexcept {
     return load((getSystemProcedureTableBase() + 12), TreatAsOrdinal{});
 }
 
@@ -201,7 +201,6 @@ bool
 Core::faultHappened() noexcept {
     return faultCode.getValue(TreatAsOrdinal{}) != NoFault;
 }
-Ordinal getSystemProcedureTableBase() noexcept;
 Ordinal 
 Core::unpackSrc1_COBR(TreatAsOrdinal) noexcept {
     if (instruction.cobr.m1) {
@@ -257,31 +256,30 @@ Core::flushreg() noexcept {
     /// @todo implement if it makes sense since we aren't using register frames
 }
 void
-mark() noexcept {
-    if (pc.pc.traceEnable && tc.trace.breakpointTraceMode) {
+Core::mark() noexcept {
+    if (pc_.pc.traceEnable && tc.trace.breakpointTraceMode) {
         setFaultCode(MarkTraceFault);
     }
 }
 void
-fmark() noexcept {
-    if (pc.pc.traceEnable) {
+Core::fmark() noexcept {
+    if (pc_.pc.traceEnable) {
         setFaultCode(MarkTraceFault);
     }
 }
-void restoreRegisterSet(Ordinal fp) noexcept;
 void
-restoreStandardFrame() noexcept {
+Core::restoreStandardFrame() noexcept {
     // need to leave the current call
     moveGPR(FPIndex, PFPIndex, TreatAsOrdinal{});
     // remember that the lowest 6 bits are ignored so it is important to mask
     // them out of the frame pointer address when using the address
     auto realAddress = getGPRValue(FPIndex, TreatAsOrdinal{}) & NotC;
     restoreRegisterSet(realAddress);
-    ip.setValue(getGPRValue(RIPIndex, TreatAsOrdinal{}), TreatAsOrdinal{});
-    flags.ucode.dontAdvanceIP = 1;
+    ip_.setValue(getGPRValue(RIPIndex, TreatAsOrdinal{}), TreatAsOrdinal{});
+    flags_.ucode.dontAdvanceIP = 1;
 }
 void
-ret() {
+Core::ret() {
     syncf();
     auto& pfp = getGPR(PFPIndex);
     switch (pfp.pfp.rt) {
@@ -385,7 +383,7 @@ Core::computeAddress() noexcept {
     }
 }
 void
-storeBlock(Ordinal baseAddress, byte baseRegister, byte count) noexcept {
+Core::storeBlock(Ordinal baseAddress, byte baseRegister, byte count) noexcept {
     for (byte i = 0; i < count; ++i, baseAddress += 4) {
         store(baseAddress, getGPRValue(baseRegister, i, TreatAsOrdinal{}), TreatAsOrdinal{});
     }
@@ -491,7 +489,7 @@ Core::enterCall(Ordinal fp) noexcept {
     }
 }
 void
-callx() noexcept {
+Core::callx() noexcept {
     // wait for any uncompleted instructions to finish
     auto temp = (getGPRValue(SPIndex, TreatAsOrdinal{}) + C) & NotC; // round stack pointer to next boundary
     auto addr = computeAddress();
@@ -505,7 +503,7 @@ callx() noexcept {
     flags.ucode.dontAdvanceIP = 1;
 }
 void 
-call() {
+Core::call() {
     // wait for any uncompleted instructions to finish
     auto temp = (getGPRValue(SPIndex, TreatAsOrdinal{}) + C) & NotC; // round stack pointer to next boundary
     auto fp = getGPRValue(FPIndex, TreatAsOrdinal{});
@@ -544,8 +542,8 @@ Core::calls(Ordinal src1) noexcept {
         /// @todo expand pfp and fp to accurately model how this works
         auto& pfp = getGPR(PFPIndex);
         // lowest six bits are ignored
-        pfp_.setValue(getGPRValue(FPIndex, TreatAsOrdinal{}) & ~0b1'111, TreatAsOrdinal{});
-        pfp_.pfp.rt = tempRRR;
+        pfp.setValue(getGPRValue(FPIndex, TreatAsOrdinal{}) & ~0b1'111, TreatAsOrdinal{});
+        pfp.pfp.rt = tempRRR;
         setGPR(FPIndex, temp, TreatAsOrdinal{});
         setGPR(SPIndex, temp + 64, TreatAsOrdinal{});
         flags_.ucode.dontAdvanceIP = 1;

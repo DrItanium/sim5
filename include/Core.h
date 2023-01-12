@@ -825,6 +825,9 @@ class Core {
         void stq() noexcept;
         void stt() noexcept;
         void stl() noexcept;
+        void ret() noexcept;
+        void call() noexcept;
+        void callx() noexcept;
     protected:
         void enterCall(Ordinal fp) noexcept;
         void leaveCall() noexcept;
@@ -832,6 +835,9 @@ class Core {
         bool registerSetAvailable() noexcept;
         void saveRegisterSet(Ordinal fp) noexcept;
         void restoreRegisterSet(Ordinal fp) noexcept;
+        void restoreStandardFrame() noexcept;
+        void storeBlock(Ordinal baseAddress, byte baseRegister, byte count) noexcept;
+        void loadBlock(Ordinal baseAddress, byte baseRegister, byte count) noexcept;
 
     private:
         Ordinal faultPortValue_;
