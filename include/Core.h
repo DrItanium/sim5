@@ -25,6 +25,7 @@
 #define SIM5_CORE_H__
 
 #include "Types.h"
+#include "IAC.h"
 #include "BinaryOperations.h"
 
 constexpr Ordinal SALIGN = 4;

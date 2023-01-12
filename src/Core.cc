@@ -1535,70 +1535,6 @@ synmovl(Register& dest, Ordinal src) noexcept {
     ac.arith.conditionCode = 0b010;
 
 }
-struct IAC {
-    explicit IAC(uint32_t w0, uint32_t w1, uint32_t w2, uint32_t w3) noexcept : messageType(w0 >> 24), field1(w0 >> 16), field2(w0), field3(w1), field4(w2), field5(w3) { }
-    uint8_t messageType;
-    uint8_t field1;
-    uint16_t field2;
-    uint32_t field3;
-    uint32_t field4;
-    uint32_t field5;
-};
-void dispatchInterrupt(uint8_t vector) noexcept;
-void purgeInstructionCache() noexcept;
-void reinitializeProcessor(Ordinal satBase, Ordinal prcbBase, Ordinal startIP) noexcept;
-void setBreakpointRegister(Ordinal breakpointIp0, Ordinal breakpointIp1) noexcept;
-void storeSystemBase(Ordinal destinationAddress) noexcept;
-void testPendingInterrupts() noexcept;
-// Kx related IACs
-void freeze() noexcept;
-void continueInitialization() noexcept;
-
-// MC related IACs
-void checkProcessNotice(Ordinal processSegmentSelectorBase) noexcept;
-void flushLocalRegisters(Ordinal physicalStackPageAddress) noexcept;
-void flushProcess() noexcept;
-void flushTLB() noexcept;
-void flushTLBPageTableEntry(Ordinal offsetFromSegmentBase, Ordinal ssofSegmentThatContainsPage) noexcept;
-void flushTLBPhysicalPage(Ordinal basePhysicalAddressOfPage) noexcept;
-void flushTLBSegmentEntry(Ordinal ssForSegment) noexcept;
-void modifyProcessControls(Ordinal newProcessorControlWords, Ordinal mask) noexcept;
-void preemptProcess() noexcept;
-void restartProcessor(Ordinal segmentTableBase, Ordinal prcbBase) noexcept;
-void stopProcessor() noexcept;
-void storeProcessor() noexcept;
-void warmstartProcessor(Ordinal segmentTableBase, Ordinal prcbBase) noexcept;
-
-void 
-sendIAC(const IAC& message) noexcept {
-    noInterrupts();
-    /// @todo implement
-    switch (message.messageType) {
-        case 0x40: dispatchInterrupt(message.field1); break;
-        case 0x41: testPendingInterrupts(); break;
-        case 0x80: storeSystemBase(message.field3); break;
-        case 0x81: restartProcessor(message.field3, message.field4); break;
-        case 0x83: stopProcessor(); break;
-        case 0x84: flushLocalRegisters(message.field3); break;
-        case 0x85: preemptProcess(); break;
-        case 0x86: storeProcessor(); break;
-        case 0x87: flushProcess(); break;
-        case 0x88: flushTLBPhysicalPage(message.field3); break;
-        case 0x89: purgeInstructionCache(); break;
-        case 0x8A: flushTLB(); break;
-        case 0x8B: flushTLBSegmentEntry(message.field3); break;
-        case 0x8C: flushTLBPageTableEntry(message.field3, message.field4); break;
-        case 0x8D: modifyProcessControls(message.field3, message.field4); break;
-        case 0x8E: warmstartProcessor(message.field3, message.field4); break;
-        case 0x8F: setBreakpointRegister(message.field3, message.field4); break;
-        case 0x90: checkProcessNotice(message.field3); break;
-        case 0x91: freeze(); break;
-        case 0x92: continueInitialization(); break;
-        case 0x93: reinitializeProcessor(message.field3, message.field4, message.field5); break;
-        default: /* do nothing */ break;
-    }
-    interrupts();
-}
 void 
 synmovq(Register& dest, Ordinal src) noexcept {
 
@@ -1608,7 +1544,7 @@ synmovq(Register& dest, Ordinal src) noexcept {
     auto temp2 = load(src+8, TreatAsOrdinal{});
     auto temp3 = load(src+12, TreatAsOrdinal{});
     if (auto tempa = dest.getValue(TreatAsOrdinal{}) & 0xFFFF'FFF0; tempa == 0xFF00'0010) {
-        sendIAC(IAC{temp0, temp1, temp2, temp3});
+        iac::send(iac::Message{temp0, temp1, temp2, temp3});
         ac.arith.conditionCode = 0b010;
     } else {
         store(tempa, temp0, TreatAsOrdinal{});
@@ -1629,97 +1565,6 @@ sysctl(Register& dest, Ordinal src1, Ordinal src2) noexcept {
     
 }
 
-void 
-dispatchInterrupt(uint8_t vector) noexcept {
-    /// @todo implement
-}
-
-void 
-purgeInstructionCache() noexcept {
-    // do nothing right now
-}
-void 
-reinitializeProcessor(Ordinal satBase, Ordinal prcbBase, Ordinal startIP) noexcept {
-    /// @todo implement
-}
-void 
-setBreakpointRegister(Ordinal breakpointIp0, Ordinal breakpointIp1) noexcept {
-    /// @todo implement
-}
-void 
-storeSystemBase(Ordinal destinationAddress) noexcept {
-    /// @todo implement
-}
-void 
-testPendingInterrupts() noexcept {
-    /// @todo implement
-    // perhaps call checkForPendingInterrupts?
-}
-void 
-checkProcessNotice(Ordinal processSegmentSelectorBase) noexcept {
-
-    /// @todo implement
-}
-void 
-flushLocalRegisters(Ordinal physicalStackPageAddress) noexcept { 
-    /// @todo implement
-}
-void 
-flushProcess() noexcept { 
-    /// @todo implement
-}
-void 
-flushTLB() noexcept { 
-    /// @todo implement
-}
-void 
-flushTLBPageTableEntry(Ordinal offsetFromSegmentBase, Ordinal ssofSegmentThatContainsPage) noexcept { 
-    /// @todo implement
-}
-void 
-flushTLBPhysicalPage(Ordinal basePhysicalAddressOfPage) noexcept { 
-    /// @todo implement
-}
-void 
-flushTLBSegmentEntry(Ordinal ssForSegment) noexcept { 
-    /// @todo implement
-}
-void 
-modifyProcessControls(Ordinal newProcessorControlWords, Ordinal mask) noexcept { 
-    /// @todo implement
-}
-
-void 
-freeze() noexcept {
-    /// @todo implement
-}
-void 
-continueInitialization() noexcept {
-    /// @todo implement
-}
-
-void
-preemptProcess() noexcept {
-    /// @todo implement
-}
-
-void 
-restartProcessor(Ordinal segmentTableBase, Ordinal prcbBase) noexcept {
-    /// @todo implement
-}
-
-void 
-stopProcessor() noexcept {
-
-}
-void 
-storeProcessor() noexcept {
-
-}
-void 
-warmstartProcessor(Ordinal segmentTableBase, Ordinal prcbBase) noexcept {
-
-}
 void 
 performSelect(Register& dest, Ordinal src1, Ordinal src2, bool condition) noexcept {
     if (condition) {
