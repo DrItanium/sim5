@@ -883,6 +883,17 @@ class Core {
             andOperation(destination, src1, src2);
             destination.invert(TreatAsOrdinal{});
         }
+        void xorOperation(Register& destination, Ordinal src1, Ordinal src2) noexcept {
+            destination.setValue(src2 ^ src1, TreatAsOrdinal{});
+        }
+        void xnor(Register& destination, Ordinal src1, Ordinal src2) noexcept {
+            xorOperation(destination, src1, src2);
+            destination.invert(TreatAsOrdinal{});
+        }
+        void notbit(Register& destination, Ordinal src1, Ordinal src2) noexcept {
+            // notbit is src2 ^ computeBitPosition(src1)
+            xorOperation(destination, computeBitPosition(src1), src2);
+        }
     private:
         Ordinal faultPortValue_;
         Ordinal systemAddressTableBase_ = 0;

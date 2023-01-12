@@ -766,11 +766,10 @@ Core::cycle() noexcept {
             flags_.ucode.performLogical = 1;
             break;
         case Opcodes::notbit: // notbit
-                     // notbit is src2 ^ computeBitPosition(src1)
-            flags_.ucode.src1IsBitPosition = 1;
-        case Opcodes::xorOperation: // xor
-            flags_.ucode.doXor = 1;
-            flags_.ucode.performLogical = 1;
+            notbit(regDest, src1o, src2o);
+            break;
+        case Opcodes::xorOperation:
+            xorOperation(regDest, src1o, src2o);
             break;
         case Opcodes::setbit:
             setbit(regDest, src1o, src2o);
@@ -781,10 +780,8 @@ Core::cycle() noexcept {
         case Opcodes::nor: // nor
             nor(regDest, src1o, src2o);
             break;
-        case Opcodes::xnor: // xnor
-            flags_.ucode.doXor = 1;
-            flags_.ucode.invertResult = 1;
-            flags_.ucode.performLogical = 1;
+        case Opcodes::xnor: 
+            xnor(regDest, src1o, src2o);
             break;
         case Opcodes::notOperation: // not 
                      // perform fallthrough to ornot with src2 set to zero
