@@ -27,7 +27,7 @@
 namespace iac {
 
 void 
-sendIAC(const IAC& message) noexcept {
+send(const Message& message) noexcept {
     noInterrupts();
     /// @todo implement
     switch (message.messageType) {
