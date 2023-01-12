@@ -1109,9 +1109,6 @@ Core::cycle() noexcept {
         }
         unlockBus();
     }
-    if (flags_.ucode.performRegisterTransfer) {
-        performRegisterTransfer(flags2_.ucode2.mask, flags2_.ucode2.count);
-    }
     if (flags_.ucode.performLogical) {
         if (flags_.ucode.src1IsBitPosition) {
             src1o = computeBitPosition(src1o);
@@ -1217,16 +1214,6 @@ Core::cycle() noexcept {
             setFaultCode(InvalidOpcodeFault);
         }
 
-    } else if (flags_.ucode.performMultiply) {
-        if (flags_.ucode.ordinalOp) {
-            regDest.o = src2o * src1o;
-        } else if (flags_.ucode.integerOp) {
-            regDest.i = src2i * src1i;
-        } else {
-            // if we got here then it means we don't have something configured
-            // correctly
-            setFaultCode(InvalidOpcodeFault);
-        }
     } else if (flags_.ucode.performDivide) {
         if (flags_.ucode.ordinalOp) {
             if (src1o == 0) {

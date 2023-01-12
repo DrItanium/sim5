@@ -491,14 +491,12 @@ union Register {
         Ordinal performCompare : 1;
         Ordinal performConditionalCompare : 1;
         Ordinal performLogical : 1;
-        Ordinal performMultiply : 1;
         Ordinal performDivide : 1;
         Ordinal performRemainder : 1;
         Ordinal performSyncf : 1;
         Ordinal performAtomicOperation : 1;
         Ordinal performModify : 1;
         Ordinal dontAdvanceIP : 1;
-        Ordinal performRegisterTransfer : 1;
     } ucode;
     struct {
         Ordinal mask : 8;
