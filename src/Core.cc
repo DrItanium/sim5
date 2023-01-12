@@ -57,22 +57,6 @@ Register& Core::getGPR(byte index) noexcept {
 Register& Core::getGPR(byte index, byte offset) noexcept {
     return getGPR((index + offset) & 0b11111);
 }
-//void setGPR(byte index, Ordinal value, TreatAsOrdinal) noexcept { getGPR(index).setValue(value, TreatAsOrdinal{}); }
-//void setGPR(byte index, byte offset, Ordinal value, TreatAsOrdinal) noexcept { getGPR(index, offset).setValue(value, TreatAsOrdinal{}); }
-//void setGPR(byte index, Integer value, TreatAsInteger) noexcept { getGPR(index).setValue(value, TreatAsInteger{}); }
-//Register& getSFR(byte index) noexcept;
-//Register& getSFR(byte index, byte offset) noexcept;
-//Ordinal getGPRValue(byte index, TreatAsOrdinal) noexcept { return getGPR(index).getValue(TreatAsOrdinal{}); }
-//Ordinal getGPRValue(byte index, byte offset, TreatAsOrdinal) noexcept { return getGPR(index, offset).getValue(TreatAsOrdinal{}); }
-//Integer getGPRValue(byte index, TreatAsInteger) noexcept { return getGPR(index).getValue(TreatAsInteger{}); }
-//Ordinal unpackSrc1_REG(TreatAsOrdinal) noexcept;
-//Ordinal unpackSrc1_REG(byte offset, TreatAsOrdinal) noexcept;
-//Integer unpackSrc1_REG(TreatAsInteger) noexcept;
-//Ordinal unpackSrc2_REG(TreatAsOrdinal) noexcept;
-//Integer unpackSrc2_REG(TreatAsInteger) noexcept;
-//void setFaultCode(Ordinal value) noexcept;
-//bool faultHappened() noexcept;
-//void checkForPendingInterrupts() noexcept;
 Ordinal 
 Core::unpackSrc1_REG(TreatAsOrdinal) noexcept {
     if (instruction.reg.m1) {
@@ -203,62 +187,27 @@ Core::getSystemAddressTableBase() noexcept {
     return systemAddressTableBase; 
 }
 
-inline Ordinal
+Ordinal
 Core::getSystemProcedureTableBase() noexcept {
     return load(getSystemAddressTableBase() + 120, TreatAsOrdinal{});
 }
 
-inline Ordinal
+Ordinal
 Core::getSupervisorStackPointer() noexcept {
     return load((getSystemProcedureTableBase() + 12), TreatAsOrdinal{});
 }
-template<bool doScan>
-inline void
-xbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
-    for (Ordinal index = 0; index < 32; ++index) {
-        if ((src1 & computeBitPosition(31 - index)) != 0) {
-            if constexpr (doScan) {
-                dest.o = (31 - index);
-                ac.arith.conditionCode = 0b010;
-                return;
-            }
-        } else {
-            if constexpr (!doScan) {
-                dest.o = (31 - index);
-                ac.arith.conditionCode = 0b010;
-                return;
-            }
-        }
-    }
-    dest.o = 0xFFFF'FFFF;
-    ac.arith.conditionCode = 0;
-}
-inline void 
-scanbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
-    xbit<true>(dest, src1, src2);
-}
-inline void 
-spanbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
-    xbit<false>(dest, src1, src2);
-}
 
-inline void
-setFaultCode(Ordinal fault) noexcept {
+void
+Core::setFaultCode(Ordinal fault) noexcept {
     faultCode.setValue(fault, TreatAsOrdinal{});
 }
-inline bool 
-faultHappened() noexcept {
+bool 
+Core::faultHappened() noexcept {
     return faultCode.getValue(TreatAsOrdinal{}) != NoFault;
 }
-void scanbyte(Ordinal src2, Ordinal src1) noexcept;
-void emul(Register& dest, Ordinal src1, Ordinal src2) noexcept;
-void ediv(Register& dest, Ordinal src1, Ordinal src2) noexcept;
-void scanbit(Register& dest, Ordinal src1, Ordinal src2) noexcept;
-void spanbit(Register& dest, Ordinal src1, Ordinal src2) noexcept;
-void arithmeticWithCarryGeneric(Ordinal result, bool src2MSB, bool src1MSB, bool destMSB) noexcept;
 Ordinal getSystemProcedureTableBase() noexcept;
-inline Ordinal 
-unpackSrc1_COBR(TreatAsOrdinal) noexcept {
+Ordinal 
+Core::unpackSrc1_COBR(TreatAsOrdinal) noexcept {
     if (instruction.cobr.m1) {
         // treat src1 as a literal
         return instruction.cobr.src1;
@@ -266,8 +215,8 @@ unpackSrc1_COBR(TreatAsOrdinal) noexcept {
         return getGPRValue(instruction.cobr.src1, TreatAsOrdinal{});
     }
 }
-inline Ordinal
-unpackSrc2_COBR(TreatAsOrdinal) noexcept {
+Ordinal
+Core::unpackSrc2_COBR(TreatAsOrdinal) noexcept {
     if (instruction.cobr.s2) {
         // access the contents of the sfrs
         // at this point it is just a simple extra set of 32 registers
@@ -276,8 +225,8 @@ unpackSrc2_COBR(TreatAsOrdinal) noexcept {
         return getGPRValue(instruction.cobr.src2, TreatAsOrdinal{});
     }
 }
-inline Integer
-unpackSrc1_COBR(TreatAsInteger) noexcept {
+Integer
+Core::unpackSrc1_COBR(TreatAsInteger) noexcept {
     if (instruction.cobr.m1) {
         // treat src1 as a literal
         return instruction.cobr.src1;
@@ -285,8 +234,8 @@ unpackSrc1_COBR(TreatAsInteger) noexcept {
         return getGPRValue(instruction.cobr.src1, TreatAsInteger{});
     }
 }
-inline Integer
-unpackSrc2_COBR(TreatAsInteger) noexcept {
+Integer
+Core::unpackSrc2_COBR(TreatAsInteger) noexcept {
     if (instruction.cobr.s2) {
         // access the contents of the sfrs
         // at this point it is just a simple extra set of 32 registers
@@ -295,20 +244,20 @@ unpackSrc2_COBR(TreatAsInteger) noexcept {
         return getGPRValue(instruction.cobr.src2, TreatAsInteger{});
     }
 }
-inline Register& getSFR(byte index) noexcept {
+Register& Core::getSFR(byte index) noexcept {
     return sfrs.get(index);
 }
-inline Register& getSFR(byte index, byte offset) noexcept {
+Register& Core::getSFR(byte index, byte offset) noexcept {
     return getSFR((index + offset) & 0b11111);
 }
-inline void
-syncf() noexcept {
+void
+Core::syncf() noexcept {
     // Wait for all faults to be generated that are associated with any prior
     // uncompleted instructions
     /// @todo implement if it makes sense since we don't have a pipeline
 }
 void
-flushreg() noexcept {
+Core::flushreg() noexcept {
     /// @todo implement if it makes sense since we aren't using register frames
 }
 void
@@ -392,39 +341,16 @@ ret() {
     }
 }
 
-template<bool checkClear>
-void 
-branchIfBitGeneric() {
-    Ordinal bitpos = computeBitPosition(unpackSrc1_COBR(TreatAsOrdinal{}));
-    Ordinal against = unpackSrc2_COBR(TreatAsOrdinal{});
-    bool condition = false;
-    // Branch if bit set
-    if constexpr (checkClear) {
-        condition = (bitpos & against) == 0;
-    } else {
-        condition = (bitpos & against) != 0;
-    }
-    if (condition) {
-        ac.arith.conditionCode = checkClear ? 0b000 : 0b010;
-        Register temp;
-        temp.alignedTransfer.important = instruction.cobr.displacement;
-        ip.alignedTransfer.important = ip.alignedTransfer.important + temp.alignedTransfer.important;
-        ip.alignedTransfer.aligned = 0;
-    flags.ucode.dontAdvanceIP = 1;
-    } else {
-        ac.arith.conditionCode = checkClear ? 0b010 : 0b000;
-    }
-}
 void
-bbc() {
+Core::bbc() {
     branchIfBitGeneric<true>();
 }
 void
-bbs() {
+Core::bbs() {
     branchIfBitGeneric<false>();
 }
 Ordinal
-computeAddress() noexcept {
+Core::computeAddress() noexcept {
     if (instruction.isMEMA()) {
         Ordinal result = instruction.mem.offset;
         if (instruction.mema.action) {
@@ -461,39 +387,6 @@ computeAddress() noexcept {
             }
         }
     }
-}
-template<typename T>
-void
-cmpGeneric(T src1, T src2) noexcept {
-    if (src1 < src2) {
-        ac.arith.conditionCode = 0b100;
-    } else if (src1 == src2) {
-        ac.arith.conditionCode = 0b010;
-    } else {
-        ac.arith.conditionCode = 0b001;
-    }
-}
-template<typename T>
-void
-cmpxbGeneric() noexcept {
-    auto src1 = unpackSrc1_COBR(TreatAs<T>{});
-    auto src2 = unpackSrc2_COBR(TreatAs<T>{});
-    cmpGeneric(src1, src2);
-    if ((instruction.instGeneric.mask & ac.getConditionCode()) != 0) {
-        Register temp;
-        temp.alignedTransfer.important = instruction.cobr.displacement;
-        ip.alignedTransfer.important = ip.alignedTransfer.important + temp.alignedTransfer.important;
-        ip.alignedTransfer.aligned = 0;
-    flags.ucode.dontAdvanceIP = 1;
-    }
-}
-void 
-cmpobGeneric() noexcept {
-    cmpxbGeneric<Ordinal>();
-}
-void
-cmpibGeneric() noexcept {
-    cmpxbGeneric<Integer>();
 }
 void
 storeBlock(Ordinal baseAddress, byte baseRegister, byte count) noexcept {
@@ -664,22 +557,22 @@ calls(Ordinal src1) noexcept {
     }
 }
 void
-bx() noexcept {
-    ip.setValue(computeAddress(), TreatAsOrdinal{});
-    flags.ucode.dontAdvanceIP = 1;
+Core::bx() noexcept {
+    ip_.setValue(computeAddress(), TreatAsOrdinal{});
+    flags_.ucode.dontAdvanceIP = 1;
 }
 void
-performRegisterTransfer(byte mask, byte count) noexcept {
-    if (((instruction.reg.srcDest & mask) != 0) || ((instruction.reg.src1 & mask) != 0)) {
+Core::performRegisterTransfer(byte mask, byte count) noexcept {
+    if (((instruction_.reg.srcDest & mask) != 0) || ((instruction_.reg.src1 & mask) != 0)) {
         setFaultCode(InvalidOpcodeFault);
     }
     for (byte i = 0; i < count; ++i) {
-        setGPR(instruction.reg.srcDest, i, unpackSrc1_REG(i, TreatAsOrdinal{}), TreatAsOrdinal{});
+        setGPR(instruction_.reg.srcDest, i, unpackSrc1_REG(i, TreatAsOrdinal{}), TreatAsOrdinal{});
     }
 }
 
 void 
-setFaultPort(Ordinal value) noexcept {
+Core::setFaultPort(Ordinal value) noexcept {
     faultPortValue = value;
 }
  
@@ -688,31 +581,31 @@ Ordinal getFaultPort() noexcept {
 }
 
 void
-lockBus() noexcept {
+Core::lockBus() noexcept {
     while (digitalRead(LOCKPIN) == LOW);
     pinMode(LOCKPIN, OUTPUT);
 }
 void
-unlockBus() noexcept {
+Core::unlockBus() noexcept {
     pinMode(LOCKPIN, INPUT);
 }
 void
-signalBootFailure() noexcept {
+Core::signalBootFailure() noexcept {
     digitalWrite(FAILPIN, HIGH);
 }
 void
-branch() noexcept {
+Core::branch() noexcept {
     ip.i += instruction.ctrl.displacement;
     flags.ucode.dontAdvanceIP = 1;
 }
 void
-branchConditional(bool condition) noexcept {
+Core::branchConditional(bool condition) noexcept {
     if (condition) {
         branch();
     }
 }
 void
-setFaultCode(Ordinal value, bool cond) noexcept {
+Core::setFaultCode(Ordinal value, bool cond) noexcept {
     if (cond) {
         setFaultCode(value);
     }
@@ -723,16 +616,16 @@ setFaultCode(Ordinal value, bool cond) noexcept {
  * instruction encoding; returns true if the value returned is not zero
  */
 bool
-getMaskedConditionCode() noexcept {
+Core::getMaskedConditionCode() noexcept {
     return (ac.getConditionCode() & instruction.instGeneric.mask) != 0;
 }
 
 bool
-conditionCodeEqualsMask() noexcept {
+Core::conditionCodeEqualsMask() noexcept {
     return ac.getConditionCode() == instruction.instGeneric.mask;
 }
 bool
-fullConditionCodeCheck() noexcept {
+Core::fullConditionCodeCheck() noexcept {
     // the second condition handles the case where we are looking at unordered
     // output where it is only true if it is equal to zero. So if it turns out
     // that the condition code is zero and the mask is the unordered kind then
@@ -741,11 +634,6 @@ fullConditionCodeCheck() noexcept {
     // masked condition code will be non zero.
     return getMaskedConditionCode() || conditionCodeEqualsMask();
 }
-void synld(Register& dest, Ordinal src) noexcept;
-void synmovl(Register& dest, Ordinal src) noexcept;
-void synmov(Register& dest, Ordinal src) noexcept;
-void synmovq(Register& dest, Ordinal src) noexcept;
-void sysctl(Register& dest, Ordinal src1, Ordinal src2) noexcept;
 void performSelect(Register& dest, Ordinal src1, Ordinal src2, bool condition) noexcept;
 void performConditionalSubtract(Register& dest, Integer src1, Integer src2, bool condition, TreatAsInteger) noexcept;
 void performConditionalSubtract(Register& dest, Ordinal src1, Ordinal src2, bool condition, TreatAsOrdinal) noexcept;

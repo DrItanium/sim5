@@ -682,7 +682,12 @@ class Core {
         Integer unpackSrc1_REG(TreatAsInteger) noexcept;
         Ordinal unpackSrc2_REG(TreatAsOrdinal) noexcept;
         Integer unpackSrc2_REG(TreatAsInteger) noexcept;
+        Ordinal unpackSrc1_COBR(TreatAsOrdinal) noexcept;
+        Integer unpackSrc1_COBR(TreatAsInteger) noexcept;
+        Ordinal unpackSrc2_COBR(TreatAsOrdinal) noexcept;
+        Integer unpackSrc2_COBR(TreatAsInteger) noexcept;
         void setFaultCode(Ordinal value) noexcept;
+        void setFaultCode(Ordinal value, bool condition) noexcept;
         bool faultHappened() noexcept;
         void checkForPendingInterrupts() noexcept;
         template<typename T>
@@ -693,6 +698,11 @@ class Core {
         void moveGPR(byte destIndex, byte destOffset, byte srcIndex, byte srcOffset, TreatAs<T>) noexcept {
             setGPR(destIndex, destOffset, getGPRValue(srcIndex, srcOffset, TreatAs<T>{}), TreatAs<T>{});
         }
+        bool getMaskedConditionCode() noexcept;
+        bool conditionCodeEqualsMask() noexcept;
+        bool fullConditionCodeCheck() noexcept;
+        Ordinal computeAddress() noexcept;
+        void performRegisterTransfer(byte mask, byte count) noexcept;
     protected:
         void sendIAC(const iac::Message& msg) noexcept;
         void dispatchInterrupt(uint8_t vector) noexcept;
@@ -729,6 +739,91 @@ class Core {
         void synmovl(Register& dest, Ordinal src) noexcept;
         void synmovq(Register& dest, Ordinal src) noexcept;
         void sysctl(Register& dest, Ordinal src1, Ordinal src2) noexcept;
+        template<bool doScan>
+        inline void
+        xbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+            for (Ordinal index = 0; index < 32; ++index) {
+                if ((src1 & computeBitPosition(31 - index)) != 0) {
+                    if constexpr (doScan) {
+                        dest.o = (31 - index);
+                        ac_.arith.conditionCode = 0b010;
+                        return;
+                    }
+                } else {
+                    if constexpr (!doScan) {
+                        dest.o = (31 - index);
+                        ac_.arith.conditionCode = 0b010;
+                        return;
+                    }
+                }
+            }
+            dest.o = 0xFFFF'FFFF;
+            ac_.arith.conditionCode = 0;
+        }
+        void scanbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+            xbit<true>(dest, src1, src2);
+        }
+        void spanbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+            xbit<false>(dest, src1, src2);
+        }
+        void branch() noexcept;
+        void branchConditional(bool condition) noexcept;
+        void scanbyte(Ordinal src2, Ordinal src1) noexcept;
+        void emul(Register& dest, Ordinal src1, Ordinal src2) noexcept;
+        void ediv(Register& dest, Ordinal src1, Ordinal src2) noexcept;
+        void arithmeticWithCarryGeneric(Ordinal result, bool src2MSB, bool src1MSB, bool destMSB) noexcept;
+        template<bool checkClear>
+        void 
+        branchIfBitGeneric() {
+            Ordinal bitpos = computeBitPosition(unpackSrc1_COBR(TreatAsOrdinal{}));
+            Ordinal against = unpackSrc2_COBR(TreatAsOrdinal{});
+            bool condition = false;
+            // Branch if bit set
+            if constexpr (checkClear) {
+                condition = (bitpos & against) == 0;
+            } else {
+                condition = (bitpos & against) != 0;
+            }
+            if (condition) {
+                ac_.arith.conditionCode = checkClear ? 0b000 : 0b010;
+                Register temp;
+                temp.alignedTransfer.important = instruction_.cobr.displacement;
+                ip_.alignedTransfer.important = ip_.alignedTransfer.important + temp.alignedTransfer.important;
+                ip_.alignedTransfer.aligned = 0;
+                flags_.ucode.dontAdvanceIP = 1;
+            } else {
+                ac_.arith.conditionCode = checkClear ? 0b010 : 0b000;
+            }
+        }
+        void bbs() noexcept;
+        void bbc() noexcept;
+        template<typename T>
+        void cmpGeneric(T src1, T src2) noexcept {
+            if (src1 < src2) {
+                ac_.arith.conditionCode = 0b100;
+            } else if (src1 == src2) {
+                ac_.arith.conditionCode = 0b010;
+            } else {
+                ac_.arith.conditionCode = 0b001;
+            }
+        }
+        template<typename T>
+        void cmpxbGeneric() noexcept {
+            auto src1 = unpackSrc1_COBR(TreatAs<T>{});
+            auto src2 = unpackSrc2_COBR(TreatAs<T>{});
+            cmpGeneric(src1, src2);
+            if ((instruction_.instGeneric.mask & ac_.getConditionCode()) != 0) {
+                Register temp;
+                temp.alignedTransfer.important = instruction_.cobr.displacement;
+                ip_.alignedTransfer.important = ip_.alignedTransfer.important + temp.alignedTransfer.important;
+                ip_.alignedTransfer.aligned = 0;
+                flags_.ucode.dontAdvanceIP = 1;
+            }
+        }
+        inline void cmpobGeneric() noexcept { cmpxbGeneric<Ordinal>(); }
+        inline void cmpibGeneric() noexcept { cmpxbGeneric<Integer>(); }
+        void flushreg() noexcept;
+        void bx() noexcept;
     private:
         Ordinal faultPortValue_;
         Ordinal systemAddressTableBase_ = 0;
