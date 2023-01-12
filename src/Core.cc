@@ -1457,8 +1457,10 @@ Core::performConditionalAdd(Register& dest, Ordinal src1, Ordinal src2, bool con
 void
 Core::start() noexcept {
     running_ = true;
+    // do checksum and make sure that we have booted ourselves
 }
 void
 Core::stop() noexcept {
     running_ = false;
+    // this will halt the cpu
 }
