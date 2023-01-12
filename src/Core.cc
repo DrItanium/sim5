@@ -707,6 +707,19 @@ void
 signalBootFailure() noexcept {
     digitalWrite(FAILPIN, HIGH);
 }
+void
+branch() noexcept {
+        ip.i += instruction.ctrl.displacement;
+        flags.ucode.dontAdvanceIP = 1;
+}
+void 
+branchConditionalGeneric() noexcept {
+    // the branch instructions have the mask encoded into the opcode
+    // itself so we can just use it and save a ton of space overall
+    if ((ac.arith.conditionCode & instruction.instGeneric.mask) != 0) {
+        branch();
+    }
+}
 void 
 invokeCore() noexcept {
     setFaultCode(NoFault);
@@ -725,8 +738,7 @@ invokeCore() noexcept {
             setGPR(LRIndex, ip.getValue<Ordinal>() + 4, TreatAsOrdinal{});
             // then fallthrough and take the branch
         case Opcodes::b: // b
-            ip.i += instruction.cobr.displacement;
-            flags.ucode.dontAdvanceIP = 1;
+            branch();
             break;
         case Opcodes::call: // call
             call();
@@ -736,8 +748,7 @@ invokeCore() noexcept {
             break;
         case Opcodes::bno:
             if (ac.arith.conditionCode == 0) {
-                ip.i += instruction.ctrl.displacement;
-                flags.ucode.dontAdvanceIP = 1;
+                branch();
             }
             break;
         case Opcodes::be:
@@ -747,12 +758,7 @@ invokeCore() noexcept {
         case Opcodes::bg:
         case Opcodes::bge:
         case Opcodes::bo:
-            // the branch instructions have the mask encoded into the opcode
-            // itself so we can just use it and save a ton of space overall
-            if ((ac.arith.conditionCode & instruction.instGeneric.mask) != 0) {
-                ip.i += instruction.ctrl.displacement;
-                flags.ucode.dontAdvanceIP = 1;
-            }
+            branchConditionalGeneric();
             break;
         case Opcodes::faultno:
             if (ac.arith.conditionCode == 0) {
