@@ -1484,6 +1484,19 @@ void reinitializeProcessor(Ordinal satBase, Ordinal prcbBase, Ordinal startIP) n
 void setBreakpointRegister(Ordinal breakpointIp0, Ordinal breakpointIp1) noexcept;
 void storeSystemBase(Ordinal destinationAddress) noexcept;
 void testPendingInterrupts() noexcept;
+// Kx related IACs
+void freeze() noexcept;
+void continueInitialization() noexcept;
+
+// MC related IACs
+void checkProcessNotice(Ordinal processSegmentSelectorBase) noexcept;
+void flushLocalRegisters(Ordinal physicalStackPageAddress) noexcept;
+void flushProcess() noexcept;
+void flushTLB() noexcept;
+void flushTLBPageTableEntry(Ordinal offsetFromSegmentBase, Ordinal ssofSegmentThatContainsPage) noexcept;
+void flushTLBPhysicalPage(Ordinal basePhysicalAddressOfPage) noexcept;
+void flushTLBSegmentEntry(Ordinal ssForSegment) noexcept;
+
 void 
 sendIAC(const IAC& message) noexcept {
     noInterrupts();
@@ -1492,8 +1505,17 @@ sendIAC(const IAC& message) noexcept {
         case 0x40: dispatchInterrupt(message.field1); break;
         case 0x41: testPendingInterrupts(); break;
         case 0x80: storeSystemBase(message.field3); break;
+        case 0x84: flushLocalRegisters(message.field3); break;
+        case 0x87: flushProcess(); break;
+        case 0x88: flushTLBPhysicalPage(message.field3); break;
         case 0x89: purgeInstructionCache(); break;
+        case 0x8A: flushTLB(); break;
+        case 0x8B: flushTLBSegmentEntry(message.field3); break;
+        case 0x8C: flushTLBPageTableEntry(message.field3, message.field4); break;
         case 0x8F: setBreakpointRegister(message.field3, message.field4); break;
+        case 0x90: checkProcessNotice(message.field3); break;
+        case 0x91: freeze(); break;
+        case 0x92: continueInitialization(); break;
         case 0x93: reinitializeProcessor(message.field3, message.field4, message.field5); break;
         default: /* do nothing */ break;
     }
