@@ -1412,15 +1412,6 @@ Core::synmovq(Register& dest, Ordinal src) noexcept {
         ac_.arith.conditionCode = 0b010;
     }
 }
-void
-Core::sysctl(Register& dest, Ordinal src1, Ordinal src2) noexcept {
-    ByteOrdinal type = src1 >> 8;
-    ByteOrdinal field1 = src1;
-    ShortOrdinal field2 = static_cast<ShortOrdinal>(src1 >> 16);
-    Ordinal field3 = src2;
-    Ordinal field4 = dest.getValue(TreatAsOrdinal{});
-    
-}
 
 void 
 Core::performSelect(Register& dest, Ordinal src1, Ordinal src2, bool condition) noexcept {
