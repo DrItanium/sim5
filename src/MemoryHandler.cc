@@ -26,6 +26,21 @@
 #include "Core.h"
 #include "Peripherals.h"
 
+namespace {
+    template<typename T>
+    T load(Address address, TreatAs<T>) noexcept {
+        SplitWord32 split(address);
+        set328BusAddress(split);
+        return memory<T>(static_cast<size_t>(split.splitAddress.lower) + 0x8000);
+    }
+    template<typename T>
+    void store(Address address, T value, TreatAs<T>) noexcept {
+        SplitWord32 split(address);
+        set328BusAddress(split);
+        memory<T>(static_cast<size_t>(split.splitAddress.lower) + 0x8000) = value;
+    }
+}
+
 void
 set328BusAddress(const SplitWord32& address) noexcept {
     // set the upper
@@ -41,3 +56,18 @@ setInternalBusAddress(const SplitWord32& address) noexcept {
     digitalWrite(BANK2, address.internalBankAddress.bank2);
     digitalWrite(BANK3, address.internalBankAddress.bank3);
 }
+
+
+Integer Core::load(Address addr, TreatAsInteger) const { return ::load<Integer>(addr, TreatAsInteger{}); }
+Ordinal Core::load(Address addr, TreatAsOrdinal) const { return ::load<Ordinal>(addr, TreatAsOrdinal{}); }
+ByteInteger Core::load(Address addr, TreatAsByteInteger) const { return ::load<ByteInteger>(addr, TreatAsByteInteger{}); }
+ByteOrdinal Core::load(Address addr, TreatAsByteOrdinal) const { return ::load<ByteOrdinal>(addr, TreatAsByteOrdinal{}); }
+ShortInteger Core::load(Address addr, TreatAsShortInteger) const { return ::load<ShortInteger>(addr, TreatAsShortInteger{}); }
+ShortOrdinal Core::load(Address addr, TreatAsShortOrdinal) const { return ::load<ShortOrdinal>(addr, TreatAsShortOrdinal{}); }
+
+void Core::store(Address addr, Integer value, TreatAsInteger) { ::store<Integer>(addr, value, TreatAsInteger{}); }
+void Core::store(Address addr, Ordinal value, TreatAsOrdinal) { ::store<Ordinal>(addr, value, TreatAsOrdinal{}); }
+void Core::store(Address addr, ByteInteger value, TreatAsByteInteger) { ::store<ByteInteger>(addr, value, TreatAsByteInteger{}); }
+void Core::store(Address addr, ByteOrdinal value, TreatAsByteOrdinal) { ::store<ByteOrdinal>(addr, value, TreatAsByteOrdinal{}); }
+void Core::store(Address addr, ShortInteger value, TreatAsShortInteger) { ::store<ShortInteger>(addr, value, TreatAsShortInteger{}); }
+void Core::store(Address addr, ShortOrdinal value, TreatAsShortOrdinal) { ::store<ShortOrdinal>(addr, value, TreatAsShortOrdinal{}); }

@@ -25,20 +25,6 @@
 #include "Types.h"
 #include "Core.h"
 
-#if 0
-template<typename T>
-T load(Address address, TreatAs<T>) noexcept {
-    SplitWord32 split(address);
-    set328BusAddress(split);
-    return memory<T>(static_cast<size_t>(split.splitAddress.lower) + 0x8000);
-}
-template<typename T>
-void store(Address address, T value, TreatAs<T>) noexcept {
-    SplitWord32 split(address);
-    set328BusAddress(split);
-    memory<T>(static_cast<size_t>(split.splitAddress.lower) + 0x8000) = value;
-}
-#endif
 Ordinal 
 Core::unpackSrc1_REG(TreatAsOrdinal) noexcept {
     if (instruction_.reg.m1) {
