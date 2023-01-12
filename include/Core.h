@@ -902,6 +902,16 @@ class Core {
         void sub(Register& destination, T src1, T src2, TreatAs<T>) noexcept {
             destination.setValue(src2 - src1, TreatAs<T>{});
         }
+        void ornot(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+            dest.setValue(src2 | ~src1, TreatAsOrdinal{});
+        }
+        void notor(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+            dest.setValue(src2 | ~src1, TreatAsOrdinal{});
+        }
+        void notOperation(Register& destination, Ordinal src) noexcept {
+            // destination = 0 | ~src
+            ornot(destination, src, 0);
+        }
 
     private:
         Ordinal faultPortValue_;

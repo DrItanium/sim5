@@ -783,18 +783,14 @@ Core::cycle() noexcept {
         case Opcodes::xnor: 
             xnor(regDest, src1o, src2o);
             break;
-        case Opcodes::notOperation: // not 
-                     // perform fallthrough to ornot with src2 set to zero
-            flags_.ucode.zeroSrc2 = 1;
+        case Opcodes::notOperation: 
+            notOperation(regDest, src1o);
+            break;
         case Opcodes::ornot: // ornot
-            flags_.ucode.doOr = 1;
-            flags_.ucode.invertSrc1 = 1;
-            flags_.ucode.performLogical = 1;
+            ornot(regDest, src1o, src2o);
             break;
         case Opcodes::notor: // notor
-            flags_.ucode.doOr = 1;
-            flags_.ucode.invertSrc2 = 1;
-            flags_.ucode.performLogical = 1;
+            notor(regDest, src1o, src2o);
             break;
         case Opcodes::alterbit: // alterbit
             flags_.ucode.src1IsBitPosition = 1;
