@@ -37,12 +37,6 @@ void store(Address address, T value, TreatAs<T>) noexcept {
     set328BusAddress(split);
     memory<T>(static_cast<size_t>(split.splitAddress.lower) + 0x8000) = value;
 }
-Register& Core::getGPR(byte index) noexcept {
-    return gpr_.get(index);
-}
-Register& Core::getGPR(byte index, byte offset) noexcept {
-    return getGPR((index + offset) & 0b11111);
-}
 Ordinal 
 Core::unpackSrc1_REG(TreatAsOrdinal) noexcept {
     if (instruction_.reg.m1) {
@@ -244,13 +238,13 @@ Core::flushreg() noexcept {
 }
 void
 Core::mark() noexcept {
-    if (pc_.pc.traceEnable && tc_.trace.breakpointTraceMode) {
+    if (pc_.processControls.traceEnable && tc_.trace.breakpointTraceMode) {
         setFaultCode(MarkTraceFault);
     }
 }
 void
 Core::fmark() noexcept {
-    if (pc_.pc.traceEnable) {
+    if (pc_.processControls.traceEnable) {
         setFaultCode(MarkTraceFault);
     }
 }
@@ -287,15 +281,15 @@ Core::ret() {
             }
         case 0b010: 
             if (pc_.inSupervisorMode()) {
-                pc_.pc.traceEnable = 0;
-                pc_.pc.executionMode = 0;
+                pc_.processControls.traceEnable = 0;
+                pc_.processControls.executionMode = 0;
             }
             restoreStandardFrame();
             break;
         case 0b011: 
             if (pc_.inSupervisorMode()) {
-                pc_.pc.traceEnable = 1;
-                pc_.pc.executionMode = 0;
+                pc_.processControls.traceEnable = 1;
+                pc_.processControls.executionMode = 0;
             }
             restoreStandardFrame();
             break;
@@ -521,9 +515,9 @@ Core::calls(Ordinal src1) noexcept {
             tempRRR = 0;
         } else {
             temp = getSupervisorStackPointer();
-            tempRRR = 0b010 | (pc_.pc.traceEnable ? 0b001 : 0);
-            pc_.pc.executionMode = 1;
-            pc_.pc.traceEnable = temp & 0b1;
+            tempRRR = 0b010 | (pc_.processControls.traceEnable ? 0b001 : 0);
+            pc_.processControls.executionMode = 1;
+            pc_.processControls.traceEnable = temp & 0b1;
         }
         enterCall(temp);
         /// @todo expand pfp and fp to accurately model how this works

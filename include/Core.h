@@ -452,7 +452,8 @@ union Register {
         Ordinal unused2 : 2;
         Ordinal priority : 5;
         Ordinal internalState : 11;
-    } pc;
+    } processControls;
+    void setPriority(Ordinal value) noexcept { processControls.priority = value; }
     struct {
         Ordinal unused0 : 1; // 0
         Ordinal instructionTraceMode : 1; // 1
@@ -514,7 +515,7 @@ union Register {
         Ordinal int2Vector : 8;
         Ordinal int3Vector : 8;
     } interruptControl;
-    bool inSupervisorMode() const noexcept { return pc.executionMode; }
+    bool inSupervisorMode() const noexcept { return processControls.executionMode; }
     bool inUserMode() const noexcept { return !inSupervisorMode(); }
     bool isMEMA() const noexcept { return !mem.selector; }
     bool isMEMB() const noexcept { return mem.selector; }
@@ -548,7 +549,7 @@ union Register {
     }
     bool getCarryBit() const noexcept { return arith.conditionCode & 0b001; }
     [[nodiscard]] Ordinal modify(Ordinal mask, Ordinal src) noexcept;
-    [[nodiscard]] constexpr byte getPriority() const noexcept { return pc.priority; }
+    [[nodiscard]] constexpr byte getPriority() const noexcept { return processControls.priority; }
 
     void setValue(Ordinal value, TreatAsOrdinal) noexcept { o = value; }
     void setValue(Integer value, TreatAsInteger) noexcept { i = value; }
@@ -570,9 +571,40 @@ union Register {
     void increment(TreatAsInteger) noexcept { ++i; }
     void decrement(TreatAsOrdinal) noexcept { --o; }
     void decrement(TreatAsInteger) noexcept { --i; }
-
+    template<typename T>
+    T& viewAs() noexcept {
+        return T(*this);
+    }
+    template<typename T>
+    const T& viewAs() const noexcept {
+        return T(*this);
+    }
 };
 static_assert(sizeof(Register) == sizeof(Ordinal));
+template<typename T>
+class RegisterView final {
+    public:
+        explicit RegisterView(Register& r) : backingStore_(r) { }
+        constexpr auto getValue() const noexcept { return backingStore_.getValue<T>(); }
+        void setValue(T value) noexcept { backingStore_.setValue<T>(value); }
+        bool operator==(const Register& other) const noexcept { return getValue() == other.getValue<T>(); }
+        bool operator==(const RegisterView<T>& other) const noexcept { return getValue() == other.getValue(); }
+        bool operator!=(const Register& other) const noexcept { return getValue() != other.getValue<T>(); }
+        bool operator!=(const RegisterView<T>& other) const noexcept { return getValue() != other.getValue(); }
+        bool operator<(const Register& other) const noexcept { return getValue() < other.getValue<T>(); }
+        bool operator<(const RegisterView<T>& other) const noexcept { return getValue() < other.getValue(); }
+        bool operator>(const Register& other) const noexcept { return getValue() > other.getValue<T>(); }
+        bool operator>(const RegisterView<T>& other) const noexcept { return getValue() > other.getValue(); }
+        bool operator<=(const Register& other) const noexcept { return getValue() <= other.getValue<T>(); }
+        bool operator<=(const RegisterView<T>& other) const noexcept { return getValue() <= other.getValue(); }
+        bool operator>=(const Register& other) const noexcept { return getValue() >= other.getValue<T>(); }
+        bool operator>=(const RegisterView<T>& other) const noexcept { return getValue() >= other.getValue(); }
+    private:
+        Register& backingStore_;
+};
+
+using OrdinalView = RegisterView<Ordinal>;
+using IntegerView = RegisterView<Integer>;
 // On the i960 this is separated out into two parts, locals and globals
 // The idea is that globals are always available and locals are per function.
 // You are supposed to have multiple local frames on chip to accelerate
@@ -654,34 +686,32 @@ class Core {
         void unlockBus();
         void signalBootFailure();
         void setFaultPort(Ordinal value) noexcept;
-        Ordinal getFaultPort() const noexcept;
+        [[nodiscard]] Ordinal getFaultPort() const noexcept;
         /// @todo insert iac dispatch here
         /// @todo insert routines for getting registers and such 
-        Register& getGPR(byte index) noexcept;
-        Register& getGPR(byte index, byte offset) noexcept;
-        const Register& getGPR(byte index) const noexcept;
-        const Register& getGPR(byte index, byte offset) const noexcept;
+        [[nodiscard]] Register& getGPR(byte index) noexcept { return gpr_.get(index); }
+        [[nodiscard]] Register& getGPR(byte index, byte offset) noexcept { return getGPR((index + offset) & 0b11111); }
+        [[nodiscard]] inline Ordinal getGPRValue(byte index, TreatAsOrdinal) noexcept { return getGPR(index).getValue(TreatAsOrdinal{}); }
+        [[nodiscard]] inline Ordinal getGPRValue(byte index, byte offset, TreatAsOrdinal) noexcept { return getGPR(index, offset).getValue(TreatAsOrdinal{}); }
+        [[nodiscard]] inline Integer getGPRValue(byte index, TreatAsInteger) noexcept { return getGPR(index).getValue(TreatAsInteger{}); }
         [[nodiscard]] constexpr Ordinal getSystemAddressTableBase() const noexcept { return systemAddressTableBase_; }
-        Ordinal getSystemProcedureTableBase() const noexcept;
-        Ordinal getSupervisorStackPointer() const noexcept;
+        [[nodiscard]] Ordinal getSystemProcedureTableBase() const noexcept;
+        [[nodiscard]] Ordinal getSupervisorStackPointer() const noexcept;
         void restoreRegisterSet() noexcept;
-        void setGPR(byte index, Ordinal value, TreatAsOrdinal) noexcept { getGPR(index).setValue(value, TreatAsOrdinal{}); }
-        void setGPR(byte index, byte offset, Ordinal value, TreatAsOrdinal) noexcept { getGPR(index, offset).setValue(value, TreatAsOrdinal{}); }
-        void setGPR(byte index, Integer value, TreatAsInteger) noexcept { getGPR(index).setValue(value, TreatAsInteger{}); }
-        Register& getSFR(byte index) noexcept;
-        Register& getSFR(byte index, byte offset) noexcept;
-        Ordinal getGPRValue(byte index, TreatAsOrdinal) noexcept { return getGPR(index).getValue(TreatAsOrdinal{}); }
-        Ordinal getGPRValue(byte index, byte offset, TreatAsOrdinal) noexcept { return getGPR(index, offset).getValue(TreatAsOrdinal{}); }
-        Integer getGPRValue(byte index, TreatAsInteger) noexcept { return getGPR(index).getValue(TreatAsInteger{}); }
-        Ordinal unpackSrc1_REG(TreatAsOrdinal) noexcept;
-        Ordinal unpackSrc1_REG(byte offset, TreatAsOrdinal) noexcept;
-        Integer unpackSrc1_REG(TreatAsInteger) noexcept;
-        Ordinal unpackSrc2_REG(TreatAsOrdinal) noexcept;
-        Integer unpackSrc2_REG(TreatAsInteger) noexcept;
-        Ordinal unpackSrc1_COBR(TreatAsOrdinal) noexcept;
-        Integer unpackSrc1_COBR(TreatAsInteger) noexcept;
-        Ordinal unpackSrc2_COBR(TreatAsOrdinal) noexcept;
-        Integer unpackSrc2_COBR(TreatAsInteger) noexcept;
+        inline void setGPR(byte index, Ordinal value, TreatAsOrdinal) noexcept { getGPR(index).setValue(value, TreatAsOrdinal{}); }
+        inline void setGPR(byte index, byte offset, Ordinal value, TreatAsOrdinal) noexcept { getGPR(index, offset).setValue(value, TreatAsOrdinal{}); }
+        inline void setGPR(byte index, Integer value, TreatAsInteger) noexcept { getGPR(index).setValue(value, TreatAsInteger{}); }
+        [[nodiscard]] Register& getSFR(byte index) noexcept;
+        [[nodiscard]] Register& getSFR(byte index, byte offset) noexcept;
+        [[nodiscard]] Ordinal unpackSrc1_REG(TreatAsOrdinal) noexcept;
+        [[nodiscard]] Ordinal unpackSrc1_REG(byte offset, TreatAsOrdinal) noexcept;
+        [[nodiscard]] Integer unpackSrc1_REG(TreatAsInteger) noexcept;
+        [[nodiscard]] Ordinal unpackSrc2_REG(TreatAsOrdinal) noexcept;
+        [[nodiscard]] Integer unpackSrc2_REG(TreatAsInteger) noexcept;
+        [[nodiscard]] Ordinal unpackSrc1_COBR(TreatAsOrdinal) noexcept;
+        [[nodiscard]] Integer unpackSrc1_COBR(TreatAsInteger) noexcept;
+        [[nodiscard]] Ordinal unpackSrc2_COBR(TreatAsOrdinal) noexcept;
+        [[nodiscard]] Integer unpackSrc2_COBR(TreatAsInteger) noexcept;
         void setFaultCode(Ordinal value) noexcept;
         void setFaultCode(Ordinal value, bool condition) noexcept;
         bool faultHappened() noexcept;
