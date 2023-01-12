@@ -38,7 +38,7 @@ void store(Address address, T value, TreatAs<T>) noexcept {
     memory<T>(static_cast<size_t>(split.splitAddress.lower) + 0x8000) = value;
 }
 Register& Core::getGPR(byte index) noexcept {
-    return gpr.get(index);
+    return gpr_.get(index);
 }
 Register& Core::getGPR(byte index, byte offset) noexcept {
     return getGPR((index + offset) & 0b11111);
@@ -227,7 +227,7 @@ Core::unpackSrc2_COBR(TreatAsInteger) noexcept {
 }
 Register& 
 Core::getSFR(byte index) noexcept {
-    return sfrs.get(index);
+    return sfrs_.get(index);
 }
 Register& Core::getSFR(byte index, byte offset) noexcept {
     return getSFR((index + offset) & 0b11111);
@@ -244,7 +244,7 @@ Core::flushreg() noexcept {
 }
 void
 Core::mark() noexcept {
-    if (pc_.pc.traceEnable && tc.trace.breakpointTraceMode) {
+    if (pc_.pc.traceEnable && tc_.trace.breakpointTraceMode) {
         setFaultCode(MarkTraceFault);
     }
 }
@@ -344,8 +344,8 @@ Core::computeAddress() noexcept {
         if (instruction_.memb.group) {
             // okay so it is going to be the displacement versions
             // load 32-bits into the optionalDisplacement field
-            advanceBy += 4;
-            Integer result = static_cast<Integer>(load(ip.a + 4, TreatAsOrdinal{})); // load the optional displacement
+            advanceBy_ += 4;
+            Integer result = static_cast<Integer>(load(ip_.a + 4, TreatAsOrdinal{})); // load the optional displacement
             if (instruction_.memb_grp2.useIndex) {
                 result += (getGPRValue(instruction_.memb_grp2.index, TreatAsInteger{}) << static_cast<Integer>(instruction_.memb_grp2.scale));
             }
@@ -359,8 +359,8 @@ Core::computeAddress() noexcept {
                 case 0b00: // Register Indirect
                     return getGPRValue(instruction_.memb.abase, TreatAsOrdinal{});
                 case 0b01: // IP With Displacement 
-                    advanceBy += 4;
-                    return static_cast<Ordinal>(ip.i + load(ip.a + 4, TreatAsInteger{}) + 8);
+                    advanceBy_ += 4;
+                    return static_cast<Ordinal>(ip_.i + load(ip_.a + 4, TreatAsInteger{}) + 8);
                 case 0b11: // Register Indirect With Index
                     return getGPRValue(instruction_.memb.abase, TreatAsOrdinal{}) + (getGPRValue(instruction_.memb.index, TreatAsOrdinal{}) << instruction_.memb.scale);
                 default:
@@ -443,9 +443,9 @@ Core::stq() noexcept {
 void
 Core::balx() noexcept {
     auto address = computeAddress();
-    setGPR(instruction_.mem.srcDest, ip.getValue(TreatAsOrdinal{}) + advanceBy, TreatAsOrdinal{});
-    ip.setValue(address, TreatAsOrdinal{});
-    flags.ucode.dontAdvanceIP = 1;
+    setGPR(instruction_.mem.srcDest, ip_.getValue(TreatAsOrdinal{}) + advanceBy_, TreatAsOrdinal{});
+    ip_.setValue(address, TreatAsOrdinal{});
+    flags_.ucode.dontAdvanceIP = 1;
 }
 bool 
 Core::registerSetAvailable() noexcept {
@@ -481,26 +481,26 @@ Core::callx() noexcept {
     auto temp = (getGPRValue(SPIndex, TreatAsOrdinal{}) + C) & NotC; // round stack pointer to next boundary
     auto addr = computeAddress();
     auto fp = getGPRValue(FPIndex, TreatAsOrdinal{});
-    setGPR(RIPIndex, ip.getValue(TreatAsOrdinal{}) + advanceBy, TreatAsOrdinal{});
+    setGPR(RIPIndex, ip_.getValue(TreatAsOrdinal{}) + advanceBy_, TreatAsOrdinal{});
     enterCall(fp);
-    ip.setValue(addr, TreatAsOrdinal{});
+    ip_.setValue(addr, TreatAsOrdinal{});
     setGPR(PFPIndex, fp, TreatAsOrdinal{});
     setGPR(FPIndex, temp, TreatAsOrdinal{});
     setGPR(SPIndex , temp + 64, TreatAsOrdinal{});
-    flags.ucode.dontAdvanceIP = 1;
+    flags_.ucode.dontAdvanceIP = 1;
 }
 void 
 Core::call() {
     // wait for any uncompleted instructions to finish
     auto temp = (getGPRValue(SPIndex, TreatAsOrdinal{}) + C) & NotC; // round stack pointer to next boundary
     auto fp = getGPRValue(FPIndex, TreatAsOrdinal{});
-    setGPR(RIPIndex, ip.getValue(TreatAsOrdinal{}) + advanceBy, TreatAsOrdinal{});
+    setGPR(RIPIndex, ip_.getValue(TreatAsOrdinal{}) + advanceBy_, TreatAsOrdinal{});
     enterCall(fp);
-    ip.i += instruction_.ctrl.displacement;
+    ip_.i += instruction_.ctrl.displacement;
     setGPR(PFPIndex, fp, TreatAsOrdinal{});
     setGPR(FPIndex, temp, TreatAsOrdinal{});
     setGPR(SPIndex , temp + 64, TreatAsOrdinal{});
-    flags.ucode.dontAdvanceIP = 1;
+    flags_.ucode.dontAdvanceIP = 1;
 }
 void
 Core::calls(Ordinal src1) noexcept {
@@ -513,7 +513,7 @@ Core::calls(Ordinal src1) noexcept {
         auto procedureAddress = tempPE & ~0b11;
         // read entry from system-procedure table, where spbase is address of
         // system-procedure table from Initial Memory Image
-        setGPR(RIPIndex, ip.getValue(TreatAsOrdinal{}) + advanceBy, TreatAsOrdinal{});
+        setGPR(RIPIndex, ip_.getValue(TreatAsOrdinal{}) + advanceBy_, TreatAsOrdinal{});
         ip_.setValue(procedureAddress, TreatAsOrdinal{});
         Ordinal temp = 0, tempRRR = 0;
         if ((type == 0b00) || pc_.inSupervisorMode()) {
@@ -553,12 +553,12 @@ Core::performRegisterTransfer(byte mask, byte count) noexcept {
 
 void 
 Core::setFaultPort(Ordinal value) noexcept {
-    faultPortValue = value;
+    faultPortValue_ = value;
 }
  
 Ordinal 
 Core::getFaultPort() const noexcept { 
-    return faultPortValue;
+    return faultPortValue_;
 }
 
 void
@@ -576,8 +576,8 @@ Core::signalBootFailure() noexcept {
 }
 void
 Core::branch() noexcept {
-    ip.i += instruction_.ctrl.displacement;
-    flags.ucode.dontAdvanceIP = 1;
+    ip_.i += instruction_.ctrl.displacement;
+    flags_.ucode.dontAdvanceIP = 1;
 }
 void
 Core::branchConditional(bool condition) noexcept {
@@ -618,7 +618,7 @@ Core::fullConditionCodeCheck() noexcept {
 bool
 Core::cycle() noexcept {
     setFaultCode(NoFault);
-    instruction_.setValue(load(ip.a, TreatAsOrdinal{}), TreatAsOrdinal{});
+    instruction_.setValue(load(ip_.a, TreatAsOrdinal{}), TreatAsOrdinal{});
     auto& regDest = getGPR(instruction_.reg.srcDest);
     auto src2o = unpackSrc2_REG(TreatAsOrdinal{});
     auto src2i = unpackSrc2_REG(TreatAsInteger{});
@@ -701,11 +701,11 @@ Core::cycle() noexcept {
             cmpibGeneric();
             break;
         case Opcodes::ld: 
-            //flags2.ucode2.count = 1;
+            //flags2_.ucode2.count = 1;
             loadBlock(computeAddress(), instruction_.mem.srcDest, 1);
             break;
         case Opcodes::st: 
-            //flags2.ucode2.count = 1;
+            //flags2_.ucode2.count = 1;
             storeBlock(computeAddress(), instruction_.mem.srcDest, 1);
             break;
         case Opcodes::ldob:
@@ -942,20 +942,20 @@ Core::cycle() noexcept {
             break;
         case Opcodes::movl:
             flags_.ucode.performRegisterTransfer = 1;
-            flags2.ucode2.mask = 0b1;
-            flags2.ucode2.count = 2; 
+            flags2_.ucode2.mask = 0b1;
+            flags2_.ucode2.count = 2; 
             //performRegisterTransfer(0b1, 2);
             break;
         case Opcodes::movt:
             flags_.ucode.performRegisterTransfer = 1;
-            flags2.ucode2.mask = 0b11;
-            flags2.ucode2.count = 3; 
+            flags2_.ucode2.mask = 0b11;
+            flags2_.ucode2.count = 3; 
             //performRegisterTransfer(0b11, 3);
             break;
         case Opcodes::movq:
             flags_.ucode.performRegisterTransfer = 1;
-            flags2.ucode2.mask = 0b11;
-            flags2.ucode2.count = 3; 
+            flags2_.ucode2.mask = 0b11;
+            flags2_.ucode2.count = 3; 
             //performRegisterTransfer(0b11, 4);
             break;
         case Opcodes::syncf:
@@ -1158,7 +1158,7 @@ Core::cycle() noexcept {
         unlockBus();
     }
     if (flags_.ucode.performRegisterTransfer) {
-        performRegisterTransfer(flags2.ucode2.mask, flags2.ucode2.count);
+        performRegisterTransfer(flags2_.ucode2.mask, flags2_.ucode2.count);
     }
     if (flags_.ucode.performLogical) {
         if (flags_.ucode.src1IsBitPosition) {
@@ -1330,7 +1330,7 @@ Core::cycle() noexcept {
     // okay we got here so we need to start grabbing data off of the bus and
     // start executing the next instruction
     if (!flags_.ucode.dontAdvanceIP) {
-        ip_.o += advanceBy; 
+        ip_.o += advanceBy_; 
     }
     return true;
 }
