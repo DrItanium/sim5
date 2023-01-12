@@ -759,8 +759,8 @@ void performConditionalSubtract(Register& dest, Integer src1, Integer src2, bool
 void performConditionalSubtract(Register& dest, Ordinal src1, Ordinal src2, bool condition, TreatAsOrdinal) noexcept;
 void performConditionalAdd(Register& dest, Integer src1, Integer src2, bool condition, TreatAsInteger) noexcept;
 void performConditionalAdd(Register& dest, Ordinal src1, Ordinal src2, bool condition, TreatAsOrdinal) noexcept;
-void 
-invokeCore() noexcept {
+bool
+Core::cycle() noexcept {
     setFaultCode(NoFault);
     instruction.setValue(load(ip.a, TreatAsOrdinal{}), TreatAsOrdinal{});
     auto& regDest = getGPR(instruction.reg.srcDest);
@@ -1476,6 +1476,7 @@ invokeCore() noexcept {
     if (!flags.ucode.dontAdvanceIP) {
         ip.o += advanceBy; 
     }
+    return true;
 }
 
 Ordinal 

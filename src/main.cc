@@ -54,7 +54,7 @@ setupSerial(bool displayBootScreen = true) noexcept {
         Serial.println(F("Base Platform: Arduino Mega2560"));
     }
 }
-
+Core core;
 void 
 setup() {
     setupSerial();
@@ -91,11 +91,12 @@ setup() {
     setInternalBusAddress(0);
     Serial.println(F("DONE"));
 
+    core.begin();
     configureSimulatorStructures();
     Serial.println(F("BOOT COMPLETE!!"));
 }
 void 
 loop() {
-    invokeCore();
+    while (core.cycle());
 }
 

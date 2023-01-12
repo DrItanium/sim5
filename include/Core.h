@@ -647,7 +647,7 @@ Ordinal getFaultPort() noexcept;
 void lockBus() noexcept;
 void unlockBus() noexcept;
 void signalBootFailure() noexcept;
-void invokeCore() noexcept;
+//void invokeCore() noexcept;
 void configureSimulatorStructures() noexcept;
 class Core {
     public:
@@ -672,6 +672,32 @@ class Core {
         void mark() noexcept;
         void fmark() noexcept;
         void restoreRegisterSet() noexcept;
+    protected:
+        void sendIAC(const iac::Message& msg) noexcept;
+        void dispatchInterrupt(uint8_t vector) noexcept;
+        void purgeInstructionCache() noexcept;
+        void reinitializeProcessor(Ordinal satBase, Ordinal prcbBase, Ordinal startIP) noexcept;
+        void setBreakpointRegister(Ordinal breakpointIp0, Ordinal breakpointIp1) noexcept;
+        void storeSystemBase(Ordinal destinationAddress) noexcept;
+        void testPendingInterrupts() noexcept;
+        // Kx related IACs
+        void freeze() noexcept;
+        void continueInitialization() noexcept;
+
+        // MC related IACs
+        void checkProcessNotice(Ordinal processSegmentSelectorBase) noexcept;
+        void flushLocalRegisters(Ordinal physicalStackPageAddress) noexcept;
+        void flushProcess() noexcept;
+        void flushTLB() noexcept;
+        void flushTLBPageTableEntry(Ordinal offsetFromSegmentBase, Ordinal ssofSegmentThatContainsPage) noexcept;
+        void flushTLBPhysicalPage(Ordinal basePhysicalAddressOfPage) noexcept;
+        void flushTLBSegmentEntry(Ordinal ssForSegment) noexcept;
+        void modifyProcessControls(Ordinal newProcessorControlWords, Ordinal mask) noexcept;
+        void preemptProcess() noexcept;
+        void restartProcessor(Ordinal segmentTableBase, Ordinal prcbBase) noexcept;
+        void stopProcessor() noexcept;
+        void storeProcessor() noexcept;
+        void warmstartProcessor(Ordinal segmentTableBase, Ordinal prcbBase) noexcept;
     private:
         Ordinal faultPortValue_;
         Ordinal systemAddressTableBase_ = 0;
