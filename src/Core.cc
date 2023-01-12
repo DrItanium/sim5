@@ -607,7 +607,6 @@ Core::cycle() noexcept {
     auto src1o = unpackSrc1_REG(TreatAsOrdinal{});
     auto src1i = unpackSrc1_REG(TreatAsInteger{});
     flags_.clear();
-    flags2_.clear();
     advanceBy_ = 4;
     
     switch (instruction_.getOpcode()) {
@@ -683,11 +682,9 @@ Core::cycle() noexcept {
             cmpibGeneric();
             break;
         case Opcodes::ld: 
-            //flags2_.ucode2.count = 1;
             loadBlock(computeAddress(), instruction_.mem.srcDest, 1);
             break;
         case Opcodes::st: 
-            //flags2_.ucode2.count = 1;
             storeBlock(computeAddress(), instruction_.mem.srcDest, 1);
             break;
         case Opcodes::ldob:

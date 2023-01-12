@@ -499,13 +499,6 @@ union Register {
         Ordinal dontAdvanceIP : 1;
     } ucode;
     struct {
-        Ordinal mask : 8;
-        Ordinal count : 4;
-        Ordinal compareAgainst : 3;
-        Ordinal ccOnTrue : 3;
-        Ordinal ccOnFalse : 3;
-    } ucode2;
-    struct {
         Ordinal int0Vector : 8;
         Ordinal int1Vector : 8;
         Ordinal int2Vector : 8;
@@ -937,7 +930,6 @@ class Core {
         Register pc_;
         Register tc_; 
         Register flags_; 
-        Register flags2_; 
         Register faultCode_; 
         Register instruction_;
         Register ictl_;
