@@ -38,6 +38,10 @@ using LongInteger = int64_t;
 template<typename T> struct TreatAs { };
 using TreatAsOrdinal = TreatAs<Ordinal>;
 using TreatAsInteger = TreatAs<Integer>;
+using TreatAsShortOrdinal = TreatAs<ShortOrdinal>;
+using TreatAsByteOrdinal = TreatAs<ByteOrdinal>;
+using TreatAsShortInteger = TreatAs<ShortInteger>;
+using TreatAsByteInteger = TreatAs<ByteInteger>;
 
 union SplitWord32 {
     constexpr SplitWord32 (Ordinal a) : whole(a) { }

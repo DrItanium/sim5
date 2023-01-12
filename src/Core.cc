@@ -25,6 +25,7 @@
 #include "Types.h"
 #include "Core.h"
 
+#if 0
 template<typename T>
 T load(Address address, TreatAs<T>) noexcept {
     SplitWord32 split(address);
@@ -37,6 +38,7 @@ void store(Address address, T value, TreatAs<T>) noexcept {
     set328BusAddress(split);
     memory<T>(static_cast<size_t>(split.splitAddress.lower) + 0x8000) = value;
 }
+#endif
 Ordinal 
 Core::unpackSrc1_REG(TreatAsOrdinal) noexcept {
     if (instruction_.reg.m1) {
@@ -706,27 +708,27 @@ Core::cycle() noexcept {
             setGPR(instruction_.mem.srcDest, load(computeAddress(), TreatAs<ByteOrdinal>{}), TreatAsOrdinal{});
             break;
         case Opcodes::stob:
-            store<ByteOrdinal>(computeAddress(), getGPRValue(instruction_.mem.srcDest, TreatAs<Ordinal>{}), TreatAs<ByteOrdinal>{});
+            store(computeAddress(), getGPRValue(instruction_.mem.srcDest, TreatAs<Ordinal>{}), TreatAs<ByteOrdinal>{});
             break;
         case Opcodes::ldos:
             setGPR(instruction_.mem.srcDest, load(computeAddress(), TreatAs<ShortOrdinal>{}), TreatAsOrdinal{});
             break;
         case Opcodes::stos:
-            store<ShortOrdinal>(computeAddress(), getGPRValue(instruction_.mem.srcDest, TreatAsOrdinal{}), TreatAs<ShortOrdinal>{});
+            store(computeAddress(), getGPRValue(instruction_.mem.srcDest, TreatAsOrdinal{}), TreatAs<ShortOrdinal>{});
             break;
         case Opcodes::ldib:
             setGPR(instruction_.mem.srcDest, load(computeAddress(), TreatAs<ByteInteger>{}), TreatAsInteger{});
             break;
         case Opcodes::stib:
             /// @todo fully implement fault detection
-            store<ByteInteger>(computeAddress(), getGPRValue(instruction_.mem.srcDest, TreatAsInteger{}), TreatAs<ByteInteger>{});
+            store(computeAddress(), getGPRValue(instruction_.mem.srcDest, TreatAsInteger{}), TreatAs<ByteInteger>{});
             break;
         case Opcodes::ldis:
             setGPR(instruction_.mem.srcDest, load(computeAddress(), TreatAs<ShortInteger>{}), TreatAsInteger{});
             break;
         case Opcodes::stis:
             /// @todo fully implement fault detection
-            store<ShortInteger>(computeAddress(), getGPRValue(instruction_.mem.srcDest, TreatAsInteger{}), TreatAs<ShortInteger>{});
+            store(computeAddress(), getGPRValue(instruction_.mem.srcDest, TreatAsInteger{}), TreatAs<ShortInteger>{});
             break;
         case Opcodes::ldl:
             ldl();
