@@ -734,11 +734,27 @@ bool
 getMaskedConditionCode() noexcept {
     return (ac.getConditionCode() & instruction.instGeneric.mask) != 0;
 }
+
+bool
+conditionCodeEqualsMask() noexcept {
+    return ac.getConditionCode() == instruction.instGeneric.mask;
+}
+bool
+fullConditionCodeCheck() noexcept {
+    // the second condition handles the case where we are looking at unordered
+    // output where it is only true if it is equal to zero. So if it turns out
+    // that the condition code is zero and the mask is the unordered kind then
+    // return true :). In all other cases, the second check will either fail
+    // (because the condition code is zero) or it will never fire because the
+    // masked condition code will be non zero.
+    return getMaskedConditionCode() || conditionCodeEqualsMask();
+}
 void synld(Register& dest, Ordinal src) noexcept;
 void synmovl(Register& dest, Ordinal src) noexcept;
 void synmov(Register& dest, Ordinal src) noexcept;
 void synmovq(Register& dest, Ordinal src) noexcept;
 void sysctl(Register& dest, Ordinal src1, Ordinal src2) noexcept;
+void performSelect(Register& dest, Ordinal src1, Ordinal src2, bool condition) noexcept;
 void 
 invokeCore() noexcept {
     setFaultCode(NoFault);
@@ -766,8 +782,6 @@ invokeCore() noexcept {
             ret();
             break;
         case Opcodes::bno:
-            branchConditional(ac.getConditionCode() == 0);
-            break;
         case Opcodes::be:
         case Opcodes::bne:
         case Opcodes::bl:
@@ -777,11 +791,9 @@ invokeCore() noexcept {
         case Opcodes::bo:
             // the branch instructions have the mask encoded into the opcode
             // itself so we can just use it and save a ton of space overall
-            branchConditional(getMaskedConditionCode());
+            branchConditional(fullConditionCodeCheck());
             break;
         case Opcodes::faultno:
-            setFaultCode(ConstraintRangeFault, ac.getConditionCode() == 0);
-            break;
         case Opcodes::faulte:
         case Opcodes::faultne:
         case Opcodes::faultl:
@@ -789,11 +801,9 @@ invokeCore() noexcept {
         case Opcodes::faultg:
         case Opcodes::faultge:
         case Opcodes::faulto:
-            setFaultCode(ConstraintRangeFault, getMaskedConditionCode());
+            setFaultCode(ConstraintRangeFault, fullConditionCodeCheck());
             break;
         case Opcodes::testno:
-            setGPR(instruction.cobr.src1, ac.getConditionCode() == 0 ? 1 : 0, TreatAsOrdinal{});
-            break;
         case Opcodes::testg:
         case Opcodes::teste:
         case Opcodes::testge:
@@ -801,7 +811,7 @@ invokeCore() noexcept {
         case Opcodes::testne:
         case Opcodes::testle:
         case Opcodes::testo:
-            setGPR(instruction.cobr.src1, getMaskedConditionCode() ? 1 : 0, TreatAsOrdinal{});
+            setGPR(instruction.cobr.src1, (fullConditionCodeCheck()) ? 1 : 0, TreatAsOrdinal{});
             break;
         case Opcodes::lda:
             setGPR(instruction.mem.srcDest, computeAddress(), TreatAsOrdinal{});
@@ -1202,6 +1212,16 @@ invokeCore() noexcept {
             break;
         case Opcodes::sysctl:
             sysctl(regDest, src1o, src2o);
+            break;
+        case Opcodes::selno:
+        case Opcodes::sele:
+        case Opcodes::selg:
+        case Opcodes::selge:
+        case Opcodes::sell:
+        case Opcodes::selne:
+        case Opcodes::selle:
+        case Opcodes::selo:
+            performSelect(regDest, src1o, src2o, fullConditionCodeCheck());
             break;
         default:
             setFaultCode(UnimplementedFault);
@@ -1653,4 +1673,12 @@ storeProcessor() noexcept {
 void 
 warmstartProcessor(Ordinal segmentTableBase, Ordinal prcbBase) noexcept {
 
+}
+void 
+performSelect(Register& dest, Ordinal src1, Ordinal src2, bool condition) noexcept {
+    if (condition) {
+        dest.setValue(src2, TreatAsOrdinal{});
+    } else {
+        dest.setValue(src1, TreatAsOrdinal{});
+    }
 }
