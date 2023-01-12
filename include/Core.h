@@ -918,6 +918,18 @@ class Core {
             // so lets use andnot
             andnot(dest, computeBitPosition(src1), src2);
         }
+        void modi(Register& dest, Integer src1, Integer src2) noexcept {
+            if (auto denominator = src1; denominator == 0) {
+                setFaultCode(ZeroDivideFault);
+            } else {
+                auto numerator = src2;
+                auto result = numerator - ((numerator / denominator) * denominator);
+                if (((numerator * denominator) < 0) && (result != 0)) {
+                    result += denominator;
+                }
+                dest.setValue<Integer>(result);
+            }
+        }
 
     private:
         Ordinal faultPortValue_;

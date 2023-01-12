@@ -944,16 +944,7 @@ Core::cycle() noexcept {
             flags_.ucode.integerOp = 1;
             break;
         case Opcodes::modi: 
-            if (auto denominator = src1i; denominator == 0) {
-                setFaultCode(ZeroDivideFault);
-            } else {
-                auto numerator = src2i;
-                auto result = numerator - ((numerator / denominator) * denominator);
-                if (((numerator * denominator) < 0) && (result != 0)) {
-                    result += denominator;
-                }
-                regDest.setValue<Integer>(result);
-            }
+            modi(regDest, src1i, src2i);
             break;
         case Opcodes::modify:
             regDest.setValue<Ordinal>(modify(src1o, src2o, regDest.getValue<Ordinal>()));
