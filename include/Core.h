@@ -581,30 +581,6 @@ union Register {
     }
 };
 static_assert(sizeof(Register) == sizeof(Ordinal));
-template<typename T>
-class RegisterView final {
-    public:
-        explicit RegisterView(Register& r) : backingStore_(r) { }
-        constexpr auto getValue() const noexcept { return backingStore_.getValue<T>(); }
-        void setValue(T value) noexcept { backingStore_.setValue<T>(value); }
-        bool operator==(const Register& other) const noexcept { return getValue() == other.getValue<T>(); }
-        bool operator==(const RegisterView<T>& other) const noexcept { return getValue() == other.getValue(); }
-        bool operator!=(const Register& other) const noexcept { return getValue() != other.getValue<T>(); }
-        bool operator!=(const RegisterView<T>& other) const noexcept { return getValue() != other.getValue(); }
-        bool operator<(const Register& other) const noexcept { return getValue() < other.getValue<T>(); }
-        bool operator<(const RegisterView<T>& other) const noexcept { return getValue() < other.getValue(); }
-        bool operator>(const Register& other) const noexcept { return getValue() > other.getValue<T>(); }
-        bool operator>(const RegisterView<T>& other) const noexcept { return getValue() > other.getValue(); }
-        bool operator<=(const Register& other) const noexcept { return getValue() <= other.getValue<T>(); }
-        bool operator<=(const RegisterView<T>& other) const noexcept { return getValue() <= other.getValue(); }
-        bool operator>=(const Register& other) const noexcept { return getValue() >= other.getValue<T>(); }
-        bool operator>=(const RegisterView<T>& other) const noexcept { return getValue() >= other.getValue(); }
-    private:
-        Register& backingStore_;
-};
-
-using OrdinalView = RegisterView<Ordinal>;
-using IntegerView = RegisterView<Integer>;
 // On the i960 this is separated out into two parts, locals and globals
 // The idea is that globals are always available and locals are per function.
 // You are supposed to have multiple local frames on chip to accelerate
