@@ -661,6 +661,17 @@ class Core {
         Ordinal getFaultPort() const noexcept;
         /// @todo insert iac dispatch here
         /// @todo insert routines for getting registers and such 
+        Register& getGPR(byte index) noexcept;
+        Register& getGPR(byte index, byte offset) noexcept;
+        const Register& getGPR(byte index) const noexcept;
+        const Register& getGPR(byte index, byte offset) const noexcept;
+        [[nodiscard]] constexpr Ordinal getSystemAddressTableBase() const noexcept { return systemAddressTableBase_; }
+        Ordinal getSystemProcedureTableBase() const noexcept;
+        Ordinal getSupervisorStackPointer() const noexcept;
+        void syncf() noexcept;
+        void mark() noexcept;
+        void fmark() noexcept;
+        void restoreRegisterSet() noexcept;
     private:
         Ordinal faultPortValue_;
         Ordinal systemAddressTableBase_ = 0;
