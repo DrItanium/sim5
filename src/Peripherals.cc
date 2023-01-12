@@ -114,9 +114,9 @@ namespace {
 
 void 
 setupPeripherals() noexcept {
-    //setupClockGenerator();
-    //setupDisplay();
-    //setupTouchScreen();
-    //setupRTC();
-    //setupSDCard();
+    setupClockGenerator();
+    setupDisplay();
+    setupTouchScreen();
+    setupRTC();
+    setupSDCard();
 }
