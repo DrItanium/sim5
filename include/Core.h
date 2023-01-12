@@ -642,13 +642,6 @@ class RegisterBlock32 {
     private:
         Register registers_[32];
 };
-void setFaultPort(Ordinal value) noexcept;
-Ordinal getFaultPort() noexcept;
-void lockBus() noexcept;
-void unlockBus() noexcept;
-void signalBootFailure() noexcept;
-//void invokeCore() noexcept;
-void configureSimulatorStructures() noexcept;
 class Core {
     public:
         void begin() noexcept;
@@ -824,6 +817,22 @@ class Core {
         inline void cmpibGeneric() noexcept { cmpxbGeneric<Integer>(); }
         void flushreg() noexcept;
         void bx() noexcept;
+        void balx() noexcept;
+        void calls(Ordinal value) noexcept;
+        void ldl() noexcept;
+        void ldq() noexcept;
+        void ldt() noexcept;
+        void stq() noexcept;
+        void stt() noexcept;
+        void stl() noexcept;
+    protected:
+        void enterCall(Ordinal fp) noexcept;
+        void leaveCall() noexcept;
+        void allocateNewRegisterFrame() noexcept;
+        bool registerSetAvailable() noexcept;
+        void saveRegisterSet(Ordinal fp) noexcept;
+        void restoreRegisterSet(Ordinal fp) noexcept;
+
     private:
         Ordinal faultPortValue_;
         Ordinal systemAddressTableBase_ = 0;

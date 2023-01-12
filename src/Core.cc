@@ -182,10 +182,6 @@ Core::ediv(Register& dest, Ordinal src1, Ordinal src2Lower) noexcept {
     dest.setValue<Ordinal>(result.parts[0]);
     setGPR(instruction.reg.srcDest, 1, result.parts[1], TreatAsOrdinal{});
 }
-Ordinal 
-Core::getSystemAddressTableBase() noexcept { 
-    return systemAddressTableBase; 
-}
 
 Ordinal
 Core::getSystemProcedureTableBase() noexcept {
@@ -395,13 +391,13 @@ storeBlock(Ordinal baseAddress, byte baseRegister, byte count) noexcept {
     }
 }
 void
-loadBlock(Ordinal baseAddress, byte baseRegister, byte count) noexcept {
+Core::loadBlock(Ordinal baseAddress, byte baseRegister, byte count) noexcept {
     for (byte i = 0; i < count; ++i, baseAddress += 4) {
         setGPR(baseRegister, i, load(baseAddress, TreatAsOrdinal{}), TreatAsOrdinal{});
     }
 }
 void 
-ldl() noexcept {
+Core::ldl() noexcept {
     if ((instruction.mem.srcDest & 0b1) != 0) {
         setFaultCode(InvalidOperandFault);
     } else {
@@ -411,7 +407,7 @@ ldl() noexcept {
 }
 
 void
-stl() noexcept {
+Core::stl() noexcept {
     if ((instruction.mem.srcDest & 0b1) != 0) {
         setFaultCode(InvalidOperandFault);
     } else {
@@ -420,7 +416,7 @@ stl() noexcept {
     }
 }
 void
-ldt() noexcept {
+Core::ldt() noexcept {
     if ((instruction.mem.srcDest & 0b11) != 0) {
         setFaultCode(InvalidOperandFault);
     } else {
@@ -430,7 +426,7 @@ ldt() noexcept {
 }
 
 void
-stt() noexcept {
+Core::stt() noexcept {
     if ((instruction.mem.srcDest & 0b11) != 0) {
         setFaultCode(InvalidOperandFault);
     } else {
@@ -440,7 +436,7 @@ stt() noexcept {
 }
 
 void
-ldq() noexcept {
+Core::ldq() noexcept {
     if ((instruction.mem.srcDest & 0b11) != 0) {
         setFaultCode(InvalidOperandFault);
     } else {
@@ -450,7 +446,7 @@ ldq() noexcept {
 }
 
 void
-stq() noexcept {
+Core::stq() noexcept {
     if ((instruction.mem.srcDest & 0b11) != 0) {
         setFaultCode(InvalidOperandFault);
     } else {
@@ -460,33 +456,33 @@ stq() noexcept {
 }
 
 void
-balx() noexcept {
+Core::balx() noexcept {
     auto address = computeAddress();
     setGPR(instruction.mem.srcDest, ip.getValue(TreatAsOrdinal{}) + advanceBy, TreatAsOrdinal{});
     ip.setValue(address, TreatAsOrdinal{});
     flags.ucode.dontAdvanceIP = 1;
 }
 bool 
-registerSetAvailable() noexcept {
+Core::registerSetAvailable() noexcept {
     /// @todo implement this properly when we implement support for register
     /// sets
     return false;
 }
 void
-allocateNewRegisterFrame() noexcept {
+Core::allocateNewRegisterFrame() noexcept {
     // do nothing right now
 }
 void 
-saveRegisterSet(Ordinal fp) noexcept {
+Core::saveRegisterSet(Ordinal fp) noexcept {
     // save the "next" register frame to main memory to reclaim it
     storeBlock(fp, 16, 16);
 }
 void
-restoreRegisterSet(Ordinal fp) noexcept {
+Core::restoreRegisterSet(Ordinal fp) noexcept {
     loadBlock(fp, 16, 16);
 }
 void 
-enterCall(Ordinal fp) noexcept {
+Core::enterCall(Ordinal fp) noexcept {
     if (registerSetAvailable()) {
         allocateNewRegisterFrame();
     } else {
@@ -521,9 +517,8 @@ call() {
     setGPR(SPIndex , temp + 64, TreatAsOrdinal{});
     flags.ucode.dontAdvanceIP = 1;
 }
-Ordinal getSupervisorStackPointer() noexcept;
 void
-calls(Ordinal src1) noexcept {
+Core::calls(Ordinal src1) noexcept {
     if (auto targ = src1; targ > 259) {
         setFaultCode(ProtectionLengthFault);
     } else {
@@ -534,7 +529,7 @@ calls(Ordinal src1) noexcept {
         // read entry from system-procedure table, where spbase is address of
         // system-procedure table from Initial Memory Image
         setGPR(RIPIndex, ip.getValue(TreatAsOrdinal{}) + advanceBy, TreatAsOrdinal{});
-        ip.setValue(procedureAddress, TreatAsOrdinal{});
+        ip_.setValue(procedureAddress, TreatAsOrdinal{});
         Ordinal temp = 0, tempRRR = 0;
         if ((type == 0b00) || pc.inSupervisorMode()) {
             temp = (getGPRValue(SPIndex, TreatAsOrdinal{}) + C) & NotC;
@@ -542,18 +537,18 @@ calls(Ordinal src1) noexcept {
         } else {
             temp = getSupervisorStackPointer();
             tempRRR = 0b010 | (pc.pc.traceEnable ? 0b001 : 0);
-            pc.pc.executionMode = 1;
-            pc.pc.traceEnable = temp & 0b1;
+            pc_.pc.executionMode = 1;
+            pc_.pc.traceEnable = temp & 0b1;
         }
         enterCall(temp);
         /// @todo expand pfp and fp to accurately model how this works
         auto& pfp = getGPR(PFPIndex);
         // lowest six bits are ignored
-        pfp.setValue(getGPRValue(FPIndex, TreatAsOrdinal{}) & ~0b1'111, TreatAsOrdinal{});
-        pfp.pfp.rt = tempRRR;
+        pfp_.setValue(getGPRValue(FPIndex, TreatAsOrdinal{}) & ~0b1'111, TreatAsOrdinal{});
+        pfp_.pfp.rt = tempRRR;
         setGPR(FPIndex, temp, TreatAsOrdinal{});
         setGPR(SPIndex, temp + 64, TreatAsOrdinal{});
-        flags.ucode.dontAdvanceIP = 1;
+        flags_.ucode.dontAdvanceIP = 1;
     }
 }
 void
@@ -576,7 +571,8 @@ Core::setFaultPort(Ordinal value) noexcept {
     faultPortValue = value;
 }
  
-Ordinal getFaultPort() noexcept { 
+Ordinal 
+Core::getFaultPort() const noexcept { 
     return faultPortValue;
 }
 

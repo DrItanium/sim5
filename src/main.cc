@@ -92,7 +92,6 @@ setup() {
     Serial.println(F("DONE"));
 
     core.begin();
-    configureSimulatorStructures();
     Serial.println(F("BOOT COMPLETE!!"));
 }
 void 
