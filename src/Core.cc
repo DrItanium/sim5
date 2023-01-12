@@ -712,12 +712,16 @@ branch() noexcept {
         ip.i += instruction.ctrl.displacement;
         flags.ucode.dontAdvanceIP = 1;
 }
-void 
-branchConditionalGeneric() noexcept {
-    // the branch instructions have the mask encoded into the opcode
-    // itself so we can just use it and save a ton of space overall
-    if ((ac.arith.conditionCode & instruction.instGeneric.mask) != 0) {
+void
+branchConditional(bool condition) noexcept {
+    if (condition) {
         branch();
+    }
+}
+void
+setFaultCode(Ordinal value, bool cond) noexcept {
+    if (cond) {
+        setFaultCode(value);
     }
 }
 void 
@@ -747,9 +751,7 @@ invokeCore() noexcept {
             ret();
             break;
         case Opcodes::bno:
-            if (ac.arith.conditionCode == 0) {
-                branch();
-            }
+            branchConditional(ac.arith.conditionCode == 0);
             break;
         case Opcodes::be:
         case Opcodes::bne:
@@ -758,12 +760,12 @@ invokeCore() noexcept {
         case Opcodes::bg:
         case Opcodes::bge:
         case Opcodes::bo:
-            branchConditionalGeneric();
+            // the branch instructions have the mask encoded into the opcode
+            // itself so we can just use it and save a ton of space overall
+            branchConditional((ac.arith.conditionCode & instruction.instGeneric.mask) != 0);
             break;
         case Opcodes::faultno:
-            if (ac.arith.conditionCode == 0) {
-                setFaultCode(ConstraintRangeFault);
-            }
+            setFaultCode(ConstraintRangeFault, ac.arith.conditionCode == 0);
             break;
         case Opcodes::faulte:
         case Opcodes::faultne:
@@ -772,9 +774,7 @@ invokeCore() noexcept {
         case Opcodes::faultg:
         case Opcodes::faultge:
         case Opcodes::faulto:
-            if ((ac.arith.conditionCode & instruction.instGeneric.mask) != 0) {
-                setFaultCode(ConstraintRangeFault);
-            }
+            setFaultCode(ConstraintRangeFault, (ac.arith.conditionCode & instruction.instGeneric.mask) != 0);
             break;
         case Opcodes::testno:
             setGPR(instruction.cobr.src1, ac.arith.conditionCode == 0 ? 1 : 0, TreatAsOrdinal{});
