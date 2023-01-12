@@ -659,6 +659,8 @@ class Core {
         void signalBootFailure();
         void setFaultPort(Ordinal value) noexcept;
         Ordinal getFaultPort() const noexcept;
+        /// @todo insert iac dispatch here
+        /// @todo insert routines for getting registers and such 
     private:
         Ordinal faultPortValue_;
         Ordinal systemAddressTableBase_ = 0;
