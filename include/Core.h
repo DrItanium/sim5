@@ -263,16 +263,44 @@ enum class Opcodes : uint16_t {
     // new core instructions
     bswap = 0x5AD,
     dcctl = 0x65C,
-    sysctl = 0x659, // Jx instruction that I am going to support the same way
-                    // we do IAC instructions. The format of the sysctl
-                    // "packet" is nearly identical to an IAC with the order of
-                    // fields in the first 32-bit being reversed
     eshro = 0x5D8, 
     dcinva = 0xAD,  // hx specific instruction
     iccctl = 0x65B,
     intctl = 0x658,
     intdis = 0x5B4,
     inten = 0x5B5,
+    addono = 0x780,
+    addog = 0x790,
+    addoe = 0x7a0,
+    addoge = 0x7b0,
+    addol = 0x7c0,
+    addone = 0x7d0,
+    addole = 0x7e0,
+    addoo = 0x7f0,
+    addino = 0x781,
+    addig = 0x791,
+    addie = 0x7a1,
+    addige = 0x7b1,
+    addil = 0x7c1,
+    addine = 0x7d1,
+    addile = 0x7e1,
+    addio = 0x7f1,
+    subono = 0x782,
+    subog = 0x792,
+    suboe = 0x7a2,
+    suboge = 0x7b2,
+    subol = 0x7c2,
+    subone = 0x7d2,
+    subole = 0x7e2,
+    suboo = 0x7f2,
+    subino = 0x783,
+    subig = 0x793,
+    subie = 0x7a3,
+    subige = 0x7b3,
+    subil = 0x7c3,
+    subine = 0x7d3,
+    subile = 0x7e3,
+    subio = 0x7f3,
     selno = 0x784,
     selg = 0x794,
     sele = 0x7a4,
@@ -281,7 +309,10 @@ enum class Opcodes : uint16_t {
     selne = 0x7d4,
     selle = 0x7e4,
     selo = 0x7f4,
-
+    sysctl = 0x659, // Jx instruction that I am going to support the same way
+                    // we do IAC instructions. The format of the sysctl
+                    // "packet" is nearly identical to an IAC with the order of
+                    // fields in the first 32-bit being reversed
 };
 union Register {
     constexpr explicit Register(Ordinal value = 0) : o(value) { }
