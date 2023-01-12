@@ -493,7 +493,6 @@ union Register {
         Ordinal performLogical : 1;
         Ordinal performDivide : 1;
         Ordinal performRemainder : 1;
-        Ordinal performSyncf : 1;
         Ordinal performAtomicOperation : 1;
         Ordinal performModify : 1;
         Ordinal dontAdvanceIP : 1;

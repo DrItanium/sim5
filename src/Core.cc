@@ -983,12 +983,12 @@ Core::cycle() noexcept {
             }
             break;
         case Opcodes::atadd:
-            flags_.ucode.performSyncf = 1;
+            syncf();
             flags_.ucode.performAtomicOperation = 1;
             flags_.ucode.performAdd = 1;
             break;
         case Opcodes::atmod:
-            flags_.ucode.performSyncf = 1;
+            syncf();
             flags_.ucode.performAtomicOperation = 1;
             flags_.ucode.performModify = 1;
             break;
@@ -1077,9 +1077,6 @@ Core::cycle() noexcept {
         default:
             setFaultCode(UnimplementedFault);
             break;
-    }
-    if (flags_.ucode.performSyncf) {
-        syncf();
     }
     if (flags_.ucode.performAtomicOperation) {
         lockBus();
