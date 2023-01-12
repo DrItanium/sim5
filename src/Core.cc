@@ -486,7 +486,7 @@ cmpxbGeneric() noexcept {
     auto src1 = unpackSrc1_COBR(TreatAs<T>{});
     auto src2 = unpackSrc2_COBR(TreatAs<T>{});
     cmpGeneric(src1, src2);
-    if ((instruction.instGeneric.mask & ac.arith.conditionCode) != 0) {
+    if ((instruction.instGeneric.mask & ac.getConditionCode()) != 0) {
         Register temp;
         temp.alignedTransfer.important = instruction.cobr.displacement;
         ip.alignedTransfer.important = ip.alignedTransfer.important + temp.alignedTransfer.important;
@@ -751,7 +751,7 @@ invokeCore() noexcept {
             ret();
             break;
         case Opcodes::bno:
-            branchConditional(ac.arith.conditionCode == 0);
+            branchConditional(ac.getConditionCode() == 0);
             break;
         case Opcodes::be:
         case Opcodes::bne:
@@ -762,10 +762,10 @@ invokeCore() noexcept {
         case Opcodes::bo:
             // the branch instructions have the mask encoded into the opcode
             // itself so we can just use it and save a ton of space overall
-            branchConditional((ac.arith.conditionCode & instruction.instGeneric.mask) != 0);
+            branchConditional((ac.getConditionCode() & instruction.instGeneric.mask) != 0);
             break;
         case Opcodes::faultno:
-            setFaultCode(ConstraintRangeFault, ac.arith.conditionCode == 0);
+            setFaultCode(ConstraintRangeFault, ac.getConditionCode() == 0);
             break;
         case Opcodes::faulte:
         case Opcodes::faultne:
@@ -774,10 +774,10 @@ invokeCore() noexcept {
         case Opcodes::faultg:
         case Opcodes::faultge:
         case Opcodes::faulto:
-            setFaultCode(ConstraintRangeFault, (ac.arith.conditionCode & instruction.instGeneric.mask) != 0);
+            setFaultCode(ConstraintRangeFault, (ac.getConditionCode() & instruction.instGeneric.mask) != 0);
             break;
         case Opcodes::testno:
-            setGPR(instruction.cobr.src1, ac.arith.conditionCode == 0 ? 1 : 0, TreatAsOrdinal{});
+            setGPR(instruction.cobr.src1, ac.getConditionCode() == 0 ? 1 : 0, TreatAsOrdinal{});
             break;
         case Opcodes::testg:
         case Opcodes::teste:
@@ -786,7 +786,7 @@ invokeCore() noexcept {
         case Opcodes::testne:
         case Opcodes::testle:
         case Opcodes::testo:
-            setGPR(instruction.cobr.src1, (ac.arith.conditionCode & instruction.instGeneric.mask) != 0 ? 1 : 0, TreatAsOrdinal{});
+            setGPR(instruction.cobr.src1, (ac.getConditionCode() & instruction.instGeneric.mask) != 0 ? 1 : 0, TreatAsOrdinal{});
             break;
         case Opcodes::lda:
             setGPR(instruction.mem.srcDest, computeAddress(), TreatAsOrdinal{});
@@ -938,7 +938,7 @@ invokeCore() noexcept {
         case Opcodes::alterbit: // alterbit
             flags.ucode.src1IsBitPosition = 1;
             flags.ucode.performLogical = 1;
-            if (ac.arith.conditionCode & 0b010) {
+            if (ac.getConditionCode() & 0b010) {
                 flags.ucode.doOr = 1;
             } else {
                 flags.ucode.doAnd = 1;
@@ -1234,7 +1234,7 @@ invokeCore() noexcept {
     }
     if (flags.ucode.performCompare) {
         if (flags.ucode.performConditionalCompare) {
-            if ((ac.arith.conditionCode & 0b100) == 0) {
+            if ((ac.getConditionCode() & 0b100) == 0) {
                 bool cond = false;
                 if (flags.ucode.ordinalOp) {
                     cond = src1o <= src2o;

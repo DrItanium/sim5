@@ -317,6 +317,8 @@ union Register {
         Ordinal floatingPointNormalizingMode : 1;
         Ordinal floatingPointRoundingControl : 2;
     } arith;
+    constexpr auto getConditionCode() const noexcept { return arith.conditionCode; }
+
     struct {
         Ordinal rt : 3;
         Ordinal p : 1;
