@@ -1497,6 +1497,11 @@ void flushTLBPageTableEntry(Ordinal offsetFromSegmentBase, Ordinal ssofSegmentTh
 void flushTLBPhysicalPage(Ordinal basePhysicalAddressOfPage) noexcept;
 void flushTLBSegmentEntry(Ordinal ssForSegment) noexcept;
 void modifyProcessControls(Ordinal newProcessorControlWords, Ordinal mask) noexcept;
+void preemptProcess() noexcept;
+void restartProcessor(Ordinal segmentTableBase, Ordinal prcbBase) noexcept;
+void stopProcessor() noexcept;
+void storeProcessor() noexcept;
+void warmstartProcessor(Ordinal segmentTableBase, Ordinal prcbBase) noexcept;
 
 void 
 sendIAC(const IAC& message) noexcept {
@@ -1506,7 +1511,11 @@ sendIAC(const IAC& message) noexcept {
         case 0x40: dispatchInterrupt(message.field1); break;
         case 0x41: testPendingInterrupts(); break;
         case 0x80: storeSystemBase(message.field3); break;
+        case 0x81: restartProcessor(message.field3, message.field4); break;
+        case 0x83: stopProcessor(); break;
         case 0x84: flushLocalRegisters(message.field3); break;
+        case 0x85: preemptProcess(); break;
+        case 0x86: storeProcessor(); break;
         case 0x87: flushProcess(); break;
         case 0x88: flushTLBPhysicalPage(message.field3); break;
         case 0x89: purgeInstructionCache(); break;
@@ -1514,6 +1523,7 @@ sendIAC(const IAC& message) noexcept {
         case 0x8B: flushTLBSegmentEntry(message.field3); break;
         case 0x8C: flushTLBPageTableEntry(message.field3, message.field4); break;
         case 0x8D: modifyProcessControls(message.field3, message.field4); break;
+        case 0x8E: warmstartProcessor(message.field3, message.field4); break;
         case 0x8F: setBreakpointRegister(message.field3, message.field4); break;
         case 0x90: checkProcessNotice(message.field3); break;
         case 0x91: freeze(); break;
@@ -1620,4 +1630,27 @@ freeze() noexcept {
 void 
 continueInitialization() noexcept {
     /// @todo implement
+}
+
+void
+preemptProcess() noexcept {
+    /// @todo implement
+}
+
+void 
+restartProcessor(Ordinal segmentTableBase, Ordinal prcbBase) noexcept {
+    /// @todo implement
+}
+
+void 
+stopProcessor() noexcept {
+
+}
+void 
+storeProcessor() noexcept {
+
+}
+void 
+warmstartProcessor(Ordinal segmentTableBase, Ordinal prcbBase) noexcept {
+
 }
