@@ -1441,11 +1441,28 @@ synld(Register& dest, Ordinal src) noexcept {
     }
 }
 void 
-synmovl(Register& dest, Ordinal src) noexcept {
-
+synmov(Register& dest, Ordinal src) noexcept {
+    ac.arith.conditionCode = 0b000;
+    if (auto tempa = dest.getValue(TreatAsOrdinal{}) & 0xFFFF'FFFC; tempa == 0xFF00'0004) {
+        ictl.o = load(src, TreatAsOrdinal{});
+        ac.arith.conditionCode = 0b010;
+    } else {
+        auto temp = load(src, TreatAsOrdinal{});
+        store(tempa, temp, TreatAsOrdinal{});
+        // wait for completion
+        ac.arith.conditionCode = 0b010;
+    }
 }
 void 
-synmov(Register& dest, Ordinal src) noexcept {
+synmovl(Register& dest, Ordinal src) noexcept {
+    ac.arith.conditionCode = 0b000;
+    auto tempa = dest.getValue(TreatAsOrdinal{}) & 0xFFFF'FFF8; 
+    auto tempLower = load(src, TreatAsOrdinal{});
+    auto tempUpper = load(src + 4, TreatAsOrdinal{});
+    store(tempa, tempLower, TreatAsOrdinal{});
+    store(tempa + 4, tempUpper, TreatAsOrdinal{});
+    // wait for completion
+    ac.arith.conditionCode = 0b010;
 
 }
 void 
