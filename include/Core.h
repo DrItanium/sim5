@@ -185,10 +185,6 @@ enum class Opcodes : uint16_t {
     modtc = 0x654,
     modpc,
     receive,
-    sysctl = 0x659, // Jx instruction that I am going to support the same way
-                    // we do IAC instructions. The format of the sysctl
-                    // "packet" is nearly identical to an IAC with the order of
-                    // fields in the first 32-bit being reversed
     calls = 0x660,
     send = 0x662,
     sendserv = 0x663,
@@ -262,7 +258,30 @@ enum class Opcodes : uint16_t {
     subrl = 0x79D,
     tanr = 0x68E,
     tanrl = 0x69E,
-        
+
+
+    // new core instructions
+    bswap = 0x5AD,
+    dcctl = 0x65C,
+    sysctl = 0x659, // Jx instruction that I am going to support the same way
+                    // we do IAC instructions. The format of the sysctl
+                    // "packet" is nearly identical to an IAC with the order of
+                    // fields in the first 32-bit being reversed
+    eshro = 0x5D8, 
+    dcinva = 0xAD,  // hx specific instruction
+    iccctl = 0x65B,
+    intctl = 0x658,
+    intdis = 0x5B4,
+    inten = 0x5B5,
+    selno = 0x784,
+    selg = 0x794,
+    sele = 0x7a4,
+    selge = 0x7b4,
+    sell = 0x7c4,
+    selne = 0x7d4,
+    selle = 0x7e4,
+    selo = 0x7f4,
+
 };
 union Register {
     constexpr explicit Register(Ordinal value = 0) : o(value) { }
