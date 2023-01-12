@@ -738,6 +738,7 @@ void synld(Register& dest, Ordinal src) noexcept;
 void synmovl(Register& dest, Ordinal src) noexcept;
 void synmov(Register& dest, Ordinal src) noexcept;
 void synmovq(Register& dest, Ordinal src) noexcept;
+void sysctl(Register& dest, Ordinal src1, Ordinal src2) noexcept;
 void 
 invokeCore() noexcept {
     setFaultCode(NoFault);
@@ -1199,6 +1200,9 @@ invokeCore() noexcept {
         case Opcodes::synmovq:
             synmovq(getGPR(instruction.reg.src1), src2o);
             break;
+        case Opcodes::sysctl:
+            sysctl(regDest, src1o, src2o);
+            break;
         default:
             setFaultCode(UnimplementedFault);
             break;
@@ -1465,15 +1469,22 @@ synmovl(Register& dest, Ordinal src) noexcept {
     ac.arith.conditionCode = 0b010;
 
 }
-void sendIAC(uint8_t messageType, uint8_t f1, uint8_t f2, Ordinal f3, Ordinal f4, Ordinal f5) noexcept {
+struct IAC {
+    explicit IAC(uint32_t w0, uint32_t w1, uint32_t w2, uint32_t w3) noexcept : messageType(w0 >> 24), field1(w0 >> 16), field2(w0), field3(w1), field4(w2), field5(w3) { }
+    uint8_t messageType;
+    uint8_t field1;
+    uint16_t field2;
+    uint32_t field3;
+    uint32_t field4;
+    uint32_t field5;
+};
+void 
+systemRequest(const IAC& message) noexcept {
     /// @todo implement
 }
 void 
 sendIAC(Ordinal f0, Ordinal f3, Ordinal f4, Ordinal f5) noexcept {
-    sendIAC(static_cast<uint8_t>(f0 >> 24), 
-            static_cast<uint8_t>(f0 >> 16),
-            static_cast<uint16_t>(f0),
-            f3, f4, f5);
+    systemRequest(IAC{f0, f3, f4, f5});
 }
 void 
 synmovq(Register& dest, Ordinal src) noexcept {
@@ -1495,4 +1506,13 @@ synmovq(Register& dest, Ordinal src) noexcept {
         // wait for completion
         ac.arith.conditionCode = 0b010;
     }
+}
+void
+sysctl(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+    ByteOrdinal type = src1 >> 8;
+    ByteOrdinal field1 = src1;
+    ShortOrdinal field2 = static_cast<ShortOrdinal>(src1 >> 16);
+    Ordinal field3 = src2;
+    Ordinal field4 = dest.getValue(TreatAsOrdinal{});
+    
 }

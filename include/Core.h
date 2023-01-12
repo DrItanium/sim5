@@ -174,6 +174,10 @@ enum class Opcodes : uint16_t {
     extract,
     modtc = 0x654,
     modpc,
+    sysctl = 0x659, // Jx instruction that I am going to support the same way
+                    // we do IAC instructions. The format of the sysctl
+                    // "packet" is nearly identical to an IAC with the order of
+                    // fields in the first 32-bit being reversed
     calls = 0x660,
     mark = 0x66b,
     fmark,
