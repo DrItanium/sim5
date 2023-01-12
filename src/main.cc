@@ -93,9 +93,12 @@ setup() {
 
     core.begin();
     Serial.println(F("BOOT COMPLETE!!"));
+    core.start();
 }
 void 
 loop() {
-    while (core.cycle());
+    if (core.running()) {
+        core.cycle();
+    }
 }
 

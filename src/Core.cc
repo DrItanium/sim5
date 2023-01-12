@@ -615,7 +615,7 @@ Core::fullConditionCodeCheck() noexcept {
     // masked condition code will be non zero.
     return getMaskedConditionCode() || conditionCodeEqualsMask();
 }
-bool
+void
 Core::cycle() noexcept {
     setFaultCode(NoFault);
     instruction_.setValue(load(ip_.a, TreatAsOrdinal{}), TreatAsOrdinal{});
@@ -1332,7 +1332,6 @@ Core::cycle() noexcept {
     if (!flags_.ucode.dontAdvanceIP) {
         ip_.o += advanceBy_; 
     }
-    return true;
 }
 
 Ordinal 
@@ -1350,6 +1349,7 @@ Core::begin() noexcept {
     for (int i = 0; i < 32; ++i) {
         getGPR(i).clear();
     }
+    running_ = false;
     //Serial.println(F("DONE"));
 }
 
@@ -1452,4 +1452,13 @@ Core::performConditionalAdd(Register& dest, Ordinal src1, Ordinal src2, bool con
     if (condition) {
         dest.setValue(src1 + src2, TreatAsOrdinal{});
     }
+}
+
+void
+Core::start() noexcept {
+    running_ = true;
+}
+void
+Core::stop() noexcept {
+    running_ = false;
 }

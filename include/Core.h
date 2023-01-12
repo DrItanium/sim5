@@ -645,7 +645,10 @@ class RegisterBlock32 {
 class Core {
     public:
         void begin() noexcept;
-        bool cycle() noexcept;
+        void start() noexcept;
+        void stop() noexcept;
+        void cycle() noexcept;
+        [[nodiscard]] constexpr bool running() const noexcept { return running_; }
     protected:
         void lockBus();
         void unlockBus();
@@ -860,5 +863,6 @@ class Core {
         Register instruction_;
         Register ictl_;
         byte advanceBy_;
+        bool running_;
 };
 #endif // end SIM5_CORE_H__
