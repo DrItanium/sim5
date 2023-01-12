@@ -313,6 +313,16 @@ enum class Opcodes : uint16_t {
                     // we do IAC instructions. The format of the sysctl
                     // "packet" is nearly identical to an IAC with the order of
                     // fields in the first 32-bit being reversed
+    cmpob = 0x594,
+    cmpib = 0x595,
+    cmpos = 0x596,
+    cmpis = 0x597,
+
+    halt = 0x65D, // page missing from the Hx manual but in the Jx manual...
+                  // oops
+    // Cx specific instructions
+    sdma = 0x630,
+    udma = 0x631,
 };
 union Register {
     constexpr explicit Register(Ordinal value = 0) : o(value) { }
