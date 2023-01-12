@@ -1,18 +1,12 @@
-# sim5 - an i960 simulator targeting the atmega162
+# sim5 - an i960 simulator targeting microcontrollers with an External Memory Interface
 
-The atmega162 is a very simple AVR microcontroller with 16k of flash and 1k
-of SRAM. It is actually a very good target to emulate an i960 for one
-very important reason. It comes with something called EBI/XMEM. This maps a
-16-bit bus to the data space of the 162. Thus it becomes simple to access
-external devices very easily. Combining this with a series of external latches
-and an SRAM chip allows one to create a 32-bit bus and also enough space to
-cache values if necessary. This means we can emulate a 32-bit address bus with
-an 8-bit data bus trivially. I call this bus a 32/8 bus and it is where the
-emulator pulls instructions from. It maps the upper 32k of the EBI to this
-window with the lower 32k being reserved for internal features like the latches
-and anything else needed. The SRAM chip is optional but a good idea just in
-case. 
+The ATmega2560,2561,1280,1281,640,641,8515, and 162 all have an external memory
+bus which uses the unmapped part of the AVR data space to provide access to things like
+external memory or other devices. While it only allows access to a 16-bit data
+bus, one can use extra GPIOs to provide bank switching to emulate a 32-bit
+address bus with an 8-bit data bus. I call this bus a 32/8 bus and it is where
+the emulator pulls instructions and data from. It uses the upper 32k of the 64k
+memory space to act as a view into the greater 32-bit memory bus. The lower
+half of memory is used for internal purposes.
 
-It also provides the emulator with scratch space or rom space if necessary for
-anything.
-
+Practically, I have been using an Arduino Mega as the development board.
