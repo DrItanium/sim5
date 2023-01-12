@@ -904,22 +904,13 @@ Core::cycle() noexcept {
             regDest.setValue<Ordinal>(src1o);
             break;
         case Opcodes::movl:
-            flags_.ucode.performRegisterTransfer = 1;
-            flags2_.ucode2.mask = 0b1;
-            flags2_.ucode2.count = 2; 
-            //performRegisterTransfer(0b1, 2);
+            performRegisterTransfer(0b1, 2);
             break;
         case Opcodes::movt:
-            flags_.ucode.performRegisterTransfer = 1;
-            flags2_.ucode2.mask = 0b11;
-            flags2_.ucode2.count = 3; 
-            //performRegisterTransfer(0b11, 3);
+            performRegisterTransfer(0b11, 3);
             break;
         case Opcodes::movq:
-            flags_.ucode.performRegisterTransfer = 1;
-            flags2_.ucode2.mask = 0b11;
-            flags2_.ucode2.count = 3; 
-            //performRegisterTransfer(0b11, 4);
+            performRegisterTransfer(0b11, 4);
             break;
         case Opcodes::syncf:
             flags_.ucode.performSyncf = 1;
