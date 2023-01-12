@@ -652,6 +652,8 @@ void configureSimulatorStructures() noexcept;
 class Core {
     public:
         void begin() noexcept;
+        bool cycle() noexcept;
+    protected:
         void lockBus();
         void unlockBus();
         void signalBootFailure();
