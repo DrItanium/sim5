@@ -1478,9 +1478,26 @@ struct IAC {
     uint32_t field4;
     uint32_t field5;
 };
+void dispatchInterrupt(uint8_t vector) noexcept;
+void purgeInstructionCache() noexcept;
+void reinitializeProcessor(Ordinal satBase, Ordinal prcbBase, Ordinal startIP) noexcept;
+void setBreakpointRegister(Ordinal breakpointIp0, Ordinal breakpointIp1) noexcept;
+void storeSystemBase(Ordinal destinationAddress) noexcept;
+void testPendingInterrupts() noexcept;
 void 
 sendIAC(const IAC& message) noexcept {
+    noInterrupts();
     /// @todo implement
+    switch (message.messageType) {
+        case 0x40: dispatchInterrupt(message.field1); break;
+        case 0x41: testPendingInterrupts(); break;
+        case 0x80: storeSystemBase(message.field3); break;
+        case 0x89: purgeInstructionCache(); break;
+        case 0x8F: setBreakpointRegister(message.field3, message.field4); break;
+        case 0x93: reinitializeProcessor(message.field3, message.field4, message.field5); break;
+        default: /* do nothing */ break;
+    }
+    interrupts();
 }
 void 
 synmovq(Register& dest, Ordinal src) noexcept {
@@ -1510,4 +1527,31 @@ sysctl(Register& dest, Ordinal src1, Ordinal src2) noexcept {
     Ordinal field3 = src2;
     Ordinal field4 = dest.getValue(TreatAsOrdinal{});
     
+}
+
+void 
+dispatchInterrupt(uint8_t vector) noexcept {
+    /// @todo implement
+}
+
+void 
+purgeInstructionCache() noexcept {
+    // do nothing right now
+}
+void 
+reinitializeProcessor(Ordinal satBase, Ordinal prcbBase, Ordinal startIP) noexcept {
+    /// @todo implement
+}
+void 
+setBreakpointRegister(Ordinal breakpointIp0, Ordinal breakpointIp1) noexcept {
+    /// @todo implement
+}
+void 
+storeSystemBase(Ordinal destinationAddress) noexcept {
+    /// @todo implement
+}
+void 
+testPendingInterrupts() noexcept {
+    /// @todo implement
+    // perhaps call checkForPendingInterrupts?
 }
