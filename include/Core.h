@@ -854,18 +854,16 @@ class Core {
         void performConditionalAdd(Register& dest, Ordinal src1, Ordinal src2, bool condition, TreatAsOrdinal) noexcept;
         void performSelect(Register& dest, Ordinal src1, Ordinal src2, bool condition) noexcept;
     protected:
-        Integer load(Address addr, TreatAsInteger) const;
-        void store(Address addr, Integer value, TreatAsInteger);
-        Ordinal load(Address addr, TreatAsOrdinal) const;
-        void store(Address addr, Ordinal value, TreatAsOrdinal);
-        ByteOrdinal load(Address addr, TreatAsByteOrdinal) const;
-        void store(Address addr, ByteOrdinal value, TreatAsByteOrdinal);
-        ShortOrdinal load(Address addr, TreatAsShortOrdinal) const;
-        void store(Address addr, ShortOrdinal value, TreatAsShortOrdinal);
-        ByteInteger load(Address addr, TreatAsByteInteger) const;
-        void store(Address addr, ByteInteger value, TreatAsByteInteger);
-        ShortInteger load(Address addr, TreatAsShortInteger) const;
-        void store(Address addr, ShortInteger value, TreatAsShortInteger);
+#define X(type) \
+        type load(Address addr, TreatAs< type > ) const; \
+        void store(Address addr, type value, TreatAs< type > )
+        X(Integer);
+        X(Ordinal);
+        X(ByteInteger);
+        X(ByteOrdinal);
+        X(ShortInteger);
+        X(ShortOrdinal);
+#undef X
     private:
         Ordinal faultPortValue_;
         Ordinal systemAddressTableBase_ = 0;
