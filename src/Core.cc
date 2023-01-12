@@ -772,17 +772,14 @@ Core::cycle() noexcept {
             flags_.ucode.doXor = 1;
             flags_.ucode.performLogical = 1;
             break;
-        case Opcodes::setbit: // setbit
-                     // setbit is src2 | computeBitPosition(src1o)
-            flags_.ucode.src1IsBitPosition = 1;
+        case Opcodes::setbit:
+            setbit(regDest, src1o, src2o);
+            break;
         case Opcodes::orOperation: // or
-            flags_.ucode.doOr = 1;
-            flags_.ucode.performLogical = 1;
+            orOperation(regDest, src1o, src2o);
             break;
         case Opcodes::nor: // nor
-            flags_.ucode.doOr = 1;
-            flags_.ucode.invertResult = 1;
-            flags_.ucode.performLogical = 1;
+            nor(regDest, src1o, src2o);
             break;
         case Opcodes::xnor: // xnor
             flags_.ucode.doXor = 1;

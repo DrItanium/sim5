@@ -865,6 +865,17 @@ class Core {
         X(ShortOrdinal);
 #undef X
     protected:
+        void orOperation(Register& destination, Ordinal src1, Ordinal src2) noexcept {
+            destination.setValue(src2 | src1, TreatAsOrdinal{});
+        }
+        void setbit(Register& destination, Ordinal src1, Ordinal src2) noexcept {
+            // setbit is src2 | computeBitPosition(src1o)
+            orOperation(destination, computeBitPosition(src1), src2);
+        }
+        void nor(Register& destination, Ordinal src1, Ordinal src2) noexcept {
+            orOperation(destination, src1, src2);
+            destination.invert(TreatAsOrdinal{});
+        }
         void andOperation(Register& destination, Ordinal src1, Ordinal src2) noexcept {
             destination.setValue(src2 & src1, TreatAsOrdinal{});
         }
