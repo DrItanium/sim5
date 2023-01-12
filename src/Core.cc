@@ -913,7 +913,7 @@ Core::cycle() noexcept {
             performRegisterTransfer(0b11, 4);
             break;
         case Opcodes::syncf:
-            flags_.ucode.performSyncf = 1;
+            syncf();
             break;
         case Opcodes::flushreg:
             flushreg();
