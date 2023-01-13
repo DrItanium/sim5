@@ -919,12 +919,10 @@ Core::cycle() noexcept {
             mult<Integer>(regDest, src1i, src2i, TreatAsInteger{});
             break;
         case Opcodes::divi:
-            flags_.ucode.performDivide = 1;
-            flags_.ucode.integerOp = 1;
+            divi(regDest, src1i, src2i);
             break;
         case Opcodes::divo:
-            flags_.ucode.performDivide = 1;
-            flags_.ucode.ordinalOp = 1;
+            divo(regDest, src1o, src2o);
             break;
         case Opcodes::remo:
             remo(regDest, src1o, src2o);
@@ -1124,27 +1122,6 @@ Core::cycle() noexcept {
             }
         }
     }
-    if (flags_.ucode.performDivide) {
-        if (flags_.ucode.ordinalOp) {
-            if (src1o == 0) {
-                /// @todo fix this
-                setFaultCode(ZeroDivideFault);
-            } else {
-                regDest.o = src2o / src1o;
-            }
-        } else if (flags_.ucode.integerOp) {
-            if (src1i == 0) {
-                /// @todo fix this
-                setFaultCode(ZeroDivideFault);
-            } else {
-                regDest.i = src2i / src1i;
-            }
-        } else {
-            // if we got here then it means we don't have something configured
-            // correctly
-            setFaultCode(InvalidOpcodeFault);
-        }
-    } 
     if (faultHappened()) {
         /// @todo implement this as the fallback operation when something bad
         /// happens

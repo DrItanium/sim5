@@ -479,8 +479,6 @@ union Register {
         Ordinal performAdd : 1;
         Ordinal performCompare : 1;
         Ordinal performConditionalCompare : 1;
-        Ordinal performDivide : 1;
-        Ordinal performRemainder : 1;
         Ordinal performAtomicOperation : 1;
         Ordinal performModify : 1;
         Ordinal dontAdvanceIP : 1;
@@ -943,26 +941,39 @@ class Core {
                     (src1 & 0x8000'0000), 
                     (dest.getValue<Ordinal>() & 0x8000'0000));
         }
-        void remi(Register& dest, Integer src1, Integer src2) noexcept {
+        template<typename T>
+        void remainderOperation(Register& dest, T src1, T src2) noexcept {
             if (src1 == 0) {
                 /// @todo fix this
                 setFaultCode(ZeroDivideFault);
             } else {
                 // taken from the i960Sx manual
-                //dest.setInteger(src2 - ((src2 / src1) * src1));
-                dest.setValue(src2 % src1, TreatAsInteger{});
+                //dest.setValue(src2 - ((src2 / src1) * src1), TreatAs<T>{});
+                dest.setValue(src2 % src1, TreatAs<T>{});
             }
+        }
+        void remi(Register& dest, Integer src1, Integer src2) noexcept {
+            remainderOperation<Integer>(dest, src1, src2);
         }
         void remo(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+            remainderOperation<Ordinal>(dest, src1, src2);
+        }
+        template<typename T>
+        void divideOperation(Register& dest, T src1, T src2) noexcept {
             if (src1 == 0) {
                 /// @todo fix this
                 setFaultCode(ZeroDivideFault);
             } else {
-                // taken from the i960Sx manual
-                //dest.setOrdinal(src2 - ((src2 / src1) * src1));
-                dest.setValue(src2 % src1, TreatAsOrdinal{});
+                dest.setValue(src2 / src1, TreatAs<T>{});
             }
         }
+        void divi(Register& dest, Integer src1, Integer src2) noexcept {
+            divideOperation<Integer>(dest, src1, src2);
+        }
+        void divo(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+            divideOperation<Ordinal>(dest, src1, src2);
+        }
+
     private:
         Ordinal faultPortValue_;
         Ordinal systemAddressTableBase_ = 0;
