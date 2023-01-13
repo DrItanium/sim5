@@ -927,12 +927,10 @@ Core::cycle() noexcept {
             flags_.ucode.ordinalOp = 1;
             break;
         case Opcodes::remo:
-            flags_.ucode.performRemainder = 1;
-            flags_.ucode.ordinalOp = 1;
+            remo(regDest, src1o, src2o);
             break;
         case Opcodes::remi:
-            flags_.ucode.performRemainder = 1;
-            flags_.ucode.integerOp = 1;
+            remi(regDest, src1i, src2i);
             break;
         case Opcodes::modi: 
             modi(regDest, src1i, src2i);
@@ -1146,31 +1144,7 @@ Core::cycle() noexcept {
             // correctly
             setFaultCode(InvalidOpcodeFault);
         }
-    } else if (flags_.ucode.performRemainder) {
-        if (flags_.ucode.ordinalOp) {
-            if (src1o == 0) {
-                /// @todo fix this
-                setFaultCode(ZeroDivideFault);
-            } else {
-                // taken from the i960Sx manual
-                //dest.setOrdinal(src2 - ((src2 / src1) * src1));
-                regDest.o = src2o % src1o;
-            }
-        } else if (flags_.ucode.integerOp) {
-            if (src1i == 0) {
-                /// @todo fix this
-                setFaultCode(ZeroDivideFault);
-            } else {
-                // taken from the i960Sx manual
-                //dest.setInteger(src2 - ((src2 / src1) * src1));
-                regDest.i = src2i % src1i;
-            }
-        } else {
-            // if we got here then it means we don't have something configured
-            // correctly
-            setFaultCode(InvalidOpcodeFault);
-        }
-    }
+    } 
     if (faultHappened()) {
         /// @todo implement this as the fallback operation when something bad
         /// happens

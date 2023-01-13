@@ -943,7 +943,26 @@ class Core {
                     (src1 & 0x8000'0000), 
                     (dest.getValue<Ordinal>() & 0x8000'0000));
         }
-
+        void remi(Register& dest, Integer src1, Integer src2) noexcept {
+            if (src1 == 0) {
+                /// @todo fix this
+                setFaultCode(ZeroDivideFault);
+            } else {
+                // taken from the i960Sx manual
+                //dest.setInteger(src2 - ((src2 / src1) * src1));
+                dest.setValue(src2 % src1, TreatAsInteger{});
+            }
+        }
+        void remo(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+            if (src1 == 0) {
+                /// @todo fix this
+                setFaultCode(ZeroDivideFault);
+            } else {
+                // taken from the i960Sx manual
+                //dest.setOrdinal(src2 - ((src2 / src1) * src1));
+                dest.setValue(src2 % src1, TreatAsOrdinal{});
+            }
+        }
     private:
         Ordinal faultPortValue_;
         Ordinal systemAddressTableBase_ = 0;
