@@ -845,14 +845,10 @@ Core::cycle() noexcept {
             cmpi(src1o, src2o);
             break;
         case Opcodes::concmpo: // concmpo
-            flags_.ucode.performConditionalCompare = 1;
-            flags_.ucode.ordinalOp = 1;
-            flags_.ucode.performCompare = 1;
+            concmpo(src1o, src2o);
             break;
         case Opcodes::concmpi: // concmpi
-            flags_.ucode.performConditionalCompare = 1;
-            flags_.ucode.integerOp = 1;
-            flags_.ucode.performCompare = 1;
+            concmpi(src1i, src2i);
             break;
         case Opcodes::cmpinco: // cmpinco
             cmpinco(regDest, src1o, src2o);
@@ -1041,47 +1037,6 @@ Core::cycle() noexcept {
         default:
             setFaultCode(UnimplementedFault);
             break;
-    }
-    if (flags_.ucode.performCompare) {
-        if (flags_.ucode.performConditionalCompare) {
-            if ((ac_.getConditionCode() & 0b100) == 0) {
-                bool cond = false;
-                if (flags_.ucode.ordinalOp) {
-                    cond = src1o <= src2o;
-                } else if (flags_.ucode.integerOp) {
-                    cond = src1i <= src2i;
-                } else {
-                    // if we got here then it means we don't have something configured
-                    // correctly
-                    setFaultCode(InvalidOpcodeFault);
-                }
-                if (!faultHappened()) {
-                    ac_.arith.conditionCode = cond ? 0b010 : 0b001;
-                }
-            }
-        } else {
-            if (flags_.ucode.ordinalOp) {
-                cmpGeneric(src1o, src2o);
-                if (flags_.ucode.performIncrement) {
-                    regDest.o = src2o + 1;
-                }
-                if (flags_.ucode.performDecrement) {
-                    regDest.o = src2o - 1;
-                }
-            } else if (flags_.ucode.integerOp) {
-                cmpGeneric(src1i, src2i);
-                if (flags_.ucode.performIncrement) {
-                    regDest.i = src2i + 1;
-                }
-                if (flags_.ucode.performDecrement) {
-                    regDest.i = src2i - 1;
-                }
-            } else {
-                // if we got here then it means we don't have something configured
-                // correctly
-                setFaultCode(InvalidOpcodeFault);
-            }
-        }
     }
     if (faultHappened()) {
         /// @todo implement this as the fallback operation when something bad

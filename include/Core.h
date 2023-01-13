@@ -472,15 +472,6 @@ union Register {
         Ordinal unused2 : 8;
     } trace;
     struct {
-        Ordinal ordinalOp : 1;
-        Ordinal integerOp : 1;
-        Ordinal performIncrement : 1;
-        Ordinal performDecrement : 1;
-        Ordinal performAdd : 1;
-        Ordinal performCompare : 1;
-        Ordinal performConditionalCompare : 1;
-        Ordinal performAtomicOperation : 1;
-        Ordinal performModify : 1;
         Ordinal dontAdvanceIP : 1;
     } ucode;
     struct {
