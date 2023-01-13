@@ -927,6 +927,24 @@ class Core {
                 andnot(dest, s1, src2);
             }
         }
+        void addc(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+            LongOrdinal result = static_cast<LongOrdinal>(src2) + static_cast<LongOrdinal>(src1);
+            result += (ac_.getCarryBit() ? 1 : 0);
+            dest.setValue(result, TreatAsOrdinal{});
+            arithmeticWithCarryGeneric(static_cast<Ordinal>(result >> 32), 
+                    (src2 & 0x8000'0000), 
+                    (src1 & 0x8000'0000), 
+                    (dest.getValue<Ordinal>() & 0x8000'0000));
+        }
+        void subc(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+            LongOrdinal result = static_cast<LongOrdinal>(src2) - static_cast<LongOrdinal>(src1) - 1;
+            result += (ac_.getCarryBit() ? 1 : 0);
+            dest.setValue(result, TreatAsOrdinal{});
+            arithmeticWithCarryGeneric(static_cast<Ordinal>(result >> 32), 
+                    (src2 & 0x8000'0000), 
+                    (src1 & 0x8000'0000), 
+                    (dest.getValue<Ordinal>() & 0x8000'0000));
+        }
 
     private:
         Ordinal faultPortValue_;

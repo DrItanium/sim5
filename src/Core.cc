@@ -883,12 +883,10 @@ Core::cycle() noexcept {
             ac_.arith.conditionCode = ((src2o & computeBitPosition(src1o)) == 0 ? 0b000 : 0b010);
             break;
         case Opcodes::addc: 
-            flags_.ucode.performAdd = 1;
-            flags_.ucode.performCarry = 1;
+            addc(regDest, src1o, src2o);
             break;
         case Opcodes::subc:
-            flags_.ucode.performSubtract = 1;
-            flags_.ucode.performCarry = 1;
+            subc(regDest, src1o, src2o);
             break;
         case Opcodes::mov:
             regDest.setValue<Ordinal>(src1o);
@@ -1128,26 +1126,7 @@ Core::cycle() noexcept {
             }
         }
     }
-    if (flags_.ucode.performCarry) {
-        LongOrdinal result = 0;
         if (flags_.ucode.performAdd) {
-            result = static_cast<LongOrdinal>(src2o) + static_cast<LongOrdinal>(src1o);
-        } else if (flags_.ucode.performSubtract) {
-            result = static_cast<LongOrdinal>(src2o) - static_cast<LongOrdinal>(src1o) - 1;
-        } else {
-            // if we got here then it means we don't have something configured
-            // correctly
-                setFaultCode(InvalidOpcodeFault);
-        }
-        if (!faultHappened()) {
-            result += (ac_.getCarryBit() ? 1 : 0);
-            regDest.o = static_cast<Ordinal>(result);
-            arithmeticWithCarryGeneric(static_cast<Ordinal>(result >> 32), 
-                    (src2o & 0x8000'0000), 
-                    (src1o & 0x8000'0000), 
-                    (regDest.o & 0x8000'0000));
-        }
-    } else if (flags_.ucode.performAdd) {
         if (flags_.ucode.ordinalOp) {
             regDest.o = src2o + src1o;
         } else if (flags_.ucode.integerOp) {
