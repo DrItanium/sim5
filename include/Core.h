@@ -477,7 +477,6 @@ union Register {
         Ordinal performIncrement : 1;
         Ordinal performDecrement : 1;
         Ordinal performAdd : 1;
-        Ordinal performSubtract : 1;
         Ordinal performCompare : 1;
         Ordinal performConditionalCompare : 1;
         Ordinal performDivide : 1;
