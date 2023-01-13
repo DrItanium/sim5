@@ -785,14 +785,7 @@ Core::cycle() noexcept {
             notor(regDest, src1o, src2o);
             break;
         case Opcodes::alterbit: // alterbit
-            flags_.ucode.src1IsBitPosition = 1;
-            flags_.ucode.performLogical = 1;
-            if (ac_.getConditionCode() & 0b010) {
-                flags_.ucode.doOr = 1;
-            } else {
-                flags_.ucode.doAnd = 1;
-                flags_.ucode.invertSrc1 = 1;
-            }
+            alterbit(regDest, src1o, src2o);
             break;
         case Opcodes::addo:
             add<Ordinal>(regDest, src1o, src2o, TreatAsOrdinal{});
@@ -1093,30 +1086,6 @@ Core::cycle() noexcept {
             regDest.o = temp;
         }
         unlockBus();
-    }
-    if (flags_.ucode.performLogical) {
-        if (flags_.ucode.src1IsBitPosition) {
-            src1o = computeBitPosition(src1o);
-        }
-        if (flags_.ucode.invertSrc1) {
-            src1o = ~src1o;
-        }
-        if (flags_.ucode.zeroSrc2) {
-            src2o = 0;
-        }
-        if (flags_.ucode.invertSrc2) {
-            src2o = ~src2o;
-        }
-        if (flags_.ucode.doAnd) {
-            regDest.setValue(src2o & src1o, TreatAsOrdinal{});
-        } else if (flags_.ucode.doXor) {
-            regDest.setValue(src2o ^ src1o, TreatAsOrdinal{});
-        } else if (flags_.ucode.doOr) {
-            regDest.setValue(src2o | src1o, TreatAsOrdinal{});
-        }
-        if (flags_.ucode.invertResult) {
-            regDest.invert(TreatAsOrdinal{});
-        }
     }
     if (flags_.ucode.performCompare) {
         if (flags_.ucode.performConditionalCompare) {

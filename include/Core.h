@@ -490,7 +490,6 @@ union Register {
         Ordinal performCarry : 1;
         Ordinal performCompare : 1;
         Ordinal performConditionalCompare : 1;
-        Ordinal performLogical : 1;
         Ordinal performDivide : 1;
         Ordinal performRemainder : 1;
         Ordinal performAtomicOperation : 1;
@@ -867,10 +866,23 @@ class Core {
         inline void xorOperation(Register& destination, Ordinal src1, Ordinal src2) noexcept {
             destination.setValue(::xorOperation<Ordinal, invert>(src2, src1), TreatAsOrdinal{});
         }
+        template<typename T>
+        void add(Register& destination, T src1, T src2, TreatAs<T>) noexcept {
+            destination.setValue(::addOperation<T>(src2, src1), TreatAs<T>{});
+        }
+        template<typename T>
+        void sub(Register& destination, T src1, T src2, TreatAs<T>) noexcept {
+            destination.setValue(::subOperation<T>(src2, src1), TreatAs<T>{});
+        }
+        template<typename T>
+        void mult(Register& destination, T src1, T src2, TreatAs<T>) noexcept {
+            destination.setValue(::multiplyOperation<T>(src2, src1), TreatAs<T>{});
+        }
         void setbit(Register& destination, Ordinal src1, Ordinal src2) noexcept {
             // setbit is src2 | computeBitPosition(src1o)
             orOperation(destination, computeBitPosition(src1), src2);
         }
+
         void nor(Register& destination, Ordinal src1, Ordinal src2) noexcept {
             orOperation<true>(destination, src1, src2);
         }
@@ -883,18 +895,6 @@ class Core {
         void notbit(Register& destination, Ordinal src1, Ordinal src2) noexcept {
             // notbit is src2 ^ computeBitPosition(src1)
             xorOperation(destination, computeBitPosition(src1), src2);
-        }
-        template<typename T>
-        void add(Register& destination, T src1, T src2, TreatAs<T>) noexcept {
-            destination.setValue(::addOperation<T>(src2, src1), TreatAs<T>{});
-        }
-        template<typename T>
-        void sub(Register& destination, T src1, T src2, TreatAs<T>) noexcept {
-            destination.setValue(::subOperation<T>(src2, src1), TreatAs<T>{});
-        }
-        template<typename T>
-        void mult(Register& destination, T src1, T src2, TreatAs<T>) noexcept {
-            destination.setValue(::multiplyOperation<T>(src2, src1), TreatAs<T>{});
         }
         void ornot(Register& dest, Ordinal src1, Ordinal src2) noexcept {
             orOperation(dest, ~src1, src2);
@@ -927,6 +927,13 @@ class Core {
                     result += denominator;
                 }
                 dest.setValue<Integer>(result);
+            }
+        }
+        void alterbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+            if (auto s1 = computeBitPosition(src1); ac_.getConditionCode() & 0b010) {
+                orOperation(dest, s1, src2);
+            } else {
+                andnot(dest, s1, src2);
             }
         }
 
