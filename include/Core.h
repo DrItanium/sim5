@@ -886,11 +886,11 @@ class Core {
         }
         template<typename T>
         void add(Register& destination, T src1, T src2, TreatAs<T>) noexcept {
-            destination.setValue(src2 + src1, TreatAs<T>{});
+            destination.setValue(::addOperation<T>(src2, src1), TreatAs<T>{});
         }
         template<typename T>
         void sub(Register& destination, T src1, T src2, TreatAs<T>) noexcept {
-            destination.setValue(src2 - src1, TreatAs<T>{});
+            destination.setValue(::subOperation<T>(src2, src1), TreatAs<T>{});
         }
         template<typename T>
         void mult(Register& destination, T src1, T src2, TreatAs<T>) noexcept {
@@ -907,10 +907,10 @@ class Core {
         }
 
         void andnot(Register& dest, Ordinal src1, Ordinal src2) noexcept {
-            dest.setValue(src2 & ~src1, TreatAsOrdinal{});
+            andOperation(dest, ~src1, src2);
         }
         void notand(Register& dest, Ordinal src1, Ordinal src2) noexcept {
-            dest.setValue(~src2 & src1, TreatAsOrdinal{});
+            andOperation(dest, src1, ~src2);
         }
         void clrbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
             // clrbit is src2 & ~computeBitPosition(src1)
