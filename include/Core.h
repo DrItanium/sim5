@@ -756,7 +756,7 @@ class Core {
                 temp.alignedTransfer.important = instruction_.cobr.displacement;
                 ip_.alignedTransfer.important = ip_.alignedTransfer.important + temp.alignedTransfer.important;
                 ip_.alignedTransfer.aligned = 0;
-                dontAdvanceIP_ = true;
+                advanceBy_ = 0;
             } else {
                 ac_.arith.conditionCode = checkClear ? 0b010 : 0b000;
             }
@@ -783,7 +783,7 @@ class Core {
                 temp.alignedTransfer.important = instruction_.cobr.displacement;
                 ip_.alignedTransfer.important = ip_.alignedTransfer.important + temp.alignedTransfer.important;
                 ip_.alignedTransfer.aligned = 0;
-                dontAdvanceIP_ = true;
+                advanceBy_ = 0;
             }
         }
         inline void cmpobGeneric() noexcept { cmpxbGeneric<Ordinal>(); }
@@ -1036,6 +1036,5 @@ class Core {
         Register ictl_;
         byte advanceBy_;
         bool running_;
-        bool dontAdvanceIP_;
 };
 #endif // end SIM5_CORE_H__
