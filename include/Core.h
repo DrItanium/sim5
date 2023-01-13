@@ -973,6 +973,32 @@ class Core {
         void divo(Register& dest, Ordinal src1, Ordinal src2) noexcept {
             divideOperation<Ordinal>(dest, src1, src2);
         }
+        void atadd(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+            syncf();
+            lockBus();
+            auto addr = src1 & 0xFFFF'FFFC;
+            auto temp = load(addr, TreatAsOrdinal{});
+            // adds the src (src2 internally) value to the value in memory location specified with the addr (src1 in this case) operand.
+            // The initial value from memory is stored in dst (internally src/dst).
+            Ordinal result = temp + src2;
+            store(addr, result, TreatAsOrdinal{});
+            dest.setValue(temp, TreatAsOrdinal{});
+            unlockBus();
+        }
+        void atmod(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+            syncf();
+            lockBus();
+            auto addr = src1 & 0xFFFF'FFFC;
+            auto temp = load(addr, TreatAsOrdinal{});
+            // copies the src/dest value (logical version) into the memory location specifeid by src1.
+            // The bits set in the mask (src2) operand select the bits to be modified in memory. The initial
+            // value from memory is stored in src/dest
+            Ordinal result = modify(src2, dest.getValue<Ordinal>(), temp);
+            store(addr, result, TreatAsOrdinal{});
+            dest.setValue(temp, TreatAsOrdinal{});
+            unlockBus();
+
+        }
 
     private:
         Ordinal faultPortValue_;

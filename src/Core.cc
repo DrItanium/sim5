@@ -961,14 +961,10 @@ Core::cycle() noexcept {
             }
             break;
         case Opcodes::atadd:
-            syncf();
-            flags_.ucode.performAtomicOperation = 1;
-            flags_.ucode.performAdd = 1;
+            atadd(regDest, src1o, src2o);
             break;
         case Opcodes::atmod:
-            syncf();
-            flags_.ucode.performAtomicOperation = 1;
-            flags_.ucode.performModify = 1;
+            atmod(regDest, src1o, src2o);
             break;
         case Opcodes::emul:
             emul(regDest, src2o, src1o);
@@ -1055,31 +1051,6 @@ Core::cycle() noexcept {
         default:
             setFaultCode(UnimplementedFault);
             break;
-    }
-    if (flags_.ucode.performAtomicOperation) {
-        lockBus();
-        auto addr = src1o & 0xFFFF'FFFC;
-        auto temp = load(addr, TreatAsOrdinal{});
-        Ordinal result = 0;
-        if (flags_.ucode.performAdd) {
-            // adds the src (src2 internally) value to the value in memory location specified with the addr (src1 in this case) operand.
-            // The initial value from memory is stored in dst (internally src/dst).
-            result = temp + src2o;
-        } else if (flags_.ucode.performModify) {
-            // copies the src/dest value (logical version) into the memory location specifeid by src1.
-            // The bits set in the mask (src2) operand select the bits to be modified in memory. The initial
-            // value from memory is stored in src/dest
-            result = modify(src2o, regDest.o, temp);
-        } else {
-            // if we got here then it means we don't have something configured
-            // correctly
-                setFaultCode(InvalidOpcodeFault);
-        }
-        if (!faultHappened()) {
-            store(addr, result, TreatAsOrdinal{});
-            regDest.o = temp;
-        }
-        unlockBus();
     }
     if (flags_.ucode.performCompare) {
         if (flags_.ucode.performConditionalCompare) {
