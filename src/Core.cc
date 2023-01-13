@@ -245,7 +245,7 @@ Core::restoreStandardFrame() noexcept {
     auto realAddress = getGPRValue(FPIndex, TreatAsOrdinal{}) & NotC;
     restoreRegisterSet(realAddress);
     ip_.setValue(getGPRValue(RIPIndex, TreatAsOrdinal{}), TreatAsOrdinal{});
-    flags_.ucode.dontAdvanceIP = 1;
+    dontAdvanceIP_ = true;
 }
 void
 Core::ret() {
@@ -427,7 +427,7 @@ Core::balx() noexcept {
     auto address = computeAddress();
     setGPR(instruction_.mem.srcDest, ip_.getValue(TreatAsOrdinal{}) + advanceBy_, TreatAsOrdinal{});
     ip_.setValue(address, TreatAsOrdinal{});
-    flags_.ucode.dontAdvanceIP = 1;
+    dontAdvanceIP_ = true;
 }
 bool 
 Core::registerSetAvailable() noexcept {
@@ -469,7 +469,7 @@ Core::callx() noexcept {
     setGPR(PFPIndex, fp, TreatAsOrdinal{});
     setGPR(FPIndex, temp, TreatAsOrdinal{});
     setGPR(SPIndex , temp + 64, TreatAsOrdinal{});
-    flags_.ucode.dontAdvanceIP = 1;
+    dontAdvanceIP_ = true;
 }
 void 
 Core::call() {
@@ -482,7 +482,7 @@ Core::call() {
     setGPR(PFPIndex, fp, TreatAsOrdinal{});
     setGPR(FPIndex, temp, TreatAsOrdinal{});
     setGPR(SPIndex , temp + 64, TreatAsOrdinal{});
-    flags_.ucode.dontAdvanceIP = 1;
+    dontAdvanceIP_ = true;
 }
 void
 Core::calls(Ordinal src1) noexcept {
@@ -515,13 +515,13 @@ Core::calls(Ordinal src1) noexcept {
         pfp.pfp.rt = tempRRR;
         setGPR(FPIndex, temp, TreatAsOrdinal{});
         setGPR(SPIndex, temp + 64, TreatAsOrdinal{});
-        flags_.ucode.dontAdvanceIP = 1;
+        dontAdvanceIP_ = true;
     }
 }
 void
 Core::bx() noexcept {
     ip_.setValue(computeAddress(), TreatAsOrdinal{});
-    flags_.ucode.dontAdvanceIP = 1;
+    dontAdvanceIP_ = true;
 }
 void
 Core::performRegisterTransfer(byte mask, byte count) noexcept {
@@ -559,7 +559,7 @@ Core::signalBootFailure() noexcept {
 void
 Core::branch() noexcept {
     ip_.i += instruction_.ctrl.displacement;
-    flags_.ucode.dontAdvanceIP = 1;
+    dontAdvanceIP_ = true;
 }
 void
 Core::branchConditional(bool condition) noexcept {
@@ -606,7 +606,7 @@ Core::cycle() noexcept {
     auto src2i = unpackSrc2_REG(TreatAsInteger{});
     auto src1o = unpackSrc1_REG(TreatAsOrdinal{});
     auto src1i = unpackSrc1_REG(TreatAsInteger{});
-    flags_.clear();
+    dontAdvanceIP_ = false;
     advanceBy_ = 4;
     
     switch (instruction_.getOpcode()) {
@@ -1047,7 +1047,7 @@ Core::cycle() noexcept {
     }
     // okay we got here so we need to start grabbing data off of the bus and
     // start executing the next instruction
-    if (!flags_.ucode.dontAdvanceIP) {
+    if (!dontAdvanceIP_) {
         ip_.o += advanceBy_; 
     }
 }

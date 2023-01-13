@@ -472,9 +472,6 @@ union Register {
         Ordinal unused2 : 8;
     } trace;
     struct {
-        Ordinal dontAdvanceIP : 1;
-    } ucode;
-    struct {
         Ordinal int0Vector : 8;
         Ordinal int1Vector : 8;
         Ordinal int2Vector : 8;
@@ -759,7 +756,7 @@ class Core {
                 temp.alignedTransfer.important = instruction_.cobr.displacement;
                 ip_.alignedTransfer.important = ip_.alignedTransfer.important + temp.alignedTransfer.important;
                 ip_.alignedTransfer.aligned = 0;
-                flags_.ucode.dontAdvanceIP = 1;
+                dontAdvanceIP_ = true;
             } else {
                 ac_.arith.conditionCode = checkClear ? 0b010 : 0b000;
             }
@@ -786,7 +783,7 @@ class Core {
                 temp.alignedTransfer.important = instruction_.cobr.displacement;
                 ip_.alignedTransfer.important = ip_.alignedTransfer.important + temp.alignedTransfer.important;
                 ip_.alignedTransfer.aligned = 0;
-                flags_.ucode.dontAdvanceIP = 1;
+                dontAdvanceIP_ = true;
             }
         }
         inline void cmpobGeneric() noexcept { cmpxbGeneric<Ordinal>(); }
@@ -1034,11 +1031,11 @@ class Core {
         Register ac_; 
         Register pc_;
         Register tc_; 
-        Register flags_; 
         Register faultCode_; 
         Register instruction_;
         Register ictl_;
         byte advanceBy_;
         bool running_;
+        bool dontAdvanceIP_;
 };
 #endif // end SIM5_CORE_H__
