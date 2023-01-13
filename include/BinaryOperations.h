@@ -38,4 +38,45 @@ constexpr Ordinal modify(Ordinal mask, Ordinal src, Ordinal srcDest) noexcept {
     return (src & mask) | (srcDest & ~mask);
 }
 
+template<typename T, bool invertResult = false>
+constexpr T orOperation(T a, T b) noexcept {
+    if constexpr (invertResult) {
+        return ~(a | b);
+    } else {
+        return a | b;
+    }
+}
+template<typename T, bool invertResult = false>
+constexpr T andOperation(T a, T b) noexcept {
+    if constexpr (invertResult) {
+        return ~(a & b);
+    } else {
+        return a & b;
+    }
+}
+template<typename T, bool invertResult = false>
+constexpr T xorOperation(T a, T b) noexcept {
+    if constexpr (invertResult) {
+        return ~(a ^ b);
+    } else {
+        return a ^ b;
+    }
+}
+template<typename T>
+constexpr T nor(T a, T b) noexcept {
+    return orOperation<T, true>(a, b);
+}
+
+template<typename T>
+constexpr T nand(T a, T b) noexcept {
+    return andOperation<T, true>(a, b);
+}
+
+template<typename T>
+constexpr T xnor(T a, T b) noexcept {
+    return xorOperation<T, true>(a, b);
+}
+
+
+
 #endif // end SIM5_BINARY_OPERATIONS_H__

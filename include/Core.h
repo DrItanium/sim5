@@ -855,30 +855,30 @@ class Core {
         X(ShortOrdinal);
 #undef X
     protected:
-        void orOperation(Register& destination, Ordinal src1, Ordinal src2) noexcept {
-            destination.setValue(src2 | src1, TreatAsOrdinal{});
+        template<bool invert = false>
+        inline void orOperation(Register& destination, Ordinal src1, Ordinal src2) noexcept {
+            destination.setValue(::orOperation<Ordinal, invert>(src2, src1), TreatAsOrdinal{});
+        }
+        template<bool invert = false>
+        inline void andOperation(Register& destination, Ordinal src1, Ordinal src2) noexcept {
+            destination.setValue(::andOperation<Ordinal, invert>(src2, src1), TreatAsOrdinal{});
+        }
+        template<bool invert = false>
+        inline void xorOperation(Register& destination, Ordinal src1, Ordinal src2) noexcept {
+            destination.setValue(::xorOperation<Ordinal, invert>(src2, src1), TreatAsOrdinal{});
         }
         void setbit(Register& destination, Ordinal src1, Ordinal src2) noexcept {
             // setbit is src2 | computeBitPosition(src1o)
             orOperation(destination, computeBitPosition(src1), src2);
         }
         void nor(Register& destination, Ordinal src1, Ordinal src2) noexcept {
-            orOperation(destination, src1, src2);
-            destination.invert(TreatAsOrdinal{});
-        }
-        void andOperation(Register& destination, Ordinal src1, Ordinal src2) noexcept {
-            destination.setValue(src2 & src1, TreatAsOrdinal{});
+            orOperation<true>(destination, src1, src2);
         }
         void nand(Register& destination, Ordinal src1, Ordinal src2) noexcept {
-            andOperation(destination, src1, src2);
-            destination.invert(TreatAsOrdinal{});
-        }
-        void xorOperation(Register& destination, Ordinal src1, Ordinal src2) noexcept {
-            destination.setValue(src2 ^ src1, TreatAsOrdinal{});
+            andOperation<true>(destination, src1, src2);
         }
         void xnor(Register& destination, Ordinal src1, Ordinal src2) noexcept {
-            xorOperation(destination, src1, src2);
-            destination.invert(TreatAsOrdinal{});
+            xorOperation<true>(destination, src1, src2);
         }
         void notbit(Register& destination, Ordinal src1, Ordinal src2) noexcept {
             // notbit is src2 ^ computeBitPosition(src1)
