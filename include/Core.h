@@ -478,7 +478,6 @@ union Register {
         Ordinal performDecrement : 1;
         Ordinal performAdd : 1;
         Ordinal performSubtract : 1;
-        Ordinal performCarry : 1;
         Ordinal performCompare : 1;
         Ordinal performConditionalCompare : 1;
         Ordinal performDivide : 1;
@@ -880,35 +879,35 @@ class Core {
         void nand(Register& destination, Ordinal src1, Ordinal src2) noexcept {
             andOperation<true>(destination, src1, src2);
         }
-        void xnor(Register& destination, Ordinal src1, Ordinal src2) noexcept {
+        inline void xnor(Register& destination, Ordinal src1, Ordinal src2) noexcept {
             xorOperation<true>(destination, src1, src2);
         }
-        void notbit(Register& destination, Ordinal src1, Ordinal src2) noexcept {
+        inline void notbit(Register& destination, Ordinal src1, Ordinal src2) noexcept {
             // notbit is src2 ^ computeBitPosition(src1)
             xorOperation(destination, computeBitPosition(src1), src2);
         }
-        void ornot(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+        inline void ornot(Register& dest, Ordinal src1, Ordinal src2) noexcept {
             orOperation(dest, ~src1, src2);
         }
-        void notor(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+        inline void notor(Register& dest, Ordinal src1, Ordinal src2) noexcept {
             orOperation(dest, src1, ~src2);
         }
-        void notOperation(Register& destination, Ordinal src) noexcept {
+        inline void notOperation(Register& destination, Ordinal src) noexcept {
             destination.setValue(~src, TreatAsOrdinal{});
         }
 
-        void andnot(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+        inline void andnot(Register& dest, Ordinal src1, Ordinal src2) noexcept {
             andOperation(dest, ~src1, src2);
         }
-        void notand(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+        inline void notand(Register& dest, Ordinal src1, Ordinal src2) noexcept {
             andOperation(dest, src1, ~src2);
         }
-        void clrbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+        inline void clrbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
             // clrbit is src2 & ~computeBitPosition(src1)
             // so lets use andnot
             andnot(dest, computeBitPosition(src1), src2);
         }
-        void modi(Register& dest, Integer src1, Integer src2) noexcept {
+        inline void modi(Register& dest, Integer src1, Integer src2) noexcept {
             if (auto denominator = src1; denominator == 0) {
                 setFaultCode(ZeroDivideFault);
             } else {
@@ -920,14 +919,14 @@ class Core {
                 dest.setValue<Integer>(result);
             }
         }
-        void alterbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+        inline void alterbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
             if (auto s1 = computeBitPosition(src1); ac_.getConditionCode() & 0b010) {
                 orOperation(dest, s1, src2);
             } else {
                 andnot(dest, s1, src2);
             }
         }
-        void addc(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+        inline void addc(Register& dest, Ordinal src1, Ordinal src2) noexcept {
             LongOrdinal result = static_cast<LongOrdinal>(src2) + static_cast<LongOrdinal>(src1);
             result += (ac_.getCarryBit() ? 1 : 0);
             dest.setValue(result, TreatAsOrdinal{});
@@ -936,7 +935,7 @@ class Core {
                     (src1 & 0x8000'0000), 
                     (dest.getValue<Ordinal>() & 0x8000'0000));
         }
-        void subc(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+        inline void subc(Register& dest, Ordinal src1, Ordinal src2) noexcept {
             LongOrdinal result = static_cast<LongOrdinal>(src2) - static_cast<LongOrdinal>(src1) - 1;
             result += (ac_.getCarryBit() ? 1 : 0);
             dest.setValue(result, TreatAsOrdinal{});

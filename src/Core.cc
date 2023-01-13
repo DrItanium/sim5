@@ -1126,28 +1126,7 @@ Core::cycle() noexcept {
             }
         }
     }
-        if (flags_.ucode.performAdd) {
-        if (flags_.ucode.ordinalOp) {
-            regDest.o = src2o + src1o;
-        } else if (flags_.ucode.integerOp) {
-            regDest.i = src2i + src1i;
-        } else {
-            // if we got here then it means we don't have something configured
-            // correctly
-            setFaultCode(InvalidOpcodeFault);
-        }
-    } else if (flags_.ucode.performSubtract) {
-        if (flags_.ucode.ordinalOp) {
-            regDest.o = src2o - src1o;
-        } else if (flags_.ucode.integerOp) {
-            regDest.i = src2i - src1i;
-        } else {
-            // if we got here then it means we don't have something configured
-            // correctly
-            setFaultCode(InvalidOpcodeFault);
-        }
-
-    } else if (flags_.ucode.performDivide) {
+    if (flags_.ucode.performDivide) {
         if (flags_.ucode.ordinalOp) {
             if (src1o == 0) {
                 /// @todo fix this
