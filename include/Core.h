@@ -894,17 +894,16 @@ class Core {
         }
         template<typename T>
         void mult(Register& destination, T src1, T src2, TreatAs<T>) noexcept {
-            destination.setValue(src2 * src1, TreatAs<T>{});
+            destination.setValue(::multiplyOperation<T>(src2, src1), TreatAs<T>{});
         }
         void ornot(Register& dest, Ordinal src1, Ordinal src2) noexcept {
-            dest.setValue(src2 | ~src1, TreatAsOrdinal{});
+            orOperation(dest, ~src1, src2);
         }
         void notor(Register& dest, Ordinal src1, Ordinal src2) noexcept {
-            dest.setValue(src2 | ~src1, TreatAsOrdinal{});
+            orOperation(dest, src1, ~src2);
         }
         void notOperation(Register& destination, Ordinal src) noexcept {
-            // destination = 0 | ~src
-            ornot(destination, src, 0);
+            destination.setValue(~src, TreatAsOrdinal{});
         }
 
         void andnot(Register& dest, Ordinal src1, Ordinal src2) noexcept {

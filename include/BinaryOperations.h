@@ -62,21 +62,21 @@ constexpr T xorOperation(T a, T b) noexcept {
         return a ^ b;
     }
 }
+
 template<typename T>
-constexpr T nor(T a, T b) noexcept {
-    return orOperation<T, true>(a, b);
+constexpr T addOperation(T a, T b) noexcept {
+    return a + b;
 }
 
 template<typename T>
-constexpr T nand(T a, T b) noexcept {
-    return andOperation<T, true>(a, b);
+constexpr T subOperation(T a, T b) noexcept {
+    return a - b;
 }
 
 template<typename T>
-constexpr T xnor(T a, T b) noexcept {
-    return xorOperation<T, true>(a, b);
+constexpr T multiplyOperation(T a, T b) noexcept {
+    return a * b;
 }
-
 
 
 #endif // end SIM5_BINARY_OPERATIONS_H__
