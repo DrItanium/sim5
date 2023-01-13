@@ -1021,6 +1021,18 @@ class Core {
             cmpGeneric(src1, src2);
             dest.setValue(src2 - 1, TreatAsInteger{});
         }
+        template<typename T>
+        void concmpGeneric(T src1, T src2) noexcept {
+            if ((ac_.getConditionCode() & 0b100) == 0) {
+                ac_.arith.conditionCode = src1 <= src2 ? 0b010 : 0b001;
+            }
+        }
+        void concmpo(Ordinal src1, Ordinal src2) noexcept {
+            concmpGeneric<Ordinal>(src1, src2);
+        }
+        void concmpi(Integer src1, Integer src2) noexcept {
+            concmpGeneric<Integer>(src1, src2);
+        }
 
     private:
         Ordinal faultPortValue_;
