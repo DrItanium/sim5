@@ -472,15 +472,6 @@ union Register {
         Ordinal unused2 : 8;
     } trace;
     struct {
-        Ordinal invertResult : 1;
-        Ordinal invertSrc1 : 1;
-        Ordinal zeroSrc1 : 1;
-        Ordinal src1IsBitPosition : 1;
-        Ordinal invertSrc2 : 1;
-        Ordinal zeroSrc2 : 1;
-        Ordinal doXor : 1;
-        Ordinal doOr : 1;
-        Ordinal doAnd : 1;
         Ordinal ordinalOp : 1;
         Ordinal integerOp : 1;
         Ordinal performIncrement : 1;
