@@ -999,6 +999,28 @@ class Core {
             unlockBus();
 
         }
+        void cmpo(Ordinal src1, Ordinal src2) noexcept {
+            cmpGeneric(src1, src2);
+        }
+        void cmpinco(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+            cmpGeneric(src1, src2);
+            dest.setValue(src2 + 1, TreatAsOrdinal{});
+        }
+        void cmpdeco(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+            cmpGeneric(src1, src2);
+            dest.setValue(src2 - 1, TreatAsOrdinal{});
+        }
+        void cmpi(Integer src1, Integer src2) noexcept {
+            cmpGeneric(src1, src2);
+        }
+        void cmpinci(Register& dest, Integer src1, Integer src2) noexcept {
+            cmpGeneric(src1, src2);
+            dest.setValue(src2 + 1, TreatAsInteger{});
+        }
+        void cmpdeci(Register& dest, Integer src1, Integer src2) noexcept {
+            cmpGeneric(src1, src2);
+            dest.setValue(src2 - 1, TreatAsInteger{});
+        }
 
     private:
         Ordinal faultPortValue_;

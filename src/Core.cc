@@ -839,12 +839,10 @@ Core::cycle() noexcept {
             regDest.setValue<Integer>(src2i << src1i);
             break;
         case Opcodes::cmpo: // cmpo
-            flags_.ucode.performCompare = 1;
-            flags_.ucode.ordinalOp = 1;
+            cmpo(src1o, src2o);
             break;
         case Opcodes::cmpi: // cmpi
-            flags_.ucode.performCompare = 1;
-            flags_.ucode.integerOp = 1;
+            cmpi(src1o, src2o);
             break;
         case Opcodes::concmpo: // concmpo
             flags_.ucode.performConditionalCompare = 1;
@@ -857,24 +855,16 @@ Core::cycle() noexcept {
             flags_.ucode.performCompare = 1;
             break;
         case Opcodes::cmpinco: // cmpinco
-            flags_.ucode.performCompare = 1;
-            flags_.ucode.ordinalOp = 1;
-            flags_.ucode.performIncrement = 1;
+            cmpinco(regDest, src1o, src2o);
             break;
         case Opcodes::cmpinci: // cmpinci
-            flags_.ucode.performCompare = 1;
-            flags_.ucode.integerOp = 1;
-            flags_.ucode.performIncrement = 1;
+            cmpinci(regDest, src1i, src2i);
             break;
         case Opcodes::cmpdeco: // cmpdeco
-            flags_.ucode.performCompare = 1;
-            flags_.ucode.ordinalOp = 1;
-            flags_.ucode.performDecrement = 1;
+            cmpdeco(regDest, src1i, src2i);
             break;
         case Opcodes::cmpdeci: // cmpdeci
-            flags_.ucode.performCompare = 1;
-            flags_.ucode.integerOp = 1;
-            flags_.ucode.performDecrement = 1;
+            cmpdeci(regDest, src1i, src2i);
             break;
         case Opcodes::scanbyte: // scanbyte
             scanbyte(src2o, src1o);
