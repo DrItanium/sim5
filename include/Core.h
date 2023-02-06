@@ -911,18 +911,18 @@ class Core {
             result += (ac_.getCarryBit() ? 1 : 0);
             dest.setValue(result, TreatAsOrdinal{});
             arithmeticWithCarryGeneric(static_cast<Ordinal>(result >> 32), 
-                    (src2 & 0x8000'0000), 
-                    (src1 & 0x8000'0000), 
-                    (dest.getValue<Ordinal>() & 0x8000'0000));
+                    mostSignificantBit(src2),
+                    mostSignificantBit(src1),
+                    mostSignificantBit(dest.getValue<Ordinal>()));
         }
         inline void subc(Register& dest, Ordinal src1, Ordinal src2) noexcept {
             LongOrdinal result = static_cast<LongOrdinal>(src2) - static_cast<LongOrdinal>(src1) - 1;
             result += (ac_.getCarryBit() ? 1 : 0);
             dest.setValue(result, TreatAsOrdinal{});
             arithmeticWithCarryGeneric(static_cast<Ordinal>(result >> 32), 
-                    (src2 & 0x8000'0000), 
-                    (src1 & 0x8000'0000), 
-                    (dest.getValue<Ordinal>() & 0x8000'0000));
+                    mostSignificantBit(src2),
+                    mostSignificantBit(src1),
+                    mostSignificantBit(dest.getValue<Ordinal>()));
         }
         template<typename T>
         void remainderOperation(Register& dest, T src1, T src2) noexcept {
@@ -959,7 +959,7 @@ class Core {
         void atadd(Register& dest, Ordinal src1, Ordinal src2) noexcept {
             syncf();
             lockBus();
-            auto addr = src1 & 0xFFFF'FFFC;
+            auto addr = mask<decltype(src1), 0xFFFF'FFFC>(src1) ;
             auto temp = load(addr, TreatAsOrdinal{});
             // adds the src (src2 internally) value to the value in memory location specified with the addr (src1 in this case) operand.
             // The initial value from memory is stored in dst (internally src/dst).
@@ -971,7 +971,7 @@ class Core {
         void atmod(Register& dest, Ordinal src1, Ordinal src2) noexcept {
             syncf();
             lockBus();
-            auto addr = src1 & 0xFFFF'FFFC;
+            auto addr = mask<decltype(src1), 0xFFFF'FFFC>(src1) ;
             auto temp = load(addr, TreatAsOrdinal{});
             // copies the src/dest value (logical version) into the memory location specifeid by src1.
             // The bits set in the mask (src2) operand select the bits to be modified in memory. The initial

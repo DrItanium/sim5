@@ -1071,7 +1071,7 @@ Core::begin() noexcept {
 void 
 Core::synld(Register& dest, Ordinal src) noexcept {
     ac_.arith.conditionCode = 0b000;
-    if (auto tempa = src & 0xFFFF'FFFC; tempa == 0xFF00'0004) {
+    if (auto tempa = mask<decltype(src), 0xFFFF'FFFC>(src); tempa == 0xFF00'0004) {
         // interrupt control register needs to be read through this
         ac_.arith.conditionCode = 0b010;
         // copy the contents of the interrupt control register to a target
@@ -1085,7 +1085,7 @@ Core::synld(Register& dest, Ordinal src) noexcept {
 void 
 Core::synmov(Register& dest, Ordinal src) noexcept {
     ac_.arith.conditionCode = 0b000;
-    if (auto tempa = dest.getValue(TreatAsOrdinal{}) & 0xFFFF'FFFC; tempa == 0xFF00'0004) {
+    if (auto tempa = mask<Ordinal, 0xFFFF'FFFC>(dest.getValue(TreatAsOrdinal{})); tempa == 0xFF00'0004) {
         ictl_.o = load(src, TreatAsOrdinal{});
         ac_.arith.conditionCode = 0b010;
     } else {

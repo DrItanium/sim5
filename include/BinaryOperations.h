@@ -85,7 +85,7 @@ constexpr Out decode(In input, In mask, In shift = static_cast<Out>(0)) noexcept
     return static_cast<Out>(maskedValue);
 }
 
-template<typename In, typename Out, In mask, In shift = static_cast<In>(0)>
+template<typename In, typename Out, In mask, In shift>
 constexpr Out decode(In input) noexcept {
     auto maskedValue = (input & mask);
     maskedValue >>= shift;
@@ -108,5 +108,18 @@ constexpr Out encode(Out container, In value) noexcept {
     return static_cast<Out>(preservedBitsOnly | valueToInsert);
 }
 
+
+template<typename T, T mask>
+constexpr T mask(T value) noexcept {
+    return value & mask;
+}
+template<typename T>
+constexpr T mask(T value, T mask) noexcept {
+    return value & mask;
+}
+
+constexpr Ordinal mostSignificantBit(Ordinal input) noexcept {
+    return mask<Ordinal, 0x8000'0000>(input);
+}
 
 #endif // end SIM5_BINARY_OPERATIONS_H__
