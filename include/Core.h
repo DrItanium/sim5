@@ -1028,6 +1028,7 @@ class Core {
     private:
         Ordinal faultPortValue_;
         Ordinal systemAddressTableBase_ = 0;
+        Ordinal prcbAddress_ = 0;
         GPRBlock gpr_;
         RegisterBlock32 sfrs_;
         Register ip_;

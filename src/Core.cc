@@ -1198,6 +1198,15 @@ Core::start() noexcept {
             assertFailureState();
             return BootResult::ChecksumFail;
         } else {
+            systemAddressTableBase_ = x[0];
+            prcbAddress_ = x[1];
+            ip_.setValue(x[3], TreatAsOrdinal{});
+            // fetch IMI
+            // processor.priority = 31
+            // processor.state = interrupted
+            // fp <- imi.interrupt_stack_pointer
+            // clear any latched external interrupt/IAC signals
+            // begin execution
             running_ = true;
             return BootResult::Success;
         }
