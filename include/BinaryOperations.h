@@ -110,16 +110,16 @@ constexpr Out encode(Out container, In value) noexcept {
 
 
 template<typename T, T mask>
-constexpr T mask(T value) noexcept {
+constexpr T maskValue(T value) noexcept {
     return value & mask;
 }
 template<typename T>
-constexpr T mask(T value, T mask) noexcept {
+constexpr T maskValue(T value, T mask) noexcept {
     return value & mask;
 }
 
 constexpr Ordinal mostSignificantBit(Ordinal input) noexcept {
-    return mask<Ordinal, 0x8000'0000>(input);
+    return maskValue<Ordinal, 0x8000'0000>(input);
 }
 
 #endif // end SIM5_BINARY_OPERATIONS_H__
