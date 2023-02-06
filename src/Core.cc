@@ -1098,7 +1098,7 @@ Core::synmov(Register& dest, Ordinal src) noexcept {
 void 
 Core::synmovl(Register& dest, Ordinal src) noexcept {
     ac_.arith.conditionCode = 0b000;
-    auto tempa = dest.getValue(TreatAsOrdinal{}) & 0xFFFF'FFF8; 
+    auto tempa = maskValue<Ordinal, 0xFFFF'FFF8>(dest.getValue(TreatAsOrdinal{}));
     auto tempLower = load(src, TreatAsOrdinal{});
     auto tempUpper = load(src + 4, TreatAsOrdinal{});
     store(tempa, tempLower, TreatAsOrdinal{});
@@ -1115,7 +1115,7 @@ Core::synmovq(Register& dest, Ordinal src) noexcept {
     auto temp1 = load(src+4, TreatAsOrdinal{});
     auto temp2 = load(src+8, TreatAsOrdinal{});
     auto temp3 = load(src+12, TreatAsOrdinal{});
-    if (auto tempa = dest.getValue(TreatAsOrdinal{}) & 0xFFFF'FFF0; tempa == 0xFF00'0010) {
+    if (auto tempa = maskValue<Ordinal, 0xFFFF'FFF0>(dest.getValue(TreatAsOrdinal{})); tempa == 0xFF00'0010) {
         sendIAC(iac::Message{temp0, temp1, temp2, temp3});
         ac_.arith.conditionCode = 0b010;
     } else {
@@ -1159,14 +1159,62 @@ Core::performConditionalAdd(Register& dest, Ordinal src1, Ordinal src2, bool con
         dest.setValue(src1 + src2, TreatAsOrdinal{});
     }
 }
-
-void
+bool
+Core::performSelfTest() noexcept {
+    /// @todo add self test routines here to sanity check things before doing
+    /// checksum work
+    return true;
+}
+BootResult
 Core::start() noexcept {
-    running_ = true;
-    // do checksum and make sure that we have booted ourselves
+    assertFailureState();
+    if (!performSelfTest()) {
+        return BootResult::SelfTestFailure;
+    } else {
+        deassertFailureState();
+        // Kx has a startup pin to denote if it is the startup processor or not, we
+        // are not doing that here
+        Ordinal x[8] {
+            load(0x0, TreatAsOrdinal{}),
+                load(0x4, TreatAsOrdinal{}),
+                load(0x8, TreatAsOrdinal{}),
+                load(0xC, TreatAsOrdinal{}),
+                load(0x10, TreatAsOrdinal{}),
+                load(0x14, TreatAsOrdinal{}),
+                load(0x18, TreatAsOrdinal{}),
+                load(0x1C, TreatAsOrdinal{}),
+        };
+
+        ac_.arith.conditionCode = 0b000; // clear condition code
+        Ordinal temp = 0xFFFF'FFFF + x[0];
+        temp += x[1];
+        temp += x[2];
+        temp += x[3];
+        temp += x[4];
+        temp += x[5];
+        temp += x[6];
+        temp += x[7];
+        if (temp != 0) {
+            assertFailureState();
+            return BootResult::ChecksumFail;
+        } else {
+            running_ = true;
+            return BootResult::Success;
+        }
+    }
 }
 void
 Core::stop() noexcept {
     running_ = false;
     // this will halt the cpu
+}
+
+void
+Core::assertFailureState() noexcept {
+    /// @todo implement
+}
+
+void
+Core::deassertFailureState() noexcept {
+    /// @todo implement
 }

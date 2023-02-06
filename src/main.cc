@@ -93,7 +93,26 @@ setup() {
 
     core.begin();
     Serial.println(F("BOOT COMPLETE!!"));
-    core.start();
+    bool successfulInit = false;
+    switch(core.start()) {
+        case BootResult::Success:
+            Serial.println(F("Initialization Procedure successful!"));
+            successfulInit = true;
+            break;
+        case BootResult::ChecksumFail:
+            Serial.println(F("Checksum Failure!"));
+            break;
+        case BootResult::SelfTestFailure:
+            Serial.println(F("Self Test Failure!"));
+            break;
+        default:
+            Serial.println(F("Undefined Failure!"));
+            break;
+    }
+    if (!successfulInit) {
+        Serial.println(F("HALTING!"));
+        while (true);
+    }
 }
 void 
 loop() {

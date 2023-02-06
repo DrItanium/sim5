@@ -325,6 +325,11 @@ enum class Opcodes : uint16_t {
     sdma = 0x630,
     udma = 0x631,
 };
+enum class BootResult : uint8_t {
+    Success,
+    SelfTestFailure,
+    ChecksumFail,
+};
 union Register {
     constexpr explicit Register(Ordinal value = 0) : o(value) { }
     Ordinal o;
@@ -612,7 +617,7 @@ class RegisterBlock32 {
 class Core {
     public:
         void begin() noexcept;
-        void start() noexcept;
+        BootResult start() noexcept;
         void stop() noexcept;
         void cycle() noexcept;
         [[nodiscard]] constexpr bool running() const noexcept { return running_; }
@@ -1016,7 +1021,10 @@ class Core {
         void concmpi(Integer src1, Integer src2) noexcept {
             concmpGeneric<Integer>(src1, src2);
         }
-
+    protected:
+        bool performSelfTest() noexcept;
+        void assertFailureState() noexcept;
+        void deassertFailureState() noexcept;
     private:
         Ordinal faultPortValue_;
         Ordinal systemAddressTableBase_ = 0;

@@ -26,20 +26,20 @@
 
 #include <Arduino.h>
 #include "Types.h"
-constexpr Ordinal rotateOperation(Ordinal src, Ordinal length) noexcept {
+[[nodiscard]] constexpr Ordinal rotateOperation(Ordinal src, Ordinal length) noexcept {
     return (src << length)  | (src >> ((-length) & 31u));
 }
 
-constexpr Ordinal computeBitPosition(Ordinal value) noexcept {
+[[nodiscard]] constexpr Ordinal computeBitPosition(Ordinal value) noexcept {
     return static_cast<Ordinal>(1u) << static_cast<Ordinal>(value);
 }
 
-constexpr Ordinal modify(Ordinal mask, Ordinal src, Ordinal srcDest) noexcept {
+[[nodiscard]] constexpr Ordinal modify(Ordinal mask, Ordinal src, Ordinal srcDest) noexcept {
     return (src & mask) | (srcDest & ~mask);
 }
 
 template<typename T, bool invertResult = false>
-constexpr T orOperation(T a, T b) noexcept {
+[[nodiscard]] constexpr T orOperation(T a, T b) noexcept {
     if constexpr (invertResult) {
         return ~(a | b);
     } else {
@@ -47,7 +47,7 @@ constexpr T orOperation(T a, T b) noexcept {
     }
 }
 template<typename T, bool invertResult = false>
-constexpr T andOperation(T a, T b) noexcept {
+[[nodiscard]] constexpr T andOperation(T a, T b) noexcept {
     if constexpr (invertResult) {
         return ~(a & b);
     } else {
@@ -55,7 +55,7 @@ constexpr T andOperation(T a, T b) noexcept {
     }
 }
 template<typename T, bool invertResult = false>
-constexpr T xorOperation(T a, T b) noexcept {
+[[nodiscard]] constexpr T xorOperation(T a, T b) noexcept {
     if constexpr (invertResult) {
         return ~(a ^ b);
     } else {
@@ -64,36 +64,36 @@ constexpr T xorOperation(T a, T b) noexcept {
 }
 
 template<typename T>
-constexpr T addOperation(T a, T b) noexcept {
+[[nodiscard]] constexpr T addOperation(T a, T b) noexcept {
     return a + b;
 }
 
 template<typename T>
-constexpr T subOperation(T a, T b) noexcept {
+[[nodiscard]] constexpr T subOperation(T a, T b) noexcept {
     return a - b;
 }
 
 template<typename T>
-constexpr T multiplyOperation(T a, T b) noexcept {
+[[nodiscard]] constexpr T multiplyOperation(T a, T b) noexcept {
     return a * b;
 }
 
 template<typename In, typename Out>
-constexpr Out decode(In input, In mask, In shift = static_cast<Out>(0)) noexcept {
+[[nodiscard]] constexpr Out decode(In input, In mask, In shift = static_cast<Out>(0)) noexcept {
     auto maskedValue = (input & mask);
     maskedValue >>= shift;
     return static_cast<Out>(maskedValue);
 }
 
 template<typename In, typename Out, In mask, In shift>
-constexpr Out decode(In input) noexcept {
+[[nodiscard]] constexpr Out decode(In input) noexcept {
     auto maskedValue = (input & mask);
     maskedValue >>= shift;
     return static_cast<Out>(maskedValue);
 }
 
 template<typename In, typename Out>
-constexpr Out encode(Out container, In value, Out mask, Out shift = static_cast<Out>(0)) noexcept {
+[[nodiscard]] constexpr Out encode(Out container, In value, Out mask, Out shift = static_cast<Out>(0)) noexcept {
     auto preservedBitsOnly = container & ~mask;
     auto valueToInsert = static_cast<Out>(value) << shift;
     valueToInsert &= mask;
@@ -101,7 +101,7 @@ constexpr Out encode(Out container, In value, Out mask, Out shift = static_cast<
 }
 
 template<typename In, typename Out, Out mask, Out shift = static_cast<Out>(0)>
-constexpr Out encode(Out container, In value) noexcept {
+[[nodiscard]] constexpr Out encode(Out container, In value) noexcept {
     auto preservedBitsOnly = container & ~mask;
     auto valueToInsert = static_cast<Out>(value) << shift;
     valueToInsert &= mask;
@@ -110,15 +110,15 @@ constexpr Out encode(Out container, In value) noexcept {
 
 
 template<typename T, T mask>
-constexpr T maskValue(T value) noexcept {
+[[nodiscard]] constexpr T maskValue(T value) noexcept {
     return value & mask;
 }
 template<typename T>
-constexpr T maskValue(T value, T mask) noexcept {
+[[nodiscard]] constexpr T maskValue(T value, T mask) noexcept {
     return value & mask;
 }
 
-constexpr Ordinal mostSignificantBit(Ordinal input) noexcept {
+[[nodiscard]] constexpr Ordinal mostSignificantBit(Ordinal input) noexcept {
     return maskValue<Ordinal, 0x8000'0000>(input);
 }
 
