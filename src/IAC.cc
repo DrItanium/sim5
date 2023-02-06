@@ -136,13 +136,15 @@ Core::restartProcessor(Ordinal segmentTableBase, Ordinal prcbBase) noexcept {
 
 void 
 Core::stopProcessor() noexcept {
+    // do nothing
 
 }
 void 
 Core::storeProcessor() noexcept {
+    // do nothing
 
 }
 void 
 Core::warmstartProcessor(Ordinal segmentTableBase, Ordinal prcbBase) noexcept {
-
+    // do nothing
 }

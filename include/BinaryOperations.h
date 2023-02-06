@@ -78,5 +78,35 @@ constexpr T multiplyOperation(T a, T b) noexcept {
     return a * b;
 }
 
+template<typename In, typename Out>
+constexpr Out decode(In input, In mask, In shift = static_cast<Out>(0)) noexcept {
+    auto maskedValue = (input & mask);
+    maskedValue >>= shift;
+    return static_cast<Out>(maskedValue);
+}
+
+template<typename In, typename Out, In mask, In shift = static_cast<In>(0)>
+constexpr Out decode(In input) noexcept {
+    auto maskedValue = (input & mask);
+    maskedValue >>= shift;
+    return static_cast<Out>(maskedValue);
+}
+
+template<typename In, typename Out>
+constexpr Out encode(Out container, In value, Out mask, Out shift = static_cast<Out>(0)) noexcept {
+    auto preservedBitsOnly = container & ~mask;
+    auto valueToInsert = static_cast<Out>(value) << shift;
+    valueToInsert &= mask;
+    return static_cast<Out>(preservedBitsOnly | valueToInsert);
+}
+
+template<typename In, typename Out, Out mask, Out shift = static_cast<Out>(0)>
+constexpr Out encode(Out container, In value) noexcept {
+    auto preservedBitsOnly = container & ~mask;
+    auto valueToInsert = static_cast<Out>(value) << shift;
+    valueToInsert &= mask;
+    return static_cast<Out>(preservedBitsOnly | valueToInsert);
+}
+
 
 #endif // end SIM5_BINARY_OPERATIONS_H__
