@@ -471,12 +471,7 @@ union Register {
         Ordinal breakpointTraceEvent : 1; // 23
         Ordinal unused2 : 8;
     } trace;
-    struct {
-        Ordinal int0Vector : 8;
-        Ordinal int1Vector : 8;
-        Ordinal int2Vector : 8;
-        Ordinal int3Vector : 8;
-    } interruptControl;
+    uint8_t interruptControl[4];
     constexpr auto getConditionCode() const noexcept { return arith.conditionCode; }
     void setPriority(Ordinal value) noexcept { processControls.priority = value; }
     bool inSupervisorMode() const noexcept { return processControls.executionMode; }
