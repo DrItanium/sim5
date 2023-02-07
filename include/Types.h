@@ -135,6 +135,10 @@ static_assert(generateSegmentDescriptor(7) == 0x1ff);
  * triggered.
  */
 struct [[gnu::packed]] FaultRecord {
+    Ordinal unused;
+    Ordinal overrideFaultData[3];
+    Ordinal faultData[3];
+    Ordinal overrideType;
     /**
      * @brief A copy of the ProcessControls register at the time the fault was
      * raised.
@@ -154,6 +158,7 @@ struct [[gnu::packed]] FaultRecord {
      */
     Address addr;
 };
+static_assert(sizeof(FaultRecord) == 48);
 
 struct [[gnu::packed]] FaultTableEntry {
     explicit constexpr FaultTableEntry(Ordinal addr, SegmentSelector selector) noexcept : handlerFunctionAddress_(addr), selector_(selector) { }
@@ -257,23 +262,34 @@ constexpr Ordinal DisablePrefetching_Sx = 0xFFFF'FF10;
 /**
  * @brief Used by the processor to describe initial system state
  */
-struct ProcessorControlBlock {
+struct [[gnu::packed]] ProcessorControlBlock {
     Ordinal reserved0;
     Ordinal processorControls; // this is a magic number of the Sx series
     Ordinal reserved1;
-    Ordinal reserved2;
-    Ordinal reserved3;
+    Ordinal currentProcessSS;
+    Ordinal dispatchPortSS;
     Ordinal interruptTableBase;
     Ordinal interruptStackBase;
-    Ordinal reserved4;
+    Ordinal reserved2;
     SegmentSelector region3Selector; 
     SegmentSelector systemProcedureTableSelector;
     Address faultTablePhysicalAddress;
     Ordinal reservedBootArgs; // @44
     Ordinal multiprocessorPreemption[3];
+    Ordinal reserved3;
     LongOrdinal idleTime;
-    LongOrdinal reserved5;
-    Ordinal scratch[23];
+    Ordinal systemErrorFault;
+    Ordinal reserved4;
+    union {
+        Ordinal scratchSpace[24];
+        struct {
+            Ordinal resumptionRecord[12];
+            FaultRecord systemErrorFaultRecord;
+        };
+    };
+    //Ordinal resumptionRecord[12];
+    //static_assert(sizeof(resumptionRecord) == 48);
+    //FaultRecord systemError;
 };
 
 using PRCB = ProcessorControlBlock;
