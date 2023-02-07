@@ -1187,6 +1187,12 @@ Core::start() noexcept {
                 load(0x18, TreatAsOrdinal{}),
                 load(0x1C, TreatAsOrdinal{}),
         };
+        for (int i = 0; i < 8; ++i) {
+            Serial.print(F("\tx["));
+            Serial.print(i);
+            Serial.print(F("]: 0x"));
+            Serial.println(x[i], HEX);
+        }
 
         ac_.arith.conditionCode = 0b000; // clear condition code
         Register temp_{0};
@@ -1200,17 +1206,20 @@ Core::start() noexcept {
         addc(temp_, temp_.getValue(TreatAsOrdinal{}), x[7]);
         if (temp_.getValue(TreatAsOrdinal{}) != 0) {
             assertFailureState();
+            Serial.print(F("FAILED CHECKSUM VALUE: 0x"));
+            Serial.println(temp_.getValue(TreatAsOrdinal{}), HEX);
             return BootResult::ChecksumFail;
         } else {
             systemAddressTableBase_ = x[0];
             prcbAddress_ = x[1];
             ip_.setValue(x[3], TreatAsOrdinal{});
             // fetch IMI
-            set328BusAddress(prcbAddress_);
+            SplitWord32 split(prcbAddress_);
+            set328BusAddress(split);
+            volatile PRCB& thePRCB = memory<PRCB>(static_cast<size_t>(split.splitAddress.lower) + 0x8000);
             pc_.processControls.priority = 31;
             pc_.processControls.state = 1;
-            //setGPR(FPIndex, memory<
-            // fp <- imi.interrupt_stack_pointer
+            setGPR(FPIndex, thePRCB.interruptStackBase, TreatAsOrdinal{});
             // clear any latched external interrupt/IAC signals
             // begin execution
             running_ = true;

@@ -32,6 +32,7 @@ namespace {
         SplitWord32 split(address);
         set328BusAddress(split);
         return memory<T>(static_cast<size_t>(split.splitAddress.lower) + 0x8000);
+
     }
     template<typename T>
     void store(Address address, T value, TreatAs<T>) noexcept {
@@ -59,7 +60,9 @@ setInternalBusAddress(const SplitWord32& address) noexcept {
 
 
 Integer Core::load(Address addr, TreatAsInteger) const { return ::load<Integer>(addr, TreatAsInteger{}); }
-Ordinal Core::load(Address addr, TreatAsOrdinal) const { return ::load<Ordinal>(addr, TreatAsOrdinal{}); }
+Ordinal Core::load(Address addr, TreatAsOrdinal) const { 
+    return ::load<Ordinal>(addr, TreatAsOrdinal{}); 
+}
 ByteInteger Core::load(Address addr, TreatAsByteInteger) const { return ::load<ByteInteger>(addr, TreatAsByteInteger{}); }
 ByteOrdinal Core::load(Address addr, TreatAsByteOrdinal) const { return ::load<ByteOrdinal>(addr, TreatAsByteOrdinal{}); }
 ShortInteger Core::load(Address addr, TreatAsShortInteger) const { return ::load<ShortInteger>(addr, TreatAsShortInteger{}); }
