@@ -1171,7 +1171,10 @@ Core::start() noexcept {
     if (!performSelfTest()) {
         return BootResult::SelfTestFailure;
     } else {
+        // start execution at this point, according to the docs this is what we
+        // want to do. 
         deassertFailureState();
+        // after this point we now need to jump 
         // Kx has a startup pin to denote if it is the startup processor or not, we
         // are not doing that here
         Ordinal x[8] {
@@ -1186,15 +1189,16 @@ Core::start() noexcept {
         };
 
         ac_.arith.conditionCode = 0b000; // clear condition code
-        Ordinal temp = 0xFFFF'FFFF + x[0];
-        temp += x[1];
-        temp += x[2];
-        temp += x[3];
-        temp += x[4];
-        temp += x[5];
-        temp += x[6];
-        temp += x[7];
-        if (temp != 0) {
+        Register temp_{0};
+        addc(temp_, 0xFFFF'FFFF, x[0]);
+        addc(temp_, temp_.getValue(TreatAsOrdinal{}), x[1]);
+        addc(temp_, temp_.getValue(TreatAsOrdinal{}), x[2]);
+        addc(temp_, temp_.getValue(TreatAsOrdinal{}), x[3]);
+        addc(temp_, temp_.getValue(TreatAsOrdinal{}), x[4]);
+        addc(temp_, temp_.getValue(TreatAsOrdinal{}), x[5]);
+        addc(temp_, temp_.getValue(TreatAsOrdinal{}), x[6]);
+        addc(temp_, temp_.getValue(TreatAsOrdinal{}), x[7]);
+        if (temp_.getValue(TreatAsOrdinal{}) != 0) {
             assertFailureState();
             return BootResult::ChecksumFail;
         } else {
@@ -1202,8 +1206,10 @@ Core::start() noexcept {
             prcbAddress_ = x[1];
             ip_.setValue(x[3], TreatAsOrdinal{});
             // fetch IMI
-            // processor.priority = 31
-            // processor.state = interrupted
+            set328BusAddress(prcbAddress_);
+            pc_.processControls.priority = 31;
+            pc_.processControls.state = 1;
+            //setGPR(FPIndex, memory<
             // fp <- imi.interrupt_stack_pointer
             // clear any latched external interrupt/IAC signals
             // begin execution

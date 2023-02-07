@@ -614,6 +614,7 @@ class RegisterBlock32 {
     private:
         Register registers_[32];
 };
+
 class Core {
     public:
         void begin() noexcept;
