@@ -43,9 +43,15 @@ namespace ebi {
         digitalWrite(BANK2, address.internalBankAddress.bank2);
         digitalWrite(BANK3, address.internalBankAddress.bank3);
     }
+    constexpr bool PerformDebugChecks = false;
     void 
     begin() noexcept {
-        Serial.println(F("Setting up EBI..."));
+        Serial.print(F("Setting up EBI..."));
+        pinMode(38, OUTPUT);
+        DDRF = 0xFF;
+        DDRK = 0xFF;
+        PORTK = 0;
+        PORTF = 0;
         // cleave the address space in half via sector limits.
         // lower half is io space for the implementation
         // upper half is the window into the 32/8 bus
@@ -56,36 +62,41 @@ namespace ebi {
                              // Also turn on the EBI
         set328BusAddress(0);
         setInternalBusAddress(0);
-        volatile byte* ptr = reinterpret_cast<volatile byte*>(RAMEND+1);
-        for (size_t i = (RAMEND + 1); i < 0x8000; ++i, ++ptr) {
-            volatile byte value = random();
-            *ptr = value;
-            if (*ptr != value) {
-                Serial.print(F("IBUS@0x"));
-                Serial.print(i, HEX);
-                Serial.print(F(", MISMATCH! E: 0x"));
-                Serial.print(value, HEX);
-                Serial.print(F(", G: 0x"));
-                Serial.println(*ptr, HEX);
+        if constexpr (PerformDebugChecks) {
+            Serial.println();
+            volatile byte* ptr = reinterpret_cast<volatile byte*>(RAMEND+1);
+            for (size_t i = (RAMEND + 1); i < 0x8000; ++i, ++ptr) {
+                volatile byte value = random();
+                *ptr = value;
+                if (*ptr != value) {
+                    Serial.print(F("IBUS@0x"));
+                    Serial.print(i, HEX);
+                    Serial.print(F(", MISMATCH! E: 0x"));
+                    Serial.print(value, HEX);
+                    Serial.print(F(", G: 0x"));
+                    Serial.println(*ptr, HEX);
+                }
             }
-        }
-        constexpr uint32_t TwoMegs = 2ul * 1024ul * 1024ul;
-        for (uint32_t i = 0 ; i < TwoMegs; ++i) {
-            volatile ByteOrdinal value = random();
-            store<ByteOrdinal>(i, value, TreatAsByteOrdinal{});
-            volatile auto result = load<ByteOrdinal>(i, TreatAsByteOrdinal{});
-            if (result != value) {
-                Serial.print(F("XBUS@0x"));
-                Serial.print(i, HEX);
-                Serial.print(F(", MISMATCH! E: 0x"));
-                Serial.print(value, HEX);
-                Serial.print(F(", G: 0x"));
-                Serial.println(*ptr, HEX);
+            constexpr uint32_t TwoMegs = 2ul * 1024ul * 1024ul;
+            for (uint32_t i = 0 ; i < TwoMegs; ++i) {
+                volatile ByteOrdinal value = random();
+                store<ByteOrdinal>(i, value, TreatAsByteOrdinal{});
+                volatile auto result = load<ByteOrdinal>(i, TreatAsByteOrdinal{});
+                if (result != value) {
+                    Serial.print(F("XBUS@0x"));
+                    Serial.print(i, HEX);
+                    Serial.print(F(", MISMATCH! E: 0x"));
+                    Serial.print(value, HEX);
+                    Serial.print(F(", G: 0x"));
+                    Serial.println(*ptr, HEX);
+                }
             }
+            Serial.print(F("ADDR OF PTR: 0x"));
+            Serial.println(reinterpret_cast<uintptr_t>(ptr), HEX);
+            Serial.println(F("EBI Setup Complete!"));
+        } else {
+            Serial.println(F("DONE"));
         }
-        Serial.print(F("ADDR OF PTR: 0x"));
-        Serial.println(reinterpret_cast<uintptr_t>(ptr), HEX);
-        Serial.println(F("EBI Setup Complete!"));
     }
 
 }

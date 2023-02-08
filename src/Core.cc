@@ -1171,24 +1171,15 @@ Core::start() noexcept {
     if (!performSelfTest()) {
         return BootResult::SelfTestFailure;
     } else {
-        ebi::set328BusAddress(0);
         // start execution at this point, according to the docs this is what we
         // want to do. 
         deassertFailureState();
         // after this point we now need to jump 
         // Kx has a startup pin to denote if it is the startup processor or not, we
         // are not doing that here
-        Ordinal x[8] {
-            load(0x0, TreatAsOrdinal{}),
-                load(0x4, TreatAsOrdinal{}),
-                load(0x8, TreatAsOrdinal{}),
-                load(0xC, TreatAsOrdinal{}),
-                load(0x10, TreatAsOrdinal{}),
-                load(0x14, TreatAsOrdinal{}),
-                load(0x18, TreatAsOrdinal{}),
-                load(0x1C, TreatAsOrdinal{}),
-        };
-        for (int i = 0; i < 8; ++i) {
+        Ordinal x[8] = { 0 };
+        for (int i = 0, j = 0; i < 8; ++i, j+=4) {
+            x[i] = load(j, TreatAsOrdinal{});
             Serial.print(F("\tx["));
             Serial.print(i);
             Serial.print(F("]: 0x"));
@@ -1215,12 +1206,9 @@ Core::start() noexcept {
             prcbAddress_ = x[1];
             ip_.setValue(x[3], TreatAsOrdinal{});
             // fetch IMI
-            SplitWord32 split(prcbAddress_);
-            ebi::set328BusAddress(split);
-            volatile PRCB& thePRCB = memory<PRCB>(static_cast<size_t>(split.splitAddress.lower) + 0x8000);
+            setGPR(FPIndex, load(prcbAddress_ + 24, TreatAsOrdinal{}), TreatAsOrdinal{});
             pc_.processControls.priority = 31;
             pc_.processControls.state = 1;
-            setGPR(FPIndex, thePRCB.interruptStackBase, TreatAsOrdinal{});
             // clear any latched external interrupt/IAC signals
             // begin execution
             running_ = true;
