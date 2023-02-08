@@ -79,18 +79,8 @@ setup() {
     digitalWrite(LOCKPIN, LOW);
     pinMode(LOCKPIN, INPUT);
     Serial.println(F("DONE"));
-    Serial.print(F("Setting up EBI..."));
-    // cleave the address space in half via sector limits.
-    // lower half is io space for the implementation
-    // upper half is the window into the 32/8 bus
-    XMCRB = 0;           // No external memory bus keeper and full 64k address
-                         // space
-    XMCRA = 0b1100'0000; // Divide the 64k address space in half at 0x8000, no
-                         // wait states activated either. Also turn on the EBI
-    set328BusAddress(0);
-    setInternalBusAddress(0);
-    Serial.println(F("DONE"));
 
+    ebi::begin();
     core.begin();
     Serial.println(F("BOOT COMPLETE!!"));
     bool successfulInit = false;

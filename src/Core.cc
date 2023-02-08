@@ -1171,6 +1171,7 @@ Core::start() noexcept {
     if (!performSelfTest()) {
         return BootResult::SelfTestFailure;
     } else {
+        ebi::set328BusAddress(0);
         // start execution at this point, according to the docs this is what we
         // want to do. 
         deassertFailureState();
@@ -1215,7 +1216,7 @@ Core::start() noexcept {
             ip_.setValue(x[3], TreatAsOrdinal{});
             // fetch IMI
             SplitWord32 split(prcbAddress_);
-            set328BusAddress(split);
+            ebi::set328BusAddress(split);
             volatile PRCB& thePRCB = memory<PRCB>(static_cast<size_t>(split.splitAddress.lower) + 0x8000);
             pc_.processControls.priority = 31;
             pc_.processControls.state = 1;

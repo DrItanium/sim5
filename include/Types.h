@@ -88,8 +88,27 @@ template<typename T>
 volatile T& memory(size_t address) noexcept {
     return *reinterpret_cast<volatile T*>(address);
 }
-void set328BusAddress(const SplitWord32& address) noexcept;
-void setInternalBusAddress(const SplitWord32& address) noexcept;
+namespace ebi {
+    void set328BusAddress(const SplitWord32& address) noexcept;
+    void setInternalBusAddress(const SplitWord32& address) noexcept;
+    template<typename T>
+    [[nodiscard]] T 
+    load(Address address, TreatAs<T>) noexcept {
+        SplitWord32 split(address);
+        set328BusAddress(split);
+        return memory<T>(static_cast<size_t>(split.splitAddress.lower) + 0x8000);
+    }
+    template<typename T>
+    void 
+    store(Address address, T value, TreatAs<T>) noexcept {
+        SplitWord32 split(address);
+        set328BusAddress(split);
+        memory<T>(static_cast<size_t>(split.splitAddress.lower) + 0x8000) = value;
+    }
+    void begin() noexcept;
+
+}
+
 
 
 constexpr Ordinal computeChecksumOffset(Address segmentTableBase, Address prcbBase, Address startAddress) noexcept {
