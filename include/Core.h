@@ -626,7 +626,6 @@ class Core {
         void lockBus();
         void unlockBus();
         void signalBootFailure();
-        void setFaultPort(Ordinal value) noexcept;
         [[nodiscard]] Ordinal getFaultPort() const noexcept;
         /// @todo insert iac dispatch here
         /// @todo insert routines for getting registers and such 
@@ -653,8 +652,6 @@ class Core {
         [[nodiscard]] Integer unpackSrc1_COBR(TreatAsInteger) noexcept;
         [[nodiscard]] Ordinal unpackSrc2_COBR(TreatAsOrdinal) noexcept;
         [[nodiscard]] Integer unpackSrc2_COBR(TreatAsInteger) noexcept;
-        void setFaultCode(Ordinal value) noexcept;
-        void setFaultCode(Ordinal value, bool condition) noexcept;
         bool faultHappened() noexcept;
         void checkForPendingInterrupts() noexcept;
         template<typename T>
@@ -895,7 +892,7 @@ class Core {
         }
         inline void modi(Register& dest, Integer src1, Integer src2) noexcept {
             if (auto denominator = src1; denominator == 0) {
-                setFaultCode(ZeroDivideFault);
+                handleFault(ZeroDivideFault);
             } else {
                 auto numerator = src2;
                 auto result = numerator - ((numerator / denominator) * denominator);
@@ -934,7 +931,7 @@ class Core {
         void remainderOperation(Register& dest, T src1, T src2) noexcept {
             if (src1 == 0) {
                 /// @todo fix this
-                setFaultCode(ZeroDivideFault);
+                handleFault(ZeroDivideFault);
             } else {
                 // taken from the i960Sx manual
                 //dest.setValue(src2 - ((src2 / src1) * src1), TreatAs<T>{});
@@ -951,7 +948,7 @@ class Core {
         void divideOperation(Register& dest, T src1, T src2) noexcept {
             if (src1 == 0) {
                 /// @todo fix this
-                setFaultCode(ZeroDivideFault);
+                handleFault(ZeroDivideFault);
             } else {
                 dest.setValue(src2 / src1, TreatAs<T>{});
             }
@@ -1026,6 +1023,15 @@ class Core {
         bool performSelfTest() noexcept;
         void assertFailureState() noexcept;
         void deassertFailureState() noexcept;
+        void handleFault(Ordinal faultCode) noexcept;
+        inline void handleFault(Ordinal faultCode, bool condition) noexcept {
+            if (condition) {
+                handleFault(faultCode);
+            }
+        }
+        inline void raiseInvalidOperandFault() noexcept {
+            handleFault(InvalidOperandFault);
+        }
     private:
         Ordinal faultPortValue_;
         Ordinal systemAddressTableBase_ = 0;

@@ -117,7 +117,7 @@ void
 Core::emul(Register& dest, Ordinal src1, Ordinal src2) noexcept {
     SplitWord64 result;
     if ((instruction_.reg.srcDest & 0b1) != 0) {
-        setFaultCode(InvalidOpcodeFault);
+        handleFault(InvalidOpcodeFault);
     }  else {
         result.whole = static_cast<LongOrdinal>(src2) * static_cast<LongOrdinal>(src1);
     }
@@ -134,10 +134,10 @@ Core::ediv(Register& dest, Ordinal src1, Ordinal src2Lower) noexcept {
     src2.parts[0] = src2Lower;
     if ((instruction_.reg.srcDest & 0b1) != 0 || (instruction_.reg.src2 & 0b1) != 0) {
         /// @todo fix
-        setFaultCode(InvalidOpcodeFault);
+        handleFault(InvalidOpcodeFault);
     } else if (src1 == 0) {
         // divide by zero
-        setFaultCode(ZeroDivideFault);
+        handleFault(ZeroDivideFault);
     } else {
         src2.parts[1] = getGPRValue(instruction_.reg.src2, 1, TreatAsOrdinal{});
         result.parts[1] = src2.whole / src1; // quotient
@@ -161,10 +161,6 @@ Core::getSupervisorStackPointer() const noexcept {
     return load((getSystemProcedureTableBase() + 12), TreatAsOrdinal{});
 }
 
-void
-Core::setFaultCode(Ordinal fault) noexcept {
-    faultCode_.setValue(fault, TreatAsOrdinal{});
-}
 bool 
 Core::faultHappened() noexcept {
     return faultCode_.getValue(TreatAsOrdinal{}) != NoFault;
@@ -227,13 +223,13 @@ Core::flushreg() noexcept {
 void
 Core::mark() noexcept {
     if (pc_.processControls.traceEnable && tc_.trace.breakpointTraceMode) {
-        setFaultCode(MarkTraceFault);
+        handleFault(MarkTraceFault);
     }
 }
 void
 Core::fmark() noexcept {
     if (pc_.processControls.traceEnable) {
-        setFaultCode(MarkTraceFault);
+        handleFault(MarkTraceFault);
     }
 }
 void
@@ -366,7 +362,7 @@ Core::loadBlock(Ordinal baseAddress, byte baseRegister, byte count) noexcept {
 void 
 Core::ldl() noexcept {
     if ((instruction_.mem.srcDest & 0b1) != 0) {
-        setFaultCode(InvalidOperandFault);
+        handleFault(InvalidOperandFault);
     } else {
         loadBlock(computeAddress(), instruction_.mem.srcDest, 2);
         // support unaligned accesses
@@ -376,7 +372,7 @@ Core::ldl() noexcept {
 void
 Core::stl() noexcept {
     if ((instruction_.mem.srcDest & 0b1) != 0) {
-        setFaultCode(InvalidOperandFault);
+        raiseInvalidOperandFault();
     } else {
         storeBlock(computeAddress(), instruction_.mem.srcDest, 2);
         // support unaligned accesses
@@ -385,7 +381,7 @@ Core::stl() noexcept {
 void
 Core::ldt() noexcept {
     if ((instruction_.mem.srcDest & 0b11) != 0) {
-        setFaultCode(InvalidOperandFault);
+        raiseInvalidOperandFault();
     } else {
         loadBlock(computeAddress(), instruction_.mem.srcDest, 3);
         // support unaligned accesses
@@ -395,7 +391,7 @@ Core::ldt() noexcept {
 void
 Core::stt() noexcept {
     if ((instruction_.mem.srcDest & 0b11) != 0) {
-        setFaultCode(InvalidOperandFault);
+        raiseInvalidOperandFault();
     } else {
         storeBlock(computeAddress(), instruction_.mem.srcDest, 3);
         // support unaligned accesses
@@ -405,7 +401,7 @@ Core::stt() noexcept {
 void
 Core::ldq() noexcept {
     if ((instruction_.mem.srcDest & 0b11) != 0) {
-        setFaultCode(InvalidOperandFault);
+        raiseInvalidOperandFault();
     } else {
         loadBlock(computeAddress(), instruction_.mem.srcDest, 4);
         // support unaligned accesses
@@ -415,7 +411,7 @@ Core::ldq() noexcept {
 void
 Core::stq() noexcept {
     if ((instruction_.mem.srcDest & 0b11) != 0) {
-        setFaultCode(InvalidOperandFault);
+        raiseInvalidOperandFault();
     } else {
         storeBlock(computeAddress(), instruction_.mem.srcDest, 4);
         // support unaligned accesses
@@ -487,7 +483,8 @@ Core::call() {
 void
 Core::calls(Ordinal src1) noexcept {
     if (auto targ = src1; targ > 259) {
-        setFaultCode(ProtectionLengthFault);
+        handleFault(ProtectionLengthFault);
+        // handle execution here
     } else {
         syncf();
         auto tempPE = load(getSystemProcedureTableBase() + 48 + (4 * targ), TreatAsOrdinal{});
@@ -526,21 +523,11 @@ Core::bx() noexcept {
 void
 Core::performRegisterTransfer(byte mask, byte count) noexcept {
     if (((instruction_.reg.srcDest & mask) != 0) || ((instruction_.reg.src1 & mask) != 0)) {
-        setFaultCode(InvalidOpcodeFault);
+        handleFault(InvalidOpcodeFault);
     }
     for (byte i = 0; i < count; ++i) {
         setGPR(instruction_.reg.srcDest, i, unpackSrc1_REG(i, TreatAsOrdinal{}), TreatAsOrdinal{});
     }
-}
-
-void 
-Core::setFaultPort(Ordinal value) noexcept {
-    faultPortValue_ = value;
-}
- 
-Ordinal 
-Core::getFaultPort() const noexcept { 
-    return faultPortValue_;
 }
 
 void
@@ -565,12 +552,6 @@ void
 Core::branchConditional(bool condition) noexcept {
     if (condition) {
         branch();
-    }
-}
-void
-Core::setFaultCode(Ordinal value, bool cond) noexcept {
-    if (cond) {
-        setFaultCode(value);
     }
 }
 
@@ -599,7 +580,6 @@ Core::fullConditionCodeCheck() noexcept {
 }
 void
 Core::cycle() noexcept {
-    setFaultCode(NoFault);
     instruction_.setValue(load(ip_.a, TreatAsOrdinal{}), TreatAsOrdinal{});
     auto& regDest = getGPR(instruction_.reg.srcDest);
     auto src2o = unpackSrc2_REG(TreatAsOrdinal{});
@@ -641,7 +621,7 @@ Core::cycle() noexcept {
         case Opcodes::faultg:
         case Opcodes::faultge:
         case Opcodes::faulto:
-            setFaultCode(ConstraintRangeFault, fullConditionCodeCheck());
+            handleFault(ConstraintRangeFault, fullConditionCodeCheck());
             break;
         case Opcodes::testno:
         case Opcodes::testg:
@@ -934,7 +914,7 @@ Core::cycle() noexcept {
         case Opcodes::modpc:
             if (auto mask = src1o; mask != 0) {
                 if (!pc_.inSupervisorMode()) {
-                    setFaultCode(TypeMismatchFault);
+                    handleFault(TypeMismatchFault);
                 } else {
                     regDest.setValue<Ordinal>(pc_.modify(mask, src2o));
                     if (regDest.getPriority() > pc_.getPriority()) {
@@ -1034,15 +1014,8 @@ Core::cycle() noexcept {
             performConditionalSubtract(regDest, src1i, src2i, fullConditionCodeCheck(), TreatAsInteger{});
             break;
         default:
-            setFaultCode(UnimplementedFault);
+            handleFault(UnimplementedFault);
             break;
-    }
-    if (faultHappened()) {
-        /// @todo implement this as the fallback operation when something bad
-        /// happens
-        ///
-        /// Faults are basically fallback behavior when something goes wacky!
-        setFaultPort(faultCode_.o);
     }
     // okay we got here so we need to start grabbing data off of the bus and
     // start executing the next instruction
