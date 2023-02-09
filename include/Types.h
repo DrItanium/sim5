@@ -313,4 +313,25 @@ struct [[gnu::packed]] ProcessorControlBlock {
 
 using PRCB = ProcessorControlBlock;
 static_assert(sizeof(ProcessorControlBlock) == 176);
+
+constexpr uint8_t computeInterruptPriority(uint8_t index) noexcept  {
+    return index / 8;
+}
+static_assert(computeInterruptPriority(0) == 0);
+static_assert(computeInterruptPriority(1) == 0);
+static_assert(computeInterruptPriority(2) == 0);
+static_assert(computeInterruptPriority(3) == 0);
+static_assert(computeInterruptPriority(4) == 0);
+static_assert(computeInterruptPriority(5) == 0);
+static_assert(computeInterruptPriority(6) == 0);
+static_assert(computeInterruptPriority(7) == 0);
+static_assert(computeInterruptPriority(8) == 1);
+static_assert(computeInterruptPriority(9) == 1);
+static_assert(computeInterruptPriority(10) == 1);
+static_assert(computeInterruptPriority(11) == 1);
+static_assert(computeInterruptPriority(12) == 1);
+static_assert(computeInterruptPriority(13) == 1);
+static_assert(computeInterruptPriority(14) == 1);
+static_assert(computeInterruptPriority(15) == 1);
+static_assert(computeInterruptPriority(16) == 2);
 #endif // end SIM5_TYPES_H__
