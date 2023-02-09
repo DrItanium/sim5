@@ -23,3 +23,10 @@
 
 
 #include "Core.h"
+
+
+void
+Core::handleFault(Ordinal faultType) noexcept {
+
+}
+
