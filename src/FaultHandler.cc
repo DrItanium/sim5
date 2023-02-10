@@ -56,7 +56,7 @@ Core::saveFaultRecord(Ordinal faultType) noexcept {
 const FaultTableEntry& 
 Core::getFaultTableEntry(Ordinal faultType) noexcept {
     auto type = static_cast<uint8_t>(faultType >> 16);
-    volatile FaultTable& theTable = ebi::load<FaultTable>(load(prcbAddress_ + 40, TreatAsOrdinal{}), TreatAs<FaultTable>{});
+    volatile auto& theTable = ebi::load<FaultTable>(load(prcbAddress_ + 40, TreatAsOrdinal{}), TreatAs<FaultTable>{});
     return theTable.getFaultTableEntry(type);
 }
 
