@@ -1032,7 +1032,7 @@ class Core {
         inline void raiseInvalidOperandFault() noexcept {
             handleFault(InvalidOperandFault);
         }
-        Ordinal getFaultTableBase() const noexcept;
+
 
     private:
         Ordinal faultPortValue_;
