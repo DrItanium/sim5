@@ -150,6 +150,13 @@ static_assert(generateSegmentDescriptor(8) == 0x23f);
 static_assert(generateSegmentDescriptor(7) == 0x1ff);
 
 /**
+ * @brief A resumption record is a block of data the processor may
+ * generate based on the kind of interrupt or fault it encounters where
+ * execution must be paused.
+ */
+template<uint8_t N>
+using ResumptionRecord = byte[N];
+/**
  * @brief the data structure the processor creates upon a fault being
  * triggered.
  */
@@ -199,6 +206,9 @@ struct [[gnu::packed]] FaultTableEntry {
 
 struct [[gnu::packed]] FaultTable {
     FaultTableEntry entries[32];
+    auto& getFaultTableEntry(uint8_t index) noexcept {
+        return entries[index & 0b11111];
+    }
 };
 
 struct [[gnu::packed]] InterruptTable {
@@ -311,7 +321,6 @@ struct InterruptRecord {
      */
     Ordinal pc;
 
-    ByteOrdinal resumptionRecord[48]; 
 };
 
 /**
