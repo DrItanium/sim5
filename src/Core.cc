@@ -161,10 +161,6 @@ Core::getSupervisorStackPointer() const noexcept {
     return load((getSystemProcedureTableBase() + 12), TreatAsOrdinal{});
 }
 
-bool 
-Core::faultHappened() noexcept {
-    return faultCode_.getValue(TreatAsOrdinal{}) != NoFault;
-}
 Ordinal 
 Core::unpackSrc1_COBR(TreatAsOrdinal) noexcept {
     if (instruction_.cobr.m1) {

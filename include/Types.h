@@ -92,7 +92,7 @@ namespace ebi {
     void set328BusAddress(const SplitWord32& address) noexcept;
     void setInternalBusAddress(const SplitWord32& address) noexcept;
     template<typename T>
-    [[nodiscard]] T 
+    [[nodiscard]] decltype(auto) 
     load(Address address, TreatAs<T>) noexcept {
         SplitWord32 split(address);
         set328BusAddress(split);

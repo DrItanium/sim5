@@ -28,6 +28,7 @@
 void
 Core::handleFault(Ordinal faultType) noexcept {
     /// @todo implement saving of the resumption record if it makes sense
+    /// @todo implement proper return ip address support
     saveFaultRecord(faultType);
     if (auto& entry = getFaultTableEntry(faultType); entry.isLocalEntry()) {
         /// @todo add support for resuming at the current instruction if it makes sense
@@ -49,6 +50,14 @@ Core::saveFaultRecord(Ordinal faultType) noexcept {
     // is currently using.
     // okay so in both cases we are going to store the fault record to the
     // current stack
+    /// @todo implement
+}
+
+const FaultTableEntry& 
+Core::getFaultTableEntry(Ordinal faultType) noexcept {
+    auto type = static_cast<uint8_t>(faultType >> 16);
+    volatile FaultTable& theTable = ebi::load<FaultTable>(load(prcbAddress_ + 40, TreatAsOrdinal{}), TreatAs<FaultTable>{});
+    return theTable.getFaultTableEntry(type);
 }
 
 
