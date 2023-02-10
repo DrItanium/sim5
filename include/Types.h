@@ -61,7 +61,7 @@ union SplitWord32 {
         Ordinal rest : 13;
     } internalBankAddress;
     struct {
-        Ordinal offest : 28;
+        Ordinal offset : 28;
         Ordinal space : 4;
     } addressKind;
     [[nodiscard]] constexpr bool inIOSpace() const noexcept { return addressKind.space == 0b1111; }
@@ -200,8 +200,90 @@ struct [[gnu::packed]] FaultTable {
 
 struct [[gnu::packed]] InterruptTable {
     Ordinal pendingPriorities;
-    Ordinal pendingInterrupts[8];
+    byte pendingInterrupts[32]; // index 0 is reserved
     Address interruptProcedureBases[248];
+
+    inline void post(uint8_t vector) noexcept {
+        static constexpr uint32_t PriorityMaskTable[32] {
+            1ul << 0ul, 1ul << 1ul,
+            1ul << 2ul, 1ul << 3ul,
+            1ul << 4ul, 1ul << 5ul,
+            1ul << 6ul, 1ul << 7ul,
+            1ul << 8ul, 1ul << 9ul,
+            1ul << 10ul, 1ul << 11ul,
+            1ul << 12ul, 1ul << 13ul,
+            1ul << 14ul, 1ul << 15ul,
+            1ul << 16ul, 1ul << 17ul,
+            1ul << 18ul, 1ul << 19ul,
+            1ul << 20ul, 1ul << 21ul,
+            1ul << 22ul, 1ul << 23ul,
+            1ul << 24ul, 1ul << 25ul,
+            1ul << 26ul, 1ul << 27ul,
+            1ul << 28ul, 1ul << 29ul,
+            1ul << 30ul, 1ul << 31ul,
+        };
+        static constexpr uint8_t InterruptMaskTable[8] {
+            0b0000'0001,
+            0b0000'0010,
+            0b0000'0100,
+            0b0000'1000,
+            0b0001'0000,
+            0b0010'0000,
+            0b0100'0000,
+            0b1000'0000,
+        };
+        if (uint8_t priority = vector >> 3; priority > 0) {
+            uint8_t offset = vector & 0b111;
+            pendingPriorities |= PriorityMaskTable[priority];
+            pendingInterrupts[priority] |= InterruptMaskTable[offset];
+        }
+    }
+    inline void unpost(uint8_t vector) noexcept {
+        static constexpr uint32_t PriorityMaskTable[32] {
+            ~(1ul << 0ul), ~(1ul << 1ul),
+            ~(1ul << 2ul), ~(1ul << 3ul),
+            ~(1ul << 4ul), ~(1ul << 5ul),
+            ~(1ul << 6ul), ~(1ul << 7ul),
+            ~(1ul << 8ul), ~(1ul << 9ul),
+            ~(1ul << 10ul), ~(1ul << 11ul),
+            ~(1ul << 12ul), ~(1ul << 13ul),
+            ~(1ul << 14ul), ~(1ul << 15ul),
+            ~(1ul << 16ul), ~(1ul << 17ul),
+            ~(1ul << 18ul), ~(1ul << 19ul),
+            ~(1ul << 20ul), ~(1ul << 21ul),
+            ~(1ul << 22ul), ~(1ul << 23ul),
+            ~(1ul << 24ul), ~(1ul << 25ul),
+            ~(1ul << 26ul), ~(1ul << 27ul),
+            ~(1ul << 28ul), ~(1ul << 29ul),
+            ~(1ul << 30ul), ~(1ul << 31ul),
+        };
+        static constexpr uint8_t InterruptMaskTable[8] {
+            0b1111'1110,
+            0b1111'1101,
+            0b1111'1011,
+            0b1111'0111,
+            0b1110'1111,
+            0b1101'1111,
+            0b1011'1111,
+            0b0111'1111,
+        };
+        if (uint8_t priority = vector >> 3; priority > 0) {
+            uint8_t offset = vector & 0b111;
+            pendingInterrupts[priority] &= InterruptMaskTable[offset];
+            // all vectors have been serviced
+            if (pendingInterrupts[priority] == 0) {
+                pendingPriorities &= PriorityMaskTable[priority];
+            }
+        }
+    }
+
+    inline Address getInterruptVector(uint8_t vector) noexcept {
+        if (vector > 8) {
+            return interruptProcedureBases[vector - 8];
+        } else {
+            return 0;
+        }
+    }
 };
 
 /**
@@ -334,4 +416,11 @@ static_assert(computeInterruptPriority(13) == 1);
 static_assert(computeInterruptPriority(14) == 1);
 static_assert(computeInterruptPriority(15) == 1);
 static_assert(computeInterruptPriority(16) == 2);
+
+constexpr bool shouldServiceInterrupt(uint8_t systemPriority, uint8_t interruptPriority) noexcept {
+    return interruptPriority == 31 || (interruptPriority > systemPriority);
+}
+
+static_assert(shouldServiceInterrupt(31, 31), "Interrupt Priorities of 31 should always be immediately serviced!");
+static_assert(!shouldServiceInterrupt(30, 30), "Interrupt priorities less than or equal to system priority should have delayed service");
 #endif // end SIM5_TYPES_H__
