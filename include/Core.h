@@ -810,7 +810,6 @@ class Core {
         void restoreStandardFrame() noexcept;
         void storeBlock(Ordinal baseAddress, byte baseRegister, byte count) noexcept;
         void loadBlock(Ordinal baseAddress, byte baseRegister, byte count) noexcept;
-        void newStackFrame(Ordinal newBase, Ordinal pfpValue) noexcept;
     protected:
         void performConditionalSubtract(Register& dest, Integer src1, Integer src2, bool condition, TreatAsInteger) noexcept;
         void performConditionalSubtract(Register& dest, Ordinal src1, Ordinal src2, bool condition, TreatAsOrdinal) noexcept;
@@ -1036,6 +1035,9 @@ class Core {
         inline void raiseInvalidOperandFault() noexcept {
             handleFault(InvalidOperandFault);
         }
+        void newStackFrame(Ordinal newBase, Ordinal pfpValue) noexcept;
+        void saveFaultRecord(Ordinal faultCode);
+        const FaultTableEntry& getFaultTableEntry(Ordinal faultCode) noexcept;
 
 
     private:

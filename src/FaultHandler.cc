@@ -28,8 +28,25 @@
 void
 Core::handleFault(Ordinal faultType) noexcept {
     // so this will turn the instruction into a callx-like operation
+    if (auto& entry = getFaultTableEntry(faultType); entry.isLocalEntry()) {
+        saveFaultRecord(faultType);
+        /// @todo implement saving of the resumption record if it makes sense
+        /// @todo add support for resuming at the current instruction if it makes sense
+        callx(entry.getHandlerAddress());
+        getGPR(PFPIndex).pfp.rt = 0b001;
+    } else if (entry.isSystemProcedureTableEntry()) {
+
+    } else {
+        /// @todo what to do here? Fail out?
+    }
+}
+
+void
+Core::saveFaultRecord(Ordinal faultType) noexcept {
 
 }
+
+
 
 /* Taken from the Kx manual:
  *
