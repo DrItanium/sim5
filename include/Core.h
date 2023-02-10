@@ -1023,6 +1023,8 @@ class Core {
         bool performSelfTest() noexcept;
         void assertFailureState() noexcept;
         void deassertFailureState() noexcept;
+        void raiseLocalFault(Address handlerAddress, Address returnAddress) noexcept;
+        void raiseSupervisorFault(Address handlerAddress, Address returnAddress) noexcept;
         void handleFault(Ordinal faultCode) noexcept;
         inline void handleFault(Ordinal faultCode, bool condition) noexcept {
             if (condition) {

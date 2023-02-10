@@ -27,6 +27,51 @@
 
 void
 Core::handleFault(Ordinal faultType) noexcept {
-
+    // so this will turn the instruction into a callx-like operation
 }
 
+/* Taken from the Kx manual:
+ *
+ * Algorithm for implicit, local call/return
+ * When the selected fault-handler entry in the fault table is an entry type
+ * 0b00 (local procedure), the processor performs the following action:
+ *
+ * 1. The processor stores a fault record on the top of the stack that the
+ * process is currently using. The stack can be the local stack, the supervisor
+ * stack, or the interrupt stack
+ *
+ * 2. If the fault caused an instruction to be suspended, the processor
+ * includes an instruction-resumption record on the current stack and sets the
+ * resume flag in the saved process controls.
+ *
+ * 3. The processor creates a new frame on the current stack, with the
+ * frame-return status field set to 0b001
+ *
+ * 4. Using the procedure address from the selected fault-table entry, the
+ * processor performs an implicit call-extended (callx) operation to the fault
+ * handler.
+ *
+ * If the fault handler is not able to perform a recovery action, it performs
+ * one of the actions described in the section earlier in this chaper titled
+ * "Possible Fault-Handler Actions."
+ *
+ * If the handler action results in a recovery from the fault, a ret
+ * instruction in the fault handler allow processor control to return 
+ * to the program that was being worked on when the fault occurred. On the
+ * return, the processor performs the following action:
+ *
+ * 1. The processor deallocates the stack frame created for the fault handler
+ *
+ * 2. The processor copies the arithmetic controls field from the fault record
+ * into the arithmetic controls register in the processor.
+ *
+ * 3. The processor then resumes work on the program it was working on when the
+ * fault occurred at the instruction in the return IP register.
+ *
+ * My Commentary:
+ *
+ * The ret instruction handles the return-from-fault state already. I just need
+ * to hook up the implicit callx instruction and describe the actions to be
+ * performed in common terms provided to me. In all cases, when we raise a
+ * fault it is a callx instruction with extra things to perform ahead of time.
+ */
