@@ -187,7 +187,7 @@ struct [[gnu::packed]] FaultRecord {
             ByteOrdinal unused2;
             ByteOrdinal type;
             ByteOrdinal flags;
-        }
+        };
     } kind;
     /**
      * @brief The address of the faulting instruction

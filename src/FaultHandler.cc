@@ -51,7 +51,9 @@ Core::saveFaultRecord(Ordinal faultType, Ordinal dat0, Ordinal dat1, Ordinal dat
     // okay so in both cases we are going to store the fault record to the
     // current stack
     FaultRecord rec;
-    rec.unused = { 0 };
+    for (auto& a : rec.unused) {
+        a = 0;
+    }
     rec.faultData[0] = dat0;
     rec.faultData[1] = dat1;
     rec.faultData[2] = dat2;
