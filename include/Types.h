@@ -157,7 +157,10 @@ struct [[gnu::packed]] FaultRecord {
     Ordinal unused;
     Ordinal overrideFaultData[3];
     Ordinal faultData[3];
-    Ordinal overrideType;
+    ByteOrdinal overrideSubType;
+    ByteOrdinal unused1;
+    ByteOrdinal overrideType;
+    ByteOrdinal overrideFlags;
     /**
      * @brief A copy of the ProcessControls register at the time the fault was
      * raised.
@@ -168,10 +171,10 @@ struct [[gnu::packed]] FaultRecord {
      * fault was raised.
      */
     Ordinal ac;
-    /**
-     * @brief the type of the fault
-     */
-    Ordinal type;
+    ByteOrdinal subtype;
+    ByteOrdinal unused2;
+    ByteOrdinal type;
+    ByteOrdinal flags;
     /**
      * @brief The address of the faulting instruction
      */
@@ -291,20 +294,24 @@ struct [[gnu::packed]] InterruptTable {
  * triggered.
  */
 struct InterruptRecord {
+    Ordinal reserved;
     /**
-     * @brief Contents of process controls register at the time of the
-     * interrupt trigger.
+     * @brief The vector being triggered
      */
-    Ordinal pc;
+    ByteOrdinal vectorNumber;
+    ByteOrdinal unused[3];
     /**
      * @brief Contents of arithmetic controls register at the time of the
      * interrupt trigger.
      */
     Ordinal ac;
     /**
-     * @brief The vector being triggered
+     * @brief Contents of process controls register at the time of the
+     * interrupt trigger.
      */
-    ByteOrdinal vectorNumber;
+    Ordinal pc;
+
+    ByteOrdinal resumptionRecord[48]; 
 };
 
 /**
