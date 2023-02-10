@@ -26,7 +26,7 @@
 
 
 void
-Core::handleFault(Ordinal faultType) noexcept {
+Core::handleFault(Ordinal faultType, Ordinal dat0, Ordinal dat1, Ordinal dat2) noexcept {
     /// @todo implement saving of the resumption record if it makes sense
     /// @todo implement proper return ip address support
     saveFaultRecord(faultType);
@@ -45,12 +45,22 @@ Core::handleFault(Ordinal faultType) noexcept {
 }
 
 void
-Core::saveFaultRecord(Ordinal faultType) noexcept {
+Core::saveFaultRecord(Ordinal faultType, Ordinal dat0, Ordinal dat1, Ordinal dat2) noexcept {
     // generate a fault record and on the top of the stack that the processor
     // is currently using.
     // okay so in both cases we are going to store the fault record to the
     // current stack
-    /// @todo implement
+    FaultRecord rec;
+    rec.unused = { 0 };
+    rec.faultData[0] = dat0;
+    rec.faultData[1] = dat1;
+    rec.faultData[2] = dat2;
+    rec.unused1 = 0;
+    rec.pc = pc_.o;
+    rec.ac = ac_.o;
+    rec.kind.whole = faultType;
+    rec.addr = ip_.o;
+    /// @todo check and push onto the stack
 }
 
 const FaultTableEntry& 

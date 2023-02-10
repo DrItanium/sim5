@@ -1022,9 +1022,7 @@ class Core {
         bool performSelfTest() noexcept;
         void assertFailureState() noexcept;
         void deassertFailureState() noexcept;
-        void raiseLocalFault(Address handlerAddress, Address returnAddress) noexcept;
-        void raiseSupervisorFault(Address handlerAddress, Address returnAddress) noexcept;
-        void handleFault(Ordinal faultCode) noexcept;
+        void handleFault(Ordinal faultCode, Ordinal faultData0 = 0, Ordinal faultData1 = 0, Ordinal faultData2 = 0) noexcept;
         inline void handleFault(Ordinal faultCode, bool condition) noexcept {
             if (condition) {
                 handleFault(faultCode);
@@ -1034,7 +1032,7 @@ class Core {
             handleFault(InvalidOperandFault);
         }
         void newStackFrame(Ordinal newBase, Ordinal pfpValue) noexcept;
-        void saveFaultRecord(Ordinal faultCode);
+        void saveFaultRecord(Ordinal faultCode, Ordinal dat0 = 0, Ordinal dat1 = 0, Ordinal dat2 = 0);
         const FaultTableEntry& getFaultTableEntry(Ordinal faultCode) noexcept;
         Address getProcedureTableOffset(Address baseAddress, Ordinal offset) noexcept;
 

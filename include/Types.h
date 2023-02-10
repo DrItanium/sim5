@@ -161,13 +161,15 @@ using ResumptionRecord = byte[N];
  * triggered.
  */
 struct [[gnu::packed]] FaultRecord {
-    Ordinal unused;
-    Ordinal overrideFaultData[3];
+    Ordinal unused[4];
+    //Ordinal unused;
+    //Ordinal overrideFaultData[3];
     Ordinal faultData[3];
-    ByteOrdinal overrideSubType;
-    ByteOrdinal unused1;
-    ByteOrdinal overrideType;
-    ByteOrdinal overrideFlags;
+    Ordinal unused1;
+    //ByteOrdinal overrideSubType;
+    //ByteOrdinal unused1;
+    //ByteOrdinal overrideType;
+    //ByteOrdinal overrideFlags;
     /**
      * @brief A copy of the ProcessControls register at the time the fault was
      * raised.
@@ -178,10 +180,15 @@ struct [[gnu::packed]] FaultRecord {
      * fault was raised.
      */
     Ordinal ac;
-    ByteOrdinal subtype;
-    ByteOrdinal unused2;
-    ByteOrdinal type;
-    ByteOrdinal flags;
+    union {
+        Ordinal whole;
+        struct {
+            ByteOrdinal subtype;
+            ByteOrdinal unused2;
+            ByteOrdinal type;
+            ByteOrdinal flags;
+        }
+    } kind;
     /**
      * @brief The address of the faulting instruction
      */
