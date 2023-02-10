@@ -28,6 +28,7 @@
 void
 Core::handleFault(Ordinal faultType) noexcept {
     // so this will turn the instruction into a callx-like operation
+
 }
 
 /* Taken from the Kx manual:

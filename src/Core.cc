@@ -251,7 +251,7 @@ Core::ret() {
         case 0b000: 
             restoreStandardFrame();
             break;
-        case 0b001:
+        case 0b001: // return from fault handler
             {
                 auto fp = getGPRValue(FPIndex, TreatAsOrdinal{});
                 auto x = load(fp - 16, TreatAsOrdinal{});
@@ -453,19 +453,27 @@ Core::enterCall(Ordinal fp) noexcept {
         allocateNewRegisterFrame();
     }
 }
-void
-Core::callx() noexcept {
+        
+void 
+Core::newStackFrame(Ordinal newBase, Ordinal pfpValue) noexcept {
+    setGPR(PFPIndex, pfpValue, TreatAsOrdinal{});
+    setGPR(FPIndex, newBase, TreatAsOrdinal{});
+    setGPR(SPIndex , newBase + 64, TreatAsOrdinal{});
+    advanceBy_ = 0;
+}
+void 
+Core::callx(Address addr) noexcept {
     // wait for any uncompleted instructions to finish
     auto temp = (getGPRValue(SPIndex, TreatAsOrdinal{}) + C) & NotC; // round stack pointer to next boundary
-    auto addr = computeAddress();
     auto fp = getGPRValue(FPIndex, TreatAsOrdinal{});
     setGPR(RIPIndex, ip_.getValue(TreatAsOrdinal{}) + advanceBy_, TreatAsOrdinal{});
     enterCall(fp);
     ip_.setValue(addr, TreatAsOrdinal{});
-    setGPR(PFPIndex, fp, TreatAsOrdinal{});
-    setGPR(FPIndex, temp, TreatAsOrdinal{});
-    setGPR(SPIndex , temp + 64, TreatAsOrdinal{});
-    advanceBy_ = 0;
+    newStackFrame(temp, fp);
+}
+void
+Core::callx() noexcept {
+    callx(computeAddress());
 }
 void 
 Core::call() {
@@ -475,10 +483,7 @@ Core::call() {
     setGPR(RIPIndex, ip_.getValue(TreatAsOrdinal{}) + advanceBy_, TreatAsOrdinal{});
     enterCall(fp);
     ip_.i += instruction_.ctrl.displacement;
-    setGPR(PFPIndex, fp, TreatAsOrdinal{});
-    setGPR(FPIndex, temp, TreatAsOrdinal{});
-    setGPR(SPIndex , temp + 64, TreatAsOrdinal{});
-    advanceBy_ = 0;
+    newStackFrame(temp, fp);
 }
 void
 Core::calls(Ordinal src1) noexcept {
@@ -505,14 +510,9 @@ Core::calls(Ordinal src1) noexcept {
             pc_.processControls.traceEnable = temp & 0b1;
         }
         enterCall(temp);
-        /// @todo expand pfp and fp to accurately model how this works
-        auto& pfp = getGPR(PFPIndex);
-        // lowest six bits are ignored
-        pfp.setValue(getGPRValue(FPIndex, TreatAsOrdinal{}) & ~0b1'111, TreatAsOrdinal{});
-        pfp.pfp.rt = tempRRR;
-        setGPR(FPIndex, temp, TreatAsOrdinal{});
-        setGPR(SPIndex, temp + 64, TreatAsOrdinal{});
-        advanceBy_ = true;
+        newStackFrame(temp, getGPRValue(FPIndex, TreatAsOrdinal{}) & ~0b1'111);
+        // then we update the rt value afterwards
+        getGPR(PFPIndex).pfp.rt = tempRRR;
     }
 }
 void

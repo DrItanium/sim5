@@ -799,6 +799,7 @@ class Core {
         void ret() noexcept;
         void call() noexcept;
         void callx() noexcept;
+        void callx(Address theAddress) noexcept;
     protected:
         void enterCall(Ordinal fp) noexcept;
         void leaveCall() noexcept;
@@ -809,6 +810,7 @@ class Core {
         void restoreStandardFrame() noexcept;
         void storeBlock(Ordinal baseAddress, byte baseRegister, byte count) noexcept;
         void loadBlock(Ordinal baseAddress, byte baseRegister, byte count) noexcept;
+        void newStackFrame(Ordinal newBase, Ordinal pfpValue) noexcept;
     protected:
         void performConditionalSubtract(Register& dest, Integer src1, Integer src2, bool condition, TreatAsInteger) noexcept;
         void performConditionalSubtract(Register& dest, Ordinal src1, Ordinal src2, bool condition, TreatAsOrdinal) noexcept;
