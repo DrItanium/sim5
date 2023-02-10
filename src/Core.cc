@@ -485,6 +485,10 @@ Core::call() {
     ip_.i += instruction_.ctrl.displacement;
     newStackFrame(temp, fp);
 }
+Address 
+Core::getProcedureTableOffset(Address baseAddress, Ordinal offset) noexcept {
+        return load(baseAddress + 48 + (4 * offset), TreatAsOrdinal{});
+}
 void
 Core::calls(Ordinal src1) noexcept {
     if (auto targ = src1; targ > 259) {
@@ -492,7 +496,7 @@ Core::calls(Ordinal src1) noexcept {
         // handle execution here
     } else {
         syncf();
-        auto tempPE = load(getSystemProcedureTableBase() + 48 + (4 * targ), TreatAsOrdinal{});
+        auto tempPE = getProcedureTableOffset(getSystemAddressTableBase(), targ);
         auto type = tempPE & 0b11;
         auto procedureAddress = tempPE & ~0b11;
         // read entry from system-procedure table, where spbase is address of

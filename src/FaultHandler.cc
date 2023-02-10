@@ -27,14 +27,16 @@
 
 void
 Core::handleFault(Ordinal faultType) noexcept {
-    // so this will turn the instruction into a callx-like operation
+    /// @todo implement saving of the resumption record if it makes sense
+    saveFaultRecord(faultType);
     if (auto& entry = getFaultTableEntry(faultType); entry.isLocalEntry()) {
-        saveFaultRecord(faultType);
-        /// @todo implement saving of the resumption record if it makes sense
         /// @todo add support for resuming at the current instruction if it makes sense
         callx(entry.getHandlerAddress());
         getGPR(PFPIndex).pfp.rt = 0b001;
     } else if (entry.isSystemProcedureTableEntry()) {
+        /// @todo get the fault table number from the table entry and then jump
+        /// to the segment table to find the system procedure table
+        auto systemProcedureNumber = entry.getHandlerAddress();
 
     } else {
         /// @todo what to do here? Fail out?
@@ -43,7 +45,10 @@ Core::handleFault(Ordinal faultType) noexcept {
 
 void
 Core::saveFaultRecord(Ordinal faultType) noexcept {
-
+    // generate a fault record and on the top of the stack that the processor
+    // is currently using.
+    // okay so in both cases we are going to store the fault record to the
+    // current stack
 }
 
 

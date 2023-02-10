@@ -1038,6 +1038,7 @@ class Core {
         void newStackFrame(Ordinal newBase, Ordinal pfpValue) noexcept;
         void saveFaultRecord(Ordinal faultCode);
         const FaultTableEntry& getFaultTableEntry(Ordinal faultCode) noexcept;
+        Address getProcedureTableOffset(Address baseAddress, Ordinal offset) noexcept;
 
 
     private:
