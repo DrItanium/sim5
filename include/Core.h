@@ -340,6 +340,9 @@ union Register {
     constexpr uint8_t getInstructionMask() const noexcept { 
         return bytes[3] & 0b111;
     }
+    constexpr uint8_t getMajorOpcode() const noexcept {
+        return bytes[3];
+    }
     struct {
         Integer aligned : 2;
         Integer important : 30;
@@ -503,10 +506,10 @@ union Register {
     }
     [[nodiscard]] constexpr auto getOpcode() const noexcept { 
         if (isREGFormat()) {
-            uint16_t baseValue = static_cast<uint16_t>(bytes[3]) << 4;
+            uint16_t baseValue = static_cast<uint16_t>(getMajorOpcode()) << 4;
             return static_cast<Opcodes>(baseValue | static_cast<uint16_t>(reg.opcodeExt));
         } else {
-            return static_cast<Opcodes>(bytes[3]); 
+            return static_cast<Opcodes>(getMajorOpcode());
         }
     }
     bool getCarryBit() const noexcept { return arith.conditionCode & 0b001; }
