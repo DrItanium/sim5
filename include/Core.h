@@ -330,6 +330,8 @@ enum class BootResult : uint8_t {
     SelfTestFailure,
     ChecksumFail,
 };
+struct TreatAsREG { };
+struct TreatAsCOBR { };
 union Register {
     constexpr explicit Register(Ordinal value = 0) : o(value) { }
     Ordinal o;
@@ -646,15 +648,15 @@ class Core {
         inline void setGPR(byte index, Integer value, TreatAsInteger) noexcept { getGPR(index).setValue(value, TreatAsInteger{}); }
         [[nodiscard]] Register& getSFR(byte index) noexcept;
         [[nodiscard]] Register& getSFR(byte index, byte offset) noexcept;
-        [[nodiscard]] Ordinal unpackSrc1_REG(TreatAsOrdinal) noexcept;
-        [[nodiscard]] Ordinal unpackSrc1_REG(byte offset, TreatAsOrdinal) noexcept;
-        [[nodiscard]] Integer unpackSrc1_REG(TreatAsInteger) noexcept;
-        [[nodiscard]] Ordinal unpackSrc2_REG(TreatAsOrdinal) noexcept;
-        [[nodiscard]] Integer unpackSrc2_REG(TreatAsInteger) noexcept;
-        [[nodiscard]] Ordinal unpackSrc1_COBR(TreatAsOrdinal) noexcept;
-        [[nodiscard]] Integer unpackSrc1_COBR(TreatAsInteger) noexcept;
-        [[nodiscard]] Ordinal unpackSrc2_COBR(TreatAsOrdinal) noexcept;
-        [[nodiscard]] Integer unpackSrc2_COBR(TreatAsInteger) noexcept;
+        [[nodiscard]] Ordinal unpackSrc1(TreatAsOrdinal, TreatAsREG) noexcept;
+        [[nodiscard]] Ordinal unpackSrc1(byte offset, TreatAsOrdinal, TreatAsREG) noexcept;
+        [[nodiscard]] Integer unpackSrc1(TreatAsInteger, TreatAsREG) noexcept;
+        [[nodiscard]] Ordinal unpackSrc2(TreatAsOrdinal, TreatAsREG) noexcept;
+        [[nodiscard]] Integer unpackSrc2(TreatAsInteger, TreatAsREG) noexcept;
+        [[nodiscard]] Ordinal unpackSrc1(TreatAsOrdinal, TreatAsCOBR) noexcept;
+        [[nodiscard]] Integer unpackSrc1(TreatAsInteger, TreatAsCOBR) noexcept;
+        [[nodiscard]] Ordinal unpackSrc2(TreatAsOrdinal, TreatAsCOBR) noexcept;
+        [[nodiscard]] Integer unpackSrc2(TreatAsInteger, TreatAsCOBR) noexcept;
         void checkForPendingInterrupts() noexcept;
         template<typename T>
         void moveGPR(byte destIndex, byte srcIndex, TreatAs<T>) noexcept {
@@ -741,8 +743,8 @@ class Core {
         template<bool checkClear>
         void 
         branchIfBitGeneric() {
-            Ordinal bitpos = computeBitPosition(unpackSrc1_COBR(TreatAsOrdinal{}));
-            Ordinal against = unpackSrc2_COBR(TreatAsOrdinal{});
+            Ordinal bitpos = computeBitPosition(unpackSrc1(TreatAsOrdinal{}, TreatAsCOBR{}));
+            Ordinal against = unpackSrc2(TreatAsOrdinal{}, TreatAsCOBR{});
             bool condition = false;
             // Branch if bit set
             if constexpr (checkClear) {
@@ -775,8 +777,8 @@ class Core {
         }
         template<typename T>
         void cmpxbGeneric() noexcept {
-            auto src1 = unpackSrc1_COBR(TreatAs<T>{});
-            auto src2 = unpackSrc2_COBR(TreatAs<T>{});
+            auto src1 = unpackSrc1(TreatAs<T>{}, TreatAsCOBR{});
+            auto src2 = unpackSrc2(TreatAs<T>{}, TreatAsCOBR{});
             cmpGeneric(src1, src2);
             if ((instruction_.getInstructionMask() & ac_.getConditionCode()) != 0) {
                 Register temp{0};

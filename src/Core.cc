@@ -26,7 +26,7 @@
 #include "Core.h"
 
 Ordinal 
-Core::unpackSrc1_REG(TreatAsOrdinal) noexcept {
+Core::unpackSrc1(TreatAsOrdinal, TreatAsREG) noexcept {
     if (instruction_.reg.m1) {
         /// @todo what to do if s1 is also set?
         return instruction_.reg.src1;
@@ -37,7 +37,7 @@ Core::unpackSrc1_REG(TreatAsOrdinal) noexcept {
     }
 }
 Ordinal 
-Core::unpackSrc1_REG(byte offset, TreatAsOrdinal) noexcept {
+Core::unpackSrc1(byte offset, TreatAsOrdinal, TreatAsREG) noexcept {
     if (instruction_.reg.m1) {
         // literals should always return zero if offset is greater than zero
         return offset == 0 ? instruction_.reg.src1 : 0;
@@ -48,7 +48,7 @@ Core::unpackSrc1_REG(byte offset, TreatAsOrdinal) noexcept {
     }
 }
 Integer 
-Core::unpackSrc1_REG(TreatAsInteger) noexcept {
+Core::unpackSrc1(TreatAsInteger, TreatAsREG) noexcept {
     if (instruction_.reg.m1) {
         return instruction_.reg.src1;
     } else if (instruction_.reg.s1) {
@@ -58,7 +58,7 @@ Core::unpackSrc1_REG(TreatAsInteger) noexcept {
     }
 }
 Ordinal 
-Core::unpackSrc2_REG(TreatAsOrdinal) noexcept {
+Core::unpackSrc2(TreatAsOrdinal, TreatAsREG) noexcept {
     if (instruction_.reg.m2) {
         return instruction_.reg.src2;
     } else if (instruction_.reg.s2) {
@@ -68,7 +68,7 @@ Core::unpackSrc2_REG(TreatAsOrdinal) noexcept {
     }
 }
 Integer 
-Core::unpackSrc2_REG(TreatAsInteger) noexcept {
+Core::unpackSrc2(TreatAsInteger, TreatAsREG) noexcept {
     if (instruction_.reg.m2) {
         return instruction_.reg.src2;
     } else if (instruction_.reg.s2) {
@@ -162,7 +162,7 @@ Core::getSupervisorStackPointer() const noexcept {
 }
 
 Ordinal 
-Core::unpackSrc1_COBR(TreatAsOrdinal) noexcept {
+Core::unpackSrc1(TreatAsOrdinal, TreatAsCOBR) noexcept {
     if (instruction_.cobr.m1) {
         // treat src1 as a literal
         return instruction_.cobr.src1;
@@ -171,7 +171,7 @@ Core::unpackSrc1_COBR(TreatAsOrdinal) noexcept {
     }
 }
 Ordinal
-Core::unpackSrc2_COBR(TreatAsOrdinal) noexcept {
+Core::unpackSrc2(TreatAsOrdinal, TreatAsCOBR) noexcept {
     if (instruction_.cobr.s2) {
         // access the contents of the sfrs
         // at this point it is just a simple extra set of 32 registers
@@ -181,7 +181,7 @@ Core::unpackSrc2_COBR(TreatAsOrdinal) noexcept {
     }
 }
 Integer
-Core::unpackSrc1_COBR(TreatAsInteger) noexcept {
+Core::unpackSrc1(TreatAsInteger, TreatAsCOBR) noexcept {
     if (instruction_.cobr.m1) {
         // treat src1 as a literal
         return instruction_.cobr.src1;
@@ -190,7 +190,7 @@ Core::unpackSrc1_COBR(TreatAsInteger) noexcept {
     }
 }
 Integer
-Core::unpackSrc2_COBR(TreatAsInteger) noexcept {
+Core::unpackSrc2(TreatAsInteger, TreatAsCOBR) noexcept {
     if (instruction_.cobr.s2) {
         // access the contents of the sfrs
         // at this point it is just a simple extra set of 32 registers
@@ -533,7 +533,7 @@ Core::performRegisterTransfer(byte mask, byte count) noexcept {
         generateFault(InvalidOpcodeFault);
     }
     for (byte i = 0; i < count; ++i) {
-        setGPR(instruction_.reg.srcDest, i, unpackSrc1_REG(i, TreatAsOrdinal{}), TreatAsOrdinal{});
+        setGPR(instruction_.reg.srcDest, i, unpackSrc1(i, TreatAsOrdinal{}, TreatAsREG{}), TreatAsOrdinal{});
     }
 }
 
@@ -590,10 +590,10 @@ void
 Core::cycle() noexcept {
     instruction_.setValue(load(ip_.a, TreatAsOrdinal{}), TreatAsOrdinal{});
     auto& regDest = getGPR(instruction_.reg.srcDest);
-    auto src2o = unpackSrc2_REG(TreatAsOrdinal{});
-    auto src2i = unpackSrc2_REG(TreatAsInteger{});
-    auto src1o = unpackSrc1_REG(TreatAsOrdinal{});
-    auto src1i = unpackSrc1_REG(TreatAsInteger{});
+    auto src2o = unpackSrc2(TreatAsOrdinal{}, TreatAsREG{});
+    auto src2i = unpackSrc2(TreatAsInteger{}, TreatAsREG{});
+    auto src1o = unpackSrc1(TreatAsOrdinal{}, TreatAsREG{});
+    auto src1i = unpackSrc1(TreatAsInteger{}, TreatAsREG{});
     instructionLength_ = 4;
     advanceInstruction_ = true;
     
