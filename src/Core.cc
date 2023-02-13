@@ -125,6 +125,7 @@ Core::emul(Register& dest, Ordinal src1, Ordinal src2) noexcept {
     // if we hit a fault then we just give up whats on the stack :)
     dest.setValue(result.parts[0], TreatAsOrdinal{});
     setGPR(instruction_.reg.srcDest, 1, result.parts[1], TreatAsOrdinal{});
+    nextInstruction();
 }
 
 void
@@ -149,6 +150,7 @@ Core::ediv(Register& dest, Ordinal src1, Ordinal src2Lower) noexcept {
     // field
     dest.setValue<Ordinal>(result.parts[0]);
     setGPR(instruction_.reg.srcDest, 1, result.parts[1], TreatAsOrdinal{});
+    nextInstruction();
 }
 
 Ordinal
@@ -211,19 +213,24 @@ Core::syncf() noexcept {
     // Wait for all faults to be generated that are associated with any prior
     // uncompleted instructions
     /// @todo implement if it makes sense since we don't have a pipeline
+    nextInstruction();
 }
 void
 Core::flushreg() noexcept {
     /// @todo implement if it makes sense since we aren't using register frames
+    nextInstruction();
 }
 void
 Core::mark() noexcept {
+    nextInstruction();
     if (pc_.processControls.traceEnable && tc_.trace.breakpointTraceMode) {
         generateFault(MarkTraceFault);
     }
 }
 void
 Core::fmark() noexcept {
+    // advance first so that our return value will always be correct
+    nextInstruction();
     if (pc_.processControls.traceEnable) {
         generateFault(MarkTraceFault);
     }
@@ -363,6 +370,8 @@ Core::ldl() noexcept {
         loadBlock(computeAddress(), instruction_.mem.srcDest, 2);
         // support unaligned accesses
     }
+    // the instruction is invalid so we should complete after we are done
+    nextInstruction();
 }
 
 void
@@ -373,6 +382,8 @@ Core::stl() noexcept {
         storeBlock(computeAddress(), instruction_.mem.srcDest, 2);
         // support unaligned accesses
     }
+    // the instruction is invalid so we should complete after we are done
+    nextInstruction();
 }
 void
 Core::ldt() noexcept {
@@ -382,6 +393,8 @@ Core::ldt() noexcept {
         loadBlock(computeAddress(), instruction_.mem.srcDest, 3);
         // support unaligned accesses
     }
+    // the instruction is invalid so we should complete after we are done
+    nextInstruction();
 }
 
 void
@@ -392,6 +405,8 @@ Core::stt() noexcept {
         storeBlock(computeAddress(), instruction_.mem.srcDest, 3);
         // support unaligned accesses
     }
+    // the instruction is invalid so we should complete after we are done
+    nextInstruction();
 }
 
 void
@@ -402,6 +417,8 @@ Core::ldq() noexcept {
         loadBlock(computeAddress(), instruction_.mem.srcDest, 4);
         // support unaligned accesses
     }
+    // the instruction is invalid so we should complete after we are done
+    nextInstruction();
 }
 
 void
@@ -412,6 +429,8 @@ Core::stq() noexcept {
         storeBlock(computeAddress(), instruction_.mem.srcDest, 4);
         // support unaligned accesses
     }
+    // the instruction is invalid so we should complete after we are done
+    nextInstruction();
 }
 void
 Core::saveReturnAddress(byte linkRegister) noexcept {
@@ -526,6 +545,7 @@ Core::performRegisterTransfer(byte mask, byte count) noexcept {
     for (byte i = 0; i < count; ++i) {
         setGPR(instruction_.reg.srcDest, i, unpackSrc1_REG(i, TreatAsOrdinal{}), TreatAsOrdinal{});
     }
+    nextInstruction();
 }
 
  
@@ -620,6 +640,7 @@ Core::cycle() noexcept {
         case Opcodes::faultg:
         case Opcodes::faultge:
         case Opcodes::faulto: 
+            nextInstruction();
             if (fullConditionCodeCheck()) {
                 generateFault(ConstraintRangeFault);
             }
@@ -633,9 +654,11 @@ Core::cycle() noexcept {
         case Opcodes::testle:
         case Opcodes::testo:
             setGPR(instruction_.cobr.src1, (fullConditionCodeCheck()) ? 1 : 0, TreatAsOrdinal{});
+            nextInstruction();
             break;
         case Opcodes::lda:
             setGPR(instruction_.mem.srcDest, computeAddress(), TreatAsOrdinal{});
+            nextInstruction();
             break;
         case Opcodes::bbc:
             bbc();
@@ -663,35 +686,45 @@ Core::cycle() noexcept {
             break;
         case Opcodes::ld: 
             loadBlock(computeAddress(), instruction_.mem.srcDest, 1);
+            nextInstruction();
             break;
         case Opcodes::st: 
             storeBlock(computeAddress(), instruction_.mem.srcDest, 1);
+            nextInstruction();
             break;
         case Opcodes::ldob:
             setGPR(instruction_.mem.srcDest, load(computeAddress(), TreatAs<ByteOrdinal>{}), TreatAsOrdinal{});
+            nextInstruction();
             break;
         case Opcodes::stob:
             store(computeAddress(), getGPRValue(instruction_.mem.srcDest, TreatAs<Ordinal>{}), TreatAs<ByteOrdinal>{});
+            nextInstruction();
             break;
         case Opcodes::ldos:
             setGPR(instruction_.mem.srcDest, load(computeAddress(), TreatAs<ShortOrdinal>{}), TreatAsOrdinal{});
+            nextInstruction();
             break;
         case Opcodes::stos:
             store(computeAddress(), getGPRValue(instruction_.mem.srcDest, TreatAsOrdinal{}), TreatAs<ShortOrdinal>{});
+            nextInstruction();
             break;
         case Opcodes::ldib:
             setGPR(instruction_.mem.srcDest, load(computeAddress(), TreatAs<ByteInteger>{}), TreatAsInteger{});
+            nextInstruction();
             break;
         case Opcodes::stib:
             /// @todo fully implement fault detection
             store(computeAddress(), getGPRValue(instruction_.mem.srcDest, TreatAsInteger{}), TreatAs<ByteInteger>{});
+            nextInstruction();
             break;
         case Opcodes::ldis:
             setGPR(instruction_.mem.srcDest, load(computeAddress(), TreatAs<ShortInteger>{}), TreatAsInteger{});
+            nextInstruction();
             break;
         case Opcodes::stis:
             /// @todo fully implement fault detection
             store(computeAddress(), getGPRValue(instruction_.mem.srcDest, TreatAsInteger{}), TreatAs<ShortInteger>{});
+            nextInstruction();
             break;
         case Opcodes::ldl:
             ldl();
@@ -784,10 +817,12 @@ Core::cycle() noexcept {
             break;
         case Opcodes::shro: // shro
             regDest.setValue<Ordinal>(src1o < 32 ? src2o >> src1o : 0);
+            nextInstruction();
             break;
         case Opcodes::shrdi: // shrdi
                   // according to the manual, equivalent to divi value, 2 so that is what we're going to do for correctness sake
             regDest.setValue<Integer>( src1i < 32 && src1i >= 0 ? src2i / computeBitPosition(src1i) : 0);
+            nextInstruction();
             break;
         case Opcodes::shri: // shri
             /*
@@ -808,15 +843,19 @@ Core::cycle() noexcept {
              */
             /// @todo perhaps implement the extra logic if necessary
             regDest.setValue<Integer>(src2i >> src1i);
+            nextInstruction();
             break;
         case Opcodes::shlo: // shlo
             regDest.setValue<Ordinal>(src1o < 32 ? src2o << src1o : 0);
+            nextInstruction();
             break;
         case Opcodes::rotate: // rotate
             regDest.setValue<Ordinal>(rotateOperation(src2o, src1o));
+            nextInstruction();
             break;
         case Opcodes::shli: // shli
             regDest.setValue<Integer>(src2i << src1i);
+            nextInstruction();
             break;
         case Opcodes::cmpo: // cmpo
             cmpo(src1o, src2o);
@@ -847,6 +886,7 @@ Core::cycle() noexcept {
             break;
         case Opcodes::chkbit: // chkbit
             ac_.arith.conditionCode = ((src2o & computeBitPosition(src1o)) == 0 ? 0b000 : 0b010);
+            nextInstruction();
             break;
         case Opcodes::addc: 
             addc(regDest, src1o, src2o);
@@ -856,6 +896,7 @@ Core::cycle() noexcept {
             break;
         case Opcodes::mov:
             regDest.setValue<Ordinal>(src1o);
+            nextInstruction();
             break;
         case Opcodes::movl:
             performRegisterTransfer(0b1, 2);
@@ -901,16 +942,20 @@ Core::cycle() noexcept {
             break;
         case Opcodes::modify:
             regDest.setValue<Ordinal>(modify(src1o, src2o, regDest.getValue<Ordinal>()));
+            nextInstruction();
             break;
         case Opcodes::extract:
             // taken from the Hx manual as it isn't insane
             regDest.setValue<Ordinal>((regDest.o >> (src1o > 32 ? 32 : src1o)) & ~(0xFFFF'FFFF << src2o));
+            nextInstruction();
             break;
         case Opcodes::modac: 
             regDest.setValue<Ordinal>(ac_.modify(src1o, src2o));
+            nextInstruction();
             break;
         case Opcodes::modtc: 
             regDest.setValue<Ordinal>(tc_.modify(src1o, src2o));
+            nextInstruction();
             break;
         case Opcodes::modpc:
             if (auto mask = src1o; mask != 0) {
@@ -925,6 +970,7 @@ Core::cycle() noexcept {
             } else {
                 regDest.setValue<Ordinal>(pc_.getValue<Ordinal>());
             }
+            nextInstruction();
             break;
         case Opcodes::atadd:
             atadd(regDest, src1o, src2o);
@@ -1245,4 +1291,7 @@ Core::getNextFrameBase() const noexcept {
 void
 Core::nextInstruction() noexcept {
     ip_.o += instructionLength_;
+    // clear instruction length out so incase we call this multiple times we
+    // are okay!
+    instructionLength_ = 0;
 }

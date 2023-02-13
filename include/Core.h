@@ -915,6 +915,7 @@ class Core {
                 }
                 dest.setValue<Integer>(result);
                 nextInstruction();
+                /// @todo implement fault checks
             }
         }
         inline void alterbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
@@ -932,7 +933,7 @@ class Core {
                     mostSignificantBit(src2),
                     mostSignificantBit(src1),
                     mostSignificantBit(dest.getValue<Ordinal>()));
-                nextInstruction();
+            nextInstruction();
         }
         inline void subc(Register& dest, Ordinal src1, Ordinal src2) noexcept {
             LongOrdinal result = static_cast<LongOrdinal>(src2) - static_cast<LongOrdinal>(src1) - 1;
@@ -974,6 +975,7 @@ class Core {
         }
         void divi(Register& dest, Integer src1, Integer src2) noexcept {
             divideOperation<Integer>(dest, src1, src2);
+            /// @todo implement overflow fault checking
         }
         void divo(Register& dest, Ordinal src1, Ordinal src2) noexcept {
             divideOperation<Ordinal>(dest, src1, src2);
