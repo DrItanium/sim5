@@ -469,7 +469,7 @@ Core::setupNewFrameInternals(Ordinal fp, Ordinal temp) noexcept {
 void
 Core::callx() noexcept {
     // wait for any uncompleted instructions to finish
-    auto temp = (getGPRValue(SPIndex, TreatAsOrdinal{}) + C) & NotC; // round stack pointer to next boundary
+    auto temp = getNextFrameBase(); // round stack pointer to next boundary
     auto fp = getGPRValue(FPIndex, TreatAsOrdinal{});
     balx(RIPIndex);
     enterCall(fp);
@@ -478,7 +478,7 @@ Core::callx() noexcept {
 void 
 Core::call() {
     // wait for any uncompleted instructions to finish
-    auto temp = (getGPRValue(SPIndex, TreatAsOrdinal{}) + C) & NotC; // round stack pointer to next boundary
+    auto temp = getNextFrameBase(); // round stack pointer to next boundary
     auto fp = getGPRValue(FPIndex, TreatAsOrdinal{});
     saveReturnAddress(RIPIndex);
     enterCall(fp);
@@ -499,7 +499,7 @@ Core::calls(Ordinal src1) noexcept {
         balx(RIPIndex, procedureAddress);
         Ordinal temp = 0, tempRRR = 0;
         if ((type == 0b00) || pc_.inSupervisorMode()) {
-            temp = (getStackPointer() + C) & NotC;
+            temp = getNextFrameBase();
             tempRRR = 0;
         } else {
             temp = getSupervisorStackPointer();
