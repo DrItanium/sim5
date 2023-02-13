@@ -653,8 +653,6 @@ class Core {
         [[nodiscard]] Integer unpackSrc1_COBR(TreatAsInteger) noexcept;
         [[nodiscard]] Ordinal unpackSrc2_COBR(TreatAsOrdinal) noexcept;
         [[nodiscard]] Integer unpackSrc2_COBR(TreatAsInteger) noexcept;
-        void setFaultCode(Ordinal value) noexcept;
-        void setFaultCode(Ordinal value, bool condition) noexcept;
         bool faultHappened() noexcept;
         void checkForPendingInterrupts() noexcept;
         template<typename T>
@@ -895,7 +893,7 @@ class Core {
         }
         inline void modi(Register& dest, Integer src1, Integer src2) noexcept {
             if (auto denominator = src1; denominator == 0) {
-                setFaultCode(ZeroDivideFault);
+                generateFault(ZeroDivideFault);
             } else {
                 auto numerator = src2;
                 auto result = numerator - ((numerator / denominator) * denominator);
@@ -934,7 +932,7 @@ class Core {
         void remainderOperation(Register& dest, T src1, T src2) noexcept {
             if (src1 == 0) {
                 /// @todo fix this
-                setFaultCode(ZeroDivideFault);
+                generateFault(ZeroDivideFault);
             } else {
                 // taken from the i960Sx manual
                 //dest.setValue(src2 - ((src2 / src1) * src1), TreatAs<T>{});
@@ -951,7 +949,7 @@ class Core {
         void divideOperation(Register& dest, T src1, T src2) noexcept {
             if (src1 == 0) {
                 /// @todo fix this
-                setFaultCode(ZeroDivideFault);
+                generateFault(ZeroDivideFault);
             } else {
                 dest.setValue(src2 / src1, TreatAs<T>{});
             }
@@ -1026,6 +1024,9 @@ class Core {
         bool performSelfTest() noexcept;
         void assertFailureState() noexcept;
         void deassertFailureState() noexcept;
+        void generateFault(Ordinal faultCode) noexcept;
+        void addi(Register& dest, Integer src1, Integer src2) noexcept;
+        void addo(Register& dest, Ordinal src1, Ordinal src2) noexcept;
     private:
         Ordinal faultPortValue_;
         Ordinal systemAddressTableBase_ = 0;
