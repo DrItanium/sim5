@@ -779,7 +779,7 @@ Core::cycle() noexcept {
             alterbit(regDest, src1o, src2o);
             break;
         case Opcodes::addo:
-            add<Ordinal>(regDest, src1o, src2o, TreatAsOrdinal{});
+            addo(regDest, src1o, src2o);
             break;
         case Opcodes::addi: // addi
             addi(regDest, src1i, src2i);
@@ -788,10 +788,10 @@ Core::cycle() noexcept {
             // I remember this trick from college, subtraction is just addition
             // with a negative second argument :). I never gave it much thought
             // until now but it seems to be an effective trick to save space.
-            sub<Ordinal>(regDest, src1o, src2o, TreatAsOrdinal{});
+            subo(regDest, src1o, src2o);
             break;
         case Opcodes::subi: // subi
-            sub<Integer>(regDest, src1i, src2i, TreatAsInteger{});
+            subi(regDest, src1i, src2i);
             break;
         case Opcodes::shro: // shro
             regDest.setValue<Ordinal>(src1o < 32 ? src2o >> src1o : 0);
@@ -1118,25 +1118,29 @@ Core::performSelect(Register& dest, Ordinal src1, Ordinal src2, bool condition) 
 }
 void
 Core::performConditionalSubtract(Register& dest, Integer src1, Integer src2, bool condition, TreatAsInteger) noexcept {
-    /// @todo implement
+    if (condition) {
+        subi(dest, src1, src2);
+    }
 }
 
 void
 Core::performConditionalSubtract(Register& dest, Ordinal src1, Ordinal src2, bool condition, TreatAsOrdinal) noexcept {
     if (condition) {
-        dest.setValue(src2 - src1, TreatAsOrdinal{});
+        subo(dest, src1, src2);
     }
 }
 
 void
 Core::performConditionalAdd(Register& dest, Integer src1, Integer src2, bool condition, TreatAsInteger) noexcept {
-    /// @todo implement
+    if (condition) {
+        addi(dest, src1, src2);
+    }
 }
 
 void
 Core::performConditionalAdd(Register& dest, Ordinal src1, Ordinal src2, bool condition, TreatAsOrdinal) noexcept {
     if (condition) {
-        dest.setValue(src1 + src2, TreatAsOrdinal{});
+        addo(dest, src1, src2);
     }
 }
 bool
@@ -1214,6 +1218,14 @@ Core::deassertFailureState() noexcept {
 void
 Core::addi(Register& dest, Integer src1, Integer src2) noexcept {
     add<Integer>(dest, src1, src2, TreatAsInteger{});
+    nextInstruction();
+    /// @todo implement overflow detection and fault generation
+}
+
+void
+Core::addo(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+    add<Ordinal>(dest, src1, src2, TreatAsOrdinal{});
+    nextInstruction();
     /// @todo implement overflow detection and fault generation
 }
 
@@ -1247,4 +1259,15 @@ Core::setIP(Ordinal value, TreatAsOrdinal) noexcept {
     // automatic advancement!
     ip_.o = value;
     advanceInstruction_ = false;
+}
+void
+Core::subi(Register& dest, Integer src1, Integer src2) noexcept {
+    sub<Integer>(dest, src1, src2, TreatAsInteger{});
+    nextInstruction();
+    /// @todo implement overflow fault detection
+}
+
+void
+Core::subo(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+    sub<Ordinal>(dest, src1, src2, TreatAsOrdinal{});
 }
