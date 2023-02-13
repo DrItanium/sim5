@@ -1064,6 +1064,7 @@ Core::synld(Register& dest, Ordinal src) noexcept {
         ac_.arith.conditionCode = 0b010;
         dest.setValue(load(tempa, TreatAsOrdinal{}), TreatAsOrdinal{});
     }
+    nextInstruction();
 }
 void 
 Core::synmov(Register& dest, Ordinal src) noexcept {
@@ -1077,6 +1078,7 @@ Core::synmov(Register& dest, Ordinal src) noexcept {
         // wait for completion
         ac_.arith.conditionCode = 0b010;
     }
+    nextInstruction();
 }
 void 
 Core::synmovl(Register& dest, Ordinal src) noexcept {
@@ -1088,7 +1090,7 @@ Core::synmovl(Register& dest, Ordinal src) noexcept {
     store(tempa + 4, tempUpper, TreatAsOrdinal{});
     // wait for completion
     ac_.arith.conditionCode = 0b010;
-
+    nextInstruction();
 }
 void 
 Core::synmovq(Register& dest, Ordinal src) noexcept {
@@ -1109,15 +1111,18 @@ Core::synmovq(Register& dest, Ordinal src) noexcept {
         // wait for completion
         ac_.arith.conditionCode = 0b010;
     }
+    nextInstruction();
 }
 
 void 
 Core::performSelect(Register& dest, Ordinal src1, Ordinal src2, bool condition) noexcept {
     dest.setValue(condition ? src2 : src1, TreatAsOrdinal{});
+    nextInstruction();
 }
 void
 Core::performConditionalSubtract(Register& dest, Integer src1, Integer src2, bool condition, TreatAsInteger) noexcept {
     /// @todo implement
+    nextInstruction();
 }
 
 void
@@ -1125,11 +1130,13 @@ Core::performConditionalSubtract(Register& dest, Ordinal src1, Ordinal src2, boo
     if (condition) {
         dest.setValue(src2 - src1, TreatAsOrdinal{});
     }
+    nextInstruction();
 }
 
 void
 Core::performConditionalAdd(Register& dest, Integer src1, Integer src2, bool condition, TreatAsInteger) noexcept {
     /// @todo implement
+    nextInstruction();
 }
 
 void
@@ -1137,6 +1144,7 @@ Core::performConditionalAdd(Register& dest, Ordinal src1, Ordinal src2, bool con
     if (condition) {
         dest.setValue(src1 + src2, TreatAsOrdinal{});
     }
+    nextInstruction();
 }
 bool
 Core::performSelfTest() noexcept {
@@ -1232,4 +1240,9 @@ Core::setStackPointer(Ordinal value, TreatAsOrdinal) noexcept {
 Ordinal
 Core::getNextFrameBase() const noexcept {
     return (getStackPointer() + C) & NotC;
+}
+
+void
+Core::nextInstruction() noexcept {
+    ip_.o += instructionLength_;
 }
