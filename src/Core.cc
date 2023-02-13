@@ -422,10 +422,13 @@ Core::saveReturnAddress(byte linkRegister) noexcept {
     setGPR(linkRegister, ip_.getValue(TreatAsOrdinal{}) + instructionLength_, TreatAsOrdinal{});
 }
 void 
-Core::balx(byte linkRegister) noexcept {
-    auto address = computeAddress();
+Core::balx(byte linkRegister, Ordinal branchTo) noexcept {
     saveReturnAddress(linkRegister);
-    ip_.setValue(address, TreatAsOrdinal{});
+    ip_.setValue(branchTo, TreatAsOrdinal{});
+}
+void 
+Core::balx(byte linkRegister) noexcept {
+    balx(linkRegister, computeAddress());
 }
 void
 Core::balx() noexcept {
@@ -493,11 +496,10 @@ Core::calls(Ordinal src1) noexcept {
         auto procedureAddress = tempPE & ~0b11;
         // read entry from system-procedure table, where spbase is address of
         // system-procedure table from Initial Memory Image
-        saveReturnAddress(RIPIndex);
-        ip_.setValue(procedureAddress, TreatAsOrdinal{});
+        balx(RIPIndex, procedureAddress);
         Ordinal temp = 0, tempRRR = 0;
         if ((type == 0b00) || pc_.inSupervisorMode()) {
-            temp = (getGPRValue(SPIndex, TreatAsOrdinal{}) + C) & NotC;
+            temp = (getStackPointer() + C) & NotC;
             tempRRR = 0;
         } else {
             temp = getSupervisorStackPointer();
@@ -1226,4 +1228,13 @@ Core::addi(Register& dest, Integer src1, Integer src2) noexcept {
 void
 Core::generateFault(Ordinal faultCode) noexcept {
     /// @todo implement
+}
+
+Ordinal
+Core::getStackPointer() const noexcept {
+    return getGPRValue(SPIndex, TreatAsOrdinal{});
+}
+Ordinal
+Core::getNextFrameBase() const noexcept {
+    return (getStackPointer() + C) & NotC;
 }

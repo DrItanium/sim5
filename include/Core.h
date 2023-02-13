@@ -632,9 +632,11 @@ class Core {
         /// @todo insert routines for getting registers and such 
         [[nodiscard]] Register& getGPR(byte index) noexcept { return gpr_.get(index); }
         [[nodiscard]] Register& getGPR(byte index, byte offset) noexcept { return getGPR((index + offset) & 0b11111); }
-        [[nodiscard]] inline Ordinal getGPRValue(byte index, TreatAsOrdinal) noexcept { return getGPR(index).getValue(TreatAsOrdinal{}); }
-        [[nodiscard]] inline Ordinal getGPRValue(byte index, byte offset, TreatAsOrdinal) noexcept { return getGPR(index, offset).getValue(TreatAsOrdinal{}); }
-        [[nodiscard]] inline Integer getGPRValue(byte index, TreatAsInteger) noexcept { return getGPR(index).getValue(TreatAsInteger{}); }
+        [[nodiscard]] const Register& getGPR(byte index) const noexcept { return gpr_.get(index); }
+        [[nodiscard]] const Register& getGPR(byte index, byte offset) const noexcept { return getGPR((index + offset) & 0b11111); }
+        [[nodiscard]] inline Ordinal getGPRValue(byte index, TreatAsOrdinal) const noexcept { return getGPR(index).getValue(TreatAsOrdinal{}); }
+        [[nodiscard]] inline Ordinal getGPRValue(byte index, byte offset, TreatAsOrdinal) const noexcept { return getGPR(index, offset).getValue(TreatAsOrdinal{}); }
+        [[nodiscard]] inline Integer getGPRValue(byte index, TreatAsInteger) const noexcept { return getGPR(index).getValue(TreatAsInteger{}); }
         [[nodiscard]] constexpr Ordinal getSystemAddressTableBase() const noexcept { return systemAddressTableBase_; }
         [[nodiscard]] Ordinal getSystemProcedureTableBase() const noexcept;
         [[nodiscard]] Ordinal getSupervisorStackPointer() const noexcept;
@@ -791,6 +793,7 @@ class Core {
         void bx() noexcept;
         void balx() noexcept;
         void balx(byte linkRegister) noexcept;
+        void balx(byte linkRegister, Ordinal branchTo) noexcept;
         void calls(Ordinal value) noexcept;
         void ldl() noexcept;
         void ldq() noexcept;
@@ -1030,6 +1033,8 @@ class Core {
         void addo(Register& dest, Ordinal src1, Ordinal src2) noexcept;
         void saveReturnAddress(byte registerIndex) noexcept;
         void setupNewFrameInternals(Ordinal fp, Ordinal temp) noexcept;
+        Ordinal getStackPointer() const noexcept;
+        Ordinal getNextFrameBase() const noexcept;
     private:
         Ordinal faultPortValue_;
         Ordinal systemAddressTableBase_ = 0;
