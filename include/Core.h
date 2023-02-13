@@ -480,11 +480,11 @@ union Register {
     uint8_t interruptControl[4];
     constexpr auto getConditionCode() const noexcept { return arith.conditionCode; }
     void setPriority(Ordinal value) noexcept { processControls.priority = value; }
-    bool inSupervisorMode() const noexcept { return processControls.executionMode; }
-    bool inUserMode() const noexcept { return !inSupervisorMode(); }
-    bool isMEMA() const noexcept { return !mem.selector; }
-    bool isMEMB() const noexcept { return mem.selector; }
-    bool isDoubleWide() const noexcept {
+    constexpr bool inSupervisorMode() const noexcept { return processControls.executionMode; }
+    constexpr bool inUserMode() const noexcept { return !inSupervisorMode(); }
+    constexpr bool isMEMA() const noexcept { return !mem.selector; }
+    constexpr bool isMEMB() const noexcept { return mem.selector; }
+    constexpr bool isDoubleWide() const noexcept {
         return isMEMB() && (memb.group || (memb.modeMinor == 0b01));
     }
     void clear() noexcept { 
@@ -623,7 +623,7 @@ class Core {
         void stop() noexcept;
         void cycle() noexcept;
         [[nodiscard]] constexpr bool running() const noexcept { return running_; }
-    protected:
+    private:
         void lockBus();
         void unlockBus();
         void signalBootFailure();
@@ -669,7 +669,7 @@ class Core {
         bool fullConditionCodeCheck() noexcept;
         Ordinal computeAddress() noexcept;
         void performRegisterTransfer(byte mask, byte count) noexcept;
-    protected:
+    private:
         void sendIAC(const iac::Message& msg) noexcept;
         void dispatchInterrupt(uint8_t vector) noexcept;
         void purgeInstructionCache() noexcept;
@@ -695,7 +695,7 @@ class Core {
         void stopProcessor() noexcept;
         void storeProcessor() noexcept;
         void warmstartProcessor(Ordinal segmentTableBase, Ordinal prcbBase) noexcept;
-    protected:
+    private:
         // instructions
         void syncf() noexcept;
         void mark() noexcept;
@@ -803,7 +803,7 @@ class Core {
         void ret() noexcept;
         void call() noexcept;
         void callx() noexcept;
-    protected:
+    private:
         void enterCall(Ordinal fp) noexcept;
         void leaveCall() noexcept;
         void allocateNewRegisterFrame() noexcept;
@@ -813,7 +813,7 @@ class Core {
         void restoreStandardFrame() noexcept;
         void storeBlock(Ordinal baseAddress, byte baseRegister, byte count) noexcept;
         void loadBlock(Ordinal baseAddress, byte baseRegister, byte count) noexcept;
-    protected:
+    private:
         void performConditionalSubtract(Register& dest, Integer src1, Integer src2, bool condition, TreatAsInteger) noexcept;
         void performConditionalSubtract(Register& dest, Ordinal src1, Ordinal src2, bool condition, TreatAsOrdinal) noexcept;
         void performConditionalAdd(Register& dest, Integer src1, Integer src2, bool condition, TreatAsInteger) noexcept;
@@ -830,7 +830,7 @@ class Core {
         X(ShortInteger);
         X(ShortOrdinal);
 #undef X
-    protected:
+    private:
         template<bool invert = false>
         inline void orOperation(Register& destination, Ordinal src1, Ordinal src2) noexcept {
             destination.setValue(::orOperation<Ordinal, invert>(src2, src1), TreatAsOrdinal{});
@@ -1028,7 +1028,7 @@ class Core {
         void concmpi(Integer src1, Integer src2) noexcept {
             concmpGeneric<Integer>(src1, src2);
         }
-    protected:
+    private:
         bool performSelfTest() noexcept;
         void assertFailureState() noexcept;
         void deassertFailureState() noexcept;

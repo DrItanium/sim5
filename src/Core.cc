@@ -1255,7 +1255,7 @@ void
 Core::setIP(Ordinal value, TreatAsOrdinal) noexcept {
     // when we set the ip during this instruction, we need to turn off the
     // automatic advancement!
-    ip_.o = value;
+    ip_.setValue<Ordinal>(value);
     advanceInstruction_ = false;
 }
 void
