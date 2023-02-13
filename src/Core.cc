@@ -464,7 +464,11 @@ void
 Core::setupNewFrameInternals(Ordinal fp, Ordinal temp) noexcept {
     setGPR(PFPIndex, fp, TreatAsOrdinal{});
     setGPR(FPIndex, temp, TreatAsOrdinal{});
-    setGPR(SPIndex , temp + 64, TreatAsOrdinal{});
+    setStackPointer(temp + 64, TreatAsOrdinal{});
+}
+void
+Core::setStackPointer(Ordinal value, TreatAsOrdinal) noexcept {
+    setGPR(SPIndex, value, TreatAsOrdinal{});
 }
 void
 Core::callx() noexcept {
@@ -514,7 +518,7 @@ Core::calls(Ordinal src1) noexcept {
         pfp.setValue(getGPRValue(FPIndex, TreatAsOrdinal{}) & ~0b1'111, TreatAsOrdinal{});
         pfp.pfp.rt = tempRRR;
         setGPR(FPIndex, temp, TreatAsOrdinal{});
-        setGPR(SPIndex, temp + 64, TreatAsOrdinal{});
+        setStackPointer(temp + 64, TreatAsOrdinal{});
         advanceBy_ = true;
     }
 }

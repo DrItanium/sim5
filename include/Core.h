@@ -1035,6 +1035,7 @@ class Core {
         void setupNewFrameInternals(Ordinal fp, Ordinal temp) noexcept;
         Ordinal getStackPointer() const noexcept;
         Ordinal getNextFrameBase() const noexcept;
+        void setStackPointer(Ordinal value, TreatAsOrdinal) noexcept;
     private:
         Ordinal faultPortValue_;
         Ordinal systemAddressTableBase_ = 0;
