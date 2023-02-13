@@ -452,12 +452,16 @@ Core::restoreRegisterSet(Ordinal fp) noexcept {
 }
 void 
 Core::enterCall(Ordinal fp) noexcept {
-    if (registerSetAvailable()) {
-        allocateNewRegisterFrame();
-    } else {
+    if (!registerSetAvailable()) {
         saveRegisterSet(fp);
-        allocateNewRegisterFrame();
     }
+    allocateNewRegisterFrame();
+}
+void
+Core::setupNewFrameInternals(Ordinal fp, Ordinal temp) noexcept {
+    setGPR(PFPIndex, fp, TreatAsOrdinal{});
+    setGPR(FPIndex, temp, TreatAsOrdinal{});
+    setGPR(SPIndex , temp + 64, TreatAsOrdinal{});
 }
 void
 Core::callx() noexcept {
@@ -466,9 +470,7 @@ Core::callx() noexcept {
     auto fp = getGPRValue(FPIndex, TreatAsOrdinal{});
     balx(RIPIndex);
     enterCall(fp);
-    setGPR(PFPIndex, fp, TreatAsOrdinal{});
-    setGPR(FPIndex, temp, TreatAsOrdinal{});
-    setGPR(SPIndex , temp + 64, TreatAsOrdinal{});
+    setupNewFrameInternals(fp, temp);
 }
 void 
 Core::call() {
@@ -478,10 +480,7 @@ Core::call() {
     saveReturnAddress(RIPIndex);
     enterCall(fp);
     ip_.i += instruction_.ctrl.displacement;
-    setGPR(PFPIndex, fp, TreatAsOrdinal{});
-    setGPR(FPIndex, temp, TreatAsOrdinal{});
-    setGPR(SPIndex , temp + 64, TreatAsOrdinal{});
-    advanceBy_ = 0;
+    setupNewFrameInternals(fp, temp);
 }
 void
 Core::calls(Ordinal src1) noexcept {

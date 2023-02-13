@@ -1029,6 +1029,7 @@ class Core {
         void addi(Register& dest, Integer src1, Integer src2) noexcept;
         void addo(Register& dest, Ordinal src1, Ordinal src2) noexcept;
         void saveReturnAddress(byte registerIndex) noexcept;
+        void setupNewFrameInternals(Ordinal fp, Ordinal temp) noexcept;
     private:
         Ordinal faultPortValue_;
         Ordinal systemAddressTableBase_ = 0;
