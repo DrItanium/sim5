@@ -1130,11 +1130,7 @@ Core::synmovq(Register& dest, Ordinal src) noexcept {
 
 void 
 Core::performSelect(Register& dest, Ordinal src1, Ordinal src2, bool condition) noexcept {
-    if (condition) {
-        dest.setValue(src2, TreatAsOrdinal{});
-    } else {
-        dest.setValue(src1, TreatAsOrdinal{});
-    }
+    dest.setValue(condition ? src2 : src1, TreatAsOrdinal{});
 }
 void
 Core::performConditionalSubtract(Register& dest, Integer src1, Integer src2, bool condition, TreatAsInteger) noexcept {
