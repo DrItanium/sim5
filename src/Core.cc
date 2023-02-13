@@ -594,7 +594,6 @@ Core::cycle() noexcept {
     auto src2i = unpackSrc2_REG(TreatAsInteger{});
     auto src1o = unpackSrc1_REG(TreatAsOrdinal{});
     auto src1i = unpackSrc1_REG(TreatAsInteger{});
-    advanceBy_ = 4;
     instructionLength_ = 4;
     advanceInstruction_ = true;
     
