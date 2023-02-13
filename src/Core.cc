@@ -1225,8 +1225,6 @@ Core::addi(Register& dest, Integer src1, Integer src2) noexcept {
 void
 Core::addo(Register& dest, Ordinal src1, Ordinal src2) noexcept {
     add<Ordinal>(dest, src1, src2, TreatAsOrdinal{});
-    nextInstruction();
-    /// @todo implement overflow detection and fault generation
 }
 
 void
