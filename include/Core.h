@@ -1049,6 +1049,7 @@ class Core {
         void setIP(Ordinal value, TreatAsOrdinal) noexcept;
         void subo(Register& dest, Ordinal src1, Ordinal src2) noexcept;
         void subi(Register& dest, Integer src1, Integer src2) noexcept;
+        void faultGeneric() noexcept;
     private:
         Ordinal systemAddressTableBase_ = 0;
         Ordinal prcbAddress_ = 0;

@@ -587,6 +587,13 @@ Core::fullConditionCodeCheck() noexcept {
     return getMaskedConditionCode() || conditionCodeEqualsMask();
 }
 void
+Core::faultGeneric() noexcept {
+    nextInstruction();
+    if (fullConditionCodeCheck()) {
+        generateFault(ConstraintRangeFault);
+    }
+}
+void
 Core::cycle() noexcept {
     instruction_.setValue(load(ip_.a, TreatAsOrdinal{}), TreatAsOrdinal{});
     auto& regDest = getGPR(instruction_.reg.srcDest);
@@ -630,10 +637,7 @@ Core::cycle() noexcept {
         case Opcodes::faultg:
         case Opcodes::faultge:
         case Opcodes::faulto: 
-            nextInstruction();
-            if (fullConditionCodeCheck()) {
-                generateFault(ConstraintRangeFault);
-            }
+            faultGeneric();
             break;
         case Opcodes::testno:
         case Opcodes::testg:
