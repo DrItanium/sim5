@@ -627,7 +627,6 @@ class Core {
         void unlockBus();
         void signalBootFailure();
         void setFaultPort(Ordinal value) noexcept;
-        [[nodiscard]] Ordinal getFaultPort() const noexcept;
         /// @todo insert iac dispatch here
         /// @todo insert routines for getting registers and such 
         [[nodiscard]] Register& getGPR(byte index) noexcept { return gpr_.get(index); }
@@ -655,7 +654,6 @@ class Core {
         [[nodiscard]] Integer unpackSrc1_COBR(TreatAsInteger) noexcept;
         [[nodiscard]] Ordinal unpackSrc2_COBR(TreatAsOrdinal) noexcept;
         [[nodiscard]] Integer unpackSrc2_COBR(TreatAsInteger) noexcept;
-        bool faultHappened() noexcept;
         void checkForPendingInterrupts() noexcept;
         template<typename T>
         void moveGPR(byte destIndex, byte srcIndex, TreatAs<T>) noexcept {
@@ -1037,7 +1035,6 @@ class Core {
         Ordinal getNextFrameBase() const noexcept;
         void setStackPointer(Ordinal value, TreatAsOrdinal) noexcept;
     private:
-        Ordinal faultPortValue_;
         Ordinal systemAddressTableBase_ = 0;
         Ordinal prcbAddress_ = 0;
         GPRBlock gpr_;
@@ -1046,7 +1043,6 @@ class Core {
         Register ac_; 
         Register pc_;
         Register tc_; 
-        Register faultCode_; 
         Register instruction_;
         Register ictl_;
         byte advanceBy_;

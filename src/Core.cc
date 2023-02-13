@@ -161,10 +161,6 @@ Core::getSupervisorStackPointer() const noexcept {
     return load((getSystemProcedureTableBase() + 12), TreatAsOrdinal{});
 }
 
-bool 
-Core::faultHappened() noexcept {
-    return faultCode_.getValue(TreatAsOrdinal{}) != NoFault;
-}
 Ordinal 
 Core::unpackSrc1_COBR(TreatAsOrdinal) noexcept {
     if (instruction_.cobr.m1) {
@@ -534,11 +530,6 @@ Core::performRegisterTransfer(byte mask, byte count) noexcept {
 }
 
  
-Ordinal 
-Core::getFaultPort() const noexcept { 
-    return faultPortValue_;
-}
-
 void
 Core::lockBus() noexcept {
     while (digitalRead(LOCKPIN) == LOW);
