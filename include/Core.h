@@ -337,12 +337,9 @@ union Register {
     Address a;
     byte bytes[sizeof(Ordinal)];
     ShortOrdinal shorts[sizeof(Ordinal)/sizeof(ShortOrdinal)];
-
-    struct {
-        Ordinal unused : 24;
-        uint8_t mask : 3;
-        uint8_t major : 5;
-    } instGeneric;
+    constexpr uint8_t getInstructionMask() const noexcept { 
+        return bytes[3] & 0b111;
+    }
     struct {
         Integer aligned : 2;
         Integer important : 30;
@@ -778,7 +775,7 @@ class Core {
             auto src1 = unpackSrc1_COBR(TreatAs<T>{});
             auto src2 = unpackSrc2_COBR(TreatAs<T>{});
             cmpGeneric(src1, src2);
-            if ((instruction_.instGeneric.mask & ac_.getConditionCode()) != 0) {
+            if ((instruction_.getInstructionMask() & ac_.getConditionCode()) != 0) {
                 Register temp{0};
                 temp.alignedTransfer.important = instruction_.cobr.displacement;
                 ip_.alignedTransfer.important = ip_.alignedTransfer.important + temp.alignedTransfer.important;

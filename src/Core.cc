@@ -569,12 +569,12 @@ Core::branchConditional(bool condition) noexcept {
  */
 bool
 Core::getMaskedConditionCode() noexcept {
-    return (ac_.getConditionCode() & instruction_.instGeneric.mask) != 0;
+    return (ac_.getConditionCode() & instruction_.getInstructionMask()) != 0;
 }
 
 bool
 Core::conditionCodeEqualsMask() noexcept {
-    return ac_.getConditionCode() == instruction_.instGeneric.mask;
+    return ac_.getConditionCode() == instruction_.getInstructionMask();
 }
 bool
 Core::fullConditionCodeCheck() noexcept {
