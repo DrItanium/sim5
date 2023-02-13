@@ -125,7 +125,6 @@ Core::emul(Register& dest, Ordinal src1, Ordinal src2) noexcept {
     // if we hit a fault then we just give up whats on the stack :)
     dest.setValue(result.parts[0], TreatAsOrdinal{});
     setGPR(instruction_.reg.srcDest, 1, result.parts[1], TreatAsOrdinal{});
-    nextInstruction();
 }
 
 void
@@ -150,7 +149,6 @@ Core::ediv(Register& dest, Ordinal src1, Ordinal src2Lower) noexcept {
     // field
     dest.setValue<Ordinal>(result.parts[0]);
     setGPR(instruction_.reg.srcDest, 1, result.parts[1], TreatAsOrdinal{});
-    nextInstruction();
 }
 
 Ordinal
@@ -213,12 +211,10 @@ Core::syncf() noexcept {
     // Wait for all faults to be generated that are associated with any prior
     // uncompleted instructions
     /// @todo implement if it makes sense since we don't have a pipeline
-    nextInstruction();
 }
 void
 Core::flushreg() noexcept {
     /// @todo implement if it makes sense since we aren't using register frames
-    nextInstruction();
 }
 void
 Core::mark() noexcept {
@@ -243,8 +239,8 @@ Core::restoreStandardFrame() noexcept {
     // them out of the frame pointer address when using the address
     auto realAddress = getGPRValue(FPIndex, TreatAsOrdinal{}) & NotC;
     restoreRegisterSet(realAddress);
-    ip_.setValue(getGPRValue(RIPIndex, TreatAsOrdinal{}), TreatAsOrdinal{});
-    //advanceBy_ = 0;
+    setIP(getGPRValue(RIPIndex, TreatAsOrdinal{}), TreatAsOrdinal{});
+    advanceInstruction_ = false;
 }
 void
 Core::ret() {
@@ -371,7 +367,6 @@ Core::ldl() noexcept {
         // support unaligned accesses
     }
     // the instruction is invalid so we should complete after we are done
-    nextInstruction();
 }
 
 void
@@ -383,7 +378,6 @@ Core::stl() noexcept {
         // support unaligned accesses
     }
     // the instruction is invalid so we should complete after we are done
-    nextInstruction();
 }
 void
 Core::ldt() noexcept {
@@ -394,7 +388,6 @@ Core::ldt() noexcept {
         // support unaligned accesses
     }
     // the instruction is invalid so we should complete after we are done
-    nextInstruction();
 }
 
 void
@@ -406,7 +399,6 @@ Core::stt() noexcept {
         // support unaligned accesses
     }
     // the instruction is invalid so we should complete after we are done
-    nextInstruction();
 }
 
 void
@@ -418,7 +410,6 @@ Core::ldq() noexcept {
         // support unaligned accesses
     }
     // the instruction is invalid so we should complete after we are done
-    nextInstruction();
 }
 
 void
@@ -430,7 +421,6 @@ Core::stq() noexcept {
         // support unaligned accesses
     }
     // the instruction is invalid so we should complete after we are done
-    nextInstruction();
 }
 void
 Core::saveReturnAddress(byte linkRegister) noexcept {
@@ -439,7 +429,7 @@ Core::saveReturnAddress(byte linkRegister) noexcept {
 void 
 Core::balx(byte linkRegister, Ordinal branchTo) noexcept {
     saveReturnAddress(linkRegister);
-    ip_.setValue(branchTo, TreatAsOrdinal{});
+    setIP(branchTo, TreatAsOrdinal{});
 }
 void 
 Core::balx(byte linkRegister) noexcept {
@@ -535,7 +525,7 @@ Core::calls(Ordinal src1) noexcept {
 }
 void
 Core::bx() noexcept {
-    ip_.setValue(computeAddress(), TreatAsOrdinal{});
+    setIP(computeAddress(), TreatAsOrdinal{});
 }
 void
 Core::performRegisterTransfer(byte mask, byte count) noexcept {
@@ -545,7 +535,6 @@ Core::performRegisterTransfer(byte mask, byte count) noexcept {
     for (byte i = 0; i < count; ++i) {
         setGPR(instruction_.reg.srcDest, i, unpackSrc1_REG(i, TreatAsOrdinal{}), TreatAsOrdinal{});
     }
-    nextInstruction();
 }
 
  
@@ -565,6 +554,7 @@ Core::signalBootFailure() noexcept {
 void
 Core::branch() noexcept {
     ip_.i += instruction_.ctrl.displacement;
+    advanceInstruction_ = false;
 }
 void
 Core::branchConditional(bool condition) noexcept {
@@ -606,6 +596,7 @@ Core::cycle() noexcept {
     auto src1i = unpackSrc1_REG(TreatAsInteger{});
     advanceBy_ = 4;
     instructionLength_ = 4;
+    advanceInstruction_ = true;
     
     switch (instruction_.getOpcode()) {
         case Opcodes::bal: // bal
@@ -654,11 +645,9 @@ Core::cycle() noexcept {
         case Opcodes::testle:
         case Opcodes::testo:
             setGPR(instruction_.cobr.src1, (fullConditionCodeCheck()) ? 1 : 0, TreatAsOrdinal{});
-            nextInstruction();
             break;
         case Opcodes::lda:
             setGPR(instruction_.mem.srcDest, computeAddress(), TreatAsOrdinal{});
-            nextInstruction();
             break;
         case Opcodes::bbc:
             bbc();
@@ -686,45 +675,35 @@ Core::cycle() noexcept {
             break;
         case Opcodes::ld: 
             loadBlock(computeAddress(), instruction_.mem.srcDest, 1);
-            nextInstruction();
             break;
         case Opcodes::st: 
             storeBlock(computeAddress(), instruction_.mem.srcDest, 1);
-            nextInstruction();
             break;
         case Opcodes::ldob:
             setGPR(instruction_.mem.srcDest, load(computeAddress(), TreatAs<ByteOrdinal>{}), TreatAsOrdinal{});
-            nextInstruction();
             break;
         case Opcodes::stob:
             store(computeAddress(), getGPRValue(instruction_.mem.srcDest, TreatAs<Ordinal>{}), TreatAs<ByteOrdinal>{});
-            nextInstruction();
             break;
         case Opcodes::ldos:
             setGPR(instruction_.mem.srcDest, load(computeAddress(), TreatAs<ShortOrdinal>{}), TreatAsOrdinal{});
-            nextInstruction();
             break;
         case Opcodes::stos:
             store(computeAddress(), getGPRValue(instruction_.mem.srcDest, TreatAsOrdinal{}), TreatAs<ShortOrdinal>{});
-            nextInstruction();
             break;
         case Opcodes::ldib:
             setGPR(instruction_.mem.srcDest, load(computeAddress(), TreatAs<ByteInteger>{}), TreatAsInteger{});
-            nextInstruction();
             break;
         case Opcodes::stib:
             /// @todo fully implement fault detection
             store(computeAddress(), getGPRValue(instruction_.mem.srcDest, TreatAsInteger{}), TreatAs<ByteInteger>{});
-            nextInstruction();
             break;
         case Opcodes::ldis:
             setGPR(instruction_.mem.srcDest, load(computeAddress(), TreatAs<ShortInteger>{}), TreatAsInteger{});
-            nextInstruction();
             break;
         case Opcodes::stis:
             /// @todo fully implement fault detection
             store(computeAddress(), getGPRValue(instruction_.mem.srcDest, TreatAsInteger{}), TreatAs<ShortInteger>{});
-            nextInstruction();
             break;
         case Opcodes::ldl:
             ldl();
@@ -817,12 +796,10 @@ Core::cycle() noexcept {
             break;
         case Opcodes::shro: // shro
             regDest.setValue<Ordinal>(src1o < 32 ? src2o >> src1o : 0);
-            nextInstruction();
             break;
         case Opcodes::shrdi: // shrdi
                   // according to the manual, equivalent to divi value, 2 so that is what we're going to do for correctness sake
             regDest.setValue<Integer>( src1i < 32 && src1i >= 0 ? src2i / computeBitPosition(src1i) : 0);
-            nextInstruction();
             break;
         case Opcodes::shri: // shri
             /*
@@ -843,19 +820,15 @@ Core::cycle() noexcept {
              */
             /// @todo perhaps implement the extra logic if necessary
             regDest.setValue<Integer>(src2i >> src1i);
-            nextInstruction();
             break;
         case Opcodes::shlo: // shlo
             regDest.setValue<Ordinal>(src1o < 32 ? src2o << src1o : 0);
-            nextInstruction();
             break;
         case Opcodes::rotate: // rotate
             regDest.setValue<Ordinal>(rotateOperation(src2o, src1o));
-            nextInstruction();
             break;
         case Opcodes::shli: // shli
             regDest.setValue<Integer>(src2i << src1i);
-            nextInstruction();
             break;
         case Opcodes::cmpo: // cmpo
             cmpo(src1o, src2o);
@@ -886,7 +859,6 @@ Core::cycle() noexcept {
             break;
         case Opcodes::chkbit: // chkbit
             ac_.arith.conditionCode = ((src2o & computeBitPosition(src1o)) == 0 ? 0b000 : 0b010);
-            nextInstruction();
             break;
         case Opcodes::addc: 
             addc(regDest, src1o, src2o);
@@ -896,7 +868,6 @@ Core::cycle() noexcept {
             break;
         case Opcodes::mov:
             regDest.setValue<Ordinal>(src1o);
-            nextInstruction();
             break;
         case Opcodes::movl:
             performRegisterTransfer(0b1, 2);
@@ -942,20 +913,16 @@ Core::cycle() noexcept {
             break;
         case Opcodes::modify:
             regDest.setValue<Ordinal>(modify(src1o, src2o, regDest.getValue<Ordinal>()));
-            nextInstruction();
             break;
         case Opcodes::extract:
             // taken from the Hx manual as it isn't insane
             regDest.setValue<Ordinal>((regDest.o >> (src1o > 32 ? 32 : src1o)) & ~(0xFFFF'FFFF << src2o));
-            nextInstruction();
             break;
         case Opcodes::modac: 
             regDest.setValue<Ordinal>(ac_.modify(src1o, src2o));
-            nextInstruction();
             break;
         case Opcodes::modtc: 
             regDest.setValue<Ordinal>(tc_.modify(src1o, src2o));
-            nextInstruction();
             break;
         case Opcodes::modpc:
             if (auto mask = src1o; mask != 0) {
@@ -970,7 +937,6 @@ Core::cycle() noexcept {
             } else {
                 regDest.setValue<Ordinal>(pc_.getValue<Ordinal>());
             }
-            nextInstruction();
             break;
         case Opcodes::atadd:
             atadd(regDest, src1o, src2o);
@@ -1064,18 +1030,9 @@ Core::cycle() noexcept {
             generateFault(UnimplementedFault);
             break;
     }
-#if 0
-    if (faultHappened()) {
-        /// @todo implement this as the fallback operation when something bad
-        /// happens
-        ///
-        /// Faults are basically fallback behavior when something goes wacky!
-        setFaultPort(faultCode_.o);
+    if (advanceInstruction_) {
+        nextInstruction();
     }
-#endif
-    // okay we got here so we need to start grabbing data off of the bus and
-    // start executing the next instruction
-    //ip_.o += advanceBy_; 
 }
 
 Ordinal 
@@ -1110,7 +1067,6 @@ Core::synld(Register& dest, Ordinal src) noexcept {
         ac_.arith.conditionCode = 0b010;
         dest.setValue(load(tempa, TreatAsOrdinal{}), TreatAsOrdinal{});
     }
-    nextInstruction();
 }
 void 
 Core::synmov(Register& dest, Ordinal src) noexcept {
@@ -1124,7 +1080,6 @@ Core::synmov(Register& dest, Ordinal src) noexcept {
         // wait for completion
         ac_.arith.conditionCode = 0b010;
     }
-    nextInstruction();
 }
 void 
 Core::synmovl(Register& dest, Ordinal src) noexcept {
@@ -1136,7 +1091,6 @@ Core::synmovl(Register& dest, Ordinal src) noexcept {
     store(tempa + 4, tempUpper, TreatAsOrdinal{});
     // wait for completion
     ac_.arith.conditionCode = 0b010;
-    nextInstruction();
 }
 void 
 Core::synmovq(Register& dest, Ordinal src) noexcept {
@@ -1157,18 +1111,15 @@ Core::synmovq(Register& dest, Ordinal src) noexcept {
         // wait for completion
         ac_.arith.conditionCode = 0b010;
     }
-    nextInstruction();
 }
 
 void 
 Core::performSelect(Register& dest, Ordinal src1, Ordinal src2, bool condition) noexcept {
     dest.setValue(condition ? src2 : src1, TreatAsOrdinal{});
-    nextInstruction();
 }
 void
 Core::performConditionalSubtract(Register& dest, Integer src1, Integer src2, bool condition, TreatAsInteger) noexcept {
     /// @todo implement
-    nextInstruction();
 }
 
 void
@@ -1176,13 +1127,11 @@ Core::performConditionalSubtract(Register& dest, Ordinal src1, Ordinal src2, boo
     if (condition) {
         dest.setValue(src2 - src1, TreatAsOrdinal{});
     }
-    nextInstruction();
 }
 
 void
 Core::performConditionalAdd(Register& dest, Integer src1, Integer src2, bool condition, TreatAsInteger) noexcept {
     /// @todo implement
-    nextInstruction();
 }
 
 void
@@ -1190,7 +1139,6 @@ Core::performConditionalAdd(Register& dest, Ordinal src1, Ordinal src2, bool con
     if (condition) {
         dest.setValue(src1 + src2, TreatAsOrdinal{});
     }
-    nextInstruction();
 }
 bool
 Core::performSelfTest() noexcept {
@@ -1291,7 +1239,13 @@ Core::getNextFrameBase() const noexcept {
 void
 Core::nextInstruction() noexcept {
     ip_.o += instructionLength_;
-    // clear instruction length out so incase we call this multiple times we
-    // are okay!
-    instructionLength_ = 0;
+    advanceInstruction_ = false;
+}
+
+void
+Core::setIP(Ordinal value, TreatAsOrdinal) noexcept {
+    // when we set the ip during this instruction, we need to turn off the
+    // automatic advancement!
+    ip_.o = value;
+    advanceInstruction_ = false;
 }

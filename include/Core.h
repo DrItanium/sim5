@@ -712,21 +712,18 @@ class Core {
                     if constexpr (doScan) {
                         dest.o = (31 - index);
                         ac_.arith.conditionCode = 0b010;
-                        nextInstruction();
                         return;
                     }
                 } else {
                     if constexpr (!doScan) {
                         dest.o = (31 - index);
                         ac_.arith.conditionCode = 0b010;
-                        nextInstruction();
                         return;
                     }
                 }
             }
             dest.o = 0xFFFF'FFFF;
             ac_.arith.conditionCode = 0;
-            nextInstruction();
         }
         void scanbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
             xbit<true>(dest, src1, src2);
@@ -756,11 +753,11 @@ class Core {
                 ac_.arith.conditionCode = checkClear ? 0b000 : 0b010;
                 Register temp{0};
                 temp.alignedTransfer.important = instruction_.cobr.displacement;
-                ip_.alignedTransfer.important = ip_.alignedTransfer.important + temp.alignedTransfer.important;
+                ip_.alignedTransfer.important += temp.alignedTransfer.important;
                 ip_.alignedTransfer.aligned = 0;
+                advanceInstruction_ = false;
             } else {
                 ac_.arith.conditionCode = checkClear ? 0b010 : 0b000;
-                nextInstruction();
             }
         }
         void bbs() noexcept;
@@ -785,9 +782,8 @@ class Core {
                 temp.alignedTransfer.important = instruction_.cobr.displacement;
                 ip_.alignedTransfer.important = ip_.alignedTransfer.important + temp.alignedTransfer.important;
                 ip_.alignedTransfer.aligned = 0;
-            } else {
-                nextInstruction();
-            }
+                advanceInstruction_ = false;
+            } 
         }
         inline void cmpobGeneric() noexcept { cmpxbGeneric<Ordinal>(); }
         inline void cmpibGeneric() noexcept { cmpxbGeneric<Integer>(); }
@@ -837,32 +833,26 @@ class Core {
         template<bool invert = false>
         inline void orOperation(Register& destination, Ordinal src1, Ordinal src2) noexcept {
             destination.setValue(::orOperation<Ordinal, invert>(src2, src1), TreatAsOrdinal{});
-            nextInstruction();
         }
         template<bool invert = false>
         inline void andOperation(Register& destination, Ordinal src1, Ordinal src2) noexcept {
             destination.setValue(::andOperation<Ordinal, invert>(src2, src1), TreatAsOrdinal{});
-            nextInstruction();
         }
         template<bool invert = false>
         inline void xorOperation(Register& destination, Ordinal src1, Ordinal src2) noexcept {
             destination.setValue(::xorOperation<Ordinal, invert>(src2, src1), TreatAsOrdinal{});
-            nextInstruction();
         }
         template<typename T>
         void add(Register& destination, T src1, T src2, TreatAs<T>) noexcept {
             destination.setValue(::addOperation<T>(src2, src1), TreatAs<T>{});
-            nextInstruction();
         }
         template<typename T>
         void sub(Register& destination, T src1, T src2, TreatAs<T>) noexcept {
             destination.setValue(::subOperation<T>(src2, src1), TreatAs<T>{});
-            nextInstruction();
         }
         template<typename T>
         void mult(Register& destination, T src1, T src2, TreatAs<T>) noexcept {
             destination.setValue(::multiplyOperation<T>(src2, src1), TreatAs<T>{});
-            nextInstruction();
         }
         void setbit(Register& destination, Ordinal src1, Ordinal src2) noexcept {
             // setbit is src2 | computeBitPosition(src1o)
@@ -890,7 +880,6 @@ class Core {
         }
         inline void notOperation(Register& destination, Ordinal src) noexcept {
             destination.setValue(~src, TreatAsOrdinal{});
-            nextInstruction();
         }
 
         inline void andnot(Register& dest, Ordinal src1, Ordinal src2) noexcept {
@@ -933,7 +922,6 @@ class Core {
                     mostSignificantBit(src2),
                     mostSignificantBit(src1),
                     mostSignificantBit(dest.getValue<Ordinal>()));
-            nextInstruction();
         }
         inline void subc(Register& dest, Ordinal src1, Ordinal src2) noexcept {
             LongOrdinal result = static_cast<LongOrdinal>(src2) - static_cast<LongOrdinal>(src1) - 1;
@@ -943,7 +931,6 @@ class Core {
                     mostSignificantBit(src2),
                     mostSignificantBit(src1),
                     mostSignificantBit(dest.getValue<Ordinal>()));
-                nextInstruction();
         }
         template<typename T>
         void remainderOperation(Register& dest, T src1, T src2) noexcept {
@@ -959,6 +946,7 @@ class Core {
         }
         void remi(Register& dest, Integer src1, Integer src2) noexcept {
             remainderOperation<Integer>(dest, src1, src2);
+            /// @todo implement overflow checks
         }
         void remo(Register& dest, Ordinal src1, Ordinal src2) noexcept {
             remainderOperation<Ordinal>(dest, src1, src2);
@@ -991,7 +979,6 @@ class Core {
             store(addr, result, TreatAsOrdinal{});
             dest.setValue(temp, TreatAsOrdinal{});
             unlockBus();
-            nextInstruction();
         }
         void atmod(Register& dest, Ordinal src1, Ordinal src2) noexcept {
             syncf();
@@ -1005,42 +992,34 @@ class Core {
             store(addr, result, TreatAsOrdinal{});
             dest.setValue(temp, TreatAsOrdinal{});
             unlockBus();
-            nextInstruction();
         }
         void cmpo(Ordinal src1, Ordinal src2) noexcept {
             cmpGeneric(src1, src2);
-            nextInstruction();
         }
         void cmpinco(Register& dest, Ordinal src1, Ordinal src2) noexcept {
             cmpGeneric(src1, src2);
             dest.setValue(src2 + 1, TreatAsOrdinal{});
-            nextInstruction();
         }
         void cmpdeco(Register& dest, Ordinal src1, Ordinal src2) noexcept {
             cmpGeneric(src1, src2);
             dest.setValue(src2 - 1, TreatAsOrdinal{});
-            nextInstruction();
         }
         void cmpi(Integer src1, Integer src2) noexcept {
             cmpGeneric(src1, src2);
-            nextInstruction();
         }
         void cmpinci(Register& dest, Integer src1, Integer src2) noexcept {
             cmpGeneric(src1, src2);
             dest.setValue(src2 + 1, TreatAsInteger{});
-            nextInstruction();
         }
         void cmpdeci(Register& dest, Integer src1, Integer src2) noexcept {
             cmpGeneric(src1, src2);
             dest.setValue(src2 - 1, TreatAsInteger{});
-            nextInstruction();
         }
         template<typename T>
         void concmpGeneric(T src1, T src2) noexcept {
             if ((ac_.getConditionCode() & 0b100) == 0) {
                 ac_.arith.conditionCode = src1 <= src2 ? 0b010 : 0b001;
             }
-            nextInstruction();
         }
         void concmpo(Ordinal src1, Ordinal src2) noexcept {
             concmpGeneric<Ordinal>(src1, src2);
@@ -1060,7 +1039,12 @@ class Core {
         Ordinal getStackPointer() const noexcept;
         Ordinal getNextFrameBase() const noexcept;
         void setStackPointer(Ordinal value, TreatAsOrdinal) noexcept;
+        /**
+         * @brief Advance ip by instruction length and then prevent further
+         * advancement until the next cycle!
+         */
         void nextInstruction() noexcept;
+        void setIP(Ordinal value, TreatAsOrdinal) noexcept;
     private:
         Ordinal systemAddressTableBase_ = 0;
         Ordinal prcbAddress_ = 0;
@@ -1075,5 +1059,6 @@ class Core {
         byte advanceBy_;
         bool running_;
         byte instructionLength_ = 0;
+        bool advanceInstruction_ = false;
 };
 #endif // end SIM5_CORE_H__
