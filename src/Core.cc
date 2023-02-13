@@ -467,10 +467,6 @@ Core::setupNewFrameInternals(Ordinal fp, Ordinal temp) noexcept {
     setStackPointer(temp + 64, TreatAsOrdinal{});
 }
 void
-Core::setStackPointer(Ordinal value, TreatAsOrdinal) noexcept {
-    setGPR(SPIndex, value, TreatAsOrdinal{});
-}
-void
 Core::callx() noexcept {
     // wait for any uncompleted instructions to finish
     auto temp = getNextFrameBase(); // round stack pointer to next boundary
@@ -1237,6 +1233,10 @@ Core::generateFault(Ordinal faultCode) noexcept {
 Ordinal
 Core::getStackPointer() const noexcept {
     return getGPRValue(SPIndex, TreatAsOrdinal{});
+}
+void
+Core::setStackPointer(Ordinal value, TreatAsOrdinal) noexcept {
+    setGPR(SPIndex, value, TreatAsOrdinal{});
 }
 Ordinal
 Core::getNextFrameBase() const noexcept {
