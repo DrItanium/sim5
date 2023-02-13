@@ -417,12 +417,19 @@ Core::stq() noexcept {
         // support unaligned accesses
     }
 }
-
+void
+Core::saveReturnAddress(byte linkRegister) noexcept {
+    setGPR(linkRegister, ip_.getValue(TreatAsOrdinal{}) + instructionLength_, TreatAsOrdinal{});
+}
+void 
+Core::balx(byte linkRegister) noexcept {
+    auto address = computeAddress();
+    saveReturnAddress(linkRegister);
+    ip_.setValue(address, TreatAsOrdinal{});
+}
 void
 Core::balx() noexcept {
-    auto address = computeAddress();
-    setGPR(instruction_.mem.srcDest, ip_.getValue(TreatAsOrdinal{}) + instructionLength_, TreatAsOrdinal{});
-    ip_.setValue(address, TreatAsOrdinal{});
+    balx(instruction_.mem.srcDest);
 }
 bool 
 Core::registerSetAvailable() noexcept {
@@ -456,22 +463,19 @@ void
 Core::callx() noexcept {
     // wait for any uncompleted instructions to finish
     auto temp = (getGPRValue(SPIndex, TreatAsOrdinal{}) + C) & NotC; // round stack pointer to next boundary
-    auto addr = computeAddress();
     auto fp = getGPRValue(FPIndex, TreatAsOrdinal{});
-    setGPR(RIPIndex, ip_.getValue(TreatAsOrdinal{}) + advanceBy_, TreatAsOrdinal{});
+    balx(RIPIndex);
     enterCall(fp);
-    ip_.setValue(addr, TreatAsOrdinal{});
     setGPR(PFPIndex, fp, TreatAsOrdinal{});
     setGPR(FPIndex, temp, TreatAsOrdinal{});
     setGPR(SPIndex , temp + 64, TreatAsOrdinal{});
-    advanceBy_ = 0;
 }
 void 
 Core::call() {
     // wait for any uncompleted instructions to finish
     auto temp = (getGPRValue(SPIndex, TreatAsOrdinal{}) + C) & NotC; // round stack pointer to next boundary
     auto fp = getGPRValue(FPIndex, TreatAsOrdinal{});
-    setGPR(RIPIndex, ip_.getValue(TreatAsOrdinal{}) + advanceBy_, TreatAsOrdinal{});
+    saveReturnAddress(RIPIndex);
     enterCall(fp);
     ip_.i += instruction_.ctrl.displacement;
     setGPR(PFPIndex, fp, TreatAsOrdinal{});
@@ -490,7 +494,7 @@ Core::calls(Ordinal src1) noexcept {
         auto procedureAddress = tempPE & ~0b11;
         // read entry from system-procedure table, where spbase is address of
         // system-procedure table from Initial Memory Image
-        setGPR(RIPIndex, ip_.getValue(TreatAsOrdinal{}) + advanceBy_, TreatAsOrdinal{});
+        saveReturnAddress(RIPIndex);
         ip_.setValue(procedureAddress, TreatAsOrdinal{});
         Ordinal temp = 0, tempRRR = 0;
         if ((type == 0b00) || pc_.inSupervisorMode()) {
@@ -594,7 +598,7 @@ Core::cycle() noexcept {
     
     switch (instruction_.getOpcode()) {
         case Opcodes::bal: // bal
-            setGPR(LRIndex, ip_.getValue<Ordinal>() + 4, TreatAsOrdinal{});
+            saveReturnAddress(LRIndex);
             // then fallthrough and take the branch
         case Opcodes::b: // b
             branch();

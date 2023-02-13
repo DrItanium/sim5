@@ -790,6 +790,7 @@ class Core {
         void flushreg() noexcept;
         void bx() noexcept;
         void balx() noexcept;
+        void balx(byte linkRegister) noexcept;
         void calls(Ordinal value) noexcept;
         void ldl() noexcept;
         void ldq() noexcept;
@@ -1027,6 +1028,7 @@ class Core {
         void generateFault(Ordinal faultCode) noexcept;
         void addi(Register& dest, Integer src1, Integer src2) noexcept;
         void addo(Register& dest, Ordinal src1, Ordinal src2) noexcept;
+        void saveReturnAddress(byte registerIndex) noexcept;
     private:
         Ordinal faultPortValue_;
         Ordinal systemAddressTableBase_ = 0;
