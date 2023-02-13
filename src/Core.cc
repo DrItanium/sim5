@@ -479,7 +479,7 @@ Core::call() {
     auto fp = getGPRValue(FPIndex, TreatAsOrdinal{});
     saveReturnAddress(RIPIndex);
     enterCall(fp);
-    ip_.i += instruction_.ctrl.displacement;
+    branch();
     setupNewFrameInternals(fp, temp);
 }
 void
@@ -519,7 +519,6 @@ Core::calls(Ordinal src1) noexcept {
 void
 Core::bx() noexcept {
     ip_.setValue(computeAddress(), TreatAsOrdinal{});
-    advanceBy_ = 0;
 }
 void
 Core::performRegisterTransfer(byte mask, byte count) noexcept {
