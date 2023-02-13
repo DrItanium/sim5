@@ -337,107 +337,108 @@ union Register {
     Address a;
     byte bytes[sizeof(Ordinal)];
     ShortOrdinal shorts[sizeof(Ordinal)/sizeof(ShortOrdinal)];
+
     struct {
         Ordinal unused : 24;
-        Ordinal mask : 3;
-        Ordinal major : 5;
+        uint8_t mask : 3;
+        uint8_t major : 5;
     } instGeneric;
     struct {
         Integer aligned : 2;
         Integer important : 30;
     } alignedTransfer;
     struct {
-        Ordinal s2 : 1;
-        Ordinal t : 1;
+        uint8_t s2 : 1;
+        uint8_t t : 1;
         Integer displacement : 11;
-        Ordinal m1: 1;
-        Ordinal src2: 5;
-        Ordinal src1: 5;
-        Ordinal opcode : 8;
+        uint8_t m1: 1;
+        uint8_t src2: 5;
+        uint8_t src1: 5;
+        uint8_t opcode : 8;
     } cobr;
     struct {
-        Ordinal src1 : 5;
-        Ordinal s1 : 1;
-        Ordinal s2 : 1;
-        Ordinal opcodeExt : 4;
-        Ordinal m1 : 1;
-        Ordinal m2 : 1;
-        Ordinal m3 : 1;
-        Ordinal src2 : 5;
-        Ordinal srcDest : 5;
-        Ordinal opcode : 8;
+        uint8_t src1 : 5;
+        uint8_t s1 : 1;
+        uint8_t s2 : 1;
+        uint8_t opcodeExt : 4;
+        uint8_t m1 : 1;
+        uint8_t m2 : 1;
+        uint8_t m3 : 1;
+        uint8_t src2 : 5;
+        uint8_t srcDest : 5;
+        uint8_t opcode : 8;
     } reg;
     struct {
         Integer displacement : 24;
-        Ordinal opcode : 8;
+        uint8_t opcode : 8;
     } ctrl;
     struct {
         Ordinal offset: 12;
-        Ordinal selector : 1;
-        Ordinal selector2 : 1;
-        Ordinal abase : 5;
-        Ordinal srcDest : 5;
-        Ordinal opcode : 8;
+        uint8_t selector : 1;
+        uint8_t selector2 : 1;
+        uint8_t abase : 5;
+        uint8_t srcDest : 5;
+        uint8_t opcode : 8;
     } mem;
     struct {
         Ordinal offset : 12;
-        Ordinal fixed : 1;
-        Ordinal action : 1;
-        Ordinal abase : 5;
-        Ordinal srcDest : 5;
-        Ordinal opcode : 8;
+        uint8_t fixed : 1;
+        uint8_t action : 1;
+        uint8_t abase : 5;
+        uint8_t srcDest : 5;
+        uint8_t opcode : 8;
     } mema;
     struct {
-        Ordinal index : 5;
-        Ordinal unused : 2;
-        Ordinal scale : 3;
-        Ordinal modeMinor : 2;
-        Ordinal fixed : 1;
-        Ordinal group: 1;
-        Ordinal abase : 5;
-        Ordinal srcDest : 5;
-        Ordinal opcode : 8;
+        uint8_t index : 5;
+        uint8_t unused : 2;
+        uint8_t scale : 3;
+        uint8_t modeMinor : 2;
+        uint8_t fixed : 1;
+        uint8_t group: 1;
+        uint8_t abase : 5;
+        uint8_t srcDest : 5;
+        uint8_t opcode : 8;
     } memb;
     struct {
-        Ordinal index : 5;
-        Ordinal unused : 2;
-        Ordinal scale : 3;
-        Ordinal registerIndirect : 1;
-        Ordinal useIndex : 1;
-        Ordinal fixed : 1;
-        Ordinal group: 1;
-        Ordinal abase : 5;
-        Ordinal srcDest : 5;
-        Ordinal opcode : 8;
+        uint8_t index : 5;
+        uint8_t unused : 2;
+        uint8_t scale : 3;
+        uint8_t registerIndirect : 1;
+        uint8_t useIndex : 1;
+        uint8_t fixed : 1;
+        uint8_t group: 1;
+        uint8_t abase : 5;
+        uint8_t srcDest : 5;
+        uint8_t opcode : 8;
     } memb_grp2;
     struct {
-        Ordinal conditionCode : 3;
-        Ordinal arithmeticStatus : 4;
-        Ordinal unused0 : 1;
-        Ordinal integerOverflowFlag : 1;
-        Ordinal unused1 : 3;
-        Ordinal integerOverflowMask : 1;
-        Ordinal unused2 : 2;
-        Ordinal noImpreciseFaults : 1;
-        Ordinal floatingOverflowFlag : 1;
-        Ordinal floatingUnderflowFlag : 1;
-        Ordinal floatingInvalidOpFlag : 1;
-        Ordinal floatingZeroDivideFlag : 1;
-        Ordinal floatingInexactFlag : 1;
-        Ordinal unused3 : 3;
-        Ordinal floatingOverflowMask : 1;
-        Ordinal floatingUnderflowMask : 1;
-        Ordinal floatingInvalidOpMask : 1;
-        Ordinal floatingZeroDivideMask : 1;
-        Ordinal floatingInexactMask : 1;
-        Ordinal floatingPointNormalizingMode : 1;
-        Ordinal floatingPointRoundingControl : 2;
+        uint8_t conditionCode : 3;
+        uint8_t arithmeticStatus : 4;
+        uint8_t unused0 : 1;
+        uint8_t integerOverflowFlag : 1;
+        uint8_t unused1 : 3;
+        uint8_t integerOverflowMask : 1;
+        uint8_t unused2 : 2;
+        uint8_t noImpreciseFaults : 1;
+        uint8_t floatingOverflowFlag : 1;
+        uint8_t floatingUnderflowFlag : 1;
+        uint8_t floatingInvalidOpFlag : 1;
+        uint8_t floatingZeroDivideFlag : 1;
+        uint8_t floatingInexactFlag : 1;
+        uint8_t unused3 : 3;
+        uint8_t floatingOverflowMask : 1;
+        uint8_t floatingUnderflowMask : 1;
+        uint8_t floatingInvalidOpMask : 1;
+        uint8_t floatingZeroDivideMask : 1;
+        uint8_t floatingInexactMask : 1;
+        uint8_t floatingPointNormalizingMode : 1;
+        uint8_t floatingPointRoundingControl : 2;
     } arith;
 
     struct {
-        Ordinal rt : 3;
-        Ordinal p : 1;
-        Ordinal unused : 2; // according to the Sx manual these bits go unused
+        uint8_t rt : 3;
+        uint8_t p : 1;
+        uint8_t unused : 2; // according to the Sx manual these bits go unused
                             // but in the Hx manual they are used :/
         Ordinal a : 26;
     } pfp;
@@ -446,35 +447,35 @@ union Register {
         Ordinal proper : 26;
     } pfpAddress;
     struct {
-        Ordinal traceEnable : 1;
-        Ordinal executionMode : 1;
-        Ordinal unused : 7;
-        Ordinal resume : 1;
-        Ordinal traceFaultPending : 1;
-        Ordinal unused1 : 2;
-        Ordinal state : 1;
-        Ordinal unused2 : 2;
-        Ordinal priority : 5;
+        uint8_t traceEnable : 1;
+        uint8_t executionMode : 1;
+        uint8_t unused : 7;
+        uint8_t resume : 1;
+        uint8_t traceFaultPending : 1;
+        uint8_t unused1 : 2;
+        uint8_t state : 1;
+        uint8_t unused2 : 2;
+        uint8_t priority : 5;
         Ordinal internalState : 11;
     } processControls;
     struct {
-        Ordinal unused0 : 1; // 0
-        Ordinal instructionTraceMode : 1; // 1
-        Ordinal branchTraceMode : 1; // 2
-        Ordinal callTraceMode : 1; // 3
-        Ordinal returnTraceMode : 1; // 4
-        Ordinal prereturnTraceMode : 1; // 5
-        Ordinal supervisorTraceMode : 1; // 6
-        Ordinal breakpointTraceMode : 1; // 7
+        uint8_t unused0 : 1; // 0
+        uint8_t instructionTraceMode : 1; // 1
+        uint8_t branchTraceMode : 1; // 2
+        uint8_t callTraceMode : 1; // 3
+        uint8_t returnTraceMode : 1; // 4
+        uint8_t prereturnTraceMode : 1; // 5
+        uint8_t supervisorTraceMode : 1; // 6
+        uint8_t breakpointTraceMode : 1; // 7
         Ordinal unused1 : 9; // 8, 9, 10, 11, 12, 13, 14, 15, 16
-        Ordinal instructionTraceEvent : 1; // 17
-        Ordinal branchTraceEvent : 1; // 18
-        Ordinal callTraceEvent : 1; // 19
-        Ordinal returnTraceEvent : 1; // 20
-        Ordinal prereturnTraceEvent : 1; // 21
-        Ordinal supervisorTraceEvent : 1; // 22
-        Ordinal breakpointTraceEvent : 1; // 23
-        Ordinal unused2 : 8;
+        uint8_t instructionTraceEvent : 1; // 17
+        uint8_t branchTraceEvent : 1; // 18
+        uint8_t callTraceEvent : 1; // 19
+        uint8_t returnTraceEvent : 1; // 20
+        uint8_t prereturnTraceEvent : 1; // 21
+        uint8_t supervisorTraceEvent : 1; // 22
+        uint8_t breakpointTraceEvent : 1; // 23
+        uint8_t unused2 : 8;
     } trace;
     uint8_t interruptControl[4];
     constexpr auto getConditionCode() const noexcept { return arith.conditionCode; }
