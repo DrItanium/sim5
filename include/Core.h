@@ -740,6 +740,13 @@ class Core {
         void emul(Register& dest, Ordinal src1, Ordinal src2) noexcept;
         void ediv(Register& dest, Ordinal src1, Ordinal src2) noexcept;
         void arithmeticWithCarryGeneric(Ordinal result, bool src2MSB, bool src1MSB, bool destMSB) noexcept;
+        inline void advanceCOBRDisplacement() noexcept {
+            Register temp{0};
+            temp.alignedTransfer.important = instruction_.cobr.displacement;
+            ip_.alignedTransfer.important += temp.alignedTransfer.important;
+            ip_.alignedTransfer.aligned = 0;
+            advanceInstruction_ = false;
+        }
         template<bool checkClear>
         void 
         branchIfBitGeneric() {
@@ -754,11 +761,7 @@ class Core {
             }
             if (condition) {
                 ac_.arith.conditionCode = checkClear ? 0b000 : 0b010;
-                Register temp{0};
-                temp.alignedTransfer.important = instruction_.cobr.displacement;
-                ip_.alignedTransfer.important += temp.alignedTransfer.important;
-                ip_.alignedTransfer.aligned = 0;
-                advanceInstruction_ = false;
+                advanceCOBRDisplacement();
             } else {
                 ac_.arith.conditionCode = checkClear ? 0b010 : 0b000;
             }
@@ -781,11 +784,7 @@ class Core {
             auto src2 = unpackSrc2(TreatAs<T>{}, TreatAsCOBR{});
             cmpGeneric(src1, src2);
             if ((instruction_.getInstructionMask() & ac_.getConditionCode()) != 0) {
-                Register temp{0};
-                temp.alignedTransfer.important = instruction_.cobr.displacement;
-                ip_.alignedTransfer.important = ip_.alignedTransfer.important + temp.alignedTransfer.important;
-                ip_.alignedTransfer.aligned = 0;
-                advanceInstruction_ = false;
+                advanceCOBRDisplacement();
             } 
         }
         inline void cmpobGeneric() noexcept { cmpxbGeneric<Ordinal>(); }
