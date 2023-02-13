@@ -512,7 +512,6 @@ Core::calls(Ordinal src1) noexcept {
         pfp.pfp.rt = tempRRR;
         setGPR(FPIndex, temp, TreatAsOrdinal{});
         setStackPointer(temp + 64, TreatAsOrdinal{});
-        advanceBy_ = true;
     }
 }
 void
