@@ -241,7 +241,7 @@ Core::restoreStandardFrame() noexcept {
     auto realAddress = getGPRValue(FPIndex, TreatAsOrdinal{}) & NotC;
     restoreRegisterSet(realAddress);
     ip_.setValue(getGPRValue(RIPIndex, TreatAsOrdinal{}), TreatAsOrdinal{});
-    advanceBy_ = 0;
+    //advanceBy_ = 0;
 }
 void
 Core::ret() {
@@ -295,7 +295,7 @@ Core::ret() {
             break;
         default: 
             // undefined!
-            /// @todo raise a fault?
+            generateFault(UnimplementedFault);
             break;
     }
 }
