@@ -1035,7 +1035,7 @@ Core::cycle() noexcept {
 #endif
     // okay we got here so we need to start grabbing data off of the bus and
     // start executing the next instruction
-    ip_.o += advanceBy_; 
+    //ip_.o += advanceBy_; 
 }
 
 Ordinal 
@@ -1220,4 +1220,9 @@ void
 Core::addi(Register& dest, Integer src1, Integer src2) noexcept {
     add<Integer>(dest, src1, src2, TreatAsInteger{});
     /// @todo implement overflow detection and fault generation
+}
+
+void
+Core::generateFault(Ordinal faultCode) noexcept {
+    /// @todo implement
 }
