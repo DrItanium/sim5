@@ -492,12 +492,13 @@ Core::calls(Ordinal src1) noexcept {
     } else {
         syncf();
         auto tempPE = load(getSystemProcedureTableBase() + 48 + (4 * targ), TreatAsOrdinal{});
-        auto type = tempPE & 0b11;
+        auto type = static_cast<uint8_t>(tempPE & 0b11);
         auto procedureAddress = tempPE & ~0b11;
         // read entry from system-procedure table, where spbase is address of
         // system-procedure table from Initial Memory Image
         balx(RIPIndex, procedureAddress);
-        Ordinal temp = 0, tempRRR = 0;
+        Ordinal temp = 0;
+        byte tempRRR = 0;
         if ((type == 0b00) || pc_.inSupervisorMode()) {
             temp = getNextFrameBase();
             tempRRR = 0;
