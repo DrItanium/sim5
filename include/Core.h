@@ -712,18 +712,21 @@ class Core {
                     if constexpr (doScan) {
                         dest.o = (31 - index);
                         ac_.arith.conditionCode = 0b010;
+                        nextInstruction();
                         return;
                     }
                 } else {
                     if constexpr (!doScan) {
                         dest.o = (31 - index);
                         ac_.arith.conditionCode = 0b010;
+                        nextInstruction();
                         return;
                     }
                 }
             }
             dest.o = 0xFFFF'FFFF;
             ac_.arith.conditionCode = 0;
+            nextInstruction();
         }
         void scanbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
             xbit<true>(dest, src1, src2);
@@ -751,13 +754,13 @@ class Core {
             }
             if (condition) {
                 ac_.arith.conditionCode = checkClear ? 0b000 : 0b010;
-                Register temp;
+                Register temp{0};
                 temp.alignedTransfer.important = instruction_.cobr.displacement;
                 ip_.alignedTransfer.important = ip_.alignedTransfer.important + temp.alignedTransfer.important;
                 ip_.alignedTransfer.aligned = 0;
-                advanceBy_ = 0;
             } else {
                 ac_.arith.conditionCode = checkClear ? 0b010 : 0b000;
+                nextInstruction();
             }
         }
         void bbs() noexcept;
@@ -778,11 +781,12 @@ class Core {
             auto src2 = unpackSrc2_COBR(TreatAs<T>{});
             cmpGeneric(src1, src2);
             if ((instruction_.instGeneric.mask & ac_.getConditionCode()) != 0) {
-                Register temp;
+                Register temp{0};
                 temp.alignedTransfer.important = instruction_.cobr.displacement;
                 ip_.alignedTransfer.important = ip_.alignedTransfer.important + temp.alignedTransfer.important;
                 ip_.alignedTransfer.aligned = 0;
-                advanceBy_ = 0;
+            } else {
+                nextInstruction();
             }
         }
         inline void cmpobGeneric() noexcept { cmpxbGeneric<Ordinal>(); }
