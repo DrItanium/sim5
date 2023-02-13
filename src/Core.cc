@@ -322,7 +322,7 @@ Core::computeAddress() noexcept {
         if (instruction_.memb.group) {
             // okay so it is going to be the displacement versions
             // load 32-bits into the optionalDisplacement field
-            advanceBy_ += 4;
+            instructionLength_ = 8;
             Integer result = static_cast<Integer>(load(ip_.a + 4, TreatAsOrdinal{})); // load the optional displacement
             if (instruction_.memb_grp2.useIndex) {
                 result += (getGPRValue(instruction_.memb_grp2.index, TreatAsInteger{}) << static_cast<Integer>(instruction_.memb_grp2.scale));
@@ -337,7 +337,7 @@ Core::computeAddress() noexcept {
                 case 0b00: // Register Indirect
                     return getGPRValue(instruction_.memb.abase, TreatAsOrdinal{});
                 case 0b01: // IP With Displacement 
-                    advanceBy_ += 4;
+                    instructionLength_ = 8;
                     return static_cast<Ordinal>(ip_.i + load(ip_.a + 4, TreatAsInteger{}) + 8);
                 case 0b11: // Register Indirect With Index
                     return getGPRValue(instruction_.memb.abase, TreatAsOrdinal{}) + (getGPRValue(instruction_.memb.index, TreatAsOrdinal{}) << instruction_.memb.scale);
@@ -421,9 +421,8 @@ Core::stq() noexcept {
 void
 Core::balx() noexcept {
     auto address = computeAddress();
-    setGPR(instruction_.mem.srcDest, ip_.getValue(TreatAsOrdinal{}) + advanceBy_, TreatAsOrdinal{});
+    setGPR(instruction_.mem.srcDest, ip_.getValue(TreatAsOrdinal{}) + instructionLength_, TreatAsOrdinal{});
     ip_.setValue(address, TreatAsOrdinal{});
-    advanceBy_ = 0;
 }
 bool 
 Core::registerSetAvailable() noexcept {
@@ -551,7 +550,6 @@ Core::signalBootFailure() noexcept {
 void
 Core::branch() noexcept {
     ip_.i += instruction_.ctrl.displacement;
-    advanceBy_ = 0;
 }
 void
 Core::branchConditional(bool condition) noexcept {
@@ -592,6 +590,7 @@ Core::cycle() noexcept {
     auto src1o = unpackSrc1_REG(TreatAsOrdinal{});
     auto src1i = unpackSrc1_REG(TreatAsInteger{});
     advanceBy_ = 4;
+    instructionLength_ = 4;
     
     switch (instruction_.getOpcode()) {
         case Opcodes::bal: // bal

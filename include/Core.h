@@ -1042,5 +1042,6 @@ class Core {
         Register ictl_;
         byte advanceBy_;
         bool running_;
+        byte instructionLength_ = 0;
 };
 #endif // end SIM5_CORE_H__
