@@ -605,24 +605,6 @@ Core::cycle() noexcept {
             case Opcodes::lda:
                 setGPR(instruction_.mem.srcDest, computeAddress(), TreatAsOrdinal{});
                 break;
-            case Opcodes::cmpobg:
-            case Opcodes::cmpobe:
-            case Opcodes::cmpobge:
-            case Opcodes::cmpobl:
-            case Opcodes::cmpobne:
-            case Opcodes::cmpoble:
-                cmpobGeneric();
-                break;
-            case Opcodes::cmpibno: // never branches
-            case Opcodes::cmpibg:
-            case Opcodes::cmpibe:
-            case Opcodes::cmpibge:
-            case Opcodes::cmpibl:
-            case Opcodes::cmpibne:
-            case Opcodes::cmpible:
-            case Opcodes::cmpibo: // always branches
-                cmpibGeneric();
-                break;
             case Opcodes::ld: 
                 loadBlock(computeAddress(), instruction_.mem.srcDest, 1);
                 break;
@@ -1264,13 +1246,31 @@ Core::processInstruction(Opcodes opcode, Integer displacement, TreatAsCTRL) noex
     }
 }
 void
-Core::processInstruction(Opcodes opcode, uint8_t src1, const Register& src2, int16_t displacement, TreatAsCOBR) noexcept {
+Core::processInstruction(Opcodes opcode, uint8_t mask, uint8_t src1, const Register& src2, int16_t displacement, TreatAsCOBR) noexcept {
     switch(opcode) {
         case Opcodes::bbc:
             bbc(src1, src2, displacement);
             break;
         case Opcodes::bbs:
             bbs(src1, src2, displacement);
+            break;
+        case Opcodes::cmpobg:
+        case Opcodes::cmpobe:
+        case Opcodes::cmpobge:
+        case Opcodes::cmpobl:
+        case Opcodes::cmpobne:
+        case Opcodes::cmpoble:
+            cmpobGeneric(mask, src1, src2.getValue<Ordinal>(), displacement);
+            break;
+        case Opcodes::cmpibno: // never branches
+        case Opcodes::cmpibg:
+        case Opcodes::cmpibe:
+        case Opcodes::cmpibge:
+        case Opcodes::cmpibl:
+        case Opcodes::cmpibne:
+        case Opcodes::cmpible:
+        case Opcodes::cmpibo: // always branches
+            cmpibGeneric(mask, src1, src2.getValue<Integer>(), displacement);
             break;
         default:
             // test instructions perform modifications to src1 so we must error out
@@ -1280,7 +1280,7 @@ Core::processInstruction(Opcodes opcode, uint8_t src1, const Register& src2, int
     }
 }
 void 
-Core::processInstruction(Opcodes opcode, Register& src1, const Register& src2, int16_t displacement, TreatAsCOBR) noexcept {
+Core::processInstruction(Opcodes opcode, uint8_t mask, Register& src1, const Register& src2, int16_t displacement, TreatAsCOBR) noexcept {
     switch(opcode) {
         case Opcodes::bbc:
             bbc(src1, src2, displacement);
@@ -1297,6 +1297,24 @@ Core::processInstruction(Opcodes opcode, Register& src1, const Register& src2, i
         case Opcodes::testle:
         case Opcodes::testo:
             src1.setValue<Ordinal>(fullConditionCodeCheck() ? 1 : 0);
+            break;
+        case Opcodes::cmpobg:
+        case Opcodes::cmpobe:
+        case Opcodes::cmpobge:
+        case Opcodes::cmpobl:
+        case Opcodes::cmpobne:
+        case Opcodes::cmpoble:
+            cmpobGeneric(mask, src1.getValue<Ordinal>(), src2.getValue<Ordinal>(), displacement);
+            break;
+        case Opcodes::cmpibno: // never branches
+        case Opcodes::cmpibg:
+        case Opcodes::cmpibe:
+        case Opcodes::cmpibge:
+        case Opcodes::cmpibl:
+        case Opcodes::cmpibne:
+        case Opcodes::cmpible:
+        case Opcodes::cmpibo: // always branches
+            cmpibGeneric(mask, src1.getValue<Integer>(), src2.getValue<Integer>(), displacement);
             break;
         default:
             generateFault(UnimplementedFault);

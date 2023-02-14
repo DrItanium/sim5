@@ -798,16 +798,18 @@ class Core {
             }
         }
         template<typename T>
-        void cmpxbGeneric() noexcept {
-            auto src1 = unpackSrc1(TreatAs<T>{}, TreatAsCOBR{});
-            auto src2 = unpackSrc2(TreatAs<T>{}, TreatAsCOBR{});
-            cmpGeneric(src1, src2);
-            if ((instruction_.getInstructionMask() & ac_.getConditionCode()) != 0) {
-                advanceCOBRDisplacement(instruction_.cobr.displacement);
+        void cmpxbGeneric(uint8_t mask, T src1, T src2, int16_t displacement, TreatAs<T>) noexcept {
+            cmpGeneric<T>(src1, src2);
+            if ((mask & ac_.getConditionCode()) != 0) {
+                advanceCOBRDisplacement(displacement);
             } 
         }
-        inline void cmpobGeneric() noexcept { cmpxbGeneric<Ordinal>(); }
-        inline void cmpibGeneric() noexcept { cmpxbGeneric<Integer>(); }
+        inline void cmpobGeneric(uint8_t mask, Ordinal src1, Ordinal src2, int16_t displacement) noexcept {
+            cmpxbGeneric(mask, src1, src2, displacement, TreatAsOrdinal{}); 
+        }
+        inline void cmpibGeneric(uint8_t mask, Integer src1, Integer src2, int16_t displacement) noexcept { 
+            cmpxbGeneric(mask, src1, src2, displacement, TreatAsInteger{});
+        }
         void flushreg() noexcept;
         void bx() noexcept;
         void balx() noexcept;
@@ -1070,8 +1072,8 @@ class Core {
         void subi(Register& dest, Integer src1, Integer src2) noexcept;
         void faultGeneric() noexcept;
         void processInstruction(Opcodes opcode, Integer displacement, TreatAsCTRL) noexcept;
-        void processInstruction(Opcodes opcode, uint8_t src1, const Register& src2, int16_t displacement, TreatAsCOBR) noexcept;
-        void processInstruction(Opcodes opcode, Register& src1, const Register& src2, int16_t displacement, TreatAsCOBR) noexcept;
+        void processInstruction(Opcodes opcode, uint8_t mask, uint8_t src1, const Register& src2, int16_t displacement, TreatAsCOBR) noexcept;
+        void processInstruction(Opcodes opcode, uint8_t mask, Register& src1, const Register& src2, int16_t displacement, TreatAsCOBR) noexcept;
     private:
         Ordinal systemAddressTableBase_ = 0;
         Ordinal prcbAddress_ = 0;
