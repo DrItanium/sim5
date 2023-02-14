@@ -586,25 +586,30 @@ Core::branchConditional(bool condition, Integer displacement) noexcept {
 /**
  * @brief And the condition code with the consistent mask found in the
  * instruction encoding; returns true if the value returned is not zero
+ * @param mask The mask to apply to see if we get a value back
  */
 bool
-Core::getMaskedConditionCode() noexcept {
-    return (ac_.getConditionCode() & instruction_.getInstructionMask()) != 0;
+Core::getMaskedConditionCode(uint8_t mask) const noexcept {
+    return (ac_.getConditionCode() & mask) != 0;
 }
 
 bool
-Core::conditionCodeEqualsMask() noexcept {
-    return ac_.getConditionCode() == instruction_.getInstructionMask();
+Core::conditionCodeEqualsMask(uint8_t mask) const noexcept {
+    return ac_.getConditionCode() == mask;
 }
 bool
 Core::fullConditionCodeCheck() noexcept {
+    return fullConditionCodeCheck(instruction_.getInstructionMask());
+}
+bool
+Core::fullConditionCodeCheck(uint8_t mask) noexcept {
     // the second condition handles the case where we are looking at unordered
     // output where it is only true if it is equal to zero. So if it turns out
     // that the condition code is zero and the mask is the unordered kind then
     // return true :). In all other cases, the second check will either fail
     // (because the condition code is zero) or it will never fire because the
     // masked condition code will be non zero.
-    return getMaskedConditionCode() || conditionCodeEqualsMask();
+    return getMaskedConditionCode(mask) || conditionCodeEqualsMask(mask);
 }
 void
 Core::faultGeneric() noexcept {
@@ -985,7 +990,7 @@ Core::processInstruction(Opcodes opcode, uint8_t mask, Register& src1, const Reg
         case Opcodes::testne:
         case Opcodes::testle:
         case Opcodes::testo:
-            src1.setValue<Ordinal>(fullConditionCodeCheck() ? 1 : 0);
+            src1.setValue<Ordinal>(fullConditionCodeCheck(mask) ? 1 : 0);
             break;
         case Opcodes::cmpobg:
         case Opcodes::cmpobe:

@@ -681,9 +681,10 @@ class Core {
         void moveGPR(byte destIndex, byte destOffset, byte srcIndex, byte srcOffset, TreatAs<T>) noexcept {
             setGPR(destIndex, destOffset, getGPRValue(srcIndex, srcOffset, TreatAs<T>{}), TreatAs<T>{});
         }
-        bool getMaskedConditionCode() noexcept;
-        bool conditionCodeEqualsMask() noexcept;
+        [[nodiscard]] bool getMaskedConditionCode(uint8_t mask) const noexcept;
+        [[nodiscard]] bool conditionCodeEqualsMask(uint8_t mask) const noexcept;
         bool fullConditionCodeCheck() noexcept;
+        bool fullConditionCodeCheck(uint8_t mask) noexcept;
         Ordinal computeAddress() noexcept;
         void performRegisterTransfer(byte mask, byte count) noexcept;
     private:
