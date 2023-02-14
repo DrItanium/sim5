@@ -612,7 +612,7 @@ Core::cycle() noexcept {
         auto effectiveAddress = computeAddress();
         Register& destination = getGPR(instruction_.reg.srcDest);
         processInstruction(opcode, destination, effectiveAddress, TreatAsMEM{});
-    } else {
+    } else if (instruction_.isREGFormat()) {
         auto& regDest = getGPR(instruction_.reg.srcDest);
         auto src2o = unpackSrc2(TreatAsOrdinal{}, TreatAsREG{});
         auto src2i = unpackSrc2(TreatAsInteger{}, TreatAsREG{});
@@ -918,6 +918,8 @@ Core::cycle() noexcept {
                 generateFault(UnimplementedFault);
                 break;
         }
+    } else {
+        generateFault(UnimplementedFault);
     }
     if (advanceInstruction_) {
         nextInstruction();
@@ -1348,6 +1350,14 @@ Core::processInstruction(Opcodes opcode, Register& srcDest, Address effectiveAdd
         case Opcodes::lda:
             srcDest.setValue<Ordinal>(effectiveAddress);
             break;
+        default:
+            generateFault(UnimplementedFault);
+            break;
+    }
+}
+void 
+Core::processInstruction(Opcodes opcode, Register& srcDest, const Register& src1, const Register& src2, TreatAsREG) noexcept {
+    switch (opcode) {
         default:
             generateFault(UnimplementedFault);
             break;
