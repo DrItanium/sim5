@@ -332,6 +332,8 @@ enum class BootResult : uint8_t {
 };
 struct TreatAsREG { };
 struct TreatAsCOBR { };
+struct TreatAsCTRL { };
+struct TreatAsMEM { };
 union Register {
     constexpr explicit Register(Ordinal value = 0) : o(value) { }
     Ordinal o;
@@ -344,6 +346,12 @@ union Register {
     }
     constexpr uint8_t getMajorOpcode() const noexcept {
         return bytes[3];
+    }
+    constexpr bool isCTRL() const noexcept {
+        return bytes[3] < 0x20;
+    }
+    constexpr bool isCOBR() const noexcept {
+        return (bytes[3] & 0b1110'0000) == 0b0010'0000;
     }
     struct {
         Integer aligned : 2;
@@ -734,8 +742,8 @@ class Core {
         void spanbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
             xbit<false>(dest, src1, src2);
         }
-        void branch() noexcept;
-        void branchConditional(bool condition) noexcept;
+        void branch(Integer displacement) noexcept;
+        void branchConditional(bool condition, Integer displacement) noexcept;
         void scanbyte(Ordinal src2, Ordinal src1) noexcept;
         void emul(Register& dest, Ordinal src1, Ordinal src2) noexcept;
         void ediv(Register& dest, Ordinal src1, Ordinal src2) noexcept;
@@ -802,7 +810,7 @@ class Core {
         void stt() noexcept;
         void stl() noexcept;
         void ret() noexcept;
-        void call() noexcept;
+        void call(Integer displacement) noexcept;
         void callx() noexcept;
     private:
         void enterCall(Ordinal fp) noexcept;
@@ -1050,6 +1058,7 @@ class Core {
         void subo(Register& dest, Ordinal src1, Ordinal src2) noexcept;
         void subi(Register& dest, Integer src1, Integer src2) noexcept;
         void faultGeneric() noexcept;
+        void processInstruction(Opcodes opcode, Integer displacement, TreatAsCTRL) noexcept;
     private:
         Ordinal systemAddressTableBase_ = 0;
         Ordinal prcbAddress_ = 0;

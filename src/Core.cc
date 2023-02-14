@@ -481,13 +481,13 @@ Core::callx() noexcept {
     setupNewFrameInternals(fp, temp);
 }
 void 
-Core::call() {
+Core::call(Integer displacement) {
     // wait for any uncompleted instructions to finish
     auto temp = getNextFrameBase(); // round stack pointer to next boundary
     auto fp = getGPRValue(FPIndex, TreatAsOrdinal{});
     saveReturnAddress(RIPIndex);
     enterCall(fp);
-    branch();
+    branch(displacement);
     setupNewFrameInternals(fp, temp);
 }
 void
@@ -537,7 +537,7 @@ Core::performRegisterTransfer(byte mask, byte count) noexcept {
     }
 }
 
- 
+
 void
 Core::lockBus() noexcept {
     while (digitalRead(LOCKPIN) == LOW);
@@ -552,14 +552,14 @@ Core::signalBootFailure() noexcept {
     digitalWrite(FAILPIN, HIGH);
 }
 void
-Core::branch() noexcept {
-    ip_.i += instruction_.ctrl.displacement;
+Core::branch(Integer displacement) noexcept {
+    ip_.i += displacement;
     advanceInstruction_ = false;
 }
 void
-Core::branchConditional(bool condition) noexcept {
+Core::branchConditional(bool condition, Integer displacement) noexcept {
     if (condition) {
-        branch();
+        branch(displacement);
     }
 }
 
@@ -596,442 +596,422 @@ Core::faultGeneric() noexcept {
 void
 Core::cycle() noexcept {
     instruction_.setValue(load(ip_.a, TreatAsOrdinal{}), TreatAsOrdinal{});
-    auto& regDest = getGPR(instruction_.reg.srcDest);
-    auto src2o = unpackSrc2(TreatAsOrdinal{}, TreatAsREG{});
-    auto src2i = unpackSrc2(TreatAsInteger{}, TreatAsREG{});
-    auto src1o = unpackSrc1(TreatAsOrdinal{}, TreatAsREG{});
-    auto src1i = unpackSrc1(TreatAsInteger{}, TreatAsREG{});
     instructionLength_ = 4;
     advanceInstruction_ = true;
-    
-    switch (instruction_.getOpcode()) {
-        case Opcodes::bal: // bal
-            saveReturnAddress(LRIndex);
-            // then fallthrough and take the branch
-        case Opcodes::b: // b
-            branch();
-            break;
-        case Opcodes::call: // call
-            call();
-            break;
-        case Opcodes::ret: // ret
-            ret();
-            break;
-        case Opcodes::bno:
-        case Opcodes::be:
-        case Opcodes::bne:
-        case Opcodes::bl:
-        case Opcodes::ble:
-        case Opcodes::bg:
-        case Opcodes::bge:
-        case Opcodes::bo:
-            // the branch instructions have the mask encoded into the opcode
-            // itself so we can just use it and save a ton of space overall
-            branchConditional(fullConditionCodeCheck());
-            break;
-        case Opcodes::faultno:
-        case Opcodes::faulte:
-        case Opcodes::faultne:
-        case Opcodes::faultl:
-        case Opcodes::faultle:
-        case Opcodes::faultg:
-        case Opcodes::faultge:
-        case Opcodes::faulto: 
-            faultGeneric();
-            break;
-        case Opcodes::testno:
-        case Opcodes::testg:
-        case Opcodes::teste:
-        case Opcodes::testge:
-        case Opcodes::testl:
-        case Opcodes::testne:
-        case Opcodes::testle:
-        case Opcodes::testo:
-            setGPR(instruction_.cobr.src1, (fullConditionCodeCheck()) ? 1 : 0, TreatAsOrdinal{});
-            break;
-        case Opcodes::lda:
-            setGPR(instruction_.mem.srcDest, computeAddress(), TreatAsOrdinal{});
-            break;
-        case Opcodes::bbc:
-            bbc();
-            break;
-        case Opcodes::bbs:
-            bbs();
-            break;
-        case Opcodes::cmpobg:
-        case Opcodes::cmpobe:
-        case Opcodes::cmpobge:
-        case Opcodes::cmpobl:
-        case Opcodes::cmpobne:
-        case Opcodes::cmpoble:
-            cmpobGeneric();
-            break;
-        case Opcodes::cmpibno: // never branches
-        case Opcodes::cmpibg:
-        case Opcodes::cmpibe:
-        case Opcodes::cmpibge:
-        case Opcodes::cmpibl:
-        case Opcodes::cmpibne:
-        case Opcodes::cmpible:
-        case Opcodes::cmpibo: // always branches
-            cmpibGeneric();
-            break;
-        case Opcodes::ld: 
-            loadBlock(computeAddress(), instruction_.mem.srcDest, 1);
-            break;
-        case Opcodes::st: 
-            storeBlock(computeAddress(), instruction_.mem.srcDest, 1);
-            break;
-        case Opcodes::ldob:
-            setGPR(instruction_.mem.srcDest, load(computeAddress(), TreatAs<ByteOrdinal>{}), TreatAsOrdinal{});
-            break;
-        case Opcodes::stob:
-            store(computeAddress(), getGPRValue(instruction_.mem.srcDest, TreatAs<Ordinal>{}), TreatAs<ByteOrdinal>{});
-            break;
-        case Opcodes::ldos:
-            setGPR(instruction_.mem.srcDest, load(computeAddress(), TreatAs<ShortOrdinal>{}), TreatAsOrdinal{});
-            break;
-        case Opcodes::stos:
-            store(computeAddress(), getGPRValue(instruction_.mem.srcDest, TreatAsOrdinal{}), TreatAs<ShortOrdinal>{});
-            break;
-        case Opcodes::ldib:
-            setGPR(instruction_.mem.srcDest, load(computeAddress(), TreatAs<ByteInteger>{}), TreatAsInteger{});
-            break;
-        case Opcodes::stib:
-            /// @todo fully implement fault detection
-            store(computeAddress(), getGPRValue(instruction_.mem.srcDest, TreatAsInteger{}), TreatAs<ByteInteger>{});
-            break;
-        case Opcodes::ldis:
-            setGPR(instruction_.mem.srcDest, load(computeAddress(), TreatAs<ShortInteger>{}), TreatAsInteger{});
-            break;
-        case Opcodes::stis:
-            /// @todo fully implement fault detection
-            store(computeAddress(), getGPRValue(instruction_.mem.srcDest, TreatAsInteger{}), TreatAs<ShortInteger>{});
-            break;
-        case Opcodes::ldl:
-            ldl();
-            break;
-        case Opcodes::stl:
-            stl();
-            break;
-        case Opcodes::ldt:
-            ldt();
-            break;
-        case Opcodes::stt:
-            stt();
-            break;
-        case Opcodes::ldq:
-            ldq();
-            break;
-        case Opcodes::stq:
-            stq();
-            break;
-        case Opcodes::bx:
-            bx();
-            break;
-        case Opcodes::balx:
-            balx();
-            break;
-        case Opcodes::callx:
-            callx();
-            break;
-    // in some of the opcodeExt values seem to reflect the resultant truth
-    // table for the operation :). That's pretty cool
-        case Opcodes::nand: // nand
-            nand(regDest, src1o, src2o);
-            break;
-        case Opcodes::andOperation: // and
-            andOperation(regDest, src1o, src2o);
-            break;
-        case Opcodes::clrbit: // clrbit
-            clrbit(regDest, src1o, src2o);
-            break;
-        case Opcodes::andnot: // andnot
-            andnot(regDest, src1o, src2o);
-            break;
-        case Opcodes::notand: // notand
-            notand(regDest, src1o, src2o);
-            break;
-        case Opcodes::notbit: // notbit
-            notbit(regDest, src1o, src2o);
-            break;
-        case Opcodes::xorOperation:
-            xorOperation(regDest, src1o, src2o);
-            break;
-        case Opcodes::setbit:
-            setbit(regDest, src1o, src2o);
-            break;
-        case Opcodes::orOperation: // or
-            orOperation(regDest, src1o, src2o);
-            break;
-        case Opcodes::nor: // nor
-            nor(regDest, src1o, src2o);
-            break;
-        case Opcodes::xnor: 
-            xnor(regDest, src1o, src2o);
-            break;
-        case Opcodes::notOperation: 
-            notOperation(regDest, src1o);
-            break;
-        case Opcodes::ornot: // ornot
-            ornot(regDest, src1o, src2o);
-            break;
-        case Opcodes::notor: // notor
-            notor(regDest, src1o, src2o);
-            break;
-        case Opcodes::alterbit: // alterbit
-            alterbit(regDest, src1o, src2o);
-            break;
-        case Opcodes::addo:
-            addo(regDest, src1o, src2o);
-            break;
-        case Opcodes::addi: // addi
-            addi(regDest, src1i, src2i);
-            break;
-        case Opcodes::subo: // subo
-            // I remember this trick from college, subtraction is just addition
-            // with a negative second argument :). I never gave it much thought
-            // until now but it seems to be an effective trick to save space.
-            subo(regDest, src1o, src2o);
-            break;
-        case Opcodes::subi: // subi
-            subi(regDest, src1i, src2i);
-            break;
-        case Opcodes::shro: // shro
-            regDest.setValue<Ordinal>(src1o < 32 ? src2o >> src1o : 0);
-            break;
-        case Opcodes::shrdi: // shrdi
-                  // according to the manual, equivalent to divi value, 2 so that is what we're going to do for correctness sake
-            regDest.setValue<Integer>( src1i < 32 && src1i >= 0 ? src2i / computeBitPosition(src1i) : 0);
-            break;
-        case Opcodes::shri: // shri
-            /*
-             * if (src >= 0) {
-             *  if (len < 32) {
-             *      dest <- src/2^len
-             *  } else {
-             *      dest <- 0
-             *  }
-             * }else {
-             *  if (len < 32) {
-             *      dest <- (src - 2^len + 1)/2^len;
-             *  } else {
-             *      dest <- -1;
-             *   }
-             * }
-             *
-             */
-            /// @todo perhaps implement the extra logic if necessary
-            regDest.setValue<Integer>(src2i >> src1i);
-            break;
-        case Opcodes::shlo: // shlo
-            regDest.setValue<Ordinal>(src1o < 32 ? src2o << src1o : 0);
-            break;
-        case Opcodes::rotate: // rotate
-            regDest.setValue<Ordinal>(rotateOperation(src2o, src1o));
-            break;
-        case Opcodes::shli: // shli
-            regDest.setValue<Integer>(src2i << src1i);
-            break;
-        case Opcodes::cmpo: // cmpo
-            cmpo(src1o, src2o);
-            break;
-        case Opcodes::cmpi: // cmpi
-            cmpi(src1o, src2o);
-            break;
-        case Opcodes::concmpo: // concmpo
-            concmpo(src1o, src2o);
-            break;
-        case Opcodes::concmpi: // concmpi
-            concmpi(src1i, src2i);
-            break;
-        case Opcodes::cmpinco: // cmpinco
-            cmpinco(regDest, src1o, src2o);
-            break;
-        case Opcodes::cmpinci: // cmpinci
-            cmpinci(regDest, src1i, src2i);
-            break;
-        case Opcodes::cmpdeco: // cmpdeco
-            cmpdeco(regDest, src1i, src2i);
-            break;
-        case Opcodes::cmpdeci: // cmpdeci
-            cmpdeci(regDest, src1i, src2i);
-            break;
-        case Opcodes::scanbyte: // scanbyte
-            scanbyte(src2o, src1o);
-            break;
-        case Opcodes::chkbit: // chkbit
-            ac_.arith.conditionCode = ((src2o & computeBitPosition(src1o)) == 0 ? 0b000 : 0b010);
-            break;
-        case Opcodes::addc: 
-            addc(regDest, src1o, src2o);
-            break;
-        case Opcodes::subc:
-            subc(regDest, src1o, src2o);
-            break;
-        case Opcodes::mov:
-            regDest.setValue<Ordinal>(src1o);
-            break;
-        case Opcodes::movl:
-            performRegisterTransfer(0b1, 2);
-            break;
-        case Opcodes::movt:
-            performRegisterTransfer(0b11, 3);
-            break;
-        case Opcodes::movq:
-            performRegisterTransfer(0b11, 4);
-            break;
-        case Opcodes::syncf:
-            syncf();
-            break;
-        case Opcodes::flushreg:
-            flushreg();
-            break;
-        case Opcodes::fmark:
-            fmark();
-            break;
-        case Opcodes::mark:
-            mark();
-            break;
-        case Opcodes::mulo:
-            mult<Ordinal>(regDest, src1o, src2o, TreatAsOrdinal{});
-            break;
-        case Opcodes::muli:
-            mult<Integer>(regDest, src1i, src2i, TreatAsInteger{});
-            break;
-        case Opcodes::divi:
-            divi(regDest, src1i, src2i);
-            break;
-        case Opcodes::divo:
-            divo(regDest, src1o, src2o);
-            break;
-        case Opcodes::remo:
-            remo(regDest, src1o, src2o);
-            break;
-        case Opcodes::remi:
-            remi(regDest, src1i, src2i);
-            break;
-        case Opcodes::modi: 
-            modi(regDest, src1i, src2i);
-            break;
-        case Opcodes::modify:
-            regDest.setValue<Ordinal>(modify(src1o, src2o, regDest.getValue<Ordinal>()));
-            break;
-        case Opcodes::extract:
-            // taken from the Hx manual as it isn't insane
-            regDest.setValue<Ordinal>((regDest.o >> (src1o > 32 ? 32 : src1o)) & ~(0xFFFF'FFFF << src2o));
-            break;
-        case Opcodes::modac: 
-            regDest.setValue<Ordinal>(ac_.modify(src1o, src2o));
-            break;
-        case Opcodes::modtc: 
-            regDest.setValue<Ordinal>(tc_.modify(src1o, src2o));
-            break;
-        case Opcodes::modpc:
-            if (auto mask = src1o; mask != 0) {
-                if (!pc_.inSupervisorMode()) {
-                    generateFault(TypeMismatchFault);
-                } else {
-                    regDest.setValue<Ordinal>(pc_.modify(mask, src2o));
-                    if (regDest.getPriority() > pc_.getPriority()) {
-                        checkForPendingInterrupts();
+    if (auto opcode = instruction_.getOpcode(); instruction_.isCTRL()) {
+        processInstruction(opcode, instruction_.ctrl.displacement, TreatAsCTRL{});
+    } else {
+        auto& regDest = getGPR(instruction_.reg.srcDest);
+        auto src2o = unpackSrc2(TreatAsOrdinal{}, TreatAsREG{});
+        auto src2i = unpackSrc2(TreatAsInteger{}, TreatAsREG{});
+        auto src1o = unpackSrc1(TreatAsOrdinal{}, TreatAsREG{});
+        auto src1i = unpackSrc1(TreatAsInteger{}, TreatAsREG{});
+
+        switch (instruction_.getOpcode()) {
+            case Opcodes::faultno:
+            case Opcodes::faulte:
+            case Opcodes::faultne:
+            case Opcodes::faultl:
+            case Opcodes::faultle:
+            case Opcodes::faultg:
+            case Opcodes::faultge:
+            case Opcodes::faulto: 
+                faultGeneric();
+                break;
+            case Opcodes::testno:
+            case Opcodes::testg:
+            case Opcodes::teste:
+            case Opcodes::testge:
+            case Opcodes::testl:
+            case Opcodes::testne:
+            case Opcodes::testle:
+            case Opcodes::testo:
+                setGPR(instruction_.cobr.src1, (fullConditionCodeCheck()) ? 1 : 0, TreatAsOrdinal{});
+                break;
+            case Opcodes::lda:
+                setGPR(instruction_.mem.srcDest, computeAddress(), TreatAsOrdinal{});
+                break;
+            case Opcodes::bbc:
+                bbc();
+                break;
+            case Opcodes::bbs:
+                bbs();
+                break;
+            case Opcodes::cmpobg:
+            case Opcodes::cmpobe:
+            case Opcodes::cmpobge:
+            case Opcodes::cmpobl:
+            case Opcodes::cmpobne:
+            case Opcodes::cmpoble:
+                cmpobGeneric();
+                break;
+            case Opcodes::cmpibno: // never branches
+            case Opcodes::cmpibg:
+            case Opcodes::cmpibe:
+            case Opcodes::cmpibge:
+            case Opcodes::cmpibl:
+            case Opcodes::cmpibne:
+            case Opcodes::cmpible:
+            case Opcodes::cmpibo: // always branches
+                cmpibGeneric();
+                break;
+            case Opcodes::ld: 
+                loadBlock(computeAddress(), instruction_.mem.srcDest, 1);
+                break;
+            case Opcodes::st: 
+                storeBlock(computeAddress(), instruction_.mem.srcDest, 1);
+                break;
+            case Opcodes::ldob:
+                setGPR(instruction_.mem.srcDest, load(computeAddress(), TreatAs<ByteOrdinal>{}), TreatAsOrdinal{});
+                break;
+            case Opcodes::stob:
+                store(computeAddress(), getGPRValue(instruction_.mem.srcDest, TreatAs<Ordinal>{}), TreatAs<ByteOrdinal>{});
+                break;
+            case Opcodes::ldos:
+                setGPR(instruction_.mem.srcDest, load(computeAddress(), TreatAs<ShortOrdinal>{}), TreatAsOrdinal{});
+                break;
+            case Opcodes::stos:
+                store(computeAddress(), getGPRValue(instruction_.mem.srcDest, TreatAsOrdinal{}), TreatAs<ShortOrdinal>{});
+                break;
+            case Opcodes::ldib:
+                setGPR(instruction_.mem.srcDest, load(computeAddress(), TreatAs<ByteInteger>{}), TreatAsInteger{});
+                break;
+            case Opcodes::stib:
+                /// @todo fully implement fault detection
+                store(computeAddress(), getGPRValue(instruction_.mem.srcDest, TreatAsInteger{}), TreatAs<ByteInteger>{});
+                break;
+            case Opcodes::ldis:
+                setGPR(instruction_.mem.srcDest, load(computeAddress(), TreatAs<ShortInteger>{}), TreatAsInteger{});
+                break;
+            case Opcodes::stis:
+                /// @todo fully implement fault detection
+                store(computeAddress(), getGPRValue(instruction_.mem.srcDest, TreatAsInteger{}), TreatAs<ShortInteger>{});
+                break;
+            case Opcodes::ldl:
+                ldl();
+                break;
+            case Opcodes::stl:
+                stl();
+                break;
+            case Opcodes::ldt:
+                ldt();
+                break;
+            case Opcodes::stt:
+                stt();
+                break;
+            case Opcodes::ldq:
+                ldq();
+                break;
+            case Opcodes::stq:
+                stq();
+                break;
+            case Opcodes::bx:
+                bx();
+                break;
+            case Opcodes::balx:
+                balx();
+                break;
+            case Opcodes::callx:
+                callx();
+                break;
+                // in some of the opcodeExt values seem to reflect the resultant truth
+                // table for the operation :). That's pretty cool
+            case Opcodes::nand: // nand
+                nand(regDest, src1o, src2o);
+                break;
+            case Opcodes::andOperation: // and
+                andOperation(regDest, src1o, src2o);
+                break;
+            case Opcodes::clrbit: // clrbit
+                clrbit(regDest, src1o, src2o);
+                break;
+            case Opcodes::andnot: // andnot
+                andnot(regDest, src1o, src2o);
+                break;
+            case Opcodes::notand: // notand
+                notand(regDest, src1o, src2o);
+                break;
+            case Opcodes::notbit: // notbit
+                notbit(regDest, src1o, src2o);
+                break;
+            case Opcodes::xorOperation:
+                xorOperation(regDest, src1o, src2o);
+                break;
+            case Opcodes::setbit:
+                setbit(regDest, src1o, src2o);
+                break;
+            case Opcodes::orOperation: // or
+                orOperation(regDest, src1o, src2o);
+                break;
+            case Opcodes::nor: // nor
+                nor(regDest, src1o, src2o);
+                break;
+            case Opcodes::xnor: 
+                xnor(regDest, src1o, src2o);
+                break;
+            case Opcodes::notOperation: 
+                notOperation(regDest, src1o);
+                break;
+            case Opcodes::ornot: // ornot
+                ornot(regDest, src1o, src2o);
+                break;
+            case Opcodes::notor: // notor
+                notor(regDest, src1o, src2o);
+                break;
+            case Opcodes::alterbit: // alterbit
+                alterbit(regDest, src1o, src2o);
+                break;
+            case Opcodes::addo:
+                addo(regDest, src1o, src2o);
+                break;
+            case Opcodes::addi: // addi
+                addi(regDest, src1i, src2i);
+                break;
+            case Opcodes::subo: // subo
+                                // I remember this trick from college, subtraction is just addition
+                                // with a negative second argument :). I never gave it much thought
+                                // until now but it seems to be an effective trick to save space.
+                subo(regDest, src1o, src2o);
+                break;
+            case Opcodes::subi: // subi
+                subi(regDest, src1i, src2i);
+                break;
+            case Opcodes::shro: // shro
+                regDest.setValue<Ordinal>(src1o < 32 ? src2o >> src1o : 0);
+                break;
+            case Opcodes::shrdi: // shrdi
+                                 // according to the manual, equivalent to divi value, 2 so that is what we're going to do for correctness sake
+                regDest.setValue<Integer>( src1i < 32 && src1i >= 0 ? src2i / computeBitPosition(src1i) : 0);
+                break;
+            case Opcodes::shri: // shri
+                /*
+                 * if (src >= 0) {
+                 *  if (len < 32) {
+                 *      dest <- src/2^len
+                 *  } else {
+                 *      dest <- 0
+                 *  }
+                 * }else {
+                 *  if (len < 32) {
+                 *      dest <- (src - 2^len + 1)/2^len;
+                 *  } else {
+                 *      dest <- -1;
+                 *   }
+                 * }
+                 *
+                 */
+                /// @todo perhaps implement the extra logic if necessary
+                regDest.setValue<Integer>(src2i >> src1i);
+                break;
+            case Opcodes::shlo: // shlo
+                regDest.setValue<Ordinal>(src1o < 32 ? src2o << src1o : 0);
+                break;
+            case Opcodes::rotate: // rotate
+                regDest.setValue<Ordinal>(rotateOperation(src2o, src1o));
+                break;
+            case Opcodes::shli: // shli
+                regDest.setValue<Integer>(src2i << src1i);
+                break;
+            case Opcodes::cmpo: // cmpo
+                cmpo(src1o, src2o);
+                break;
+            case Opcodes::cmpi: // cmpi
+                cmpi(src1o, src2o);
+                break;
+            case Opcodes::concmpo: // concmpo
+                concmpo(src1o, src2o);
+                break;
+            case Opcodes::concmpi: // concmpi
+                concmpi(src1i, src2i);
+                break;
+            case Opcodes::cmpinco: // cmpinco
+                cmpinco(regDest, src1o, src2o);
+                break;
+            case Opcodes::cmpinci: // cmpinci
+                cmpinci(regDest, src1i, src2i);
+                break;
+            case Opcodes::cmpdeco: // cmpdeco
+                cmpdeco(regDest, src1i, src2i);
+                break;
+            case Opcodes::cmpdeci: // cmpdeci
+                cmpdeci(regDest, src1i, src2i);
+                break;
+            case Opcodes::scanbyte: // scanbyte
+                scanbyte(src2o, src1o);
+                break;
+            case Opcodes::chkbit: // chkbit
+                ac_.arith.conditionCode = ((src2o & computeBitPosition(src1o)) == 0 ? 0b000 : 0b010);
+                break;
+            case Opcodes::addc: 
+                addc(regDest, src1o, src2o);
+                break;
+            case Opcodes::subc:
+                subc(regDest, src1o, src2o);
+                break;
+            case Opcodes::mov:
+                regDest.setValue<Ordinal>(src1o);
+                break;
+            case Opcodes::movl:
+                performRegisterTransfer(0b1, 2);
+                break;
+            case Opcodes::movt:
+                performRegisterTransfer(0b11, 3);
+                break;
+            case Opcodes::movq:
+                performRegisterTransfer(0b11, 4);
+                break;
+            case Opcodes::syncf:
+                syncf();
+                break;
+            case Opcodes::flushreg:
+                flushreg();
+                break;
+            case Opcodes::fmark:
+                fmark();
+                break;
+            case Opcodes::mark:
+                mark();
+                break;
+            case Opcodes::mulo:
+                mult<Ordinal>(regDest, src1o, src2o, TreatAsOrdinal{});
+                break;
+            case Opcodes::muli:
+                mult<Integer>(regDest, src1i, src2i, TreatAsInteger{});
+                break;
+            case Opcodes::divi:
+                divi(regDest, src1i, src2i);
+                break;
+            case Opcodes::divo:
+                divo(regDest, src1o, src2o);
+                break;
+            case Opcodes::remo:
+                remo(regDest, src1o, src2o);
+                break;
+            case Opcodes::remi:
+                remi(regDest, src1i, src2i);
+                break;
+            case Opcodes::modi: 
+                modi(regDest, src1i, src2i);
+                break;
+            case Opcodes::modify:
+                regDest.setValue<Ordinal>(modify(src1o, src2o, regDest.getValue<Ordinal>()));
+                break;
+            case Opcodes::extract:
+                // taken from the Hx manual as it isn't insane
+                regDest.setValue<Ordinal>((regDest.o >> (src1o > 32 ? 32 : src1o)) & ~(0xFFFF'FFFF << src2o));
+                break;
+            case Opcodes::modac: 
+                regDest.setValue<Ordinal>(ac_.modify(src1o, src2o));
+                break;
+            case Opcodes::modtc: 
+                regDest.setValue<Ordinal>(tc_.modify(src1o, src2o));
+                break;
+            case Opcodes::modpc:
+                if (auto mask = src1o; mask != 0) {
+                    if (!pc_.inSupervisorMode()) {
+                        generateFault(TypeMismatchFault);
+                    } else {
+                        regDest.setValue<Ordinal>(pc_.modify(mask, src2o));
+                        if (regDest.getPriority() > pc_.getPriority()) {
+                            checkForPendingInterrupts();
+                        }
                     }
+                } else {
+                    regDest.setValue<Ordinal>(pc_.getValue<Ordinal>());
                 }
-            } else {
-                regDest.setValue<Ordinal>(pc_.getValue<Ordinal>());
-            }
-            break;
-        case Opcodes::atadd:
-            atadd(regDest, src1o, src2o);
-            break;
-        case Opcodes::atmod:
-            atmod(regDest, src1o, src2o);
-            break;
-        case Opcodes::emul:
-            emul(regDest, src2o, src1o);
-            break;
-        case Opcodes::ediv:
-            ediv(regDest, src2o, src1o);
-            break;
-        case Opcodes::calls:
-            calls(src1o);
-            break;
-        case Opcodes::spanbit:
-            spanbit(regDest, src2o, src1o);
-            break;
-        case Opcodes::scanbit:
-            scanbit(regDest, src2o, src1o);
-            break;
-        case Opcodes::synld:
-            synld(regDest, src1o);
-            break;
-        case Opcodes::synmov:
-            synmov(getGPR(instruction_.reg.src1), src2o);
-            break;
-        case Opcodes::synmovl:
-            synmovl(getGPR(instruction_.reg.src1), src2o);
-            break;
-        case Opcodes::synmovq:
-            synmovq(getGPR(instruction_.reg.src1), src2o);
-            break;
-        case Opcodes::sysctl:
-            sysctl(regDest, src1o, src2o);
-            break;
-        case Opcodes::selno:
-        case Opcodes::sele:
-        case Opcodes::selg:
-        case Opcodes::selge:
-        case Opcodes::sell:
-        case Opcodes::selne:
-        case Opcodes::selle:
-        case Opcodes::selo:
-            performSelect(regDest, src1o, src2o, fullConditionCodeCheck());
-            break;
-        case Opcodes::addono:
-        case Opcodes::addoe:
-        case Opcodes::addog:
-        case Opcodes::addoge:
-        case Opcodes::addol:
-        case Opcodes::addone:
-        case Opcodes::addole:
-        case Opcodes::addoo:
-            performConditionalAdd(regDest, src1o, src2o, fullConditionCodeCheck(), TreatAsOrdinal{});
-            break;
+                break;
+            case Opcodes::atadd:
+                atadd(regDest, src1o, src2o);
+                break;
+            case Opcodes::atmod:
+                atmod(regDest, src1o, src2o);
+                break;
+            case Opcodes::emul:
+                emul(regDest, src2o, src1o);
+                break;
+            case Opcodes::ediv:
+                ediv(regDest, src2o, src1o);
+                break;
+            case Opcodes::calls:
+                calls(src1o);
+                break;
+            case Opcodes::spanbit:
+                spanbit(regDest, src2o, src1o);
+                break;
+            case Opcodes::scanbit:
+                scanbit(regDest, src2o, src1o);
+                break;
+            case Opcodes::synld:
+                synld(regDest, src1o);
+                break;
+            case Opcodes::synmov:
+                synmov(getGPR(instruction_.reg.src1), src2o);
+                break;
+            case Opcodes::synmovl:
+                synmovl(getGPR(instruction_.reg.src1), src2o);
+                break;
+            case Opcodes::synmovq:
+                synmovq(getGPR(instruction_.reg.src1), src2o);
+                break;
+            case Opcodes::sysctl:
+                sysctl(regDest, src1o, src2o);
+                break;
+            case Opcodes::selno:
+            case Opcodes::sele:
+            case Opcodes::selg:
+            case Opcodes::selge:
+            case Opcodes::sell:
+            case Opcodes::selne:
+            case Opcodes::selle:
+            case Opcodes::selo:
+                performSelect(regDest, src1o, src2o, fullConditionCodeCheck());
+                break;
+            case Opcodes::addono:
+            case Opcodes::addoe:
+            case Opcodes::addog:
+            case Opcodes::addoge:
+            case Opcodes::addol:
+            case Opcodes::addone:
+            case Opcodes::addole:
+            case Opcodes::addoo:
+                performConditionalAdd(regDest, src1o, src2o, fullConditionCodeCheck(), TreatAsOrdinal{});
+                break;
 
-        case Opcodes::addino:
-        case Opcodes::addie:
-        case Opcodes::addig:
-        case Opcodes::addige:
-        case Opcodes::addil:
-        case Opcodes::addine:
-        case Opcodes::addile:
-        case Opcodes::addio:
-            performConditionalAdd(regDest, src1i, src2i, fullConditionCodeCheck(), TreatAsInteger{});
-            break;
-        case Opcodes::subono:
-        case Opcodes::suboe:
-        case Opcodes::subog:
-        case Opcodes::suboge:
-        case Opcodes::subol:
-        case Opcodes::subone:
-        case Opcodes::subole:
-        case Opcodes::suboo:
-            performConditionalSubtract(regDest, src1o, src2o, fullConditionCodeCheck(), TreatAsOrdinal{});
-            break;
+            case Opcodes::addino:
+            case Opcodes::addie:
+            case Opcodes::addig:
+            case Opcodes::addige:
+            case Opcodes::addil:
+            case Opcodes::addine:
+            case Opcodes::addile:
+            case Opcodes::addio:
+                performConditionalAdd(regDest, src1i, src2i, fullConditionCodeCheck(), TreatAsInteger{});
+                break;
+            case Opcodes::subono:
+            case Opcodes::suboe:
+            case Opcodes::subog:
+            case Opcodes::suboge:
+            case Opcodes::subol:
+            case Opcodes::subone:
+            case Opcodes::subole:
+            case Opcodes::suboo:
+                performConditionalSubtract(regDest, src1o, src2o, fullConditionCodeCheck(), TreatAsOrdinal{});
+                break;
 
-        case Opcodes::subino:
-        case Opcodes::subie:
-        case Opcodes::subig:
-        case Opcodes::subige:
-        case Opcodes::subil:
-        case Opcodes::subine:
-        case Opcodes::subile:
-        case Opcodes::subio:
-            performConditionalSubtract(regDest, src1i, src2i, fullConditionCodeCheck(), TreatAsInteger{});
-            break;
-        default:
-            generateFault(UnimplementedFault);
-            break;
+            case Opcodes::subino:
+            case Opcodes::subie:
+            case Opcodes::subig:
+            case Opcodes::subige:
+            case Opcodes::subil:
+            case Opcodes::subine:
+            case Opcodes::subile:
+            case Opcodes::subio:
+                performConditionalSubtract(regDest, src1i, src2i, fullConditionCodeCheck(), TreatAsInteger{});
+                break;
+            default:
+                generateFault(UnimplementedFault);
+                break;
+        }
     }
     if (advanceInstruction_) {
         nextInstruction();
@@ -1272,4 +1252,36 @@ Core::subi(Register& dest, Integer src1, Integer src2) noexcept {
 void
 Core::subo(Register& dest, Ordinal src1, Ordinal src2) noexcept {
     sub<Ordinal>(dest, src1, src2, TreatAsOrdinal{});
+}
+void 
+Core::processInstruction(Opcodes opcode, Integer displacement, TreatAsCTRL) noexcept {
+    switch (opcode) {
+        case Opcodes::bal: // bal
+            saveReturnAddress(LRIndex);
+            // then fallthrough and take the branch
+        case Opcodes::b: // b
+            branch(displacement);
+            break;
+        case Opcodes::call: // call
+            call(displacement);
+            break;
+        case Opcodes::ret: // ret
+            ret();
+            break;
+        case Opcodes::bno:
+        case Opcodes::be:
+        case Opcodes::bne:
+        case Opcodes::bl:
+        case Opcodes::ble:
+        case Opcodes::bg:
+        case Opcodes::bge:
+        case Opcodes::bo:
+            // the branch instructions have the mask encoded into the opcode
+            // itself so we can just use it and save a ton of space overall
+            branchConditional(fullConditionCodeCheck(), displacement);
+            break;
+        default:
+            generateFault(UnimplementedFault);
+            break;
+    }
 }
