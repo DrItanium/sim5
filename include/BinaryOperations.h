@@ -120,18 +120,18 @@ template<typename T>
 [[nodiscard]] constexpr uint8_t mostSignificantByte(Ordinal input) noexcept {
     return decode<Ordinal, uint8_t, 0xFF00'0000, 24>(input);
 }
-static_assert(mostSignificantByte(0xFDEDABCD) == 0xFD);
 [[nodiscard]] constexpr uint16_t lowerHalf(Ordinal input) noexcept {
     return static_cast<uint16_t>(input);
 }
 [[nodiscard]] constexpr uint16_t upperHalf(Ordinal input) noexcept {
     return static_cast<uint16_t>(input >> 16);
 }
-static_assert(lowerHalf(0xFDEDABCD) == 0xABCD);
-static_assert(upperHalf(0xFDEDABCD) == 0xFDED);
 [[nodiscard]] constexpr Ordinal mostSignificantBit(Ordinal input) noexcept {
     return maskValue<Ordinal, 0x8000'0000>(input);
 }
+static_assert(lowerHalf(0xFDEDABCD) == 0xABCD);
+static_assert(upperHalf(0xFDEDABCD) == 0xFDED);
 static_assert(mostSignificantBit(0xFDEDABCD) == 0x8000'0000);
+static_assert(mostSignificantByte(0xFDEDABCD) == 0xFD);
 
 #endif // end SIM5_BINARY_OPERATIONS_H__
