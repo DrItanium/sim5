@@ -748,18 +748,19 @@ class Core {
         void emul(Register& dest, Ordinal src1, Ordinal src2) noexcept;
         void ediv(Register& dest, Ordinal src1, Ordinal src2) noexcept;
         void arithmeticWithCarryGeneric(Ordinal result, bool src2MSB, bool src1MSB, bool destMSB) noexcept;
-        inline void advanceCOBRDisplacement() noexcept {
+        inline void advanceCOBRDisplacement(int16_t displacement) noexcept {
             Register temp{0};
-            temp.alignedTransfer.important = instruction_.cobr.displacement;
+            temp.alignedTransfer.important = displacement;
             ip_.alignedTransfer.important += temp.alignedTransfer.important;
             ip_.alignedTransfer.aligned = 0;
             advanceInstruction_ = false;
         }
         template<bool checkClear>
         void 
-        branchIfBitGeneric() {
-            Ordinal bitpos = computeBitPosition(unpackSrc1(TreatAsOrdinal{}, TreatAsCOBR{}));
-            Ordinal against = unpackSrc2(TreatAsOrdinal{}, TreatAsCOBR{});
+        branchIfBitGeneric(Ordinal bitpos, const Register& src2 , int16_t displacement) {
+            //Ordinal bitpos = computeBitPosition(unpackSrc1(TreatAsOrdinal{}, TreatAsCOBR{}));
+            //Ordinal against = unpackSrc2(TreatAsOrdinal{}, TreatAsCOBR{});
+            Ordinal against = src2.getValue<Ordinal>();
             bool condition = false;
             // Branch if bit set
             if constexpr (checkClear) {
@@ -769,13 +770,23 @@ class Core {
             }
             if (condition) {
                 ac_.arith.conditionCode = checkClear ? 0b000 : 0b010;
-                advanceCOBRDisplacement();
+                advanceCOBRDisplacement(displacement);
             } else {
                 ac_.arith.conditionCode = checkClear ? 0b010 : 0b000;
             }
         }
-        void bbs() noexcept;
-        void bbc() noexcept;
+        inline void bbc(uint8_t bitpos, const Register& against, int16_t displacement) {
+            return branchIfBitGeneric<true>(computeBitPosition(bitpos & 0b11111), against, displacement);
+        }
+        inline void bbc(const Register& bitpos, const Register& against, int16_t displacement) {
+            return branchIfBitGeneric<true>(computeBitPosition(bitpos.bytes[0] & 0b11111), against, displacement);
+        }
+        inline void bbs(uint8_t bitpos, const Register& against, int16_t displacement) {
+            return branchIfBitGeneric<false>(computeBitPosition(bitpos & 0b11111), against, displacement);
+        }
+        inline void bbs(const Register& bitpos, const Register& against, int16_t displacement) {
+            return branchIfBitGeneric<false>(computeBitPosition(bitpos.bytes[0] & 0b11111), against, displacement);
+        }
         template<typename T>
         void cmpGeneric(T src1, T src2) noexcept {
             if (src1 < src2) {
@@ -792,7 +803,7 @@ class Core {
             auto src2 = unpackSrc2(TreatAs<T>{}, TreatAsCOBR{});
             cmpGeneric(src1, src2);
             if ((instruction_.getInstructionMask() & ac_.getConditionCode()) != 0) {
-                advanceCOBRDisplacement();
+                advanceCOBRDisplacement(instruction_.cobr.displacement);
             } 
         }
         inline void cmpobGeneric() noexcept { cmpxbGeneric<Ordinal>(); }
@@ -1059,6 +1070,8 @@ class Core {
         void subi(Register& dest, Integer src1, Integer src2) noexcept;
         void faultGeneric() noexcept;
         void processInstruction(Opcodes opcode, Integer displacement, TreatAsCTRL) noexcept;
+        void processInstruction(Opcodes opcode, uint8_t src1, const Register& src2, int16_t displacement, TreatAsCOBR) noexcept;
+        void processInstruction(Opcodes opcode, Register& src1, const Register& src2, int16_t displacement, TreatAsCOBR) noexcept;
     private:
         Ordinal systemAddressTableBase_ = 0;
         Ordinal prcbAddress_ = 0;

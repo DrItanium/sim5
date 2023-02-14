@@ -299,14 +299,6 @@ Core::ret() {
     }
 }
 
-void
-Core::bbc() {
-    branchIfBitGeneric<true>();
-}
-void
-Core::bbs() {
-    branchIfBitGeneric<false>();
-}
 Ordinal
 Core::computeAddress() noexcept {
     if (instruction_.isMEMA()) {
@@ -600,6 +592,8 @@ Core::cycle() noexcept {
     advanceInstruction_ = true;
     if (auto opcode = instruction_.getOpcode(); instruction_.isCTRL()) {
         processInstruction(opcode, instruction_.ctrl.displacement, TreatAsCTRL{});
+    } else if (instruction_.isCOBR()) {
+
     } else {
         auto& regDest = getGPR(instruction_.reg.srcDest);
         auto src2o = unpackSrc2(TreatAsOrdinal{}, TreatAsREG{});
@@ -608,34 +602,8 @@ Core::cycle() noexcept {
         auto src1i = unpackSrc1(TreatAsInteger{}, TreatAsREG{});
 
         switch (instruction_.getOpcode()) {
-            case Opcodes::faultno:
-            case Opcodes::faulte:
-            case Opcodes::faultne:
-            case Opcodes::faultl:
-            case Opcodes::faultle:
-            case Opcodes::faultg:
-            case Opcodes::faultge:
-            case Opcodes::faulto: 
-                faultGeneric();
-                break;
-            case Opcodes::testno:
-            case Opcodes::testg:
-            case Opcodes::teste:
-            case Opcodes::testge:
-            case Opcodes::testl:
-            case Opcodes::testne:
-            case Opcodes::testle:
-            case Opcodes::testo:
-                setGPR(instruction_.cobr.src1, (fullConditionCodeCheck()) ? 1 : 0, TreatAsOrdinal{});
-                break;
             case Opcodes::lda:
                 setGPR(instruction_.mem.srcDest, computeAddress(), TreatAsOrdinal{});
-                break;
-            case Opcodes::bbc:
-                bbc();
-                break;
-            case Opcodes::bbs:
-                bbs();
                 break;
             case Opcodes::cmpobg:
             case Opcodes::cmpobe:
@@ -1279,6 +1247,56 @@ Core::processInstruction(Opcodes opcode, Integer displacement, TreatAsCTRL) noex
             // the branch instructions have the mask encoded into the opcode
             // itself so we can just use it and save a ton of space overall
             branchConditional(fullConditionCodeCheck(), displacement);
+            break;
+        case Opcodes::faultno:
+        case Opcodes::faulte:
+        case Opcodes::faultne:
+        case Opcodes::faultl:
+        case Opcodes::faultle:
+        case Opcodes::faultg:
+        case Opcodes::faultge:
+        case Opcodes::faulto: 
+            faultGeneric();
+            break;
+        default:
+            generateFault(UnimplementedFault);
+            break;
+    }
+}
+void
+Core::processInstruction(Opcodes opcode, uint8_t src1, const Register& src2, int16_t displacement, TreatAsCOBR) noexcept {
+    switch(opcode) {
+        case Opcodes::bbc:
+            bbc(src1, src2, displacement);
+            break;
+        case Opcodes::bbs:
+            bbs(src1, src2, displacement);
+            break;
+        default:
+            // test instructions perform modifications to src1 so we must error out
+            // in this case!
+            generateFault(UnimplementedFault);
+            break;
+    }
+}
+void 
+Core::processInstruction(Opcodes opcode, Register& src1, const Register& src2, int16_t displacement, TreatAsCOBR) noexcept {
+    switch(opcode) {
+        case Opcodes::bbc:
+            bbc(src1, src2, displacement);
+            break;
+        case Opcodes::bbs:
+            bbs(src1, src2, displacement);
+            break;
+        case Opcodes::testno:
+        case Opcodes::testg:
+        case Opcodes::teste:
+        case Opcodes::testge:
+        case Opcodes::testl:
+        case Opcodes::testne:
+        case Opcodes::testle:
+        case Opcodes::testo:
+            src1.setValue<Ordinal>(fullConditionCodeCheck() ? 1 : 0);
             break;
         default:
             generateFault(UnimplementedFault);
