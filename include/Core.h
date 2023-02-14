@@ -659,6 +659,10 @@ class Core {
         inline void setGPR(byte index, Integer value, TreatAsInteger) noexcept { getGPR(index).setValue(value, TreatAsInteger{}); }
         [[nodiscard]] Register& getSFR(byte index) noexcept;
         [[nodiscard]] Register& getSFR(byte index, byte offset) noexcept;
+        [[nodiscard]] const Register& getSFR(byte index) const noexcept;
+        [[nodiscard]] const Register& getSFR(byte index, byte offset) const noexcept;
+        [[nodiscard]] const Register& getSrc1Register(TreatAsREG) const noexcept;
+        [[nodiscard]] const Register& getSrc2Register(TreatAsREG) const noexcept;
         [[nodiscard]] Ordinal unpackSrc1(TreatAsOrdinal, TreatAsREG) noexcept;
         [[nodiscard]] Ordinal unpackSrc1(byte offset, TreatAsOrdinal, TreatAsREG) noexcept;
         [[nodiscard]] Integer unpackSrc1(TreatAsInteger, TreatAsREG) noexcept;
@@ -1073,17 +1077,18 @@ class Core {
         void subo(Register& dest, Ordinal src1, Ordinal src2) noexcept;
         void subi(Register& dest, Integer src1, Integer src2) noexcept;
         void faultGeneric() noexcept;
+        void balx(Register& linkRegister, Address ordinal) noexcept;
         void processInstruction(Opcodes opcode, Integer displacement, TreatAsCTRL) noexcept;
         void processInstruction(Opcodes opcode, uint8_t mask, uint8_t src1, const Register& src2, int16_t displacement, TreatAsCOBR) noexcept;
         void processInstruction(Opcodes opcode, uint8_t mask, Register& src1, const Register& src2, int16_t displacement, TreatAsCOBR) noexcept;
         void processInstruction(Opcodes opcode, Register& srcDest, Address effectiveAddress, TreatAsMEM) noexcept;
         void processInstruction(Opcodes opcode, Register& srcDest, const Register& src1, const Register& src2, TreatAsREG) noexcept;
-        void balx(Register& linkRegister, Address ordinal) noexcept;
     private:
         Ordinal systemAddressTableBase_ = 0;
         Ordinal prcbAddress_ = 0;
         GPRBlock gpr_;
         RegisterBlock32 sfrs_;
+        RegisterBlock32 constants_;
         Register ip_;
         Register ac_; 
         Register pc_;

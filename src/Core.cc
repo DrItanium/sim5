@@ -24,12 +24,33 @@
 #include <Arduino.h>
 #include "Types.h"
 #include "Core.h"
-
+const Register& 
+Core::getSrc1Register(TreatAsREG) const noexcept {
+    if (instruction_.reg.m1) {
+        /// @todo what to do if s1 is also set?
+        return constants_.get(instruction_.reg.src1);
+    } else if (instruction_.reg.s1) {
+        return getSFR(instruction_.reg.src1);
+    } else {
+        return getGPR(instruction_.reg.src1);
+    }
+}
+const Register& 
+Core::getSrc2Register(TreatAsREG) const noexcept {
+    if (instruction_.reg.m2) {
+        /// @todo what to do if s1 is also set?
+        return constants_.get(instruction_.reg.src2);
+    } else if (instruction_.reg.s2) {
+        return getSFR(instruction_.reg.src2);
+    } else {
+        return getGPR(instruction_.reg.src2);
+    }
+}
 Ordinal 
 Core::unpackSrc1(TreatAsOrdinal, TreatAsREG) noexcept {
     if (instruction_.reg.m1) {
         /// @todo what to do if s1 is also set?
-        return instruction_.reg.src1;
+        return constants_.getValue<Ordinal>(instruction_.reg.src1);
     } else if (instruction_.reg.s1) {
         return getSFR(instruction_.reg.src1).o;
     } else {
@@ -40,7 +61,7 @@ Ordinal
 Core::unpackSrc1(byte offset, TreatAsOrdinal, TreatAsREG) noexcept {
     if (instruction_.reg.m1) {
         // literals should always return zero if offset is greater than zero
-        return offset == 0 ? instruction_.reg.src1 : 0;
+        return offset == 0 ? constants_.getValue<Ordinal>(instruction_.reg.src1) : 0;
     } else if (instruction_.reg.s1) {
         return getSFR(instruction_.reg.src1, offset).o;
     } else {
@@ -50,7 +71,7 @@ Core::unpackSrc1(byte offset, TreatAsOrdinal, TreatAsREG) noexcept {
 Integer 
 Core::unpackSrc1(TreatAsInteger, TreatAsREG) noexcept {
     if (instruction_.reg.m1) {
-        return instruction_.reg.src1;
+        return constants_.getValue<Integer>(instruction_.reg.src1);
     } else if (instruction_.reg.s1) {
         return getSFR(instruction_.reg.src1).i;
     } else {
@@ -60,7 +81,7 @@ Core::unpackSrc1(TreatAsInteger, TreatAsREG) noexcept {
 Ordinal 
 Core::unpackSrc2(TreatAsOrdinal, TreatAsREG) noexcept {
     if (instruction_.reg.m2) {
-        return instruction_.reg.src2;
+        return constants_.getValue<Ordinal>(instruction_.reg.src2);
     } else if (instruction_.reg.s2) {
         return getSFR(instruction_.reg.src2).o;
     } else {
@@ -70,7 +91,7 @@ Core::unpackSrc2(TreatAsOrdinal, TreatAsREG) noexcept {
 Integer 
 Core::unpackSrc2(TreatAsInteger, TreatAsREG) noexcept {
     if (instruction_.reg.m2) {
-        return instruction_.reg.src2;
+        return constants_.getValue<Integer>(instruction_.reg.src2);
     } else if (instruction_.reg.s2) {
         return getSFR(instruction_.reg.src2).i;
     } else {
@@ -203,7 +224,16 @@ Register&
 Core::getSFR(byte index) noexcept {
     return sfrs_.get(index);
 }
-Register& Core::getSFR(byte index, byte offset) noexcept {
+Register& 
+Core::getSFR(byte index, byte offset) noexcept {
+    return getSFR((index + offset) & 0b11111);
+}
+const Register& 
+Core::getSFR(byte index) const noexcept {
+    return sfrs_.get(index);
+}
+const Register& 
+Core::getSFR(byte index, byte offset) const noexcept {
     return getSFR((index + offset) & 0b11111);
 }
 void
@@ -622,51 +652,6 @@ Core::cycle() noexcept {
         switch (opcode) {
                 // in some of the opcodeExt values seem to reflect the resultant truth
                 // table for the operation :). That's pretty cool
-            case Opcodes::nand: // nand
-                nand(regDest, src1o, src2o);
-                break;
-            case Opcodes::andOperation: // and
-                andOperation(regDest, src1o, src2o);
-                break;
-            case Opcodes::clrbit: // clrbit
-                clrbit(regDest, src1o, src2o);
-                break;
-            case Opcodes::andnot: // andnot
-                andnot(regDest, src1o, src2o);
-                break;
-            case Opcodes::notand: // notand
-                notand(regDest, src1o, src2o);
-                break;
-            case Opcodes::notbit: // notbit
-                notbit(regDest, src1o, src2o);
-                break;
-            case Opcodes::xorOperation:
-                xorOperation(regDest, src1o, src2o);
-                break;
-            case Opcodes::setbit:
-                setbit(regDest, src1o, src2o);
-                break;
-            case Opcodes::orOperation: // or
-                orOperation(regDest, src1o, src2o);
-                break;
-            case Opcodes::nor: // nor
-                nor(regDest, src1o, src2o);
-                break;
-            case Opcodes::xnor: 
-                xnor(regDest, src1o, src2o);
-                break;
-            case Opcodes::notOperation: 
-                notOperation(regDest, src1o);
-                break;
-            case Opcodes::ornot: // ornot
-                ornot(regDest, src1o, src2o);
-                break;
-            case Opcodes::notor: // notor
-                notor(regDest, src1o, src2o);
-                break;
-            case Opcodes::alterbit: // alterbit
-                alterbit(regDest, src1o, src2o);
-                break;
             case Opcodes::addo:
                 addo(regDest, src1o, src2o);
                 break;
@@ -940,6 +925,8 @@ Core::begin() noexcept {
     ip_.clear();
     for (int i = 0; i < 32; ++i) {
         getGPR(i).clear();
+        /// @todo setup SFRs
+        constants_.setValue<Ordinal>(i, i);
     }
     running_ = false;
     //Serial.println(F("DONE"));
@@ -1356,8 +1343,55 @@ Core::processInstruction(Opcodes opcode, Register& srcDest, Address effectiveAdd
     }
 }
 void 
-Core::processInstruction(Opcodes opcode, Register& srcDest, const Register& src1, const Register& src2, TreatAsREG) noexcept {
+Core::processInstruction(Opcodes opcode, Register& regDest, const Register& src1, const Register& src2, TreatAsREG) noexcept {
+    auto src2o = src2.getValue<Ordinal>();
+    auto src1o = src1.getValue<Ordinal>();
     switch (opcode) {
+        case Opcodes::nand: // nand
+            nand(regDest, src1o, src2o);
+            break;
+        case Opcodes::andOperation: // and
+            andOperation(regDest, src1o, src2o);
+            break;
+        case Opcodes::clrbit: // clrbit
+            clrbit(regDest, src1o, src2o);
+            break;
+        case Opcodes::andnot: // andnot
+            andnot(regDest, src1o, src2o);
+            break;
+        case Opcodes::notand: // notand
+            notand(regDest, src1o, src2o);
+            break;
+        case Opcodes::notbit: // notbit
+            notbit(regDest, src1o, src2o);
+            break;
+        case Opcodes::xorOperation:
+            xorOperation(regDest, src1o, src2o);
+            break;
+        case Opcodes::setbit:
+            setbit(regDest, src1o, src2o);
+            break;
+        case Opcodes::orOperation: // or
+            orOperation(regDest, src1o, src2o);
+            break;
+        case Opcodes::nor: // nor
+            nor(regDest, src1o, src2o);
+            break;
+        case Opcodes::xnor: 
+            xnor(regDest, src1o, src2o);
+            break;
+        case Opcodes::notOperation: 
+            notOperation(regDest, src1o);
+            break;
+        case Opcodes::ornot: // ornot
+            ornot(regDest, src1o, src2o);
+            break;
+        case Opcodes::notor: // notor
+            notor(regDest, src1o, src2o);
+            break;
+        case Opcodes::alterbit: // alterbit
+            alterbit(regDest, src1o, src2o);
+            break;
         default:
             generateFault(UnimplementedFault);
             break;
