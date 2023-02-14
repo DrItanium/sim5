@@ -473,6 +473,16 @@ Core::setupNewFrameInternals(Ordinal fp, Ordinal temp) noexcept {
     setStackPointer(temp + 64, TreatAsOrdinal{});
 }
 void
+Core::callx(Address effectiveAddress) noexcept {
+    // wait for any uncompleted instructions to finish
+    auto temp = getNextFrameBase(); // round stack pointer to next boundary
+    auto fp = getGPRValue(FPIndex, TreatAsOrdinal{});
+    balx(RIPIndex, effectiveAddress);
+    enterCall(fp);
+    setupNewFrameInternals(fp, temp);
+}
+
+void
 Core::callx() noexcept {
     // wait for any uncompleted instructions to finish
     auto temp = getNextFrameBase(); // round stack pointer to next boundary
@@ -675,9 +685,6 @@ Core::cycle() noexcept {
                 break;
             case Opcodes::stq:
                 stq();
-                break;
-            case Opcodes::callx:
-                callx();
                 break;
                 // in some of the opcodeExt values seem to reflect the resultant truth
                 // table for the operation :). That's pretty cool
@@ -1344,6 +1351,9 @@ Core::processInstruction(Opcodes opcode, Register& srcDest, Address effectiveAdd
             break;
         case Opcodes::bx:
             setIP(effectiveAddress, TreatAsOrdinal{});
+            break;
+        case Opcodes::callx:
+            callx(effectiveAddress);
             break;
         default:
             generateFault(UnimplementedFault);

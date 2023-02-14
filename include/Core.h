@@ -824,6 +824,7 @@ class Core {
         void ret() noexcept;
         void call(Integer displacement) noexcept;
         void callx() noexcept;
+        void callx(Address effectiveAddress) noexcept;
     private:
         void enterCall(Ordinal fp) noexcept;
         void leaveCall() noexcept;
