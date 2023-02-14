@@ -741,33 +741,33 @@ Core::synmovq(Register& dest, Ordinal src) noexcept {
 }
 
 void 
-Core::performSelect(Register& dest, Ordinal src1, Ordinal src2, bool condition) noexcept {
-    dest.setValue(condition ? src2 : src1, TreatAsOrdinal{});
+Core::performSelect(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+    dest.setValue(fullConditionCodeCheck() ? src2 : src1, TreatAsOrdinal{});
 }
 void
-Core::performConditionalSubtract(Register& dest, Integer src1, Integer src2, bool condition, TreatAsInteger) noexcept {
-    if (condition) {
+Core::performConditionalSubtract(Register& dest, Integer src1, Integer src2, TreatAsInteger) noexcept {
+    if (fullConditionCodeCheck()) {
         subi(dest, src1, src2);
     }
 }
 
 void
-Core::performConditionalSubtract(Register& dest, Ordinal src1, Ordinal src2, bool condition, TreatAsOrdinal) noexcept {
-    if (condition) {
+Core::performConditionalSubtract(Register& dest, Ordinal src1, Ordinal src2, TreatAsOrdinal) noexcept {
+    if (fullConditionCodeCheck()) {
         subo(dest, src1, src2);
     }
 }
 
 void
-Core::performConditionalAdd(Register& dest, Integer src1, Integer src2, bool condition, TreatAsInteger) noexcept {
-    if (condition) {
+Core::performConditionalAdd(Register& dest, Integer src1, Integer src2, TreatAsInteger) noexcept {
+    if (fullConditionCodeCheck()) {
         addi(dest, src1, src2);
     }
 }
 
 void
-Core::performConditionalAdd(Register& dest, Ordinal src1, Ordinal src2, bool condition, TreatAsOrdinal) noexcept {
-    if (condition) {
+Core::performConditionalAdd(Register& dest, Ordinal src1, Ordinal src2, TreatAsOrdinal) noexcept {
+    if (fullConditionCodeCheck()) {
         addo(dest, src1, src2);
     }
 }
@@ -1348,7 +1348,7 @@ Core::processInstruction(Opcodes opcode, Register& regDest, const Register& src1
         case Opcodes::selne:
         case Opcodes::selle:
         case Opcodes::selo:
-            performSelect(regDest, src1o, src2o, fullConditionCodeCheck());
+            performSelect(regDest, src1o, src2o);
             break;
         case Opcodes::addono:
         case Opcodes::addoe:
@@ -1358,7 +1358,7 @@ Core::processInstruction(Opcodes opcode, Register& regDest, const Register& src1
         case Opcodes::addone:
         case Opcodes::addole:
         case Opcodes::addoo:
-            performConditionalAdd(regDest, src1o, src2o, fullConditionCodeCheck(), TreatAsOrdinal{});
+            performConditionalAdd(regDest, src1o, src2o, TreatAsOrdinal{});
             break;
 
         case Opcodes::addino:
@@ -1369,7 +1369,7 @@ Core::processInstruction(Opcodes opcode, Register& regDest, const Register& src1
         case Opcodes::addine:
         case Opcodes::addile:
         case Opcodes::addio:
-            performConditionalAdd(regDest, src1i, src2i, fullConditionCodeCheck(), TreatAsInteger{});
+            performConditionalAdd(regDest, src1i, src2i, TreatAsInteger{});
             break;
         case Opcodes::subono:
         case Opcodes::suboe:
@@ -1379,7 +1379,7 @@ Core::processInstruction(Opcodes opcode, Register& regDest, const Register& src1
         case Opcodes::subone:
         case Opcodes::subole:
         case Opcodes::suboo:
-            performConditionalSubtract(regDest, src1o, src2o, fullConditionCodeCheck(), TreatAsOrdinal{});
+            performConditionalSubtract(regDest, src1o, src2o, TreatAsOrdinal{});
             break;
 
         case Opcodes::subino:
@@ -1390,7 +1390,7 @@ Core::processInstruction(Opcodes opcode, Register& regDest, const Register& src1
         case Opcodes::subine:
         case Opcodes::subile:
         case Opcodes::subio:
-            performConditionalSubtract(regDest, src1i, src2i, fullConditionCodeCheck(), TreatAsInteger{});
+            performConditionalSubtract(regDest, src1i, src2i, TreatAsInteger{});
             break;
         default:
             generateFault(UnimplementedFault);
