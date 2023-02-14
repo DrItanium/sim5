@@ -351,65 +351,65 @@ Core::loadBlock(Ordinal baseAddress, byte baseRegister, byte count) noexcept {
     }
 }
 void 
-Core::ldl() noexcept {
+Core::ldl(Address effectiveAddress) noexcept {
     if ((instruction_.mem.srcDest & 0b1) != 0) {
         generateFault(InvalidOperandFault);
     } else {
-        loadBlock(computeAddress(), instruction_.mem.srcDest, 2);
+        loadBlock(effectiveAddress, instruction_.mem.srcDest, 2);
         // support unaligned accesses
     }
     // the instruction is invalid so we should complete after we are done
 }
 
 void
-Core::stl() noexcept {
+Core::stl(Address effectiveAddress) noexcept {
     if ((instruction_.mem.srcDest & 0b1) != 0) {
         generateFault(InvalidOperandFault);
     } else {
-        storeBlock(computeAddress(), instruction_.mem.srcDest, 2);
+        storeBlock(effectiveAddress, instruction_.mem.srcDest, 2);
         // support unaligned accesses
     }
     // the instruction is invalid so we should complete after we are done
 }
 void
-Core::ldt() noexcept {
+Core::ldt(Address effectiveAddress) noexcept {
     if ((instruction_.mem.srcDest & 0b11) != 0) {
         generateFault(InvalidOperandFault);
     } else {
-        loadBlock(computeAddress(), instruction_.mem.srcDest, 3);
-        // support unaligned accesses
-    }
-    // the instruction is invalid so we should complete after we are done
-}
-
-void
-Core::stt() noexcept {
-    if ((instruction_.mem.srcDest & 0b11) != 0) {
-        generateFault(InvalidOperandFault);
-    } else {
-        storeBlock(computeAddress(), instruction_.mem.srcDest, 3);
+        loadBlock(effectiveAddress, instruction_.mem.srcDest, 3);
         // support unaligned accesses
     }
     // the instruction is invalid so we should complete after we are done
 }
 
 void
-Core::ldq() noexcept {
+Core::stt(Address effectiveAddress) noexcept {
     if ((instruction_.mem.srcDest & 0b11) != 0) {
         generateFault(InvalidOperandFault);
     } else {
-        loadBlock(computeAddress(), instruction_.mem.srcDest, 4);
+        storeBlock(effectiveAddress, instruction_.mem.srcDest, 3);
         // support unaligned accesses
     }
     // the instruction is invalid so we should complete after we are done
 }
 
 void
-Core::stq() noexcept {
+Core::ldq(Address effectiveAddress) noexcept {
     if ((instruction_.mem.srcDest & 0b11) != 0) {
         generateFault(InvalidOperandFault);
     } else {
-        storeBlock(computeAddress(), instruction_.mem.srcDest, 4);
+        loadBlock(effectiveAddress, instruction_.mem.srcDest, 4);
+        // support unaligned accesses
+    }
+    // the instruction is invalid so we should complete after we are done
+}
+
+void
+Core::stq(Address effectiveAddress) noexcept {
+    if ((instruction_.mem.srcDest & 0b11) != 0) {
+        generateFault(InvalidOperandFault);
+    } else {
+        storeBlock(effectiveAddress, instruction_.mem.srcDest, 4);
         // support unaligned accesses
     }
     // the instruction is invalid so we should complete after we are done
@@ -431,14 +431,6 @@ void
 Core::balx(Register& linkRegister, Ordinal branchTo) noexcept {
     saveReturnAddress(linkRegister);
     setIP(branchTo, TreatAsOrdinal{});
-}
-void 
-Core::balx(byte linkRegister) noexcept {
-    balx(linkRegister, computeAddress());
-}
-void
-Core::balx() noexcept {
-    balx(instruction_.mem.srcDest);
 }
 bool 
 Core::registerSetAvailable() noexcept {
@@ -482,15 +474,6 @@ Core::callx(Address effectiveAddress) noexcept {
     setupNewFrameInternals(fp, temp);
 }
 
-void
-Core::callx() noexcept {
-    // wait for any uncompleted instructions to finish
-    auto temp = getNextFrameBase(); // round stack pointer to next boundary
-    auto fp = getGPRValue(FPIndex, TreatAsOrdinal{});
-    balx(RIPIndex);
-    enterCall(fp);
-    setupNewFrameInternals(fp, temp);
-}
 void 
 Core::call(Integer displacement) {
     // wait for any uncompleted instructions to finish
@@ -633,59 +616,6 @@ Core::cycle() noexcept {
         auto src1i = unpackSrc1(TreatAsInteger{}, TreatAsREG{});
 
         switch (instruction_.getOpcode()) {
-            case Opcodes::lda:
-                setGPR(instruction_.mem.srcDest, computeAddress(), TreatAsOrdinal{});
-                break;
-            case Opcodes::ld: 
-                loadBlock(computeAddress(), instruction_.mem.srcDest, 1);
-                break;
-            case Opcodes::st: 
-                storeBlock(computeAddress(), instruction_.mem.srcDest, 1);
-                break;
-            case Opcodes::ldob:
-                setGPR(instruction_.mem.srcDest, load(computeAddress(), TreatAs<ByteOrdinal>{}), TreatAsOrdinal{});
-                break;
-            case Opcodes::stob:
-                store(computeAddress(), getGPRValue(instruction_.mem.srcDest, TreatAs<Ordinal>{}), TreatAs<ByteOrdinal>{});
-                break;
-            case Opcodes::ldos:
-                setGPR(instruction_.mem.srcDest, load(computeAddress(), TreatAs<ShortOrdinal>{}), TreatAsOrdinal{});
-                break;
-            case Opcodes::stos:
-                store(computeAddress(), getGPRValue(instruction_.mem.srcDest, TreatAsOrdinal{}), TreatAs<ShortOrdinal>{});
-                break;
-            case Opcodes::ldib:
-                setGPR(instruction_.mem.srcDest, load(computeAddress(), TreatAs<ByteInteger>{}), TreatAsInteger{});
-                break;
-            case Opcodes::stib:
-                /// @todo fully implement fault detection
-                store(computeAddress(), getGPRValue(instruction_.mem.srcDest, TreatAsInteger{}), TreatAs<ByteInteger>{});
-                break;
-            case Opcodes::ldis:
-                setGPR(instruction_.mem.srcDest, load(computeAddress(), TreatAs<ShortInteger>{}), TreatAsInteger{});
-                break;
-            case Opcodes::stis:
-                /// @todo fully implement fault detection
-                store(computeAddress(), getGPRValue(instruction_.mem.srcDest, TreatAsInteger{}), TreatAs<ShortInteger>{});
-                break;
-            case Opcodes::ldl:
-                ldl();
-                break;
-            case Opcodes::stl:
-                stl();
-                break;
-            case Opcodes::ldt:
-                ldt();
-                break;
-            case Opcodes::stt:
-                stt();
-                break;
-            case Opcodes::ldq:
-                ldq();
-                break;
-            case Opcodes::stq:
-                stq();
-                break;
                 // in some of the opcodeExt values seem to reflect the resultant truth
                 // table for the operation :). That's pretty cool
             case Opcodes::nand: // nand
@@ -1354,6 +1284,65 @@ Core::processInstruction(Opcodes opcode, Register& srcDest, Address effectiveAdd
             break;
         case Opcodes::callx:
             callx(effectiveAddress);
+            break;
+        case Opcodes::st: 
+            store(effectiveAddress, srcDest.getValue<Ordinal>(), TreatAs<Ordinal>{});
+            break;
+        case Opcodes::stob:
+            store(effectiveAddress, srcDest.getValue<Ordinal>(), TreatAs<ByteOrdinal>{});
+            break;
+        case Opcodes::stos:
+            store(effectiveAddress, srcDest.getValue<Ordinal>(), TreatAs<ShortOrdinal>{});
+            break;
+        case Opcodes::stib:
+            // If the register data is too large to be stored as a byte or
+            // short word, the value is truncated and the integer overflow
+            // condition is signalled.
+            /// @todo fully implement fault detection
+            store(effectiveAddress, srcDest.getValue<Integer>(), TreatAs<ByteInteger>());
+            break;
+        case Opcodes::stis:
+            // If the register data is too large to be stored as a byte or
+            // short word, the value is truncated and the integer overflow
+            // condition is signalled.
+            store(effectiveAddress, srcDest.getValue<Integer>(), TreatAs<ShortInteger>{});
+            /// @todo fully implement fault detection
+            break;
+        case Opcodes::ld: 
+            srcDest.setValue<Ordinal>(load(effectiveAddress, TreatAsOrdinal{}));
+            break;
+        case Opcodes::ldob:
+            srcDest.setValue(load(effectiveAddress, TreatAs<ByteOrdinal>{}), TreatAsOrdinal{});
+            break;
+        case Opcodes::ldos:
+            srcDest.setValue(load(effectiveAddress, TreatAs<ShortOrdinal>{}), TreatAsOrdinal{});
+            break;
+        case Opcodes::ldib:
+            srcDest.setValue<Integer>(load(effectiveAddress, TreatAs<ByteInteger>{}));
+            break;
+        case Opcodes::ldis:
+            srcDest.setValue<Integer>(load(effectiveAddress, TreatAs<ShortInteger>{}));
+            break;
+        case Opcodes::ldl:
+            ldl(effectiveAddress);
+            break;
+        case Opcodes::stl:
+            stl(effectiveAddress);
+            break;
+        case Opcodes::ldt:
+            ldt(effectiveAddress);
+            break;
+        case Opcodes::stt:
+            stt(effectiveAddress);
+            break;
+        case Opcodes::ldq:
+            ldq(effectiveAddress);
+            break;
+        case Opcodes::stq:
+            stq(effectiveAddress);
+            break;
+        case Opcodes::lda:
+            srcDest.setValue<Ordinal>(effectiveAddress);
             break;
         default:
             generateFault(UnimplementedFault);

@@ -811,16 +811,14 @@ class Core {
             cmpxbGeneric(mask, src1, src2, displacement, TreatAsInteger{});
         }
         void flushreg() noexcept;
-        void balx() noexcept;
-        void balx(byte linkRegister) noexcept;
         void balx(byte linkRegister, Ordinal branchTo) noexcept;
         void calls(Ordinal value) noexcept;
-        void ldl() noexcept;
-        void ldq() noexcept;
-        void ldt() noexcept;
-        void stq() noexcept;
-        void stt() noexcept;
-        void stl() noexcept;
+        void ldl(Address address) noexcept;
+        void ldq(Address address) noexcept;
+        void ldt(Address address) noexcept;
+        void stq(Address address) noexcept;
+        void stt(Address address) noexcept;
+        void stl(Address address) noexcept;
         void ret() noexcept;
         void call(Integer displacement) noexcept;
         void callx() noexcept;
