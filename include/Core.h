@@ -511,6 +511,9 @@ union Register {
         pfp.p = 0;
         pfp.rt = 0;
     }
+    [[nodiscard]] constexpr bool isMEMFormat() const noexcept {
+        return bytes[3] >= 0x80;
+    }
     [[nodiscard]] constexpr auto isREGFormat() const noexcept {
         return bytes[3] >= 0x58 && bytes[3] < 0x80;
     }

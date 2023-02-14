@@ -608,6 +608,10 @@ Core::cycle() noexcept {
                     instruction_.cobr.displacement,
                     TreatAsCOBR{});
         }
+    } else if (instruction_.isMEMFormat()) {
+        auto effectiveAddress = computeAddress();
+        Register& destination = getGPR(instruction_.reg.srcDest);
+        processInstruction(opcode, destination, effectiveAddress, TreatAsMEM{});
     } else {
         auto& regDest = getGPR(instruction_.reg.srcDest);
         auto src2o = unpackSrc2(TreatAsOrdinal{}, TreatAsREG{});
@@ -615,7 +619,7 @@ Core::cycle() noexcept {
         auto src1o = unpackSrc1(TreatAsOrdinal{}, TreatAsREG{});
         auto src1i = unpackSrc1(TreatAsInteger{}, TreatAsREG{});
 
-        switch (instruction_.getOpcode()) {
+        switch (opcode) {
                 // in some of the opcodeExt values seem to reflect the resultant truth
                 // table for the operation :). That's pretty cool
             case Opcodes::nand: // nand
