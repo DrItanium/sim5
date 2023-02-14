@@ -811,7 +811,6 @@ class Core {
             cmpxbGeneric(mask, src1, src2, displacement, TreatAsInteger{});
         }
         void flushreg() noexcept;
-        void bx() noexcept;
         void balx() noexcept;
         void balx(byte linkRegister) noexcept;
         void balx(byte linkRegister, Ordinal branchTo) noexcept;
@@ -1058,6 +1057,7 @@ class Core {
         void addi(Register& dest, Integer src1, Integer src2) noexcept;
         void addo(Register& dest, Ordinal src1, Ordinal src2) noexcept;
         void saveReturnAddress(byte registerIndex) noexcept;
+        void saveReturnAddress(Register& linkRegister) noexcept;
         void setupNewFrameInternals(Ordinal fp, Ordinal temp) noexcept;
         Ordinal getStackPointer() const noexcept;
         Ordinal getNextFrameBase() const noexcept;
@@ -1074,6 +1074,8 @@ class Core {
         void processInstruction(Opcodes opcode, Integer displacement, TreatAsCTRL) noexcept;
         void processInstruction(Opcodes opcode, uint8_t mask, uint8_t src1, const Register& src2, int16_t displacement, TreatAsCOBR) noexcept;
         void processInstruction(Opcodes opcode, uint8_t mask, Register& src1, const Register& src2, int16_t displacement, TreatAsCOBR) noexcept;
+        void processInstruction(Opcodes opcode, Register& srcDest, Address effectiveAddress, TreatAsMEM) noexcept;
+        void balx(Register& linkRegister, Address ordinal) noexcept;
     private:
         Ordinal systemAddressTableBase_ = 0;
         Ordinal prcbAddress_ = 0;

@@ -415,11 +415,20 @@ Core::stq() noexcept {
     // the instruction is invalid so we should complete after we are done
 }
 void
+Core::saveReturnAddress(Register& linkRegister) noexcept {
+    linkRegister.setValue<Ordinal>(ip_.getValue(TreatAsOrdinal{}) + instructionLength_);
+}
+void
 Core::saveReturnAddress(byte linkRegister) noexcept {
     setGPR(linkRegister, ip_.getValue(TreatAsOrdinal{}) + instructionLength_, TreatAsOrdinal{});
 }
 void 
 Core::balx(byte linkRegister, Ordinal branchTo) noexcept {
+    saveReturnAddress(linkRegister);
+    setIP(branchTo, TreatAsOrdinal{});
+}
+void 
+Core::balx(Register& linkRegister, Ordinal branchTo) noexcept {
     saveReturnAddress(linkRegister);
     setIP(branchTo, TreatAsOrdinal{});
 }
@@ -514,10 +523,6 @@ Core::calls(Ordinal src1) noexcept {
         setGPR(FPIndex, temp, TreatAsOrdinal{});
         setStackPointer(temp + 64, TreatAsOrdinal{});
     }
-}
-void
-Core::bx() noexcept {
-    setIP(computeAddress(), TreatAsOrdinal{});
 }
 void
 Core::performRegisterTransfer(byte mask, byte count) noexcept {
@@ -670,12 +675,6 @@ Core::cycle() noexcept {
                 break;
             case Opcodes::stq:
                 stq();
-                break;
-            case Opcodes::bx:
-                bx();
-                break;
-            case Opcodes::balx:
-                balx();
                 break;
             case Opcodes::callx:
                 callx();
@@ -1331,6 +1330,20 @@ Core::processInstruction(Opcodes opcode, uint8_t mask, Register& src1, const Reg
         case Opcodes::cmpible:
         case Opcodes::cmpibo: // always branches
             cmpibGeneric(mask, src1.getValue<Integer>(), src2.getValue<Integer>(), displacement);
+            break;
+        default:
+            generateFault(UnimplementedFault);
+            break;
+    }
+}
+void 
+Core::processInstruction(Opcodes opcode, Register& srcDest, Address effectiveAddress, TreatAsMEM) noexcept {
+    switch (opcode) {
+        case Opcodes::balx:
+            balx(srcDest, effectiveAddress);
+            break;
+        case Opcodes::bx:
+            setIP(effectiveAddress, TreatAsOrdinal{});
             break;
         default:
             generateFault(UnimplementedFault);
