@@ -1191,8 +1191,8 @@ Core::processInstruction(Opcodes opcode, Register& regDest, const Register& src1
             /// @todo perhaps implement the extra logic if necessary
             regDest.setValue<Integer>(src2i >> src1i);
             break;
-        case Opcodes::shlo: // shlo
-            regDest.setValue<Ordinal>(src1o < 32 ? src2o << src1o : 0);
+        case Opcodes::shlo: 
+            shlo(regDest, src1o, src2o);
             break;
         case Opcodes::rotate: // rotate
             regDest.setValue<Ordinal>(rotateOperation(src2o, src1o));
@@ -1418,4 +1418,8 @@ Core::modpc(Register& regDest, Ordinal src1o, Ordinal src2o) noexcept {
 void 
 Core::modxc(Register& control, Register& dest, Ordinal src1, Ordinal src2) noexcept {
     dest.setValue<Ordinal>(control.modify(src1, src2));
+}
+void 
+Core::shlo(Register& srcDest, Ordinal src1, Ordinal src2) noexcept {
+    srcDest.setValue<Ordinal>(src1 < 32 ? src2 << src1 : 0);
 }
