@@ -1194,11 +1194,11 @@ Core::processInstruction(Opcodes opcode, Register& regDest, const Register& src1
         case Opcodes::shlo: 
             shlo(regDest, src1o, src2o);
             break;
-        case Opcodes::rotate: // rotate
-            regDest.setValue<Ordinal>(rotateOperation(src2o, src1o));
+        case Opcodes::rotate: 
+            rotate(regDest, src1o, src2o);
             break;
-        case Opcodes::shli: // shli
-            regDest.setValue<Integer>(src2i << src1i);
+        case Opcodes::shli: 
+            shli(regDest, src1i, src2i);
             break;
         case Opcodes::cmpo: // cmpo
             cmpo(src1o, src2o);
@@ -1422,4 +1422,12 @@ Core::modxc(Register& control, Register& dest, Ordinal src1, Ordinal src2) noexc
 void 
 Core::shlo(Register& srcDest, Ordinal src1, Ordinal src2) noexcept {
     srcDest.setValue<Ordinal>(src1 < 32 ? src2 << src1 : 0);
+}
+void 
+Core::shli(Register& srcDest, Integer src1, Integer src2) noexcept {
+    srcDest.setValue<Integer>(src2 << src1);
+}
+void 
+Core::rotate(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+    dest.setValue<Ordinal>(rotateOperation(src2, src1));
 }
