@@ -1086,6 +1086,7 @@ class Core {
         void processInstruction(Opcodes opcode, Register& srcDest, const Register& src1, const Register& src2, TreatAsREG) noexcept;
     private:
         void dcinva(Ordinal effectiveAddress) noexcept;
+        void modpc(Register& dest, Ordinal src1o, Ordinal src2o) noexcept;
     private:
         Ordinal systemAddressTableBase_ = 0;
         Ordinal prcbAddress_ = 0;

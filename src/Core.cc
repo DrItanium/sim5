@@ -1295,18 +1295,7 @@ Core::processInstruction(Opcodes opcode, Register& regDest, const Register& src1
             regDest.setValue<Ordinal>(tc_.modify(src1o, src2o));
             break;
         case Opcodes::modpc:
-            if (auto mask = src1o; mask != 0) {
-                if (!pc_.inSupervisorMode()) {
-                    generateFault(TypeMismatchFault);
-                } else {
-                    regDest.setValue<Ordinal>(pc_.modify(mask, src2o));
-                    if (regDest.getPriority() > pc_.getPriority()) {
-                        checkForPendingInterrupts();
-                    }
-                }
-            } else {
-                regDest.setValue<Ordinal>(pc_.getValue<Ordinal>());
-            }
+            modpc(regDest, src1o, src2o);
             break;
         case Opcodes::atadd:
             atadd(regDest, src1o, src2o);
@@ -1409,4 +1398,20 @@ Core::dcinva(Ordinal effectiveAddress) noexcept {
     // An effective linear address is sent to the data cache. The quad word of
     // data in the data cache in which the address falls is then invalidated
     /// @todo implement
+}
+
+void
+Core::modpc(Register& regDest, Ordinal src1o, Ordinal src2o) noexcept {
+    if (auto mask = src1o; mask != 0) {
+        if (!pc_.inSupervisorMode()) {
+            generateFault(TypeMismatchFault);
+        } else {
+            regDest.setValue<Ordinal>(pc_.modify(mask, src2o));
+            if (regDest.getPriority() > pc_.getPriority()) {
+                checkForPendingInterrupts();
+            }
+        }
+    } else {
+        regDest.setValue<Ordinal>(pc_.getValue<Ordinal>());
+    }
 }
