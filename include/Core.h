@@ -784,16 +784,16 @@ class Core {
             }
         }
         inline void bbc(uint8_t bitpos, const Register& against, int16_t displacement) {
-            return branchIfBitGeneric<true>(computeBitPosition(bitpos & 0b11111), against, displacement);
+            return branchIfBitGeneric<true>(computeBitPosition(bitpos), against, displacement);
         }
         inline void bbc(const Register& bitpos, const Register& against, int16_t displacement) {
-            return branchIfBitGeneric<true>(computeBitPosition(bitpos.bytes[0] & 0b11111), against, displacement);
+            return branchIfBitGeneric<true>(computeBitPosition(bitpos.bytes[0]), against, displacement);
         }
         inline void bbs(uint8_t bitpos, const Register& against, int16_t displacement) {
-            return branchIfBitGeneric<false>(computeBitPosition(bitpos & 0b11111), against, displacement);
+            return branchIfBitGeneric<false>(computeBitPosition(bitpos), against, displacement);
         }
         inline void bbs(const Register& bitpos, const Register& against, int16_t displacement) {
-            return branchIfBitGeneric<false>(computeBitPosition(bitpos.bytes[0] & 0b11111), against, displacement);
+            return branchIfBitGeneric<false>(computeBitPosition(bitpos.bytes[0]), against, displacement);
         }
         template<typename T>
         void cmpGeneric(T src1, T src2) noexcept {
@@ -1084,6 +1084,8 @@ class Core {
         void processInstruction(Opcodes opcode, uint8_t mask, Register& src1, const Register& src2, int16_t displacement, TreatAsCOBR) noexcept;
         void processInstruction(Opcodes opcode, Register& srcDest, Address effectiveAddress, TreatAsMEM) noexcept;
         void processInstruction(Opcodes opcode, Register& srcDest, const Register& src1, const Register& src2, TreatAsREG) noexcept;
+    private:
+        void dcinva(Ordinal effectiveAddress) noexcept;
     private:
         Ordinal systemAddressTableBase_ = 0;
         Ordinal prcbAddress_ = 0;

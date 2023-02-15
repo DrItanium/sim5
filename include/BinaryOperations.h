@@ -161,11 +161,11 @@ template<typename T>
     return static_cast<uint16_t>(input >> 16);
 }
 [[nodiscard]] constexpr Ordinal mostSignificantBit(Ordinal input) noexcept {
-    return maskValue<Ordinal, 0x8000'0000>(input);
+    return maskValue<Ordinal, computeBitPosition(31)>(input);
 }
 static_assert(lowerHalf(0xFDEDABCD) == 0xABCD);
 static_assert(upperHalf(0xFDEDABCD) == 0xFDED);
-static_assert(mostSignificantBit(0xFDEDABCD) == 0x8000'0000);
+static_assert(mostSignificantBit(0xFDEDABCD) == computeBitPosition(31));
 static_assert(mostSignificantByte(0xFDEDABCD) == 0xFD);
 
 #endif // end SIM5_BINARY_OPERATIONS_H__
