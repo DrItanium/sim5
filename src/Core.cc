@@ -551,9 +551,10 @@ void
 Core::performRegisterTransfer(byte mask, byte count) noexcept {
     if (((instruction_.reg.srcDest & mask) != 0) || ((instruction_.reg.src1 & mask) != 0)) {
         generateFault(InvalidOpcodeFault);
-    }
-    for (byte i = 0; i < count; ++i) {
-        setGPR(instruction_.reg.srcDest, i, unpackSrc1(i, TreatAsOrdinal{}, TreatAsREG{}), TreatAsOrdinal{});
+    } else {
+        for (byte i = 0; i < count; ++i) {
+            setGPR(instruction_.reg.srcDest, i, unpackSrc1(i, TreatAsOrdinal{}, TreatAsREG{}), TreatAsOrdinal{});
+        }
     }
 }
 
@@ -696,7 +697,7 @@ Core::synld(Register& dest, Ordinal src) noexcept {
     }
 }
 void 
-Core::synmov(Register& dest, Ordinal src) noexcept {
+Core::synmov(const Register& dest, Ordinal src) noexcept {
     ac_.arith.conditionCode = 0b000;
     if (auto tempa = maskValue<Ordinal, 0xFFFF'FFFC>(dest.getValue(TreatAsOrdinal{})); tempa == 0xFF00'0004) {
         ictl_.o = load(src, TreatAsOrdinal{});
@@ -709,7 +710,7 @@ Core::synmov(Register& dest, Ordinal src) noexcept {
     }
 }
 void 
-Core::synmovl(Register& dest, Ordinal src) noexcept {
+Core::synmovl(const Register& dest, Ordinal src) noexcept {
     ac_.arith.conditionCode = 0b000;
     auto tempa = maskValue<Ordinal, 0xFFFF'FFF8>(dest.getValue(TreatAsOrdinal{}));
     auto tempLower = load(src, TreatAsOrdinal{});
@@ -720,7 +721,7 @@ Core::synmovl(Register& dest, Ordinal src) noexcept {
     ac_.arith.conditionCode = 0b010;
 }
 void 
-Core::synmovq(Register& dest, Ordinal src) noexcept {
+Core::synmovq(const Register& dest, Ordinal src) noexcept {
 
     ac_.arith.conditionCode = 0b000;
     auto temp0 = load(src, TreatAsOrdinal{});
@@ -1332,13 +1333,13 @@ Core::processInstruction(Opcodes opcode, Register& regDest, const Register& src1
             synld(regDest, src1o);
             break;
         case Opcodes::synmov:
-            synmov(getGPR(instruction_.reg.src1), src2o);
+            synmov(src1, src2o);
             break;
         case Opcodes::synmovl:
-            synmovl(getGPR(instruction_.reg.src1), src2o);
+            synmovl(src1, src2o);
             break;
         case Opcodes::synmovq:
-            synmovq(getGPR(instruction_.reg.src1), src2o);
+            synmovq(src1, src2o);
             break;
         case Opcodes::sysctl:
             sysctl(regDest, src1o, src2o);

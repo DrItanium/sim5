@@ -719,9 +719,9 @@ class Core {
         void mark() noexcept;
         void fmark() noexcept;
         void synld(Register& dest, Ordinal src) noexcept;
-        void synmov(Register& dest, Ordinal src) noexcept;
-        void synmovl(Register& dest, Ordinal src) noexcept;
-        void synmovq(Register& dest, Ordinal src) noexcept;
+        void synmov(const Register& dest, Ordinal src) noexcept;
+        void synmovl(const Register& dest, Ordinal src) noexcept;
+        void synmovq(const Register& dest, Ordinal src) noexcept;
         void sysctl(Register& dest, Ordinal src1, Ordinal src2) noexcept;
         template<bool doScan>
         inline void
