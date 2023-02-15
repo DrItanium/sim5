@@ -61,6 +61,9 @@ enum class Opcodes : uint16_t {
     call = 0x09,
     ret = 0x0a,
     bal = 0x0b,
+    // the lowest three bits are used to determine the kind of operation to
+    // perform when it comes to compares, tests, faults, branches, etc
+    // This maps perfectly to the condition code to be used
     bno = 0x10,
     bg = 0x11,
     be = 0x12,
@@ -102,13 +105,24 @@ enum class Opcodes : uint16_t {
     cmpibne = 0x3d,
     cmpible = 0x3e,
     cmpibo = 0x3f,
+    // mem instructions are denoted to have the most significant bit of the
+    // opcode set.
+    //
+    // The layout is somewhat baffling to me but there seems to be a method to
+    // the madness the more I look at it.
+    //
     // the v in the names means virtual, only found on the extended
     // architecture which I am noting here for completeness
+    //
+    // So the least significant bit of the major opcode denotes a virtual
+    // memory operation if the lower part is 0,1,2,3 or 8,9,a,b
+    // loads are always 0,1, 8, or 9  and stores are always  2, 3, a, or b
     ldob = 0x80, ldvob = 0x81,
     stob = 0x82, stvob = 0x83,
     bx = 0x84,
     balx = 0x85,
     callx = 0x86,
+
     ldos = 0x88, ldvos = 0x89,
     stos = 0x8a, stvos = 0x8b,
     lda = 0x8c,
@@ -138,6 +152,8 @@ enum class Opcodes : uint16_t {
     ldmq = 0xf0, ldvmq = 0xf1,
     stmq = 0xf2, stvmq = 0xf3,
     // register operations
+    // They have an extra 4 bits of opcode used to expand the instruction space
+    // to kinda 12-bit, the range in the major opcode is 0x58->0x7F
     notbit = 0x580,
     andOperation = 0x581,
     andnot = 0x582,
