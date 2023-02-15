@@ -1289,10 +1289,10 @@ Core::processInstruction(Opcodes opcode, Register& regDest, const Register& src1
             regDest.setValue<Ordinal>((regDest.o >> (src1o > 32 ? 32 : src1o)) & ~(0xFFFF'FFFF << src2o));
             break;
         case Opcodes::modac: 
-            regDest.setValue<Ordinal>(ac_.modify(src1o, src2o));
+            modxc(ac_, regDest, src1o, src2o);
             break;
         case Opcodes::modtc: 
-            regDest.setValue<Ordinal>(tc_.modify(src1o, src2o));
+            modxc(tc_, regDest, src1o, src2o);
             break;
         case Opcodes::modpc:
             modpc(regDest, src1o, src2o);
@@ -1414,4 +1414,8 @@ Core::modpc(Register& regDest, Ordinal src1o, Ordinal src2o) noexcept {
     } else {
         regDest.setValue<Ordinal>(pc_.getValue<Ordinal>());
     }
+}
+void 
+Core::modxc(Register& control, Register& dest, Ordinal src1, Ordinal src2) noexcept {
+    dest.setValue<Ordinal>(control.modify(src1, src2));
 }

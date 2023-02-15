@@ -1087,6 +1087,7 @@ class Core {
     private:
         void dcinva(Ordinal effectiveAddress) noexcept;
         void modpc(Register& dest, Ordinal src1o, Ordinal src2o) noexcept;
+        void modxc(Register& control, Register& dest, Ordinal src1, Ordinal src2) noexcept;
     private:
         Ordinal systemAddressTableBase_ = 0;
         Ordinal prcbAddress_ = 0;
