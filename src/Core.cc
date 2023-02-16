@@ -1287,7 +1287,9 @@ Core::processInstruction(Opcodes opcode, Register& regDest, const Register& src1
             emul(getGPR(instruction_.reg.srcDest, TreatAsLongRegister{}), src1o, src2o);
             break;
         case Opcodes::ediv:
-            ediv(LongRegister{regDest, getGPR(instruction_.reg.srcDest+1)}, src1o, src2o);
+            ediv(getGPR(instruction_.reg.srcDest, TreatAsLongRegister{}),
+                 src1o,
+                 getGPR(instruction_.reg.src2, TreatAsLongRegister{}));
             break;
         case Opcodes::calls:
             calls(src1o);
