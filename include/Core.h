@@ -668,20 +668,24 @@ union QuadRegister {
 
         template<typename T>
         void setValue(byte index, T value, TreatAsRegister) noexcept {
-            pair_[index & 0b11].setValue<T>(value);
+            get(index, TreatAsRegister{}). setValue<T>(value);
         }
         template<typename T>
         constexpr T getValue(byte index, TreatAsRegister) const noexcept {
-            return pair_[index & 0b11].getValue<T>();
+            return get(index, TreatAsRegister{}).getValue<T>();
         }
         template<typename T>
         void setValue(byte index, T value, TreatAsLongRegister) noexcept {
-            pair_[index & 0b1].setValue<T>(value);
+            get(index, TreatAsLongRegister{}). setValue<T>(value);
         }
         template<typename T>
         constexpr T getValue(byte index, TreatAsLongRegister) const noexcept {
-            return pair_[index & 0b1].getValue<T>();
+            return get(index, TreatAsLongRegister{}).getValue<T>();
         }
+        Register& get(byte index, TreatAsRegister) noexcept { return quads_[index & 0b11]; }
+        const Register& get(byte index, TreatAsRegister) const noexcept { return quads_[index & 0b11]; }
+        LongRegister& get(byte index, TreatAsLongRegister) noexcept { return pairs_[index & 0b1]; }
+        const LongRegister& get(byte index, TreatAsLongRegister) const noexcept { return pairs_[index & 0b1]; }
     private:
         Register quads_[4];
         LongRegister pairs_[2];
@@ -723,47 +727,53 @@ class GPRBlock {
         GPRBlock() = default;
         Register& get(byte index, TreatAsRegister) noexcept { 
             if (index < 16) {
-                return globals.get(index, TreatAsRegister);
+                return globals.get(index, TreatAsRegister{});
             } else {
-                return locals.get(index, TreatAsRegister);
+                return locals.get(index, TreatAsRegister{});
             }
         }
         const Register& get(byte index, TreatAsRegister) const noexcept { 
             if (index < 16) {
-                return globals.get(index);
+                return globals.get(index, TreatAsRegister{});
             } else {
-                return locals.get(index);
+                return locals.get(index, TreatAsRegister{});
             }
+        }
+        Register& get(byte index) noexcept { 
+            return get(index, TreatAsRegister{});
+        }
+        const Register& get(byte index) const noexcept { 
+            return get(index, TreatAsRegister{});
         }
         LongRegister& get(byte index, TreatAsLongRegister) noexcept { 
             if (index < 16) {
-                return globals.get(index, TreatAsLongRegister);
+                return globals.get(index, TreatAsLongRegister{});
             } else {
-                return locals.get(index, TreatAsLongRegister);
+                return locals.get(index, TreatAsLongRegister{});
             }
         }
         const LongRegister& get(byte index, TreatAsLongRegister) const noexcept { 
             if (index < 16) {
-                return globals.get(index);
+                return globals.get(index, TreatAsLongRegister{});
             } else {
-                return locals.get(index);
+                return locals.get(index, TreatAsLongRegister{});
             }
         }
-
         QuadRegister& get(byte index, TreatAsQuadRegister) noexcept { 
             if (index < 16) {
-                return globals.get(index, TreatAsQuadRegister);
+                return globals.get(index, TreatAsQuadRegister{});
             } else {
-                return locals.get(index, TreatAsQuadRegister);
+                return locals.get(index, TreatAsQuadRegister{});
             }
         }
         const QuadRegister& get(byte index, TreatAsQuadRegister) const noexcept { 
             if (index < 16) {
-                return globals.get(index);
+                return globals.get(index, TreatAsQuadRegister{});
             } else {
-                return locals.get(index);
+                return locals.get(index, TreatAsQuadRegister{});
             }
         }
+
 
         template<typename T>
         void setValue(byte index, T value, TreatAsRegister) noexcept {
@@ -772,6 +782,15 @@ class GPRBlock {
         template<typename T>
         T getValue(byte index, TreatAsRegister) const noexcept {
             return get(index, TreatAsRegister{}).getValue(TreatAs<T>{});
+        }
+
+        template<typename T>
+        void setValue(byte index, T value) noexcept {
+            setValue<T>(index, value, TreatAsRegister{});
+        }
+        template<typename T>
+        T getValue(byte index) const noexcept {
+            return getValue<T>(index, TreatAsRegister{});
         }
 
         template<typename T>
