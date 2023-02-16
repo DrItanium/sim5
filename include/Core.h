@@ -627,7 +627,7 @@ union Register {
         return T(*this);
     }
     template<typename T>
-    constexpr operator T() const noexcept {
+    explicit constexpr operator T() const noexcept {
         return getValue(TreatAs<T>{});
     }
 };
