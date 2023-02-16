@@ -630,6 +630,16 @@ union Register {
     explicit constexpr operator T() const noexcept {
         return getValue(TreatAs<T>{});
     }
+
+    explicit constexpr operator Opcodes() const noexcept {
+        return getOpcode();
+    }
+    byte& operator[](byte index) noexcept {
+        return bytes[index & 0b11];
+    }
+    constexpr const byte& operator[](byte index) const noexcept {
+        return bytes[index & 0b11];
+    }
 };
 static_assert(sizeof(Register) == sizeof(Ordinal));
 union LongRegister {
@@ -639,14 +649,16 @@ union LongRegister {
         [[nodiscard]] constexpr LongInteger getValue(TreatAsLongInteger) const noexcept { return li; }
         void setValue(LongOrdinal value, TreatAsLongOrdinal) noexcept { lo = value; }
         void setValue(LongInteger value, TreatAsLongInteger) noexcept { li = value; }
+        Register& get(byte index) noexcept { return pair_[index & 0b1]; }
+        const Register& get(byte index) const noexcept { return pair_[index & 0b1]; }
 
         template<typename T>
         void setValue(byte index, T value) noexcept {
-            pair_[index & 0b1].setValue<T>(value);
+            get(index).setValue<T>(value);
         }
         template<typename T>
         constexpr T getValue(byte index) const noexcept {
-            return pair_[index & 0b1].getValue<T>();
+            return get(index).getValue<T>();
         }
         template<typename T>
         constexpr T getValue() const noexcept {
@@ -655,6 +667,12 @@ union LongRegister {
         template<typename T>
         void setValue(T value) noexcept {
             setValue(value, TreatAs<T>{});
+        }
+        Register& operator[](byte index) noexcept {
+            return get(index);
+        }
+        const Register& operator[](byte index) const noexcept {
+            return get(index);
         }
     private:
         Register pair_[2];
