@@ -1171,25 +1171,8 @@ Core::processInstruction(Opcodes opcode, Register& regDest, const Register& src1
                              // according to the manual, equivalent to divi value, 2 so that is what we're going to do for correctness sake
             regDest.setValue<Integer>( src1i < 32 && src1i >= 0 ? src2i / computeBitPosition(src1i) : 0);
             break;
-        case Opcodes::shri: // shri
-            /*
-             * if (src >= 0) {
-             *  if (len < 32) {
-             *      dest <- src/2^len
-             *  } else {
-             *      dest <- 0
-             *  }
-             * }else {
-             *  if (len < 32) {
-             *      dest <- (src - 2^len + 1)/2^len;
-             *  } else {
-             *      dest <- -1;
-             *   }
-             * }
-             *
-             */
-            /// @todo perhaps implement the extra logic if necessary
-            regDest.setValue<Integer>(src2i >> src1i);
+        case Opcodes::shri: 
+            shri(regDest, src1i, src2i);
             break;
         case Opcodes::shlo: 
             shlo(regDest, src1o, src2o);
@@ -1427,4 +1410,25 @@ Core::shli(Register& srcDest, Integer src1, Integer src2) noexcept {
 void 
 Core::rotate(Register& dest, Ordinal src1, Ordinal src2) noexcept {
     dest.setValue<Ordinal>(rotateOperation(src2, src1));
+}
+void 
+Core::shri(Register& dest, Integer src1, Integer src2) noexcept {
+    /*
+     * if (src >= 0) {
+     *  if (len < 32) {
+     *      dest <- src/2^len
+     *  } else {
+     *      dest <- 0
+     *  }
+     * }else {
+     *  if (len < 32) {
+     *      dest <- (src - 2^len + 1)/2^len;
+     *  } else {
+     *      dest <- -1;
+     *   }
+     * }
+     *
+     */
+    /// @todo perhaps implement the extra logic if necessary
+    dest.setValue<Integer>(src2 >> src1);
 }
