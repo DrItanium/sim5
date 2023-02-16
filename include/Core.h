@@ -403,7 +403,8 @@ struct TreatAsCOBR { };
 struct TreatAsCTRL { };
 struct TreatAsMEM { };
 union Register {
-    constexpr explicit Register(Ordinal value = 0) : o(value) { }
+    constexpr Register(Ordinal value) : o(value) { }
+    Register() = default;
     Ordinal o;
     Integer i;
     Address a;
@@ -629,39 +630,64 @@ union Register {
 static_assert(sizeof(Register) == sizeof(Ordinal));
 union LongRegister {
     public:
-        template<typename T>
-        void setLowerHalf(T value) noexcept {
-            pair_[0].setValue<T>(value);
-        }
-        template<typename T>
-        [[nodiscard]] T getLowerValue() const noexcept {
-            return pair_[0].getValue<T>();
-        }
-        template<typename T>
-        void setUpperHalf(T value) noexcept {
-            pair_[1].setValue<T>(value);
-        }
-        template<typename T>
-        [[nodiscard]] T getUpperValue() const noexcept {
-            return pair_[1].getValue<T>();
-        }
-        const Register& getLower() const noexcept { return pair_[0]; }
-        Register& getLower() noexcept { return pair_[0]; }
-        const Register& getUpper() const noexcept { return pair[1]; }
-        Register& getUpper() noexcept { return pair[1]; }
-        SplitWord64 asLongOrdinal() const noexcept {
-            SplitWord64 result;
-            result.whole = lo;
-            return result;
-        }
+        LongRegister() = default;
         [[nodiscard]] constexpr LongOrdinal getValue(TreatAsLongOrdinal) const noexcept { return lo; }
         [[nodiscard]] constexpr LongInteger getValue(TreatAsLongInteger) const noexcept { return li; }
+        void setValue(LongOrdinal value, TreatAsLongOrdinal) noexcept { lo = value; }
+        void setValue(LongInteger value, TreatAsLongInteger) noexcept { li = value; }
+
+        template<typename T>
+        void setValue(byte index, T value) noexcept {
+            pair_[index & 0b1].setValue<T>(value);
+        }
+        template<typename T>
+        constexpr T getValue(byte index) const noexcept {
+            return pair_[index & 0b1].getValue<T>();
+        }
+        template<typename T>
+        constexpr T getValue() const noexcept {
+            return getValue(TreatAs<T>{});
+        }
+        template<typename T>
+        void setValue(T value) noexcept {
+            setValue(value, TreatAs<T>{});
+        }
     private:
         Register pair_[2];
         LongOrdinal lo;
         LongInteger li;
 };
 static_assert(sizeof(LongRegister) == sizeof(LongOrdinal));
+
+using TreatAsLongRegister = TreatAs<LongRegister>;
+using TreatAsRegister = TreatAs<Register>;
+
+union QuadRegister {
+    public:
+        QuadRegister() = default;
+
+        template<typename T>
+        void setValue(byte index, T value, TreatAsRegister) noexcept {
+            pair_[index & 0b11].setValue<T>(value);
+        }
+        template<typename T>
+        constexpr T getValue(byte index, TreatAsRegister) const noexcept {
+            return pair_[index & 0b11].getValue<T>();
+        }
+        template<typename T>
+        void setValue(byte index, T value, TreatAsLongRegister) noexcept {
+            pair_[index & 0b1].setValue<T>(value);
+        }
+        template<typename T>
+        constexpr T getValue(byte index, TreatAsLongRegister) const noexcept {
+            return pair_[index & 0b1].getValue<T>();
+        }
+    private:
+        Register quads_[4];
+        LongRegister pairs_[2];
+};
+static_assert(sizeof(QuadRegister) == (2*sizeof(LongOrdinal)));
+using TreatAsQuadRegister = TreatAs<QuadRegister>;
 // On the i960 this is separated out into two parts, locals and globals
 // The idea is that globals are always available and locals are per function.
 // You are supposed to have multiple local frames on chip to accelerate
@@ -676,17 +702,18 @@ constexpr auto RIPIndex = 18;
 union RegisterFrame {
     public:
         RegisterFrame() = default;
-        Register& get(byte index) noexcept { return registers[index & 0b1111]; }
-        const Register& get(byte index) const noexcept { return registers[index & 0b1111]; }
-        LongRegister& getLongRegister(byte index) noexcept { return longRegisters[index & 0b111]; }
-        const LongRegister& getLongRegister(byte index) const noexcept { return longRegisters[index & 0b111]; }
-        [[nodiscard]] constexpr bool alignedForLongRegister(byte index) const noexcept { return (index & 0b1) == 0; }
-        [[nodiscard]] constexpr bool alignedForQuadRegister(byte index) const noexcept { return (index & 0b11) == 0; }
-        [[nodiscard]] constexpr bool alignedForTripleRegister(byte index) const noexcept { return alignedForQuadRegister(index); }
+        Register& get(byte index, TreatAsRegister) noexcept { return registers[index & 0b1111]; }
+        const Register& get(byte index, TreatAsRegister) const noexcept { return registers[index & 0b1111]; }
+        LongRegister& get(byte index, TreatAsLongRegister) noexcept { return longRegisters[index >> 1]; }
+        const LongRegister& get(byte index, TreatAsLongRegister) const noexcept { return longRegisters[index >> 1]; }
+        QuadRegister& get(byte index, TreatAsQuadRegister) noexcept { return quadRegisters[index >> 2]; }
+        const QuadRegister& get(byte index, TreatAsQuadRegister) const noexcept { return quadRegisters[index >> 2]; }
+        [[nodiscard]] constexpr bool aligned(byte index, TreatAsLongRegister) const noexcept { return (index & 0b1) == 0; }
+        [[nodiscard]] constexpr bool aligned(byte index, TreatAsQuadRegister) const noexcept { return (index & 0b11) == 0; }
     private:
         Register registers[16];
         LongRegister longRegisters[8];
-
+        QuadRegister quadRegisters[4];
 };
 /** 
  * @brief Holds onto two separate register frames
@@ -694,27 +721,66 @@ union RegisterFrame {
 class GPRBlock {
     public:
         GPRBlock() = default;
-        Register& get(byte index) noexcept { 
+        Register& get(byte index, TreatAsRegister) noexcept { 
+            if (index < 16) {
+                return globals.get(index, TreatAsRegister);
+            } else {
+                return locals.get(index, TreatAsRegister);
+            }
+        }
+        const Register& get(byte index, TreatAsRegister) const noexcept { 
             if (index < 16) {
                 return globals.get(index);
             } else {
                 return locals.get(index);
             }
         }
-        const Register& get(byte index) const noexcept { 
+        LongRegister& get(byte index, TreatAsLongRegister) noexcept { 
+            if (index < 16) {
+                return globals.get(index, TreatAsLongRegister);
+            } else {
+                return locals.get(index, TreatAsLongRegister);
+            }
+        }
+        const LongRegister& get(byte index, TreatAsLongRegister) const noexcept { 
             if (index < 16) {
                 return globals.get(index);
             } else {
                 return locals.get(index);
             }
         }
+
+        QuadRegister& get(byte index, TreatAsQuadRegister) noexcept { 
+            if (index < 16) {
+                return globals.get(index, TreatAsQuadRegister);
+            } else {
+                return locals.get(index, TreatAsQuadRegister);
+            }
+        }
+        const QuadRegister& get(byte index, TreatAsQuadRegister) const noexcept { 
+            if (index < 16) {
+                return globals.get(index);
+            } else {
+                return locals.get(index);
+            }
+        }
+
         template<typename T>
-        void setValue(byte index, T value) noexcept {
-            get(index).setValue(value, TreatAs<T>{});
+        void setValue(byte index, T value, TreatAsRegister) noexcept {
+            get(index, TreatAsRegister{}).setValue(value, TreatAs<T>{});
         }
         template<typename T>
-        T getValue(byte index) const noexcept {
-            return get(index).getValue(TreatAs<T>{});
+        T getValue(byte index, TreatAsRegister) const noexcept {
+            return get(index, TreatAsRegister{}).getValue(TreatAs<T>{});
+        }
+
+        template<typename T>
+        void setValue(byte index, T value, TreatAsLongRegister) noexcept {
+            get(index, TreatAsLongRegister{}).setValue(value, TreatAs<T>{});
+        }
+        template<typename T>
+        T getValue(byte index, TreatAsLongRegister) const noexcept {
+            return get(index, TreatAsLongRegister{}).getValue(TreatAs<T>{});
         }
 
     private:
