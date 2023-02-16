@@ -136,40 +136,40 @@ Core::checkForPendingInterrupts() noexcept {
 
 void
 Core::emul(LongRegister& dest, Ordinal src1, Ordinal src2) noexcept {
-    SplitWord64 result;
-    if ((instruction_.reg.srcDest & 0b1) != 0) {
+    if (!aligned(instruction_.reg.srcDest, TreatAsLongRegister{})) {
+        /// Since this is unaligned and the destination will always be aligned,
+        /// we just do an expensive access of the two unaligned registers
+        /// instead. Set the both to 0xFFFF'FFFF
+        auto& lower = getGPR(instruction_.reg.srcDest);
+        auto& upper = getGPR(instruction_.reg.srcDest + 1);
+        lower.setValue<Ordinal>(0xFFFF'FFFF);
+        upper.setValue<Ordinal>(0xFFFF'FFFF);
         generateFault(InvalidOpcodeFault);
     }  else {
-        result.whole = static_cast<LongOrdinal>(src2) * static_cast<LongOrdinal>(src1);
+        dest.setValue<LongOrdinal>(static_cast<LongOrdinal>(src2) * static_cast<LongOrdinal>(src1));
     }
-    // yes this can be undefined by design :)
-    // if we hit a fault then we just give up whats on the stack :)
-    dest.setLowerHalf<Ordinal>(result.parts[0]);
-    dest.setUpperHalf<Ordinal>(result.parts[1]);
 }
 
 void
 Core::ediv(LongRegister& dest, Ordinal src1, const LongRegister& src2) noexcept {
-    SplitWord64 result;
-    result.whole = 0;
-    if ((instruction_.reg.srcDest & 0b1) != 0 || (instruction_.reg.src2 & 0b1) != 0) {
-        /// @todo fix
+    if (!aligned(instruction_.reg.srcDest, TreatAsLongRegister{}) || !aligned(instruction_.reg.src2, TreatAsLongRegister{})) {
+        /// Since this is unaligned and the destination will always be aligned,
+        /// we just do an expensive access of the two unaligned registers
+        /// instead. Set the both to 0xFFFF'FFFF
+        auto& lower = getGPR(instruction_.reg.srcDest);
+        auto& upper = getGPR(instruction_.reg.srcDest + 1);
+        lower.setValue<Ordinal>(0xFFFF'FFFF);
+        upper.setValue<Ordinal>(0xFFFF'FFFF);
         generateFault(InvalidOpcodeFault);
     } else if (src1 == 0) {
         // divide by zero
         generateFault(ZeroDivideFault);
     } else {
         //src2.parts[1] = getGPRValue(instruction_.reg.src2, 1, TreatAsOrdinal{});
-        auto sl2 = src2.asLongOrdinal();
-        result.parts[1] = sl2.whole / src1; // quotient
-        result.parts[0] = static_cast<Ordinal>(sl2.whole - (sl2.whole / src1) * src1); // remainder
+        auto sl2 = src2.getValue<LongOrdinal>();
+        dest.setValue<Ordinal>(1, sl2 / src1); // quotient
+        dest.setValue<Ordinal>(0, static_cast<Ordinal>(sl2 - (sl2 / src1) * src1)); // remainder
     }
-    // yes this can be undefined by design :)
-    // if we hit a fault then we just give whats on the stack :)
-    // however, to get the compiler to shut up, I am zeroing out the result
-    // field
-    dest.setLowerHalf<Ordinal>(result.parts[0]);
-    dest.setUpperHalf<Ordinal>(result.parts[1]);
 }
 
 Ordinal
@@ -1284,7 +1284,7 @@ Core::processInstruction(Opcodes opcode, Register& regDest, const Register& src1
             atmod(regDest, src1o, src2o);
             break;
         case Opcodes::emul:
-            emul(LongRegister{regDest, getGPR(instruction_.reg.srcDest+1)}, src1o, src2o);
+            emul(getGPR(instruction_.reg.srcDest, TreatAsLongRegister{}), src1o, src2o);
             break;
         case Opcodes::ediv:
             ediv(LongRegister{regDest, getGPR(instruction_.reg.srcDest+1)}, src1o, src2o);

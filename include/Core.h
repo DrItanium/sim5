@@ -712,13 +712,19 @@ union RegisterFrame {
         const LongRegister& get(byte index, TreatAsLongRegister) const noexcept { return longRegisters[index >> 1]; }
         QuadRegister& get(byte index, TreatAsQuadRegister) noexcept { return quadRegisters[index >> 2]; }
         const QuadRegister& get(byte index, TreatAsQuadRegister) const noexcept { return quadRegisters[index >> 2]; }
-        [[nodiscard]] constexpr bool aligned(byte index, TreatAsLongRegister) const noexcept { return (index & 0b1) == 0; }
-        [[nodiscard]] constexpr bool aligned(byte index, TreatAsQuadRegister) const noexcept { return (index & 0b11) == 0; }
     private:
         Register registers[16];
         LongRegister longRegisters[8];
         QuadRegister quadRegisters[4];
 };
+/**
+ * @brief is the given byte index aligned to long register boundaries?
+ */
+constexpr bool aligned(byte index, TreatAsLongRegister) noexcept { return (index & 0b1) == 0; }
+/**
+ * @brief is the given byte index aligned to quad register boundaries?
+ */
+constexpr bool aligned(byte index, TreatAsQuadRegister) noexcept { return (index & 0b11) == 0; }
 /** 
  * @brief Holds onto two separate register frames
  */ 
@@ -838,6 +844,8 @@ class Core {
         void setFaultPort(Ordinal value) noexcept;
         /// @todo insert iac dispatch here
         /// @todo insert routines for getting registers and such 
+        [[nodiscard]] LongRegister& getGPR(byte index, TreatAsLongRegister) noexcept { return gpr_.get(index, TreatAsLongRegister{}); }
+        [[nodiscard]] const LongRegister& getGPR(byte index, TreatAsLongRegister) const noexcept { return gpr_.get(index, TreatAsLongRegister{}); }
         [[nodiscard]] Register& getGPR(byte index) noexcept { return gpr_.get(index); }
         [[nodiscard]] Register& getGPR(byte index, byte offset) noexcept { return getGPR((index + offset) & 0b11111); }
         [[nodiscard]] const Register& getGPR(byte index) const noexcept { return gpr_.get(index); }
