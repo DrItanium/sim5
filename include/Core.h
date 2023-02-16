@@ -692,6 +692,8 @@ union QuadRegister {
 };
 static_assert(sizeof(QuadRegister) == (2*sizeof(LongOrdinal)));
 using TreatAsQuadRegister = TreatAs<QuadRegister>;
+using TreatAsTripleRegister = TreatAsQuadRegister;
+using TripleRegister = QuadRegister;
 // On the i960 this is separated out into two parts, locals and globals
 // The idea is that globals are always available and locals are per function.
 // You are supposed to have multiple local frames on chip to accelerate

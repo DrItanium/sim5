@@ -381,18 +381,20 @@ Core::loadBlock(Ordinal baseAddress, byte baseRegister, byte count) noexcept {
     }
 }
 void 
-Core::ldl(Address effectiveAddress) noexcept {
+Core::ldl(Address effectiveAddress, LongRegister& destination) noexcept {
     if (!aligned(instruction_.mem.srcDest, TreatAsLongRegister{})) {
         generateFault(InvalidOperandFault);
     } else {
-        loadBlock(effectiveAddress, instruction_.mem.srcDest, 2);
+        destination.setValue<Ordinal>(0, load<Ordinal>(effectiveAddress + 0), TreatAsRegister{});
+        destination.setValue<Ordinal>(1, load<Ordinal>(effectiveAddress + 4), TreatAsRegister{});
+        //loadBlock(effectiveAddress, instruction_.mem.srcDest, 2);
         // support unaligned accesses
     }
     // the instruction is invalid so we should complete after we are done
 }
 
 void
-Core::stl(Address effectiveAddress) noexcept {
+Core::stl(Address effectiveAddress, const LongRegister& source) noexcept {
     if (!aligned(instruction_.mem.srcDest, TreatAsLongRegister{})) {
         generateFault(InvalidOperandFault);
     } else {
@@ -402,8 +404,8 @@ Core::stl(Address effectiveAddress) noexcept {
     // the instruction is invalid so we should complete after we are done
 }
 void
-Core::ldt(Address effectiveAddress, QuadRegister& destination) noexcept {
-    if (!aligned(instruction_.mem.srcDest, TreatAsQuadRegister{})) {
+Core::ldt(Address effectiveAddress, TripleRegister& destination) noexcept {
+    if (!aligned(instruction_.mem.srcDest, TreatAsTripleRegister{})) {
         generateFault(InvalidOperandFault);
     } else {
         destination.setValue<Ordinal>(0, load<Ordinal>(effectiveAddress + 0, TreatAsOrdinal{}), TreatAsRegister{});
@@ -416,11 +418,14 @@ Core::ldt(Address effectiveAddress, QuadRegister& destination) noexcept {
 }
 
 void
-Core::stt(Address effectiveAddress) noexcept {
-    if (!aligned(instruction_.mem.srcDest, TreatAsQuadRegister{})) {
+Core::stt(Address effectiveAddress, const TripleRegister& source) noexcept {
+    if (!aligned(instruction_.mem.srcDest, TreatAsTripleRegister{})) {
         generateFault(InvalidOperandFault);
     } else {
-        storeBlock(effectiveAddress, instruction_.mem.srcDest, 3);
+        store(effectiveAddress + 0, source.getValue<Ordinal>(0, TreatAsRegister{}));
+        store(effectiveAddress + 4, source.getValue<Ordinal>(1, TreatAsRegister{}));
+        store(effectiveAddress + 8, source.getValue<Ordinal>(2, TreatAsRegister{}));
+        //storeBlock(effectiveAddress, instruction_.mem.srcDest, 3);
         // support unaligned accesses
     }
     // the instruction is invalid so we should complete after we are done
@@ -442,7 +447,7 @@ Core::ldq(Address effectiveAddress, QuadRegister& destination) noexcept {
 }
 
 void
-Core::stq(Address effectiveAddress) noexcept {
+Core::stq(Address effectiveAddress, const QuadRegister& source) noexcept {
     if (!aligned(instruction_.mem.srcDest, TreatAsQuadRegister{})) {
         generateFault(InvalidOperandFault);
     } else {
