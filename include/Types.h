@@ -42,6 +42,8 @@ using TreatAsShortOrdinal = TreatAs<ShortOrdinal>;
 using TreatAsByteOrdinal = TreatAs<ByteOrdinal>;
 using TreatAsShortInteger = TreatAs<ShortInteger>;
 using TreatAsByteInteger = TreatAs<ByteInteger>;
+using TreatAsLongOrdinal = TreatAs<LongOrdinal>;
+using TreatAsLongInteger = TreatAs<LongInteger>;
 
 union SplitWord32 {
     constexpr SplitWord32 (Ordinal a) : whole(a) { }

@@ -627,6 +627,41 @@ union Register {
     }
 };
 static_assert(sizeof(Register) == sizeof(Ordinal));
+union LongRegister {
+    public:
+        template<typename T>
+        void setLowerHalf(T value) noexcept {
+            pair_[0].setValue<T>(value);
+        }
+        template<typename T>
+        [[nodiscard]] T getLowerValue() const noexcept {
+            return pair_[0].getValue<T>();
+        }
+        template<typename T>
+        void setUpperHalf(T value) noexcept {
+            pair_[1].setValue<T>(value);
+        }
+        template<typename T>
+        [[nodiscard]] T getUpperValue() const noexcept {
+            return pair_[1].getValue<T>();
+        }
+        const Register& getLower() const noexcept { return pair_[0]; }
+        Register& getLower() noexcept { return pair_[0]; }
+        const Register& getUpper() const noexcept { return pair[1]; }
+        Register& getUpper() noexcept { return pair[1]; }
+        SplitWord64 asLongOrdinal() const noexcept {
+            SplitWord64 result;
+            result.whole = lo;
+            return result;
+        }
+        [[nodiscard]] constexpr LongOrdinal getValue(TreatAsLongOrdinal) const noexcept { return lo; }
+        [[nodiscard]] constexpr LongInteger getValue(TreatAsLongInteger) const noexcept { return li; }
+    private:
+        Register pair_[2];
+        LongOrdinal lo;
+        LongInteger li;
+};
+static_assert(sizeof(LongRegister) == sizeof(LongOrdinal));
 // On the i960 this is separated out into two parts, locals and globals
 // The idea is that globals are always available and locals are per function.
 // You are supposed to have multiple local frames on chip to accelerate
@@ -638,13 +673,20 @@ constexpr auto FPIndex = 15;
 constexpr auto PFPIndex = 16;
 constexpr auto SPIndex = 17;
 constexpr auto RIPIndex = 18;
-class RegisterFrame {
+union RegisterFrame {
     public:
         RegisterFrame() = default;
         Register& get(byte index) noexcept { return registers[index & 0b1111]; }
         const Register& get(byte index) const noexcept { return registers[index & 0b1111]; }
+        LongRegister& getLongRegister(byte index) noexcept { return longRegisters[index & 0b111]; }
+        const LongRegister& getLongRegister(byte index) const noexcept { return longRegisters[index & 0b111]; }
+        [[nodiscard]] constexpr bool alignedForLongRegister(byte index) const noexcept { return (index & 0b1) == 0; }
+        [[nodiscard]] constexpr bool alignedForQuadRegister(byte index) const noexcept { return (index & 0b11) == 0; }
+        [[nodiscard]] constexpr bool alignedForTripleRegister(byte index) const noexcept { return alignedForQuadRegister(index); }
     private:
         Register registers[16];
+        LongRegister longRegisters[8];
+
 };
 /** 
  * @brief Holds onto two separate register frames
@@ -820,8 +862,8 @@ class Core {
         void branch(Integer displacement) noexcept;
         void branchConditional(bool condition, Integer displacement) noexcept;
         void scanbyte(Ordinal src2, Ordinal src1) noexcept;
-        void emul(Register& dest, Register& upperDest, Ordinal src1, Ordinal src2) noexcept;
-        void ediv(Register& dest, Register& upperDest, Ordinal src1, Ordinal src2) noexcept;
+        void emul(LongRegister& dest, Ordinal src1, Ordinal src2) noexcept;
+        void ediv(LongRegister& dest, Ordinal src1, const LongRegister& src2) noexcept;
         void arithmeticWithCarryGeneric(Ordinal result, bool src2MSB, bool src1MSB, bool destMSB) noexcept;
         inline void advanceCOBRDisplacement(int16_t displacement) noexcept {
             Register temp{0};

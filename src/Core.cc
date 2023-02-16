@@ -135,7 +135,7 @@ Core::checkForPendingInterrupts() noexcept {
 
 
 void
-Core::emul(Register& dest, Register& upperDest, Ordinal src1, Ordinal src2) noexcept {
+Core::emul(LongRegister& dest, Ordinal src1, Ordinal src2) noexcept {
     SplitWord64 result;
     if ((instruction_.reg.srcDest & 0b1) != 0) {
         generateFault(InvalidOpcodeFault);
@@ -144,15 +144,14 @@ Core::emul(Register& dest, Register& upperDest, Ordinal src1, Ordinal src2) noex
     }
     // yes this can be undefined by design :)
     // if we hit a fault then we just give up whats on the stack :)
-    dest.setValue(result.parts[0], TreatAsOrdinal{});
-    upperDest.setValue(result.parts[1], TreatAsOrdinal{});
+    dest.setLowerHalf<Ordinal>(result.parts[0]);
+    dest.setUpperHalf<Ordinal>(result.parts[1]);
 }
 
 void
-Core::ediv(Register& dest, Register& upperDest, Ordinal src1, Ordinal src2Lower) noexcept {
-    SplitWord64 result, src2;
+Core::ediv(LongRegister& dest, Ordinal src1, const LongRegister& src2) noexcept {
+    SplitWord64 result;
     result.whole = 0;
-    src2.parts[0] = src2Lower;
     if ((instruction_.reg.srcDest & 0b1) != 0 || (instruction_.reg.src2 & 0b1) != 0) {
         /// @todo fix
         generateFault(InvalidOpcodeFault);
@@ -160,16 +159,17 @@ Core::ediv(Register& dest, Register& upperDest, Ordinal src1, Ordinal src2Lower)
         // divide by zero
         generateFault(ZeroDivideFault);
     } else {
-        src2.parts[1] = getGPRValue(instruction_.reg.src2, 1, TreatAsOrdinal{});
-        result.parts[1] = src2.whole / src1; // quotient
-        result.parts[0] = static_cast<Ordinal>(src2.whole - (src2.whole / src1) * src1); // remainder
+        //src2.parts[1] = getGPRValue(instruction_.reg.src2, 1, TreatAsOrdinal{});
+        auto sl2 = src2.asLongOrdinal();
+        result.parts[1] = sl2.whole / src1; // quotient
+        result.parts[0] = static_cast<Ordinal>(sl2.whole - (sl2.whole / src1) * src1); // remainder
     }
     // yes this can be undefined by design :)
     // if we hit a fault then we just give whats on the stack :)
     // however, to get the compiler to shut up, I am zeroing out the result
     // field
-    dest.setValue<Ordinal>(result.parts[0]);
-    upperDest.setValue<Ordinal>(result.parts[1]);
+    dest.setLowerHalf<Ordinal>(result.parts[0]);
+    dest.setUpperHalf<Ordinal>(result.parts[1]);
 }
 
 Ordinal
@@ -1284,10 +1284,10 @@ Core::processInstruction(Opcodes opcode, Register& regDest, const Register& src1
             atmod(regDest, src1o, src2o);
             break;
         case Opcodes::emul:
-            emul(regDest, getGPR(instruction_.reg.srcDest+1), src2o, src1o);
+            emul(LongRegister{regDest, getGPR(instruction_.reg.srcDest+1)}, src1o, src2o);
             break;
         case Opcodes::ediv:
-            ediv(regDest, getGPR(instruction_.reg.srcDest+1), src2o, src1o);
+            ediv(LongRegister{regDest, getGPR(instruction_.reg.srcDest+1)}, src1o, src2o);
             break;
         case Opcodes::calls:
             calls(src1o);
