@@ -1104,10 +1104,10 @@ Core::processInstruction(Opcodes opcode, Register& srcDest, Address effectiveAdd
 }
 void 
 Core::processInstruction(Opcodes opcode, Register& regDest, const Register& src1, const Register& src2, TreatAsREG) noexcept {
-    auto src2o = src2.getValue<Ordinal>();
-    auto src1o = src1.getValue<Ordinal>();
-    auto src2i = src2.getValue<Integer>();
-    auto src1i = src1.getValue<Integer>();
+    auto src2o = static_cast<Ordinal>(src2);
+    auto src1o = static_cast<Ordinal>(src1);
+    auto src2i = static_cast<Integer>(src2);
+    auto src1i = static_cast<Integer>(src1);
     switch (opcode) {
         case Opcodes::nand: // nand
             nand(regDest, src1o, src2o);

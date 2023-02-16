@@ -626,6 +626,10 @@ union Register {
     const T& viewAs() const noexcept {
         return T(*this);
     }
+    template<typename T>
+    constexpr operator T() const noexcept {
+        return getValue(TreatAs<T>{});
+    }
 };
 static_assert(sizeof(Register) == sizeof(Ordinal));
 union LongRegister {
