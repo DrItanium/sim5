@@ -1330,9 +1330,6 @@ Core::processInstruction(Opcodes opcode, Register& regDest, const Register& src1
         case Opcodes::synmovq:
             synmovq(src1, src2o);
             break;
-        case Opcodes::sysctl:
-            sysctl(regDest, src1o, src2o);
-            break;
         case Opcodes::selno:
         case Opcodes::sele:
         case Opcodes::selg:
