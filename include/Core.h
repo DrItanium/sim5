@@ -1152,7 +1152,6 @@ class Core {
         void processInstruction(Opcodes opcode, Register& srcDest, Address effectiveAddress, TreatAsMEM) noexcept;
         void processInstruction(Opcodes opcode, Register& srcDest, const Register& src1, const Register& src2, TreatAsREG) noexcept;
     private:
-        void dcinva(Ordinal effectiveAddress) noexcept;
         void modpc(Register& dest, Ordinal src1o, Ordinal src2o) noexcept;
         void modxc(Register& control, Register& dest, Ordinal src1, Ordinal src2) noexcept;
         void shlo(Register& srcDest, Ordinal src1, Ordinal src2) noexcept;

@@ -1019,9 +1019,6 @@ Core::processInstruction(Opcodes opcode, uint8_t mask, Register& src1, const Reg
 void 
 Core::processInstruction(Opcodes opcode, Register& srcDest, Address effectiveAddress, TreatAsMEM) noexcept {
     switch (opcode) {
-        case Opcodes::dcinva:
-            dcinva(effectiveAddress);
-            break;
         case Opcodes::balx:
             balx(srcDest, effectiveAddress);
             break;
@@ -1371,14 +1368,6 @@ Core::processInstruction(Opcodes opcode, Register& regDest, const Register& src1
     }
 }
 
-void
-Core::dcinva(Ordinal effectiveAddress) noexcept {
-    // data cache invalidate by address
-    //
-    // An effective linear address is sent to the data cache. The quad word of
-    // data in the data cache in which the address falls is then invalidated
-    /// @todo implement
-}
 
 void
 Core::modpc(Register& regDest, Ordinal src1o, Ordinal src2o) noexcept {
