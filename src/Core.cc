@@ -385,8 +385,8 @@ Core::ldl(Address effectiveAddress, LongRegister& destination) noexcept {
     if (!aligned(instruction_.mem.srcDest, TreatAsLongRegister{})) {
         generateFault(InvalidOperandFault);
     } else {
-        destination.setValue<Ordinal>(0, load<Ordinal>(effectiveAddress + 0), TreatAsRegister{});
-        destination.setValue<Ordinal>(1, load<Ordinal>(effectiveAddress + 4), TreatAsRegister{});
+        destination.setValue<Ordinal>(0, load(effectiveAddress + 0, TreatAsOrdinal{}));
+        destination.setValue<Ordinal>(1, load(effectiveAddress + 4, TreatAsOrdinal{}));
         //loadBlock(effectiveAddress, instruction_.mem.srcDest, 2);
         // support unaligned accesses
     }
@@ -398,7 +398,9 @@ Core::stl(Address effectiveAddress, const LongRegister& source) noexcept {
     if (!aligned(instruction_.mem.srcDest, TreatAsLongRegister{})) {
         generateFault(InvalidOperandFault);
     } else {
-        storeBlock(effectiveAddress, instruction_.mem.srcDest, 2);
+        //storeBlock(effectiveAddress, instruction_.mem.srcDest, 2);
+        store(effectiveAddress + 0, source.getValue<Ordinal>(0), TreatAsOrdinal{});
+        store(effectiveAddress + 4, source.getValue<Ordinal>(1), TreatAsOrdinal{});
         // support unaligned accesses
     }
     // the instruction is invalid so we should complete after we are done
@@ -408,9 +410,9 @@ Core::ldt(Address effectiveAddress, TripleRegister& destination) noexcept {
     if (!aligned(instruction_.mem.srcDest, TreatAsTripleRegister{})) {
         generateFault(InvalidOperandFault);
     } else {
-        destination.setValue<Ordinal>(0, load<Ordinal>(effectiveAddress + 0, TreatAsOrdinal{}), TreatAsRegister{});
-        destination.setValue<Ordinal>(1, load<Ordinal>(effectiveAddress + 4, TreatAsOrdinal{}), TreatAsRegister{});
-        destination.setValue<Ordinal>(2, load<Ordinal>(effectiveAddress + 8, TreatAsOrdinal{}), TreatAsRegister{});
+        destination.setValue<Ordinal>(0, load(effectiveAddress + 0, TreatAsOrdinal{}), TreatAsRegister{});
+        destination.setValue<Ordinal>(1, load(effectiveAddress + 4, TreatAsOrdinal{}), TreatAsRegister{});
+        destination.setValue<Ordinal>(2, load(effectiveAddress + 8, TreatAsOrdinal{}), TreatAsRegister{});
         //loadBlock(effectiveAddress, instruction_.mem.srcDest, 3);
         // support unaligned accesses
     }
@@ -422,9 +424,9 @@ Core::stt(Address effectiveAddress, const TripleRegister& source) noexcept {
     if (!aligned(instruction_.mem.srcDest, TreatAsTripleRegister{})) {
         generateFault(InvalidOperandFault);
     } else {
-        store(effectiveAddress + 0, source.getValue<Ordinal>(0, TreatAsRegister{}));
-        store(effectiveAddress + 4, source.getValue<Ordinal>(1, TreatAsRegister{}));
-        store(effectiveAddress + 8, source.getValue<Ordinal>(2, TreatAsRegister{}));
+        store(effectiveAddress + 0, source.getValue<Ordinal>(0, TreatAsRegister{}), TreatAsOrdinal{});
+        store(effectiveAddress + 4, source.getValue<Ordinal>(1, TreatAsRegister{}), TreatAsOrdinal{});
+        store(effectiveAddress + 8, source.getValue<Ordinal>(2, TreatAsRegister{}), TreatAsOrdinal{});
         //storeBlock(effectiveAddress, instruction_.mem.srcDest, 3);
         // support unaligned accesses
     }
@@ -437,10 +439,10 @@ Core::ldq(Address effectiveAddress, QuadRegister& destination) noexcept {
         generateFault(InvalidOperandFault);
     } else {
         //loadBlock(effectiveAddress, instruction_.mem.srcDest, 4);
-        destination.setValue<Ordinal>(0, load<Ordinal>(effectiveAddress + 0, TreatAsOrdinal{}), TreatAsRegister{});
-        destination.setValue<Ordinal>(1, load<Ordinal>(effectiveAddress + 4, TreatAsOrdinal{}), TreatAsRegister{});
-        destination.setValue<Ordinal>(2, load<Ordinal>(effectiveAddress + 8, TreatAsOrdinal{}), TreatAsRegister{});
-        destination.setValue<Ordinal>(3, load<Ordinal>(effectiveAddress + 12, TreatAsOrdinal{}), TreatAsRegister{});
+        destination.setValue<Ordinal>(0, load(effectiveAddress + 0, TreatAsOrdinal{}), TreatAsRegister{});
+        destination.setValue<Ordinal>(1, load(effectiveAddress + 4, TreatAsOrdinal{}), TreatAsRegister{});
+        destination.setValue<Ordinal>(2, load(effectiveAddress + 8, TreatAsOrdinal{}), TreatAsRegister{});
+        destination.setValue<Ordinal>(3, load(effectiveAddress + 12, TreatAsOrdinal{}), TreatAsRegister{});
         // support unaligned accesses
     }
     // the instruction is invalid so we should complete after we are done
@@ -451,7 +453,11 @@ Core::stq(Address effectiveAddress, const QuadRegister& source) noexcept {
     if (!aligned(instruction_.mem.srcDest, TreatAsQuadRegister{})) {
         generateFault(InvalidOperandFault);
     } else {
-        storeBlock(effectiveAddress, instruction_.mem.srcDest, 4);
+        //storeBlock(effectiveAddress, instruction_.mem.srcDest, 4);
+        store(effectiveAddress + 0, source.getValue<Ordinal>(0, TreatAsRegister{}), TreatAsOrdinal{});
+        store(effectiveAddress + 4, source.getValue<Ordinal>(1, TreatAsRegister{}), TreatAsOrdinal{});
+        store(effectiveAddress + 8, source.getValue<Ordinal>(2, TreatAsRegister{}), TreatAsOrdinal{});
+        store(effectiveAddress + 12, source.getValue<Ordinal>(3, TreatAsRegister{}), TreatAsOrdinal{});
         // support unaligned accesses
     }
     // the instruction is invalid so we should complete after we are done
@@ -1079,22 +1085,22 @@ Core::processInstruction(Opcodes opcode, Register& srcDest, Address effectiveAdd
             srcDest.setValue<Integer>(load(effectiveAddress, TreatAs<ShortInteger>{}));
             break;
         case Opcodes::ldl:
-            ldl(effectiveAddress);
+            ldl(effectiveAddress, getGPR(instruction_.mem.srcDest, TreatAsLongRegister{}));
             break;
         case Opcodes::stl:
-            stl(effectiveAddress);
+            stl(effectiveAddress, getGPR(instruction_.mem.srcDest, TreatAsLongRegister{}));
             break;
         case Opcodes::ldt:
-            ldt(effectiveAddress);
+            ldt(effectiveAddress, getGPR(instruction_.mem.srcDest, TreatAsTripleRegister{}));
             break;
         case Opcodes::stt:
-            stt(effectiveAddress);
+            stt(effectiveAddress, getGPR(instruction_.mem.srcDest, TreatAsTripleRegister{}));
             break;
         case Opcodes::ldq:
-            ldq(effectiveAddress);
+            ldq(effectiveAddress, getGPR(instruction_.mem.srcDest, TreatAsQuadRegister{}));
             break;
         case Opcodes::stq:
-            stq(effectiveAddress);
+            stq(effectiveAddress, getGPR(instruction_.mem.srcDest, TreatAsQuadRegister{}));
             break;
         case Opcodes::lda:
             srcDest.setValue<Ordinal>(effectiveAddress);

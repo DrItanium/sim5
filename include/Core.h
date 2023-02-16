@@ -846,6 +846,8 @@ class Core {
         void setFaultPort(Ordinal value) noexcept;
         /// @todo insert iac dispatch here
         /// @todo insert routines for getting registers and such 
+        [[nodiscard]] QuadRegister& getGPR(byte index, TreatAsQuadRegister) noexcept { return gpr_.get(index, TreatAsQuadRegister{}); }
+        [[nodiscard]] const QuadRegister& getGPR(byte index, TreatAsQuadRegister) const noexcept { return gpr_.get(index, TreatAsQuadRegister{}); }
         [[nodiscard]] LongRegister& getGPR(byte index, TreatAsLongRegister) noexcept { return gpr_.get(index, TreatAsLongRegister{}); }
         [[nodiscard]] const LongRegister& getGPR(byte index, TreatAsLongRegister) const noexcept { return gpr_.get(index, TreatAsLongRegister{}); }
         [[nodiscard]] Register& getGPR(byte index) noexcept { return gpr_.get(index); }
@@ -1025,12 +1027,12 @@ class Core {
         void flushreg() noexcept;
         void balx(byte linkRegister, Ordinal branchTo) noexcept;
         void calls(Ordinal value) noexcept;
-        void ldl(Address address) noexcept;
-        void ldq(Address address) noexcept;
-        void ldt(Address address) noexcept;
-        void stq(Address address) noexcept;
-        void stt(Address address) noexcept;
-        void stl(Address address) noexcept;
+        void ldl(Address address, LongRegister& destination) noexcept;
+        void ldq(Address address, QuadRegister& destination) noexcept;
+        void ldt(Address address, TripleRegister& destination) noexcept;
+        void stq(Address address, const QuadRegister& src) noexcept;
+        void stt(Address address, const TripleRegister& src) noexcept;
+        void stl(Address address, const LongRegister& src) noexcept;
         void ret() noexcept;
         void call(Integer displacement) noexcept;
         void callx() noexcept;
