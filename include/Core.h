@@ -818,8 +818,8 @@ class Core {
         void branch(Integer displacement) noexcept;
         void branchConditional(bool condition, Integer displacement) noexcept;
         void scanbyte(Ordinal src2, Ordinal src1) noexcept;
-        void emul(Register& dest, Ordinal src1, Ordinal src2) noexcept;
-        void ediv(Register& dest, Ordinal src1, Ordinal src2) noexcept;
+        void emul(Register& dest, Register& upperDest, Ordinal src1, Ordinal src2) noexcept;
+        void ediv(Register& dest, Register& upperDest, Ordinal src1, Ordinal src2) noexcept;
         void arithmeticWithCarryGeneric(Ordinal result, bool src2MSB, bool src1MSB, bool destMSB) noexcept;
         inline void advanceCOBRDisplacement(int16_t displacement) noexcept {
             Register temp{0};

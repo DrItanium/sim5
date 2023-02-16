@@ -135,7 +135,7 @@ Core::checkForPendingInterrupts() noexcept {
 
 
 void
-Core::emul(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+Core::emul(Register& dest, Register& upperDest, Ordinal src1, Ordinal src2) noexcept {
     SplitWord64 result;
     if ((instruction_.reg.srcDest & 0b1) != 0) {
         generateFault(InvalidOpcodeFault);
@@ -145,11 +145,11 @@ Core::emul(Register& dest, Ordinal src1, Ordinal src2) noexcept {
     // yes this can be undefined by design :)
     // if we hit a fault then we just give up whats on the stack :)
     dest.setValue(result.parts[0], TreatAsOrdinal{});
-    setGPR(instruction_.reg.srcDest, 1, result.parts[1], TreatAsOrdinal{});
+    upperDest.setValue(result.parts[1], TreatAsOrdinal{});
 }
 
 void
-Core::ediv(Register& dest, Ordinal src1, Ordinal src2Lower) noexcept {
+Core::ediv(Register& dest, Register& upperDest, Ordinal src1, Ordinal src2Lower) noexcept {
     SplitWord64 result, src2;
     result.whole = 0;
     src2.parts[0] = src2Lower;
@@ -169,7 +169,7 @@ Core::ediv(Register& dest, Ordinal src1, Ordinal src2Lower) noexcept {
     // however, to get the compiler to shut up, I am zeroing out the result
     // field
     dest.setValue<Ordinal>(result.parts[0]);
-    setGPR(instruction_.reg.srcDest, 1, result.parts[1], TreatAsOrdinal{});
+    upperDest.setValue<Ordinal>(result.parts[1]);
 }
 
 Ordinal
@@ -1304,10 +1304,10 @@ Core::processInstruction(Opcodes opcode, Register& regDest, const Register& src1
             atmod(regDest, src1o, src2o);
             break;
         case Opcodes::emul:
-            emul(regDest, src2o, src1o);
+            emul(regDest, getGPR(instruction_.reg.srcDest+1), src2o, src1o);
             break;
         case Opcodes::ediv:
-            ediv(regDest, src2o, src1o);
+            ediv(regDest, getGPR(instruction_.reg.srcDest+1), src2o, src1o);
             break;
         case Opcodes::calls:
             calls(src1o);
