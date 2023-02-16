@@ -454,10 +454,8 @@ Core::stq(Address effectiveAddress, const QuadRegister& source) noexcept {
         generateFault(InvalidOperandFault);
     } else {
         //storeBlock(effectiveAddress, instruction_.mem.srcDest, 4);
-        store(effectiveAddress + 0, source.getValue<Ordinal>(0, TreatAsRegister{}), TreatAsOrdinal{});
-        store(effectiveAddress + 4, source.getValue<Ordinal>(1, TreatAsRegister{}), TreatAsOrdinal{});
-        store(effectiveAddress + 8, source.getValue<Ordinal>(2, TreatAsRegister{}), TreatAsOrdinal{});
-        store(effectiveAddress + 12, source.getValue<Ordinal>(3, TreatAsRegister{}), TreatAsOrdinal{});
+        store(effectiveAddress + 0, source.getValue<LongOrdinal>(0, TreatAsLongRegister{}), TreatAsLongOrdinal{});
+        store(effectiveAddress + 8, source.getValue<LongOrdinal>(1, TreatAsLongRegister{}), TreatAsLongOrdinal{});
         // support unaligned accesses
     }
     // the instruction is invalid so we should complete after we are done

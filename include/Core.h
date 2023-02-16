@@ -1063,6 +1063,8 @@ class Core {
         X(ByteOrdinal);
         X(ShortInteger);
         X(ShortOrdinal);
+        X(LongInteger);
+        X(LongOrdinal);
 #undef X
     private:
         template<bool invert = false>
