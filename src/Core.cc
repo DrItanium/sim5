@@ -385,8 +385,7 @@ Core::ldl(Address effectiveAddress, LongRegister& destination) noexcept {
     if (!aligned(instruction_.mem.srcDest, TreatAsLongRegister{})) {
         generateFault(InvalidOperandFault);
     } else {
-        destination.setValue<Ordinal>(0, load(effectiveAddress + 0, TreatAsOrdinal{}));
-        destination.setValue<Ordinal>(1, load(effectiveAddress + 4, TreatAsOrdinal{}));
+        destination.setValue<LongOrdinal>(load(effectiveAddress + 0, TreatAsLongOrdinal{}));
         //loadBlock(effectiveAddress, instruction_.mem.srcDest, 2);
         // support unaligned accesses
     }
@@ -399,9 +398,8 @@ Core::stl(Address effectiveAddress, const LongRegister& source) noexcept {
         generateFault(InvalidOperandFault);
     } else {
         //storeBlock(effectiveAddress, instruction_.mem.srcDest, 2);
-        store(effectiveAddress + 0, source.getValue<Ordinal>(0), TreatAsOrdinal{});
-        store(effectiveAddress + 4, source.getValue<Ordinal>(1), TreatAsOrdinal{});
         // support unaligned accesses
+        store(effectiveAddress + 0, source.getValue<LongOrdinal>(), TreatAsLongOrdinal{});
     }
     // the instruction is invalid so we should complete after we are done
 }
@@ -439,10 +437,8 @@ Core::ldq(Address effectiveAddress, QuadRegister& destination) noexcept {
         generateFault(InvalidOperandFault);
     } else {
         //loadBlock(effectiveAddress, instruction_.mem.srcDest, 4);
-        destination.setValue<Ordinal>(0, load(effectiveAddress + 0, TreatAsOrdinal{}), TreatAsRegister{});
-        destination.setValue<Ordinal>(1, load(effectiveAddress + 4, TreatAsOrdinal{}), TreatAsRegister{});
-        destination.setValue<Ordinal>(2, load(effectiveAddress + 8, TreatAsOrdinal{}), TreatAsRegister{});
-        destination.setValue<Ordinal>(3, load(effectiveAddress + 12, TreatAsOrdinal{}), TreatAsRegister{});
+        destination.setValue<LongOrdinal>(0, load(effectiveAddress + 0, TreatAsLongOrdinal{}), TreatAsLongRegister{});
+        destination.setValue<LongOrdinal>(1, load(effectiveAddress + 8, TreatAsLongOrdinal{}), TreatAsLongRegister{});
         // support unaligned accesses
     }
     // the instruction is invalid so we should complete after we are done
