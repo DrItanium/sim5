@@ -876,6 +876,35 @@ Core::performSelfTest() noexcept {
         }
         return true;
     };
+    auto makeGenericOperation = [this](auto maker, auto doIt, auto converter, auto name) {
+        return [this, maker, doIt, converter, name]() {
+            auto rs0 = converter(random());
+            auto rs1 = converter(random());
+            auto& g3 = getGPR(0);
+            g3 = rs0;
+            auto& g4 = getGPR(1);
+            g4 = rs1;
+            auto& g5 = getGPR(2);
+            auto rs2 = maker(rs0, rs1);
+            doIt(g5, converter(g3), converter(g4));
+            if (converter(g5) != rs2) {
+                Serial.print(F("FAILURE, operation: "));
+                Serial.print(name);
+                Serial.print(F(", want: 0x"));
+                Serial.print(rs2, HEX);
+                Serial.print(F(", got: 0x"));
+                Serial.print(converter(g5), HEX);
+                return false;
+            }
+            return true;
+        };
+    };
+    auto makeIntegerOperation = [this, makeGenericOperation](auto maker, auto doIt, auto name) noexcept {
+        return makeGenericOperation(maker, doIt, [](auto value) { return static_cast<Integer>(value); }, name);
+    };
+    auto makeOrdinalOperation = [this, makeGenericOperation](auto maker, auto doIt, auto name) noexcept {
+        return makeGenericOperation(maker, doIt, [](auto value) { return static_cast<Ordinal>(value); }, name);
+    };
     auto runTest = [this, clearRegisters](auto fn) noexcept {
         return [this, clearRegisters, fn]() {
             clearRegisters();
@@ -888,7 +917,14 @@ Core::performSelfTest() noexcept {
     return runTest(checkAddi)() && 
            runTest(checkAddo)() &&
            runTest(testMoveOperations)() && 
-           runTest(testRegisters)();
+           runTest(testRegisters)() && 
+           runTest(makeIntegerOperation([](Integer src1, Integer src2) noexcept { return src2 - src1; }, 
+                                        [this](auto& dest, auto src1, auto src2) noexcept { return subi(dest, src1, src2); },
+                                        F("subi")))() &&
+           runTest(makeOrdinalOperation([](Ordinal src1, Ordinal src2) noexcept { return src2 - src1; },
+                                        [this](auto& dest, auto src1, auto src2) noexcept { return subo(dest, src1, src2); },
+                                        F("subo")))()
+           ;
 }
 BootResult
 Core::start() noexcept {
