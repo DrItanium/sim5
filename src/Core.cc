@@ -1446,6 +1446,11 @@ decltype(auto) doRandomDisallow0() {
         }
     }
 }
+template<typename W, typename ... Args>
+bool runTestCases(W wrapper, Args ... args) noexcept {
+    return ( ... && wrapper(args)());
+}
+
 bool
 Core::performSelfTest() noexcept {
     auto clearRegisters = [this]() {
@@ -1534,10 +1539,10 @@ Core::performSelfTest() noexcept {
     auto genericOrdinalOperation = [this, makeGenericOperation](auto maker, auto doIt, auto name, auto genSrc1, auto genSrc2) {
         return makeGenericOperation(maker, doIt, [](auto value) { return static_cast<Ordinal>(value); }, name, genSrc1, genSrc2);
     };
-    auto makeIntegerOperation = [this, genericIntegerOperation](auto maker, auto doIt, auto name) noexcept {
+    auto makeIntegerOperation = [this, genericIntegerOperation](auto maker, auto doIt, auto name) {
         return genericIntegerOperation(maker, doIt, name, doRandom, doRandom);
     };
-    auto makeOrdinalOperation = [this, genericOrdinalOperation](auto maker, auto doIt, auto name) noexcept {
+    auto makeOrdinalOperation = [this, genericOrdinalOperation](auto maker, auto doIt, auto name) {
         return genericOrdinalOperation(maker, doIt, name, doRandom, doRandom);
     };
     auto runTest = [this, clearRegisters](auto fn) {
@@ -1548,86 +1553,79 @@ Core::performSelfTest() noexcept {
             return result;
         };
     };
-    return runTest(testMoveOperations)() && 
-           runTest(testRegisters)() && 
-           runTest(makeIntegerOperation([](Integer src1, Integer src2, Integer) { return src2 + src1; }, 
+    return runTestCases(runTest,
+            testMoveOperations,
+            testRegisters,
+           (makeIntegerOperation([](Integer src1, Integer src2, Integer) { return src2 + src1; }, 
                                         [this](auto& dest, auto src1, auto src2) { return addi(dest, src1, src2); },
-                                        F("addi")))() &&
-           runTest(makeOrdinalOperation([](Ordinal src1, Ordinal src2, Ordinal) { return src2 + src1; },
-                                        [this](auto& dest, auto src1, auto src2) noexcept { return addo(dest, src1, src2); },
-                                        F("addo")))() &&
-           runTest(makeIntegerOperation([](Integer src1, Integer src2, Integer) noexcept { return src2 - src1; }, 
-                                        [this](auto& dest, auto src1, auto src2) noexcept { return subi(dest, src1, src2); },
-                                        F("subi")))() &&
-           runTest(makeOrdinalOperation([](Ordinal src1, Ordinal src2, Ordinal) noexcept { return src2 - src1; },
-                                        [this](auto& dest, auto src1, auto src2) noexcept { return subo(dest, src1, src2); },
-                                        F("subo")))() &&
-           runTest(genericIntegerOperation([](Integer src1, Integer src2, Integer) noexcept { return src2 / src1; }, 
-                                        [this](auto& dest, auto src1, auto src2) noexcept { return divi(dest, src1, src2); },
+                                        F("addi"))),
+           (makeOrdinalOperation([](Ordinal src1, Ordinal src2, Ordinal) { return src2 + src1; },
+                                        [this](auto& dest, auto src1, auto src2) { return addo(dest, src1, src2); },
+                                        F("addo"))),
+           (makeIntegerOperation([](Integer src1, Integer src2, Integer) { return src2 - src1; }, 
+                                        [this](auto& dest, auto src1, auto src2) { return subi(dest, src1, src2); },
+                                        F("subi"))),
+           (makeOrdinalOperation([](Ordinal src1, Ordinal src2, Ordinal) { return src2 - src1; },
+                                        [this](auto& dest, auto src1, auto src2) { return subo(dest, src1, src2); },
+                                        F("subo"))),
+           (genericIntegerOperation([](Integer src1, Integer src2, Integer) { return src2 / src1; }, 
+                                        [this](auto& dest, auto src1, auto src2) { return divi(dest, src1, src2); },
                                         F("divi"),
-                                        doRandomDisallow0,
-                                        doRandom
-                                        ))() &&
-           runTest(genericOrdinalOperation([](Ordinal src1, Ordinal src2, Ordinal) noexcept { return src2 / src1; },
-                                        [this](auto& dest, auto src1, auto src2) noexcept { return divo(dest, src1, src2); },
+                                        doRandomDisallow0, doRandom)),
+           (genericOrdinalOperation([](Ordinal src1, Ordinal src2, Ordinal) { return src2 / src1; },
+                                        [this](auto& dest, auto src1, auto src2) { return divo(dest, src1, src2); },
                                         F("divo"),
-                                        doRandomDisallow0,
-                                        doRandom
-                                        ))() &&
-           runTest(genericIntegerOperation([](Integer src1, Integer src2, Integer) noexcept { return src2 % src1; }, 
-                                        [this](auto& dest, auto src1, auto src2) noexcept { return remi(dest, src1, src2); },
+                                        doRandomDisallow0, doRandom)),
+           (genericIntegerOperation([](Integer src1, Integer src2, Integer) { return src2 % src1; }, 
+                                        [this](auto& dest, auto src1, auto src2) { return remi(dest, src1, src2); },
                                         F("remi"),
-                                        doRandomDisallow0,
-                                        doRandom
-                                        ))() &&
-           runTest(genericOrdinalOperation([](Ordinal src1, Ordinal src2, Ordinal) noexcept { return src2 % src1; },
-                                        [this](auto& dest, auto src1, auto src2) noexcept { return remo(dest, src1, src2); },
+                                        doRandomDisallow0, doRandom)),
+           (genericOrdinalOperation([](Ordinal src1, Ordinal src2, Ordinal) { return src2 % src1; },
+                                        [this](auto& dest, auto src1, auto src2) { return remo(dest, src1, src2); },
                                         F("remo"),
-                                        doRandomDisallow0,
-                                        doRandom
-                                        ))() &&
-           runTest(makeOrdinalOperation([](Ordinal src1, Ordinal src2, Ordinal) noexcept { return ~(src2 & src1); },
-                                        [this](auto& dest, auto src1, auto src2) noexcept { return nand(dest, src1, src2); },
-                                        F("nand")))() &&
-           runTest(makeOrdinalOperation([](Ordinal src1, Ordinal src2, Ordinal) noexcept { return ~(src2 | src1); },
-                                        [this](auto& dest, auto src1, auto src2) noexcept { return nor(dest, src1, src2); },
-                                        F("nor")))() &&
-           runTest(makeOrdinalOperation([](Ordinal src1, Ordinal src2, Ordinal) noexcept { return (src2 | src1); },
-                                        [this](auto& dest, auto src1, auto src2) noexcept { return orOperation(dest, src1, src2); },
-                                        F("or")))() &&
-           runTest(makeOrdinalOperation([](Ordinal src1, Ordinal src2, Ordinal) noexcept { return (src2 & src1); },
-                                        [this](auto& dest, auto src1, auto src2) noexcept { return andOperation(dest, src1, src2); },
-                                        F("and")))() &&
-           runTest(makeOrdinalOperation([](Ordinal src1, Ordinal src2, Ordinal) noexcept { return (src2 ^ src1); },
-                                        [this](auto& dest, auto src1, auto src2) noexcept { return xorOperation(dest, src1, src2); },
-                                        F("xor")))() &&
-           runTest(makeOrdinalOperation([](Ordinal src1, Ordinal src2, Ordinal) noexcept { return ~(src2 ^ src1); },
-                                        [this](auto& dest, auto src1, auto src2) noexcept { return xnor(dest, src1, src2); },
-                                        F("xnor")))() &&
-           runTest(makeOrdinalOperation([](Ordinal src1, Ordinal src2, Ordinal) noexcept { return rotateOperation(src2, src1); },
-                                        [this](auto& dest, auto src1, auto src2) noexcept { return rotate(dest, src1, src2); },
-                                        F("rotate")))() &&
-           runTest(makeIntegerOperation([](Integer src1, Integer src2, Integer) noexcept { return (src2 >> src1); },
-                                        [this](auto& dest, auto src1, auto src2) noexcept { return shri(dest, src1, src2); },
-                                        F("shri")))() &&
-           runTest(makeOrdinalOperation([](Ordinal src1, Ordinal src2, Ordinal) noexcept { return src1 < 32 ? (src2 << src1) : 0; },
-                                        [this](auto& dest, auto src1, auto src2) noexcept { return shlo(dest, src1, src2); },
-                                        F("shlo")))() &&
-           runTest(makeIntegerOperation([](Integer src1, Integer src2, Integer) noexcept { return (src2 << src1); },
-                                        [this](auto& dest, auto src1, auto src2) noexcept { return shli(dest, src1, src2); },
-                                        F("shli")))() &&
-           runTest(makeIntegerOperation([](Integer src1, Integer src2, Integer) noexcept { return src2 * src1; }, 
-                                        [this](auto& dest, auto src1, auto src2) noexcept { return muli(dest, src1, src2); },
-                                        F("muli")))() &&
-           runTest(makeOrdinalOperation([](Ordinal src1, Ordinal src2, Ordinal) noexcept { return src2 * src1; },
-                                        [this](auto& dest, auto src1, auto src2) noexcept { return mulo(dest, src1, src2); },
-                                        F("mulo")))() &&
-           runTest(makeOrdinalOperation([](Ordinal src1, Ordinal src2, Ordinal dest) noexcept { return ::modify(src1, src2, dest); },
-                                        [this](auto& dest, auto src1, auto src2) noexcept { return modify(dest, src1, src2); },
-                                        F("modify")))() &&
-           true
-           ;
+                                        doRandomDisallow0, doRandom)),
+           (makeOrdinalOperation([](Ordinal src1, Ordinal src2, Ordinal) { return ~(src2 & src1); },
+                                        [this](auto& dest, auto src1, auto src2) { return nand(dest, src1, src2); },
+                                        F("nand"))),
+           (makeOrdinalOperation([](Ordinal src1, Ordinal src2, Ordinal) { return ~(src2 | src1); },
+                                        [this](auto& dest, auto src1, auto src2) { return nor(dest, src1, src2); },
+                                        F("nor"))),
+           (makeOrdinalOperation([](Ordinal src1, Ordinal src2, Ordinal) { return (src2 | src1); },
+                                        [this](auto& dest, auto src1, auto src2) { return orOperation(dest, src1, src2); },
+                                        F("or"))),
+           (makeOrdinalOperation([](Ordinal src1, Ordinal src2, Ordinal) { return (src2 & src1); },
+                                        [this](auto& dest, auto src1, auto src2) { return andOperation(dest, src1, src2); },
+                                        F("and"))),
+           (makeOrdinalOperation([](Ordinal src1, Ordinal src2, Ordinal) { return (src2 ^ src1); },
+                                        [this](auto& dest, auto src1, auto src2) { return xorOperation(dest, src1, src2); },
+                                        F("xor"))),
+           (makeOrdinalOperation([](Ordinal src1, Ordinal src2, Ordinal) { return ~(src2 ^ src1); },
+                                        [this](auto& dest, auto src1, auto src2) { return xnor(dest, src1, src2); },
+                                        F("xnor"))),
+           (makeOrdinalOperation([](Ordinal src1, Ordinal src2, Ordinal) { return rotateOperation(src2, src1); },
+                                        [this](auto& dest, auto src1, auto src2) { return rotate(dest, src1, src2); },
+                                        F("rotate"))),
+           (makeIntegerOperation([](Integer src1, Integer src2, Integer) { return (src2 >> src1); },
+                                        [this](auto& dest, auto src1, auto src2) { return shri(dest, src1, src2); },
+                                        F("shri"))),
+           (makeOrdinalOperation([](Ordinal src1, Ordinal src2, Ordinal) { return src1 < 32 ? (src2 << src1) : 0; },
+                                        [this](auto& dest, auto src1, auto src2) { return shlo(dest, src1, src2); },
+                                        F("shlo"))),
+           (makeIntegerOperation([](Integer src1, Integer src2, Integer) { return (src2 << src1); },
+                                        [this](auto& dest, auto src1, auto src2) { return shli(dest, src1, src2); },
+                                        F("shli"))),
+           (makeIntegerOperation([](Integer src1, Integer src2, Integer) { return src2 * src1; }, 
+                                        [this](auto& dest, auto src1, auto src2) { return muli(dest, src1, src2); },
+                                        F("muli"))),
+           (makeOrdinalOperation([](Ordinal src1, Ordinal src2, Ordinal) { return src2 * src1; },
+                                        [this](auto& dest, auto src1, auto src2) { return mulo(dest, src1, src2); },
+                                        F("mulo"))),
+           (makeOrdinalOperation([](Ordinal src1, Ordinal src2, Ordinal dest) { return ::modify(src1, src2, dest); },
+                                        [this](auto& dest, auto src1, auto src2) { return modify(dest, src1, src2); },
+                                        F("modify")))
+           );
 }
+
 void 
 Core::mulo(Register& regDest, Ordinal src1o, Ordinal src2o) noexcept {
     mult<Ordinal>(regDest, src1o, src2o, TreatAsOrdinal{});
