@@ -565,12 +565,14 @@ Core::calls(Ordinal src1) noexcept {
 }
 void
 Core::performRegisterTransfer(byte mask, byte count) noexcept {
+    // perform the register transfer first and then check to see if we were
+    // offset at all
+    for (byte i = 0; i < count; ++i) {
+        setGPR(instruction_.reg.srcDest, i, unpackSrc1(i, TreatAsOrdinal{}, TreatAsREG{}), TreatAsOrdinal{});
+    }
     if (((instruction_.reg.srcDest & mask) != 0) || ((instruction_.reg.src1 & mask) != 0)) {
+        nextInstruction();
         generateFault(InvalidOpcodeFault);
-    } else {
-        for (byte i = 0; i < count; ++i) {
-            setGPR(instruction_.reg.srcDest, i, unpackSrc1(i, TreatAsOrdinal{}, TreatAsREG{}), TreatAsOrdinal{});
-        }
     }
 }
 
@@ -715,7 +717,7 @@ void
 Core::synmov(const Register& dest, Ordinal src) noexcept {
     ac_.arith.conditionCode = 0b000;
     if (auto tempa = maskValue<Ordinal, 0xFFFF'FFFC>(dest.getValue(TreatAsOrdinal{})); tempa == 0xFF00'0004) {
-        ictl_.o = load(src, TreatAsOrdinal{});
+        ictl_ = load(src, TreatAsOrdinal{});
         ac_.arith.conditionCode = 0b010;
     } else {
         auto temp = load(src, TreatAsOrdinal{});
@@ -789,6 +791,20 @@ Core::performConditionalAdd(Register& dest, Ordinal src1, Ordinal src2, TreatAsO
 }
 bool
 Core::performSelfTest() noexcept {
+    // test different instructions to see if they are working correctly
+    for (int i = 0; i < 32; ++i) {
+        auto& temporary = getGPR(i);
+        auto randomValue = static_cast<Ordinal>(random());
+        auto randomInteger = static_cast<Integer>(random());
+        temporary.setValue<Ordinal>(randomValue);
+        if (temporary.getValue<Ordinal>() != randomValue) {
+            return false;
+        }
+        temporary.setValue<Integer>(randomInteger);
+        if (temporary.getValue<Integer>() != randomInteger) {
+            return false;
+        }
+    }
     /// @todo add self test routines here to sanity check things before doing
     /// checksum work
     return true;
