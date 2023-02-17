@@ -1252,10 +1252,10 @@ Core::processInstruction(Opcodes opcode, Register& regDest, const Register& src1
             mark();
             break;
         case Opcodes::mulo:
-            mult<Ordinal>(regDest, src1o, src2o, TreatAsOrdinal{});
+            mulo(regDest, src1o, src2o);
             break;
         case Opcodes::muli:
-            mult<Integer>(regDest, src1i, src2i, TreatAsInteger{});
+            muli(regDest, src1i, src2i);
             break;
         case Opcodes::divi:
             divi(regDest, src1i, src2i);
@@ -1613,9 +1613,24 @@ Core::performSelfTest() noexcept {
            runTest(makeOrdinalOperation([](Ordinal src1, Ordinal src2) noexcept { return src1 < 32 ? (src2 << src1) : 0; },
                                         [this](auto& dest, auto src1, auto src2) noexcept { return shlo(dest, src1, src2); },
                                         F("shlo")))() &&
-           runTest(makeIntegerOperation([](Integer src1, Integer src2) noexcept { return src1 < 32 ? (src2 << src1) : 0; },
+           runTest(makeIntegerOperation([](Integer src1, Integer src2) noexcept { return (src2 << src1); },
                                         [this](auto& dest, auto src1, auto src2) noexcept { return shli(dest, src1, src2); },
                                         F("shli")))() &&
+           runTest(makeIntegerOperation([](Integer src1, Integer src2) noexcept { return src2 * src1; }, 
+                                        [this](auto& dest, auto src1, auto src2) noexcept { return muli(dest, src1, src2); },
+                                        F("muli")))() &&
+           runTest(makeOrdinalOperation([](Ordinal src1, Ordinal src2) noexcept { return src2 * src1; },
+                                        [this](auto& dest, auto src1, auto src2) noexcept { return mulo(dest, src1, src2); },
+                                        F("mulo")))() &&
            true
            ;
+}
+void 
+Core::mulo(Register& regDest, Ordinal src1o, Ordinal src2o) noexcept {
+    mult<Ordinal>(regDest, src1o, src2o, TreatAsOrdinal{});
+}
+
+void 
+Core::muli(Register& regDest, Integer src1o, Integer src2o) noexcept {
+    mult<Integer>(regDest, src1o, src2o, TreatAsInteger{});
 }
