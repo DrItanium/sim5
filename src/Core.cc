@@ -791,79 +791,104 @@ Core::performConditionalAdd(Register& dest, Ordinal src1, Ordinal src2, TreatAsO
 }
 bool
 Core::performSelfTest() noexcept {
+    auto clearRegisters = [this]() {
+        for (int i = 0; i < 32; ++i) {
+            getGPR(i).clear();
+        }
+    };
     // test different instructions to see if they are working correctly
-    for (int i = 0; i < 32; ++i) {
-        auto& temporary = getGPR(i);
-        auto randomValue = static_cast<Ordinal>(random());
-        auto randomInteger = static_cast<Integer>(random());
-        temporary.setValue<Ordinal>(randomValue);
-        if (temporary.getValue<Ordinal>() != randomValue) {
-            return false;
+    auto testRegisters = [this]() {
+        for (int i = 0; i < 32; ++i) {
+            auto& temporary = getGPR(i);
+            auto randomValue = static_cast<Ordinal>(random());
+            auto randomInteger = static_cast<Integer>(random());
+            temporary.setValue<Ordinal>(randomValue);
+            if (temporary.getValue<Ordinal>() != randomValue) {
+                return false;
+            }
+            temporary.setValue<Integer>(randomInteger);
+            if (temporary.getValue<Integer>() != randomInteger) {
+                return false;
+            }
         }
-        temporary.setValue<Integer>(randomInteger);
-        if (temporary.getValue<Integer>() != randomInteger) {
-            return false;
-        }
-    }
+        return true;
+    };
     // test move operations
     // first mov
-    auto& g0 = getGPR(0);
-    auto& g1 = getGPR(1);
-    auto& g2 = getGPR(2);
-    auto randomSourceValue = static_cast<Ordinal>(random());
-    g0.setValue<Ordinal>(randomSourceValue);
-    g1.setValue<Ordinal>(0xFFFF'FFFF);
-    g1.setValue<Ordinal>(g0.getValue<Ordinal>()); 
-    if (g1.getValue<Ordinal>() != g0.getValue<Ordinal>()) {
-        return false;
-    }
-    auto randomSourceValue2 = static_cast<Ordinal>(random());
-    auto& gl0 = getGPR(0, TreatAsLongRegister{});
-    auto& gl1 = getGPR(2, TreatAsLongRegister{});
-    gl0[0] = randomSourceValue;
-    gl0[1] = randomSourceValue2;
-    if (static_cast<Ordinal>(gl0[0]) != randomSourceValue) {
-        return false;
-    }
-    if (static_cast<Ordinal>(gl0[1]) != randomSourceValue2) {
-        return false;
-    }
-    gl1 = gl0;
-    if (static_cast<Ordinal>(gl1[0]) != randomSourceValue) {
-        return false;
-    }
-    if (static_cast<Ordinal>(gl1[1]) != randomSourceValue2) {
-        return false;
-    }
-    g0 = randomSourceValue;
-    g1 = randomSourceValue2;
-    Ordinal combination = randomSourceValue + randomSourceValue2;
-    addo(g2, static_cast<Ordinal>(g0), static_cast<Ordinal>(g1));
-    if (static_cast<Ordinal>(g2) != combination) {
-        return false;
-    }
-    auto randomSourceValue3 = static_cast<Integer>(random());
-    auto randomSourceValue4 = static_cast<Integer>(random());
-    auto& g3 = getGPR(3);
-    g3 = randomSourceValue3;
-    auto& g4 = getGPR(4);
-    g4 = randomSourceValue4;
-    auto& g5 = getGPR(5);
-    Integer iCombination = randomSourceValue3 + randomSourceValue4;
-    addi(g5, static_cast<Integer>(g3), static_cast<Integer>(g4));
-    if (static_cast<Integer>(g5) != iCombination) {
-        Serial.print(F("addi failed! Got: 0x"));
-        Serial.print(static_cast<Integer>(g5), HEX);
-        Serial.print(F(", Want: 0x"));
-        Serial.println(iCombination, HEX);
-        return false;
-    }
-    /// @todo add self test routines here to sanity check things before doing
-    /// checksum work
-    for (int i = 0; i < 32; ++i) {
-        getGPR(i).clear();
-    }
-    return true;
+    auto testMoveOperations = [this]() {
+        auto& g0 = getGPR(0);
+        auto& g1 = getGPR(1);
+        auto randomSourceValue = static_cast<Ordinal>(random());
+        g0.setValue<Ordinal>(randomSourceValue);
+        g1.setValue<Ordinal>(0xFFFF'FFFF);
+        g1.setValue<Ordinal>(g0.getValue<Ordinal>()); 
+        if (g1.getValue<Ordinal>() != g0.getValue<Ordinal>()) {
+            return false;
+        }
+        auto randomSourceValue2 = static_cast<Ordinal>(random());
+        auto& gl0 = getGPR(0, TreatAsLongRegister{});
+        auto& gl1 = getGPR(2, TreatAsLongRegister{});
+        gl0[0] = randomSourceValue;
+        gl0[1] = randomSourceValue2;
+        if (static_cast<Ordinal>(gl0[0]) != randomSourceValue) {
+            return false;
+        }
+        if (static_cast<Ordinal>(gl0[1]) != randomSourceValue2) {
+            return false;
+        }
+        gl1 = gl0;
+        if (static_cast<Ordinal>(gl1[0]) != randomSourceValue) {
+            return false;
+        }
+        if (static_cast<Ordinal>(gl1[1]) != randomSourceValue2) {
+            return false;
+        }
+        return true;
+    };
+    auto checkAddi = [this]() {
+        auto randomSourceValue3 = static_cast<Integer>(random());
+        auto randomSourceValue4 = static_cast<Integer>(random());
+        auto& g3 = getGPR(3);
+        g3 = randomSourceValue3;
+        auto& g4 = getGPR(4);
+        g4 = randomSourceValue4;
+        auto& g5 = getGPR(5);
+        Integer iCombination = randomSourceValue3 + randomSourceValue4;
+        addi(g5, static_cast<Integer>(g3), static_cast<Integer>(g4));
+        if (static_cast<Integer>(g5) != iCombination) {
+            return false;
+        }
+        return true;
+    };
+
+    auto checkAddo = [this]() {
+        auto rs0 = static_cast<Ordinal>(random());
+        auto rs1 = static_cast<Ordinal>(random());
+        auto& g3 = getGPR(0);
+        g3 = rs0;
+        auto& g4 = getGPR(1);
+        g4 = rs1;
+        auto& g5 = getGPR(2);
+        Ordinal rs2= rs0 + rs1;
+        addo(g5, static_cast<Ordinal>(g3), static_cast<Ordinal>(g4));
+        if (static_cast<Ordinal>(g5) != rs2 ) {
+            return false;
+        }
+        return true;
+    };
+    auto runTest = [this, clearRegisters](auto fn) noexcept {
+        return [this, clearRegisters, fn]() {
+            clearRegisters();
+            auto result = fn();
+            clearRegisters();
+            return result;
+        };
+    };
+
+    return runTest(checkAddi)() && 
+           runTest(checkAddo)() &&
+           runTest(testMoveOperations)() && 
+           runTest(testRegisters)();
 }
 BootResult
 Core::start() noexcept {
