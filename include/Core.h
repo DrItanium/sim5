@@ -674,6 +674,12 @@ union LongRegister {
         explicit constexpr operator T() const noexcept {
             return getValue(TreatAs<T>{});
         }
+        constexpr bool operator==(const LongRegister& other) const noexcept {
+            return lo == other.lo;
+        }
+        constexpr bool operator!=(const LongRegister& other) const noexcept {
+            return lo != other.lo;
+        }
     private:
         Register pair_[2];
         LongOrdinal lo;
@@ -699,6 +705,22 @@ union QuadRegister {
         const Register& get(byte index) const noexcept { return quads_[index & 0b11]; }
         Register& operator[](byte index) noexcept { return get(index); }
         const Register& operator[](byte index) const noexcept { return get(index); }
+        constexpr bool operator==(const QuadRegister& other) const noexcept {
+            for (int i = 0; i < 3; ++i) {
+                if (quads_[i] != other.quads_[i]) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        constexpr bool operator!=(const QuadRegister& other) const noexcept {
+            for (int i = 0; i < 3; ++i) {
+                if (quads_[i] == other.quads_[i]) {
+                    return false;
+                }
+            }
+            return true;
+        }
     private:
         Register quads_[4];
 };
