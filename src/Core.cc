@@ -845,39 +845,8 @@ Core::performSelfTest() noexcept {
         }
         return true;
     };
-    auto checkAddi = [this]() {
-        auto randomSourceValue3 = static_cast<Integer>(random());
-        auto randomSourceValue4 = static_cast<Integer>(random());
-        auto& g3 = getGPR(3);
-        g3 = randomSourceValue3;
-        auto& g4 = getGPR(4);
-        g4 = randomSourceValue4;
-        auto& g5 = getGPR(5);
-        Integer iCombination = randomSourceValue3 + randomSourceValue4;
-        addi(g5, static_cast<Integer>(g3), static_cast<Integer>(g4));
-        if (static_cast<Integer>(g5) != iCombination) {
-            return false;
-        }
-        return true;
-    };
-
-    auto checkAddo = [this]() {
-        auto rs0 = static_cast<Ordinal>(random());
-        auto rs1 = static_cast<Ordinal>(random());
-        auto& g3 = getGPR(0);
-        g3 = rs0;
-        auto& g4 = getGPR(1);
-        g4 = rs1;
-        auto& g5 = getGPR(2);
-        Ordinal rs2= rs0 + rs1;
-        addo(g5, static_cast<Ordinal>(g3), static_cast<Ordinal>(g4));
-        if (static_cast<Ordinal>(g5) != rs2 ) {
-            return false;
-        }
-        return true;
-    };
     auto makeGenericOperation = [this](auto maker, auto doIt, auto converter, auto name) {
-        return [this, maker, doIt, converter, name]() {
+        return [this, maker, doIt, converter, name](byte gpr0 = 0, byte gpr1 = 1, byte gpr2 = 2) -> bool {
             auto rs0 = converter(random());
             auto rs1 = converter(random());
             auto& g3 = getGPR(0);
@@ -913,10 +882,14 @@ Core::performSelfTest() noexcept {
             return result;
         };
     };
-    return runTest(checkAddi)() && 
-           runTest(checkAddo)() &&
-           runTest(testMoveOperations)() && 
+    return runTest(testMoveOperations)() && 
            runTest(testRegisters)() && 
+           runTest(makeIntegerOperation([](Integer src1, Integer src2) noexcept { return src2 + src1; }, 
+                                        [this](auto& dest, auto src1, auto src2) noexcept { return addi(dest, src1, src2); },
+                                        F("addi")))() &&
+           runTest(makeOrdinalOperation([](Ordinal src1, Ordinal src2) noexcept { return src2 + src1; },
+                                        [this](auto& dest, auto src1, auto src2) noexcept { return addo(dest, src1, src2); },
+                                        F("addo")))() &&
            runTest(makeIntegerOperation([](Integer src1, Integer src2) noexcept { return src2 - src1; }, 
                                         [this](auto& dest, auto src1, auto src2) noexcept { return subi(dest, src1, src2); },
                                         F("subi")))() &&
