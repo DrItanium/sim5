@@ -674,6 +674,10 @@ union LongRegister {
         const Register& operator[](byte index) const noexcept {
             return get(index);
         }
+        template<typename T>
+        explicit constexpr operator T() const noexcept {
+            return getValue(TreatAs<T>{});
+        }
     private:
         Register pair_[2];
         LongOrdinal lo;
