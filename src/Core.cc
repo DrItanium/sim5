@@ -1276,8 +1276,7 @@ Core::processInstruction(Opcodes opcode, Register& regDest, const Register& src1
             modify(regDest, src1o, src2o);
             break;
         case Opcodes::extract:
-            // taken from the Hx manual as it isn't insane
-            regDest.setValue<Ordinal>((regDest.o >> (src1o > 32 ? 32 : src1o)) & ~(0xFFFF'FFFF << src2o));
+            extract(regDest, src1o, src2o);
             break;
         case Opcodes::modac: 
             modxc(ac_, regDest, src1o, src2o);
@@ -1642,4 +1641,10 @@ Core::muli(Register& regDest, Integer src1o, Integer src2o) noexcept {
 void 
 Core::modify(Register& regDest, Ordinal src1o, Ordinal src2o) noexcept {
     regDest.setValue<Ordinal>(::modify(src1o, src2o, regDest.getValue<Ordinal>()));
+}
+void 
+Core::extract(Register& regDest, Ordinal bitpos, Ordinal len) noexcept {
+    // taken from the Hx manual as it isn't insane
+    auto actualBitpos = bitpos > 32 ? 32 : bitpos;
+    regDest.setValue<Ordinal>((static_cast<Ordinal>(regDest) >> actualBitpos) & ~(0xFFFF'FFFF << len));
 }

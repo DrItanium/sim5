@@ -1402,6 +1402,7 @@ class Core {
         void mulo(Register& dest, Ordinal src1, Ordinal src2) noexcept;
         void muli(Register& dest, Integer src1, Integer src2) noexcept;
         void modify(Register& dest, Ordinal src1, Ordinal src2) noexcept;
+        void extract(Register& dest, Ordinal src1, Ordinal src2) noexcept;
     private:
         Ordinal systemAddressTableBase_ = 0;
         Ordinal prcbAddress_ = 0;
