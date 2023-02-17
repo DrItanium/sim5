@@ -1613,6 +1613,9 @@ Core::performSelfTest() noexcept {
            runTest(makeOrdinalOperation([](Ordinal src1, Ordinal src2) noexcept { return src1 < 32 ? (src2 << src1) : 0; },
                                         [this](auto& dest, auto src1, auto src2) noexcept { return shlo(dest, src1, src2); },
                                         F("shlo")))() &&
+           runTest(makeIntegerOperation([](Integer src1, Integer src2) noexcept { return src1 < 32 ? (src2 << src1) : 0; },
+                                        [this](auto& dest, auto src1, auto src2) noexcept { return shli(dest, src1, src2); },
+                                        F("shli")))() &&
            true
            ;
 }
