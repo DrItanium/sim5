@@ -1459,6 +1459,18 @@ decltype(auto) makeTestRunner(auto body, auto setup, auto tearDown) noexcept {
     };
 }
 
+decltype(auto) compose(auto f, auto g) noexcept {
+    return [f, g](auto... args) {
+        return f(g(args...));
+    };
+}
+decltype(auto) compose(auto f, auto g, auto h) noexcept {
+    return compose(f, compose(g, h));
+}
+decltype(auto) compose(auto f, auto g, auto h, auto i) noexcept {
+    return compose(f, g, compose(h, i));
+}
+
 bool
 Core::performSelfTest() noexcept {
     auto clearRegisters = [this]() {
@@ -1554,7 +1566,14 @@ Core::performSelfTest() noexcept {
         return genericOrdinalOperation(maker, doIt, name, doRandom, doRandom);
     };
     auto runTest = [this, clearRegisters](auto fn) {
-        return makeTestRunner(fn, [this, clearRegisters]() { clearRegisters(); }, [this, clearRegisters]() { clearRegisters(); });
+        return makeTestRunner(fn, clearRegisters, clearRegisters);
+    };
+    auto clearAC = [this](auto fn) {
+        return makeTestRunner(fn, [this]() {
+                    ac_.clear();
+                }, [this]() {
+                    ac_.clear();
+                });
     };
     return runTestCases(runTest,
             testMoveOperations,
