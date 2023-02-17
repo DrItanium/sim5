@@ -718,7 +718,7 @@ union QuadRegister {
 };
 static_assert(sizeof(QuadRegister) == (2*sizeof(LongOrdinal)));
 using TreatAsQuadRegister = TreatAs<QuadRegister>;
-using TreatAsTripleRegister = TreatAsQuadRegister;
+struct TreatAsTripleRegister { };
 using TripleRegister = QuadRegister;
 // On the i960 this is separated out into two parts, locals and globals
 // The idea is that globals are always available and locals are per function.
@@ -740,6 +740,8 @@ union RegisterFrame {
         const LongRegister& get(byte index, TreatAsLongRegister) const noexcept { return longRegisters[index >> 1]; }
         QuadRegister& get(byte index, TreatAsQuadRegister) noexcept { return quadRegisters[index >> 2]; }
         const QuadRegister& get(byte index, TreatAsQuadRegister) const noexcept { return quadRegisters[index >> 2]; }
+        TripleRegister& get(byte index, TreatAsTripleRegister) noexcept { return quadRegisters[index >> 2]; }
+        const TripleRegister& get(byte index, TreatAsTripleRegister) const noexcept { return quadRegisters[index >> 2]; }
     private:
         Register registers[16];
         LongRegister longRegisters[8];
@@ -753,6 +755,10 @@ constexpr bool aligned(byte index, TreatAsLongRegister) noexcept { return (index
  * @brief is the given byte index aligned to quad register boundaries?
  */
 constexpr bool aligned(byte index, TreatAsQuadRegister) noexcept { return (index & 0b11) == 0; }
+/**
+ * @brief is the given byte index aligned to quad register boundaries?
+ */
+constexpr bool aligned(byte index, TreatAsTripleRegister) noexcept { return aligned(index, TreatAsQuadRegister{}); }
 /** 
  * @brief Holds onto two separate register frames
  */ 
@@ -805,6 +811,20 @@ class GPRBlock {
                 return globals.get(index, TreatAsQuadRegister{});
             } else {
                 return locals.get(index, TreatAsQuadRegister{});
+            }
+        }
+        TripleRegister& get(byte index, TreatAsTripleRegister) noexcept { 
+            if (index < 16) {
+                return globals.get(index, TreatAsTripleRegister{});
+            } else {
+                return locals.get(index, TreatAsTripleRegister{});
+            }
+        }
+        const TripleRegister& get(byte index, TreatAsTripleRegister) const noexcept { 
+            if (index < 16) {
+                return globals.get(index, TreatAsTripleRegister{});
+            } else {
+                return locals.get(index, TreatAsTripleRegister{});
             }
         }
 
@@ -874,6 +894,8 @@ class Core {
         /// @todo insert routines for getting registers and such 
         [[nodiscard]] QuadRegister& getGPR(byte index, TreatAsQuadRegister) noexcept { return gpr_.get(index, TreatAsQuadRegister{}); }
         [[nodiscard]] const QuadRegister& getGPR(byte index, TreatAsQuadRegister) const noexcept { return gpr_.get(index, TreatAsQuadRegister{}); }
+        [[nodiscard]] TripleRegister& getGPR(byte index, TreatAsTripleRegister) noexcept { return gpr_.get(index, TreatAsTripleRegister{}); }
+        [[nodiscard]] const TripleRegister& getGPR(byte index, TreatAsTripleRegister) const noexcept { return gpr_.get(index, TreatAsTripleRegister{}); }
         [[nodiscard]] LongRegister& getGPR(byte index, TreatAsLongRegister) noexcept { return gpr_.get(index, TreatAsLongRegister{}); }
         [[nodiscard]] const LongRegister& getGPR(byte index, TreatAsLongRegister) const noexcept { return gpr_.get(index, TreatAsLongRegister{}); }
         [[nodiscard]] Register& getGPR(byte index) noexcept { return gpr_.get(index); }
@@ -920,6 +942,9 @@ class Core {
         bool fullConditionCodeCheck(uint8_t mask) noexcept;
         Ordinal computeAddress() noexcept;
         void performRegisterTransfer(byte mask, byte count) noexcept;
+        void performRegisterTransfer(LongRegister& destination, const LongRegister& src, TreatAsLongRegister) noexcept;
+        void performRegisterTransfer(QuadRegister& destination, const QuadRegister& src, TreatAsQuadRegister) noexcept;
+        void performRegisterTransfer(TripleRegister& destination, const TripleRegister& src, TreatAsTripleRegister) noexcept;
     private:
         void sendIAC(const iac::Message& msg) noexcept;
         void dispatchInterrupt(uint8_t vector) noexcept;
