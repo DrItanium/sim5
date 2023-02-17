@@ -789,122 +789,6 @@ Core::performConditionalAdd(Register& dest, Ordinal src1, Ordinal src2, TreatAsO
         addo(dest, src1, src2);
     }
 }
-bool
-Core::performSelfTest() noexcept {
-    auto clearRegisters = [this]() {
-        for (int i = 0; i < 32; ++i) {
-            getGPR(i).clear();
-        }
-    };
-    // test different instructions to see if they are working correctly
-    auto testRegisters = [this]() {
-        for (int i = 0; i < 32; ++i) {
-            auto& temporary = getGPR(i);
-            auto randomValue = static_cast<Ordinal>(random());
-            auto randomInteger = static_cast<Integer>(random());
-            temporary.setValue<Ordinal>(randomValue);
-            if (temporary.getValue<Ordinal>() != randomValue) {
-                return false;
-            }
-            temporary.setValue<Integer>(randomInteger);
-            if (temporary.getValue<Integer>() != randomInteger) {
-                return false;
-            }
-        }
-        return true;
-    };
-    // test move operations
-    // first mov
-    auto testMoveOperations = [this]() {
-        auto& g0 = getGPR(0);
-        auto& g1 = getGPR(1);
-        auto randomSourceValue = static_cast<Ordinal>(random());
-        g0.setValue<Ordinal>(randomSourceValue);
-        g1.setValue<Ordinal>(0xFFFF'FFFF);
-        g1.setValue<Ordinal>(g0.getValue<Ordinal>()); 
-        if (g1.getValue<Ordinal>() != g0.getValue<Ordinal>()) {
-            return false;
-        }
-        auto randomSourceValue2 = static_cast<Ordinal>(random());
-        auto& gl0 = getGPR(0, TreatAsLongRegister{});
-        auto& gl1 = getGPR(2, TreatAsLongRegister{});
-        gl0[0] = randomSourceValue;
-        gl0[1] = randomSourceValue2;
-        if (static_cast<Ordinal>(gl0[0]) != randomSourceValue) {
-            return false;
-        }
-        if (static_cast<Ordinal>(gl0[1]) != randomSourceValue2) {
-            return false;
-        }
-        gl1 = gl0;
-        if (static_cast<Ordinal>(gl1[0]) != randomSourceValue) {
-            return false;
-        }
-        if (static_cast<Ordinal>(gl1[1]) != randomSourceValue2) {
-            return false;
-        }
-        return true;
-    };
-    auto makeGenericOperation = [this](auto maker, auto doIt, auto converter, auto name) {
-        return [this, maker, doIt, converter, name](byte gpr0 = 0, byte gpr1 = 1, byte gpr2 = 2) -> bool {
-            auto rs0 = converter(random());
-            auto rs1 = converter(random());
-            auto& g3 = getGPR(0);
-            g3 = rs0;
-            auto& g4 = getGPR(1);
-            g4 = rs1;
-            auto& g5 = getGPR(2);
-            auto rs2 = maker(rs0, rs1);
-            doIt(g5, converter(g3), converter(g4));
-            if (converter(g5) != rs2) {
-                Serial.print(F("FAILURE, operation: "));
-                Serial.print(name);
-                Serial.print(F(", want: 0x"));
-                Serial.print(rs2, HEX);
-                Serial.print(F(", got: 0x"));
-                Serial.print(converter(g5), HEX);
-                return false;
-            }
-            return true;
-        };
-    };
-    auto makeIntegerOperation = [this, makeGenericOperation](auto maker, auto doIt, auto name) noexcept {
-        return makeGenericOperation(maker, doIt, [](auto value) { return static_cast<Integer>(value); }, name);
-    };
-    auto makeOrdinalOperation = [this, makeGenericOperation](auto maker, auto doIt, auto name) noexcept {
-        return makeGenericOperation(maker, doIt, [](auto value) { return static_cast<Ordinal>(value); }, name);
-    };
-    auto runTest = [this, clearRegisters](auto fn) noexcept {
-        return [this, clearRegisters, fn]() {
-            clearRegisters();
-            auto result = fn();
-            clearRegisters();
-            return result;
-        };
-    };
-    return runTest(testMoveOperations)() && 
-           runTest(testRegisters)() && 
-           runTest(makeIntegerOperation([](Integer src1, Integer src2) noexcept { return src2 + src1; }, 
-                                        [this](auto& dest, auto src1, auto src2) noexcept { return addi(dest, src1, src2); },
-                                        F("addi")))() &&
-           runTest(makeOrdinalOperation([](Ordinal src1, Ordinal src2) noexcept { return src2 + src1; },
-                                        [this](auto& dest, auto src1, auto src2) noexcept { return addo(dest, src1, src2); },
-                                        F("addo")))() &&
-           runTest(makeIntegerOperation([](Integer src1, Integer src2) noexcept { return src2 - src1; }, 
-                                        [this](auto& dest, auto src1, auto src2) noexcept { return subi(dest, src1, src2); },
-                                        F("subi")))() &&
-           runTest(makeOrdinalOperation([](Ordinal src1, Ordinal src2) noexcept { return src2 - src1; },
-                                        [this](auto& dest, auto src1, auto src2) noexcept { return subo(dest, src1, src2); },
-                                        F("subo")))() &&
-           runTest(makeIntegerOperation([](Integer src1, Integer src2) noexcept { return src2 / src1; }, 
-                                        [this](auto& dest, auto src1, auto src2) noexcept { return divi(dest, src1, src2); },
-                                        F("divi")))() &&
-           runTest(makeOrdinalOperation([](Ordinal src1, Ordinal src2) noexcept { return src2 / src1; },
-                                        [this](auto& dest, auto src1, auto src2) noexcept { return divo(dest, src1, src2); },
-                                        F("divo")))() &&
-           true
-           ;
-}
 BootResult
 Core::start() noexcept {
     assertFailureState();
@@ -1549,4 +1433,141 @@ Core::shri(Register& dest, Integer src1, Integer src2) noexcept {
      */
     /// @todo perhaps implement the extra logic if necessary
     dest.setValue<Integer>(src2 >> src1);
+}
+
+bool
+Core::performSelfTest() noexcept {
+    auto clearRegisters = [this]() {
+        for (int i = 0; i < 32; ++i) {
+            getGPR(i).clear();
+        }
+    };
+    // test different instructions to see if they are working correctly
+    auto testRegisters = [this]() {
+        for (int i = 0; i < 32; ++i) {
+            auto& temporary = getGPR(i);
+            auto randomValue = static_cast<Ordinal>(random());
+            auto randomInteger = static_cast<Integer>(random());
+            temporary.setValue<Ordinal>(randomValue);
+            if (temporary.getValue<Ordinal>() != randomValue) {
+                return false;
+            }
+            temporary.setValue<Integer>(randomInteger);
+            if (temporary.getValue<Integer>() != randomInteger) {
+                return false;
+            }
+        }
+        return true;
+    };
+    // test move operations
+    // first mov
+    auto testMoveOperations = [this]() {
+        auto& g0 = getGPR(0);
+        auto& g1 = getGPR(1);
+        auto randomSourceValue = static_cast<Ordinal>(random());
+        g0.setValue<Ordinal>(randomSourceValue);
+        g1.setValue<Ordinal>(0xFFFF'FFFF);
+        g1.setValue<Ordinal>(g0.getValue<Ordinal>()); 
+        if (g1.getValue<Ordinal>() != g0.getValue<Ordinal>()) {
+            return false;
+        }
+        auto randomSourceValue2 = static_cast<Ordinal>(random());
+        auto& gl0 = getGPR(0, TreatAsLongRegister{});
+        auto& gl1 = getGPR(2, TreatAsLongRegister{});
+        gl0[0] = randomSourceValue;
+        gl0[1] = randomSourceValue2;
+        if (static_cast<Ordinal>(gl0[0]) != randomSourceValue) {
+            return false;
+        }
+        if (static_cast<Ordinal>(gl0[1]) != randomSourceValue2) {
+            return false;
+        }
+        gl1 = gl0;
+        if (static_cast<Ordinal>(gl1[0]) != randomSourceValue) {
+            return false;
+        }
+        if (static_cast<Ordinal>(gl1[1]) != randomSourceValue2) {
+            return false;
+        }
+        return true;
+    };
+    auto makeGenericOperation = [this](auto maker, auto doIt, auto converter, auto name) {
+        return [this, maker, doIt, converter, name](byte gpr0 = random() & 0b11111, 
+                byte gpr1 = random() & 0b11111, 
+                byte gpr2 = random() & 0b11111) -> bool {
+            auto rs0 = converter(random());
+            auto rs1 = converter(random());
+            auto& g3 = getGPR(gpr0);
+            g3 = rs0;
+            auto& g4 = getGPR(gpr1);
+            g4 = rs1;
+            auto& g5 = getGPR(gpr2);
+            auto rs2 = maker(rs0, rs1);
+            doIt(g5, converter(g3), converter(g4));
+            if (converter(g5) != rs2) {
+                Serial.print(F("FAILURE, operation: "));
+                Serial.print(name);
+                Serial.print(F(", want: 0x"));
+                Serial.print(rs2, HEX);
+                Serial.print(F(", got: 0x"));
+                Serial.print(converter(g5), HEX);
+                return false;
+            }
+            return true;
+        };
+    };
+    auto makeIntegerOperation = [this, makeGenericOperation](auto maker, auto doIt, auto name) noexcept {
+        return makeGenericOperation(maker, doIt, [](auto value) { return static_cast<Integer>(value); }, name);
+    };
+    auto makeOrdinalOperation = [this, makeGenericOperation](auto maker, auto doIt, auto name) noexcept {
+        return makeGenericOperation(maker, doIt, [](auto value) { return static_cast<Ordinal>(value); }, name);
+    };
+    auto runTest = [this, clearRegisters](auto fn) noexcept {
+        return [this, clearRegisters, fn]() {
+            clearRegisters();
+            auto result = fn();
+            clearRegisters();
+            return result;
+        };
+    };
+    return runTest(testMoveOperations)() && 
+           runTest(testRegisters)() && 
+           runTest(makeIntegerOperation([](Integer src1, Integer src2) noexcept { return src2 + src1; }, 
+                                        [this](auto& dest, auto src1, auto src2) noexcept { return addi(dest, src1, src2); },
+                                        F("addi")))() &&
+           runTest(makeOrdinalOperation([](Ordinal src1, Ordinal src2) noexcept { return src2 + src1; },
+                                        [this](auto& dest, auto src1, auto src2) noexcept { return addo(dest, src1, src2); },
+                                        F("addo")))() &&
+           runTest(makeIntegerOperation([](Integer src1, Integer src2) noexcept { return src2 - src1; }, 
+                                        [this](auto& dest, auto src1, auto src2) noexcept { return subi(dest, src1, src2); },
+                                        F("subi")))() &&
+           runTest(makeOrdinalOperation([](Ordinal src1, Ordinal src2) noexcept { return src2 - src1; },
+                                        [this](auto& dest, auto src1, auto src2) noexcept { return subo(dest, src1, src2); },
+                                        F("subo")))() &&
+           runTest(makeIntegerOperation([](Integer src1, Integer src2) noexcept { return src2 / src1; }, 
+                                        [this](auto& dest, auto src1, auto src2) noexcept { return divi(dest, src1, src2); },
+                                        F("divi")))() &&
+           runTest(makeOrdinalOperation([](Ordinal src1, Ordinal src2) noexcept { return src2 / src1; },
+                                        [this](auto& dest, auto src1, auto src2) noexcept { return divo(dest, src1, src2); },
+                                        F("divo")))() &&
+           runTest(makeIntegerOperation([](Integer src1, Integer src2) noexcept { return src2 % src1; }, 
+                                        [this](auto& dest, auto src1, auto src2) noexcept { return remi(dest, src1, src2); },
+                                        F("remi")))() &&
+           runTest(makeOrdinalOperation([](Ordinal src1, Ordinal src2) noexcept { return src2 % src1; },
+                                        [this](auto& dest, auto src1, auto src2) noexcept { return remo(dest, src1, src2); },
+                                        F("remo")))() &&
+           runTest(makeOrdinalOperation([](Ordinal src1, Ordinal src2) noexcept { return ~(src2 & src1); },
+                                        [this](auto& dest, auto src1, auto src2) noexcept { return nand(dest, src1, src2); },
+                                        F("nand")))() &&
+           runTest(makeOrdinalOperation([](Ordinal src1, Ordinal src2) noexcept { return ~(src2 | src1); },
+                                        [this](auto& dest, auto src1, auto src2) noexcept { return nor(dest, src1, src2); },
+                                        F("nor")))() &&
+           runTest(makeOrdinalOperation([](Ordinal src1, Ordinal src2) noexcept { return (src2 | src1); },
+                                        [this](auto& dest, auto src1, auto src2) noexcept { return orOperation(dest, src1, src2); },
+                                        F("or")))() &&
+           runTest(makeOrdinalOperation([](Ordinal src1, Ordinal src2) noexcept { return (src2 & src1); },
+                                        [this](auto& dest, auto src1, auto src2) noexcept { return andOperation(dest, src1, src2); },
+                                        F("and")))() &&
+           true
+           ;
 }
