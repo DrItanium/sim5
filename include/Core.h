@@ -612,20 +612,6 @@ union Register {
         setValue(value, TreatAs<T>{});
     }
 
-    void invert(TreatAsOrdinal) noexcept { o = ~o; }
-    void invert(TreatAsInteger) noexcept { i = ~i; }
-    void increment(TreatAsOrdinal) noexcept { ++o; }
-    void increment(TreatAsInteger) noexcept { ++i; }
-    void decrement(TreatAsOrdinal) noexcept { --o; }
-    void decrement(TreatAsInteger) noexcept { --i; }
-    template<typename T>
-    T& viewAs() noexcept {
-        return T(*this);
-    }
-    template<typename T>
-    const T& viewAs() const noexcept {
-        return T(*this);
-    }
     template<typename T>
     explicit constexpr operator T() const noexcept {
         return getValue(TreatAs<T>{});
@@ -643,6 +629,12 @@ union Register {
     Register& operator=(Ordinal value) noexcept {
         o = value;
         return *this;
+    }
+    constexpr bool operator==(const Register& other) const noexcept {
+        return other.o == o;
+    }
+    constexpr bool operator!=(const Register& other) const noexcept {
+        return other.o != o;
     }
 };
 static_assert(sizeof(Register) == sizeof(Ordinal));
