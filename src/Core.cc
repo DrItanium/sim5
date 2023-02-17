@@ -1451,6 +1451,15 @@ bool runTestCases(W wrapper, Args ... args) noexcept {
     return ( ... && wrapper(args)());
 }
 
+decltype(auto) makeTestRunner(auto body, auto setup, auto tearDown) noexcept {
+    return [setup, body, tearDown]() noexcept -> bool {
+        setup();
+        auto result = body();
+        tearDown();
+        return result;
+    };
+}
+
 bool
 Core::performSelfTest() noexcept {
     auto clearRegisters = [this]() {
@@ -1546,12 +1555,7 @@ Core::performSelfTest() noexcept {
         return genericOrdinalOperation(maker, doIt, name, doRandom, doRandom);
     };
     auto runTest = [this, clearRegisters](auto fn) {
-        return [this, clearRegisters, fn]() {
-            clearRegisters();
-            auto result = fn();
-            clearRegisters();
-            return result;
-        };
+        return makeTestRunner(fn, [this, clearRegisters]() { clearRegisters(); }, [this, clearRegisters]() { clearRegisters(); });
     };
     return runTestCases(runTest,
             testMoveOperations,
