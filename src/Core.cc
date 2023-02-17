@@ -913,7 +913,6 @@ Core::performSelfTest() noexcept {
             return result;
         };
     };
-
     return runTest(checkAddi)() && 
            runTest(checkAddo)() &&
            runTest(testMoveOperations)() && 
@@ -923,7 +922,14 @@ Core::performSelfTest() noexcept {
                                         F("subi")))() &&
            runTest(makeOrdinalOperation([](Ordinal src1, Ordinal src2) noexcept { return src2 - src1; },
                                         [this](auto& dest, auto src1, auto src2) noexcept { return subo(dest, src1, src2); },
-                                        F("subo")))()
+                                        F("subo")))() &&
+           runTest(makeIntegerOperation([](Integer src1, Integer src2) noexcept { return src2 / src1; }, 
+                                        [this](auto& dest, auto src1, auto src2) noexcept { return divi(dest, src1, src2); },
+                                        F("divi")))() &&
+           runTest(makeOrdinalOperation([](Ordinal src1, Ordinal src2) noexcept { return src2 / src1; },
+                                        [this](auto& dest, auto src1, auto src2) noexcept { return divo(dest, src1, src2); },
+                                        F("divo")))() &&
+           true
            ;
 }
 BootResult
