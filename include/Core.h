@@ -1295,7 +1295,7 @@ class Core {
             // copies the src/dest value (logical version) into the memory location specifeid by src1.
             // The bits set in the mask (src2) operand select the bits to be modified in memory. The initial
             // value from memory is stored in src/dest
-            Ordinal result = modify(src2, dest.getValue<Ordinal>(), temp);
+            Ordinal result = ::modify(src2, dest.getValue<Ordinal>(), temp);
             store(addr, result, TreatAsOrdinal{});
             dest.setValue(temp, TreatAsOrdinal{});
             unlockBus();
@@ -1371,6 +1371,7 @@ class Core {
         void shri(Register& dest, Integer src1, Integer src2) noexcept;
         void mulo(Register& dest, Ordinal src1, Ordinal src2) noexcept;
         void muli(Register& dest, Integer src1, Integer src2) noexcept;
+        void modify(Register& dest, Ordinal src1, Ordinal src2) noexcept;
     private:
         Ordinal systemAddressTableBase_ = 0;
         Ordinal prcbAddress_ = 0;
