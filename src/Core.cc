@@ -1568,13 +1568,6 @@ Core::performSelfTest() noexcept {
     auto runTest = [this, clearRegisters](auto fn) {
         return makeTestRunner(fn, clearRegisters, clearRegisters);
     };
-    auto clearAC = [this](auto fn) {
-        return makeTestRunner(fn, [this]() {
-                    ac_.clear();
-                }, [this]() {
-                    ac_.clear();
-                });
-    };
     return runTestCases(runTest,
             testMoveOperations,
             testRegisters,
