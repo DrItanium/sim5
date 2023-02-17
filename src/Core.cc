@@ -1506,29 +1506,22 @@ Core::performSelfTest() noexcept {
         return [this, maker, doIt, converter, name, genSrc1, genSrc2](byte gpr0 = random() & 0b11111, 
                 byte gpr1 = random() & 0b11111, 
                 byte gpr2 = random() & 0b11111) -> bool {
-            volatile auto rs0 = converter(genSrc1());
-            volatile auto rs1 = converter(genSrc2());
-            auto& g3 = getGPR(gpr0);
-            g3 = rs0;
-            auto& g4 = getGPR(gpr1);
-            g4 = rs1;
-            auto& g5 = getGPR(gpr2);
-            auto rs2 = maker(converter(g3), converter(g4));
-            doIt(g5, converter(g3), converter(g4));
-            if (converter(g5) != rs2) {
+            auto rs0 = converter(genSrc1());
+            auto rs1 = converter(genSrc2());
+            auto& src1 = getGPR(gpr0);
+            src1 = rs0;
+            auto& src2 = getGPR(gpr1);
+            src2 = rs1;
+            auto& dest = getGPR(gpr2);
+            auto rs2 = maker(converter(src1), converter(src2));
+            doIt(dest, converter(src1), converter(src2));
+            if (converter(dest) != rs2) {
                 Serial.print(F("FAILURE, operation: "));
-                Serial.println(name);
-                Serial.print(F("\twant: 0b"));
-                Serial.println(rs2, BIN);
-                Serial.print(F("\t got: 0b"));
-                Serial.println(converter(g5), BIN);
-                Serial.print(F("\tsrc1: 0b"));
-                Serial.println(rs0, BIN);
-                Serial.print(F("\tsrc2: 0b"));
-                Serial.println(rs1, BIN);
-                Serial.print(F("\tsrc1_ind: ")); Serial.println(gpr0);
-                Serial.print(F("\tsrc2_ind: ")); Serial.println(gpr1);
-                Serial.print(F("\tdest_ind: ")); Serial.println(gpr2);
+                Serial.print(name);
+                Serial.print(F(", want: 0x"));
+                Serial.print(rs2, HEX);
+                Serial.print(F(", got: 0x"));
+                Serial.print(converter(dest), HEX);
                 Serial.println();
                 return false;
             }
