@@ -705,16 +705,16 @@ union QuadRegister {
         const Register& get(byte index) const noexcept { return quads_[index & 0b11]; }
         Register& operator[](byte index) noexcept { return get(index); }
         const Register& operator[](byte index) const noexcept { return get(index); }
-        constexpr bool operator==(const QuadRegister& other) const noexcept {
-            for (int i = 0; i < 3; ++i) {
+        bool operator==(const QuadRegister& other) const noexcept {
+            for (int i = 0; i < 4; ++i) {
                 if (quads_[i] != other.quads_[i]) {
                     return false;
                 }
             }
             return true;
         }
-        constexpr bool operator!=(const QuadRegister& other) const noexcept {
-            for (int i = 0; i < 3; ++i) {
+        bool operator!=(const QuadRegister& other) const noexcept {
+            for (int i = 0; i < 4; ++i) {
                 if (quads_[i] == other.quads_[i]) {
                     return false;
                 }
@@ -753,6 +753,22 @@ class TripleRegister {
         const Register& get(byte index) const noexcept { return backingStore_.get(index % 3); }
         Register& operator[](byte index) noexcept { return get(index); }
         const Register& operator[](byte index) const noexcept { return get(index); }
+        bool operator==(const TripleRegister& other) const noexcept {
+            for (int i = 0; i < 3; ++i) {
+                if (backingStore_[i] != other.backingStore_[i]) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        bool operator!=(const TripleRegister& other) const noexcept {
+            for (int i = 0; i < 3; ++i) {
+                if (backingStore_[i] == other.backingStore_[i]) {
+                    return false;
+                }
+            }
+            return true;
+        }
     private:
         QuadRegister backingStore_;
 };
