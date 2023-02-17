@@ -805,8 +805,64 @@ Core::performSelfTest() noexcept {
             return false;
         }
     }
+    // test move operations
+    // first mov
+    auto& g0 = getGPR(0);
+    auto& g1 = getGPR(1);
+    auto& g2 = getGPR(2);
+    auto randomSourceValue = static_cast<Ordinal>(random());
+    g0.setValue<Ordinal>(randomSourceValue);
+    g1.setValue<Ordinal>(0xFFFF'FFFF);
+    g1.setValue<Ordinal>(g0.getValue<Ordinal>()); 
+    if (g1.getValue<Ordinal>() != g0.getValue<Ordinal>()) {
+        return false;
+    }
+    auto randomSourceValue2 = static_cast<Ordinal>(random());
+    auto& gl0 = getGPR(0, TreatAsLongRegister{});
+    auto& gl1 = getGPR(2, TreatAsLongRegister{});
+    gl0[0] = randomSourceValue;
+    gl0[1] = randomSourceValue2;
+    if (static_cast<Ordinal>(gl0[0]) != randomSourceValue) {
+        return false;
+    }
+    if (static_cast<Ordinal>(gl0[1]) != randomSourceValue2) {
+        return false;
+    }
+    gl1 = gl0;
+    if (static_cast<Ordinal>(gl1[0]) != randomSourceValue) {
+        return false;
+    }
+    if (static_cast<Ordinal>(gl1[1]) != randomSourceValue2) {
+        return false;
+    }
+    g0 = randomSourceValue;
+    g1 = randomSourceValue2;
+    Ordinal combination = randomSourceValue + randomSourceValue2;
+    addo(g2, static_cast<Ordinal>(g0), static_cast<Ordinal>(g1));
+    if (static_cast<Ordinal>(g2) != combination) {
+        return false;
+    }
+    auto randomSourceValue3 = static_cast<Integer>(random());
+    auto randomSourceValue4 = static_cast<Integer>(random());
+    auto& g3 = getGPR(3);
+    g3 = randomSourceValue3;
+    auto& g4 = getGPR(4);
+    g4 = randomSourceValue4;
+    auto& g5 = getGPR(5);
+    Integer iCombination = randomSourceValue3 + randomSourceValue4;
+    addi(g5, static_cast<Integer>(g3), static_cast<Integer>(g4));
+    if (static_cast<Integer>(g5) != iCombination) {
+        Serial.print(F("addi failed! Got: 0x"));
+        Serial.print(static_cast<Integer>(g5), HEX);
+        Serial.print(F(", Want: 0x"));
+        Serial.println(iCombination, HEX);
+        return false;
+    }
     /// @todo add self test routines here to sanity check things before doing
     /// checksum work
+    for (int i = 0; i < 32; ++i) {
+        getGPR(i).clear();
+    }
     return true;
 }
 BootResult
