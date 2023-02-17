@@ -640,6 +640,10 @@ union Register {
     constexpr const byte& operator[](byte index) const noexcept {
         return bytes[index & 0b11];
     }
+    Register& operator=(Ordinal value) noexcept {
+        o = value;
+        return *this;
+    }
 };
 static_assert(sizeof(Register) == sizeof(Ordinal));
 union LongRegister {
@@ -691,35 +695,54 @@ using TreatAsRegister = TreatAs<Register>;
 union QuadRegister {
     public:
         QuadRegister() = default;
-
         template<typename T>
-        void setValue(byte index, T value, TreatAsRegister) noexcept {
-            get(index, TreatAsRegister{}). setValue<T>(value);
+        void setValue(byte index, T value) noexcept {
+            get(index). setValue<T>(value);
         }
         template<typename T>
-        constexpr T getValue(byte index, TreatAsRegister) const noexcept {
-            return get(index, TreatAsRegister{}).getValue<T>();
+        constexpr T getValue(byte index) const noexcept {
+            return get(index).getValue<T>();
         }
-        template<typename T>
-        void setValue(byte index, T value, TreatAsLongRegister) noexcept {
-            get(index, TreatAsLongRegister{}). setValue<T>(value);
-        }
-        template<typename T>
-        constexpr T getValue(byte index, TreatAsLongRegister) const noexcept {
-            return get(index, TreatAsLongRegister{}).getValue<T>();
-        }
-        Register& get(byte index, TreatAsRegister) noexcept { return quads_[index & 0b11]; }
-        const Register& get(byte index, TreatAsRegister) const noexcept { return quads_[index & 0b11]; }
-        LongRegister& get(byte index, TreatAsLongRegister) noexcept { return pairs_[index & 0b1]; }
-        const LongRegister& get(byte index, TreatAsLongRegister) const noexcept { return pairs_[index & 0b1]; }
+        Register& get(byte index) noexcept { return quads_[index & 0b11]; }
+        const Register& get(byte index) const noexcept { return quads_[index & 0b11]; }
+        Register& operator[](byte index) noexcept { return get(index); }
+        const Register& operator[](byte index) const noexcept { return get(index); }
     private:
         Register quads_[4];
-        LongRegister pairs_[2];
 };
 static_assert(sizeof(QuadRegister) == (2*sizeof(LongOrdinal)));
 using TreatAsQuadRegister = TreatAs<QuadRegister>;
-struct TreatAsTripleRegister { };
-using TripleRegister = QuadRegister;
+class TripleRegister {
+    public:
+        TripleRegister() = default;
+        TripleRegister& operator=(const TripleRegister& other) noexcept {
+            setValue<Ordinal>(0, other.getValue<Ordinal>(0));
+            setValue<Ordinal>(1, other.getValue<Ordinal>(1));
+            setValue<Ordinal>(2, other.getValue<Ordinal>(2));
+            return *this;
+        }
+        TripleRegister& operator=(TripleRegister&& other) noexcept {
+            setValue<Ordinal>(0, other.getValue<Ordinal>(0));
+            setValue<Ordinal>(1, other.getValue<Ordinal>(1));
+            setValue<Ordinal>(2, other.getValue<Ordinal>(2));
+            return *this;
+        }
+        template<typename T>
+        void setValue(byte index, T value) noexcept {
+            get(index). setValue<T>(value);
+        }
+        template<typename T>
+        constexpr T getValue(byte index) const noexcept {
+            return get(index).getValue<T>();
+        }
+        Register& get(byte index) noexcept { return backingStore_.get(index % 3); }
+        const Register& get(byte index) const noexcept { return backingStore_.get(index % 3); }
+        Register& operator[](byte index) noexcept { return get(index); }
+        const Register& operator[](byte index) const noexcept { return get(index); }
+    private:
+        QuadRegister backingStore_;
+};
+using TreatAsTripleRegister = TreatAs<TripleRegister>;
 // On the i960 this is separated out into two parts, locals and globals
 // The idea is that globals are always available and locals are per function.
 // You are supposed to have multiple local frames on chip to accelerate
@@ -740,11 +763,12 @@ union RegisterFrame {
         const LongRegister& get(byte index, TreatAsLongRegister) const noexcept { return longRegisters[index >> 1]; }
         QuadRegister& get(byte index, TreatAsQuadRegister) noexcept { return quadRegisters[index >> 2]; }
         const QuadRegister& get(byte index, TreatAsQuadRegister) const noexcept { return quadRegisters[index >> 2]; }
-        TripleRegister& get(byte index, TreatAsTripleRegister) noexcept { return quadRegisters[index >> 2]; }
-        const TripleRegister& get(byte index, TreatAsTripleRegister) const noexcept { return quadRegisters[index >> 2]; }
+        TripleRegister& get(byte index, TreatAsTripleRegister) noexcept { return tripleRegisters[index >> 2]; }
+        const TripleRegister& get(byte index, TreatAsTripleRegister) const noexcept { return tripleRegisters[index >> 2]; }
     private:
         Register registers[16];
         LongRegister longRegisters[8];
+        TripleRegister tripleRegisters[4];
         QuadRegister quadRegisters[4];
 };
 /**
@@ -942,9 +966,6 @@ class Core {
         bool fullConditionCodeCheck(uint8_t mask) noexcept;
         Ordinal computeAddress() noexcept;
         void performRegisterTransfer(byte mask, byte count) noexcept;
-        void performRegisterTransfer(LongRegister& destination, const LongRegister& src, TreatAsLongRegister) noexcept;
-        void performRegisterTransfer(QuadRegister& destination, const QuadRegister& src, TreatAsQuadRegister) noexcept;
-        void performRegisterTransfer(TripleRegister& destination, const TripleRegister& src, TreatAsTripleRegister) noexcept;
     private:
         void sendIAC(const iac::Message& msg) noexcept;
         void dispatchInterrupt(uint8_t vector) noexcept;
@@ -1114,8 +1135,6 @@ class Core {
         X(ByteOrdinal);
         X(ShortInteger);
         X(ShortOrdinal);
-        X(LongInteger);
-        X(LongOrdinal);
 #undef X
     private:
         template<bool invert = false>

@@ -386,7 +386,8 @@ Core::ldl(Address effectiveAddress, LongRegister& destination) noexcept {
         generateFault(InvalidOperandFault);
         /// @todo perform an unaligned load into registers
     } else {
-        destination.setValue<LongOrdinal>(load(effectiveAddress + 0, TreatAsLongOrdinal{}));
+        destination[0] = load(effectiveAddress + 0, TreatAsOrdinal{});
+        destination[1] = load(effectiveAddress + 4, TreatAsOrdinal{});
         // support unaligned accesses
     }
     // the instruction is invalid so we should complete after we are done
@@ -399,7 +400,8 @@ Core::stl(Address effectiveAddress, const LongRegister& source) noexcept {
         /// @todo perform an unaligned load into registers
     } else {
         // support unaligned accesses
-        store(effectiveAddress + 0, source.getValue<LongOrdinal>(), TreatAsLongOrdinal{});
+        store(effectiveAddress + 0,  static_cast<Ordinal>(source[0]), TreatAsOrdinal{});
+        store(effectiveAddress + 4,  static_cast<Ordinal>(source[1]), TreatAsOrdinal{});
     }
     // the instruction is invalid so we should complete after we are done
 }
@@ -409,9 +411,9 @@ Core::ldt(Address effectiveAddress, TripleRegister& destination) noexcept {
         generateFault(InvalidOperandFault);
         /// @todo perform an unaligned load into registers
     } else {
-        destination.setValue<Ordinal>(0, load(effectiveAddress + 0, TreatAsOrdinal{}), TreatAsRegister{});
-        destination.setValue<Ordinal>(1, load(effectiveAddress + 4, TreatAsOrdinal{}), TreatAsRegister{});
-        destination.setValue<Ordinal>(2, load(effectiveAddress + 8, TreatAsOrdinal{}), TreatAsRegister{});
+        destination[0] = load(effectiveAddress + 0, TreatAsOrdinal{});
+        destination[1] = load(effectiveAddress + 4, TreatAsOrdinal{});
+        destination[2] = load(effectiveAddress + 8, TreatAsOrdinal{});
         // support unaligned accesses
     }
     // the instruction is invalid so we should complete after we are done
@@ -422,10 +424,10 @@ Core::stt(Address effectiveAddress, const TripleRegister& source) noexcept {
     if (!aligned(instruction_.mem.srcDest, TreatAsTripleRegister{})) {
         generateFault(InvalidOperandFault);
     } else {
-        store(effectiveAddress + 0, source.getValue<Ordinal>(0, TreatAsRegister{}), TreatAsOrdinal{});
-        store(effectiveAddress + 4, source.getValue<Ordinal>(1, TreatAsRegister{}), TreatAsOrdinal{});
-        store(effectiveAddress + 8, source.getValue<Ordinal>(2, TreatAsRegister{}), TreatAsOrdinal{});
         // support unaligned accesses
+        store(effectiveAddress + 0,  static_cast<Ordinal>(source[0]), TreatAsOrdinal{});
+        store(effectiveAddress + 4,  static_cast<Ordinal>(source[1]), TreatAsOrdinal{});
+        store(effectiveAddress + 8,  static_cast<Ordinal>(source[2]), TreatAsOrdinal{});
     }
     // the instruction is invalid so we should complete after we are done
 }
@@ -436,8 +438,10 @@ Core::ldq(Address effectiveAddress, QuadRegister& destination) noexcept {
         generateFault(InvalidOperandFault);
         /// @todo perform an unaligned load into registers
     } else {
-        destination.setValue<LongOrdinal>(0, load(effectiveAddress + 0, TreatAsLongOrdinal{}), TreatAsLongRegister{});
-        destination.setValue<LongOrdinal>(1, load(effectiveAddress + 8, TreatAsLongOrdinal{}), TreatAsLongRegister{});
+        destination[0] = load(effectiveAddress + 0, TreatAsOrdinal{});
+        destination[1] = load(effectiveAddress + 4, TreatAsOrdinal{});
+        destination[2] = load(effectiveAddress + 8, TreatAsOrdinal{});
+        destination[3] = load(effectiveAddress + 12, TreatAsOrdinal{});
         // support unaligned accesses
     }
     // the instruction is invalid so we should complete after we are done
@@ -448,8 +452,10 @@ Core::stq(Address effectiveAddress, const QuadRegister& source) noexcept {
     if (!aligned(instruction_.mem.srcDest, TreatAsQuadRegister{})) {
         generateFault(InvalidOperandFault);
     } else {
-        store(effectiveAddress + 0, source.getValue<LongOrdinal>(0, TreatAsLongRegister{}), TreatAsLongOrdinal{});
-        store(effectiveAddress + 8, source.getValue<LongOrdinal>(1, TreatAsLongRegister{}), TreatAsLongOrdinal{});
+        store(effectiveAddress + 0,  static_cast<Ordinal>(source[0]), TreatAsOrdinal{});
+        store(effectiveAddress + 4,  static_cast<Ordinal>(source[1]), TreatAsOrdinal{});
+        store(effectiveAddress + 8,  static_cast<Ordinal>(source[2]), TreatAsOrdinal{});
+        store(effectiveAddress + 12, static_cast<Ordinal>(source[3]), TreatAsOrdinal{});
         // support unaligned accesses
     }
     // the instruction is invalid so we should complete after we are done
@@ -567,7 +573,6 @@ Core::performRegisterTransfer(byte mask, byte count) noexcept {
         }
     }
 }
-
 
 void
 Core::lockBus() noexcept {

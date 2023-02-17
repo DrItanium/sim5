@@ -103,8 +103,6 @@ namespace ebi {
 
 Integer Core::load(Address addr, TreatAsInteger) const { return ebi::load<Integer>(addr, TreatAsInteger{}); }
 Ordinal Core::load(Address addr, TreatAsOrdinal) const { return ebi::load<Ordinal>(addr, TreatAsOrdinal{}); }
-LongInteger Core::load(Address addr, TreatAsLongInteger) const { return ebi::load<LongInteger>(addr, TreatAsLongInteger{}); }
-LongOrdinal Core::load(Address addr, TreatAsLongOrdinal) const { return ebi::load<LongOrdinal>(addr, TreatAsLongOrdinal{}); }
 ByteInteger Core::load(Address addr, TreatAsByteInteger) const { return ebi::load<ByteInteger>(addr, TreatAsByteInteger{}); }
 ByteOrdinal Core::load(Address addr, TreatAsByteOrdinal) const { return ebi::load<ByteOrdinal>(addr, TreatAsByteOrdinal{}); }
 ShortInteger Core::load(Address addr, TreatAsShortInteger) const { return ebi::load<ShortInteger>(addr, TreatAsShortInteger{}); }
@@ -116,7 +114,5 @@ void Core::store(Address addr, ByteInteger value, TreatAsByteInteger) { ebi::sto
 void Core::store(Address addr, ByteOrdinal value, TreatAsByteOrdinal) { ebi::store<ByteOrdinal>(addr, value, TreatAsByteOrdinal{}); }
 void Core::store(Address addr, ShortInteger value, TreatAsShortInteger) { ebi::store<ShortInteger>(addr, value, TreatAsShortInteger{}); }
 void Core::store(Address addr, ShortOrdinal value, TreatAsShortOrdinal) { ebi::store<ShortOrdinal>(addr, value, TreatAsShortOrdinal{}); }
-void Core::store(Address addr, LongOrdinal value, TreatAsLongOrdinal) { ebi::store<LongOrdinal>(addr, value, TreatAsLongOrdinal{}); }
-void Core::store(Address addr, LongInteger value, TreatAsLongInteger) { ebi::store<LongInteger>(addr, value, TreatAsLongInteger{}); }
 
 
