@@ -21,19 +21,12 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-// The main for the arduino version of the simulator's main
-// Created by jwscoggins on 8/21/21.
-//
-#include <Arduino.h>
-#include "Types.h"
-#include "BinaryOperations.h"
-#include "MegaboardCore.h"
+#ifndef SIM5_MEGABOARD_CORE_H__
+#define SIM5_MEGABOARD_CORE_H__
+#include "Core.h"
 
-//Core core;
-void 
-setup() {
-}
-void 
-loop() {
-}
-
+class MegaboardCore : public Core<MegaboardCore> {
+    public:
+    private:
+};
+#endif
