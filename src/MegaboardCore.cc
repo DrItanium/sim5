@@ -22,7 +22,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <Arduino.h>
 #include "MegaboardCore.h"
-
+#ifdef __AVR_ATmega2560__
 // Pins
 constexpr auto LOCKPIN = 12;
 constexpr auto FAILPIN = 13;
@@ -196,3 +196,4 @@ MegaboardCore::setBankRegisters(Address address) const noexcept {
     PORTF = static_cast<uint8_t>(address >> 16);
     PORTK = static_cast<uint8_t>(address >> 24);
 }
+#endif
