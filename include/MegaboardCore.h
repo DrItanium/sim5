@@ -54,5 +54,7 @@ class MegaboardCore : public Core<MegaboardCore> {
         void generateFault_impl(Ordinal faultCode) noexcept;
         void assertFailureState_impl() noexcept;
         void deassertFailureState_impl() noexcept;
+    private:
+        void setBankRegisters(Address addr) const noexcept;
 };
 #endif

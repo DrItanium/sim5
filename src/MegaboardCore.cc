@@ -83,56 +83,65 @@ void MegaboardCore::busUnlock() noexcept {
 }
 
 Ordinal MegaboardCore::load_impl(Address address, TreatAsOrdinal) const noexcept {
-
+    setBankRegisters(address);
     return 0;
 }
 
 Integer MegaboardCore::load_impl(Address address, TreatAsInteger) const noexcept {
-
+    setBankRegisters(address);
     return 0;
 }
 
 ShortOrdinal MegaboardCore::load_impl(Address address, TreatAsShortOrdinal) const noexcept {
+    setBankRegisters(address);
 
     return 0;
 }
 
 ShortInteger MegaboardCore::load_impl(Address address, TreatAsShortInteger) const noexcept {
+    setBankRegisters(address);
 
     return 0;
 }
 
 ByteOrdinal MegaboardCore::load_impl(Address address, TreatAsByteOrdinal) const noexcept {
+    setBankRegisters(address);
 
     return 0;
 }
 
 ByteInteger MegaboardCore::load_impl(Address address, TreatAsByteInteger) const noexcept {
+    setBankRegisters(address);
     return 0;
 }
 
 void MegaboardCore::store_impl(Address address, Ordinal value, TreatAsOrdinal) noexcept {
+    setBankRegisters(address);
 
 }
 
 void MegaboardCore::store_impl(Address address, Integer value, TreatAsInteger) noexcept {
+    setBankRegisters(address);
 
 }
 
 void MegaboardCore::store_impl(Address address, ShortOrdinal value, TreatAsShortOrdinal) noexcept {
+    setBankRegisters(address);
 
 }
 
 void MegaboardCore::store_impl(Address address, ShortInteger value, TreatAsShortInteger) noexcept {
+    setBankRegisters(address);
 
 }
 
 void MegaboardCore::store_impl(Address address, ByteOrdinal value, TreatAsByteOrdinal) noexcept {
+    setBankRegisters(address);
 
 }
 
 void MegaboardCore::store_impl(Address address, ByteInteger value, TreatAsByteInteger) noexcept {
-
+    setBankRegisters(address);
 }
 
 bool MegaboardCore::runExtendedSelfTests() noexcept {
@@ -152,3 +161,6 @@ void MegaboardCore::deassertFailureState_impl() noexcept {
 }
 
 
+void
+MegaboardCore::setBankRegisters(Address address) const noexcept {
+}

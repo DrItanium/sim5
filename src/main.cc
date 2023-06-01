@@ -40,8 +40,6 @@ setup() {
 }
 void 
 loop() {
-    while (core.running()) {
-        core.cycle();
-    }
+    core.cycle();
 }
 

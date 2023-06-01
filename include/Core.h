@@ -946,9 +946,7 @@ class Core {
 
         void begin() noexcept;
         BootResult start() noexcept;
-        void stop() noexcept;
         void cycle() noexcept;
-        [[nodiscard]] constexpr bool running() const noexcept { return running_; }
     private:
         void lockBus();
         void unlockBus();
@@ -1473,7 +1471,6 @@ class Core {
         Register instruction_;
         Register ictl_;
         byte advanceBy_;
-        bool running_;
         byte instructionLength_ = 0;
         bool advanceInstruction_ = false;
 };
@@ -2230,7 +2227,6 @@ Core<T, S>::begin() noexcept {
         constants_.setValue<Ordinal>(i, i);
     }
     static_cast<T*>(this)->begin_impl();
-    running_ = false;
 }
 
 template<typename T, Ordinal S>
@@ -2374,16 +2370,9 @@ Core<T, S>::start() noexcept {
             pc_.processControls.state = 1;
             // clear any latched external interrupt/IAC signals
             // begin execution
-            running_ = true;
             return BootResult::Success;
         }
     }
-}
-template<typename T, Ordinal S>
-void
-Core<T, S>::stop() noexcept {
-    running_ = false;
-    // this will halt the cpu
 }
 
 template<typename T, Ordinal S>
