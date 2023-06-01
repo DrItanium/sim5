@@ -30,10 +30,18 @@
 #include "MegaboardCore.h"
 
 //Core core;
+MegaboardCore core;
 void 
 setup() {
+    core.begin();
+    if (core.start() != BootResult::Success) {
+        while (true);
+    }
 }
 void 
 loop() {
+    while (core.running()) {
+        core.cycle();
+    }
 }
 

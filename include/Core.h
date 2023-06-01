@@ -1129,7 +1129,7 @@ class Core {
         }
         template<typename Q>
         void cmpxbGeneric(uint8_t mask, Q src1, Q src2, int16_t displacement, TreatAs<Q>) noexcept {
-            cmpGeneric<T>(src1, src2);
+            cmpGeneric<Q>(src1, src2);
             if ((mask & ac_.getConditionCode()) != 0) {
                 advanceCOBRDisplacement(displacement);
             } 
@@ -1172,7 +1172,7 @@ class Core {
     protected:
 #define X(type) \
         type load(Address addr, TreatAs< type > ) const { \
-            return static_cast<T*>(this)->load_impl(addr, TreatAs< type > {}); \
+            return static_cast<const T*>(this)->load_impl(addr, TreatAs< type > {}); \
         } \
         void store(Address addr, type value, TreatAs< type > ) { \
             static_cast<T*>(this)->store_impl(addr, value, TreatAs< type > {}); \

@@ -27,6 +27,32 @@
 
 class MegaboardCore : public Core<MegaboardCore> {
     public:
-    private:
+        void checkForPendingInterrupts_impl();
+        void sendIAC_impl(const iac::Message& msg);
+        void synchronizeFaults();
+        void flushRegisters();
+        bool haveAvailableRegisterSet() noexcept;
+        void makeNewRegisterFrame() noexcept;
+        void saveRegisters(Ordinal fp) noexcept;
+        void restoreRegisters(Ordinal fp) noexcept;
+        void busLock() noexcept;
+        void busUnlock() noexcept;
+        Ordinal load_impl(Address address, TreatAsOrdinal) const noexcept;
+        Integer load_impl(Address address, TreatAsInteger) const noexcept;
+        ShortOrdinal load_impl(Address address, TreatAsShortOrdinal) const noexcept;
+        ShortInteger load_impl(Address address, TreatAsShortInteger) const noexcept;
+        ByteOrdinal load_impl(Address address, TreatAsByteOrdinal) const noexcept;
+        ByteInteger load_impl(Address address, TreatAsByteInteger) const noexcept;
+        void store_impl(Address address, Ordinal value, TreatAsOrdinal) noexcept;
+        void store_impl(Address address, Integer value, TreatAsInteger) noexcept;
+        void store_impl(Address address, ShortOrdinal value, TreatAsShortOrdinal) noexcept;
+        void store_impl(Address address, ShortInteger value, TreatAsShortInteger) noexcept;
+        void store_impl(Address address, ByteOrdinal value, TreatAsByteOrdinal) noexcept;
+        void store_impl(Address address, ByteInteger value, TreatAsByteInteger) noexcept;
+        void begin_impl() noexcept;
+        bool runExtendedSelfTests() noexcept;
+        void generateFault_impl(Ordinal faultCode) noexcept;
+        void assertFailureState_impl() noexcept;
+        void deassertFailureState_impl() noexcept;
 };
 #endif
