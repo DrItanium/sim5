@@ -1165,8 +1165,12 @@ class Core {
         void performSelect(Register& dest, Ordinal src1, Ordinal src2) noexcept;
     protected:
 #define X(type) \
-        type load(Address addr, TreatAs< type > ) const; \
-        void store(Address addr, type value, TreatAs< type > )
+        type load(Address addr, TreatAs< type > ) const { \
+            return static_cast<T*>(this)->load_impl(addr, TreatAs< type > {}); \
+        } \
+        void store(Address addr, type value, TreatAs< type > ) { \
+            static_cast<T*>(this)->store_impl(addr, value, TreatAs< type > {}); \
+        } 
         X(Integer);
         X(Ordinal);
         X(ByteInteger);
@@ -2211,7 +2215,6 @@ Core<T>::cycle() noexcept {
 template<typename T>
 void
 Core<T>::begin() noexcept {
-    //Serial.print(F("Configuring simulator structures..."));
     // so we need to do any sort of processor setup here
     ip_.clear();
     for (int i = 0; i < 32; ++i) {
@@ -2219,8 +2222,8 @@ Core<T>::begin() noexcept {
         /// @todo setup SFRs
         constants_.setValue<Ordinal>(i, i);
     }
+    static_cast<T*>(this)->begin_impl();
     running_ = false;
-    //Serial.println(F("DONE"));
 }
 
 template<typename T>
@@ -2338,10 +2341,6 @@ Core<T>::start() noexcept {
         Ordinal x[8] = { 0 };
         for (int i = 0, j = 0; i < 8; ++i, j+=4) {
             x[i] = load(j, TreatAsOrdinal{});
-            Serial.print(F("\tx["));
-            Serial.print(i);
-            Serial.print(F("]: 0x"));
-            Serial.println(x[i], HEX);
         }
 
         ac_.arith.conditionCode = 0b000; // clear condition code
@@ -2356,8 +2355,6 @@ Core<T>::start() noexcept {
         addc(temp_, temp_.getValue(TreatAsOrdinal{}), x[7]);
         if (temp_.getValue(TreatAsOrdinal{}) != 0) {
             assertFailureState();
-            Serial.print(F("FAILED CHECKSUM VALUE: 0x"));
-            Serial.println(temp_.getValue(TreatAsOrdinal{}), HEX);
             return BootResult::ChecksumFail;
         } else {
             systemAddressTableBase_ = x[0];
@@ -2384,13 +2381,13 @@ Core<T>::stop() noexcept {
 template<typename T>
 void
 Core<T>::assertFailureState() noexcept {
-    /// @todo implement
+    static_cast<T*>(this)->assertFailureState_impl();
 }
 
 template<typename T>
 void
 Core<T>::deassertFailureState() noexcept {
-    /// @todo implement
+    static_cast<T*>(this)->deassertFailureState_impl();
 }
 template<typename T>
 void
@@ -2409,7 +2406,7 @@ Core<T>::addo(Register& dest, Ordinal src1, Ordinal src2) noexcept {
 template<typename T>
 void
 Core<T>::generateFault(Ordinal faultCode) noexcept {
-    /// @todo implement
+    static_cast<T*>(this)->generateFault_impl(faultCode);
 }
 
 template<typename T>
@@ -3064,13 +3061,6 @@ Core<T>::performSelfTest() noexcept {
             auto rs2 = maker(converter(src1), converter(src2), converter(dest));
             doIt(dest, converter(src1), converter(src2));
             if (converter(dest) != rs2) {
-                Serial.print(F("FAILURE, operation: "));
-                Serial.print(name);
-                Serial.print(F(", want: 0x"));
-                Serial.print(rs2, HEX);
-                Serial.print(F(", got: 0x"));
-                Serial.print(converter(dest), HEX);
-                Serial.println();
                 return false;
             }
             return true;
@@ -3161,7 +3151,7 @@ Core<T>::performSelfTest() noexcept {
             (makeOrdinalOperation([](Ordinal src1, Ordinal src2, Ordinal dest) { return ::modify(src1, src2, dest); },
                                   [this](auto& dest, auto src1, auto src2) { return modify(dest, src1, src2); },
                                   F("modify")))
-                );
+                ) && static_cast<T*>(this)->runExtendedSelfTests();
 }
 
 #endif // end SIM5_CORE_H__
