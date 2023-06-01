@@ -169,22 +169,25 @@ bool MegaboardCore::runExtendedSelfTests() noexcept {
     return true;
 }
 
-void MegaboardCore::generateFault_impl(Ordinal faultCode) noexcept {
+void 
+MegaboardCore::generateFault_impl(Ordinal faultCode) noexcept {
 
 }
 
-void MegaboardCore::assertFailureState_impl() noexcept {
+void 
+MegaboardCore::assertFailureState_impl() noexcept {
     digitalWrite(FAILPIN, LOW);
 }
 
-void MegaboardCore::deassertFailureState_impl() noexcept {
+void 
+MegaboardCore::deassertFailureState_impl() noexcept {
     digitalWrite(FAILPIN, HIGH);
 }
 
-
 void
 MegaboardCore::setBankRegisters(Address address) const noexcept {
-    digitalWrite(Address15, address & 0x0000'8000 ? HIGH : LOW);
+    // the EBI will mask out the value automatically
+    PORTC = static_cast<uint8_t>(address >> 8);
     PORTF = static_cast<uint8_t>(address >> 16);
     PORTK = static_cast<uint8_t>(address >> 24);
 }
