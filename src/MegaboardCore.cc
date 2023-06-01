@@ -63,7 +63,7 @@ MegaboardCore::synchronizeFaults() {
 
 void 
 MegaboardCore::flushRegisters() {
-
+    // no need to flush registers since we aren't caching them!
 }
 
 bool 
@@ -73,7 +73,7 @@ MegaboardCore::haveAvailableRegisterSet() noexcept {
 
 void 
 MegaboardCore::makeNewRegisterFrame() noexcept {
-
+    // making a new register frame is not necessary for this implementation
 }
 
 void 
@@ -94,7 +94,6 @@ MegaboardCore::busLock() noexcept {
 void 
 MegaboardCore::busUnlock() noexcept {
     digitalWrite(LOCKPIN, HIGH);
-
 }
 
 Ordinal 
@@ -139,33 +138,39 @@ MegaboardCore::store_impl(Address address, Ordinal value, TreatAsOrdinal) noexce
     memoryAddress<decltype(value)>(address) = value;
 }
 
-void MegaboardCore::store_impl(Address address, Integer value, TreatAsInteger) noexcept {
+void
+MegaboardCore::store_impl(Address address, Integer value, TreatAsInteger) noexcept {
     setBankRegisters(address);
     memoryAddress<decltype(value)>(address) = value;
 }
 
-void MegaboardCore::store_impl(Address address, ShortOrdinal value, TreatAsShortOrdinal) noexcept {
+void
+MegaboardCore::store_impl(Address address, ShortOrdinal value, TreatAsShortOrdinal) noexcept {
     setBankRegisters(address);
     memoryAddress<decltype(value)>(address) = value;
 
 }
 
-void MegaboardCore::store_impl(Address address, ShortInteger value, TreatAsShortInteger) noexcept {
+void
+MegaboardCore::store_impl(Address address, ShortInteger value, TreatAsShortInteger) noexcept {
     setBankRegisters(address);
     memoryAddress<decltype(value)>(address) = value;
 }
 
-void MegaboardCore::store_impl(Address address, ByteOrdinal value, TreatAsByteOrdinal) noexcept {
+void
+MegaboardCore::store_impl(Address address, ByteOrdinal value, TreatAsByteOrdinal) noexcept {
     setBankRegisters(address);
     memoryAddress<decltype(value)>(address) = value;
 }
 
-void MegaboardCore::store_impl(Address address, ByteInteger value, TreatAsByteInteger) noexcept {
+void
+MegaboardCore::store_impl(Address address, ByteInteger value, TreatAsByteInteger) noexcept {
     setBankRegisters(address);
     memoryAddress<decltype(value)>(address) = value;
 }
 
-bool MegaboardCore::runExtendedSelfTests() noexcept {
+bool 
+MegaboardCore::runExtendedSelfTests() noexcept {
     return true;
 }
 

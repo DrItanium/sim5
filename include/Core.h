@@ -934,11 +934,18 @@ class RegisterBlock32 {
     private:
         Register registers_[32];
 };
+constexpr Ordinal getSALIGNParameter() noexcept {
+#ifdef SALIGN960
+    return SALIGN960;
+#else
+    return DEFAULT_SALIGN;
+#endif
+}
 
-template<typename T, Ordinal S = DEFAULT_SALIGN>
+template<typename T>
 class Core {
     public:
-        static constexpr Ordinal SALIGN = S;
+        static constexpr Ordinal SALIGN = getSALIGNParameter();
         static constexpr Ordinal C = (SALIGN * 16) - 1;
         static constexpr Ordinal NotC = ~C;
 
@@ -1475,32 +1482,32 @@ class Core {
         bool advanceInstruction_ = false;
 };
 
-template<typename T, Ordinal S>
+template<typename T>
 void 
-Core<T, S>::mulo(Register& regDest, Ordinal src1o, Ordinal src2o) noexcept {
+Core<T>::mulo(Register& regDest, Ordinal src1o, Ordinal src2o) noexcept {
     mult<Ordinal>(regDest, src1o, src2o, TreatAsOrdinal{});
 }
 
-template<typename T, Ordinal S>
+template<typename T>
 void 
-Core<T, S>::muli(Register& regDest, Integer src1o, Integer src2o) noexcept {
+Core<T>::muli(Register& regDest, Integer src1o, Integer src2o) noexcept {
     mult<Integer>(regDest, src1o, src2o, TreatAsInteger{});
 }
-template<typename T, Ordinal S>
+template<typename T>
 void 
-Core<T, S>::modify(Register& regDest, Ordinal src1o, Ordinal src2o) noexcept {
+Core<T>::modify(Register& regDest, Ordinal src1o, Ordinal src2o) noexcept {
     regDest.setValue<Ordinal>(::modify(src1o, src2o, regDest.getValue<Ordinal>()));
 }
-template<typename T, Ordinal S>
+template<typename T>
 void 
-Core<T, S>::extract(Register& regDest, Ordinal bitpos, Ordinal len) noexcept {
+Core<T>::extract(Register& regDest, Ordinal bitpos, Ordinal len) noexcept {
     // taken from the Hx manual as it isn't insane
     auto actualBitpos = bitpos > 32 ? 32 : bitpos;
     regDest.setValue<Ordinal>((static_cast<Ordinal>(regDest) >> actualBitpos) & ~(0xFFFF'FFFF << len));
 }
-template<typename T, Ordinal S>
+template<typename T>
 const Register& 
-Core<T, S>::getSrc1Register(TreatAsREG) const noexcept {
+Core<T>::getSrc1Register(TreatAsREG) const noexcept {
     if (instruction_.reg.m1) {
         /// @todo what to do if s1 is also set?
         return constants_.get(instruction_.reg.src1);
@@ -1510,9 +1517,9 @@ Core<T, S>::getSrc1Register(TreatAsREG) const noexcept {
         return getGPR(instruction_.reg.src1);
     }
 }
-template<typename T, Ordinal S>
+template<typename T>
 const Register& 
-Core<T, S>::getSrc2Register(TreatAsREG) const noexcept {
+Core<T>::getSrc2Register(TreatAsREG) const noexcept {
     if (instruction_.reg.m2) {
         /// @todo what to do if s1 is also set?
         return constants_.get(instruction_.reg.src2);
@@ -1522,9 +1529,9 @@ Core<T, S>::getSrc2Register(TreatAsREG) const noexcept {
         return getGPR(instruction_.reg.src2);
     }
 }
-template<typename T, Ordinal S>
+template<typename T>
 Ordinal 
-Core<T, S>::unpackSrc1(TreatAsOrdinal, TreatAsREG) noexcept {
+Core<T>::unpackSrc1(TreatAsOrdinal, TreatAsREG) noexcept {
     if (instruction_.reg.m1) {
         /// @todo what to do if s1 is also set?
         return constants_.getValue<Ordinal>(instruction_.reg.src1);
@@ -1534,9 +1541,9 @@ Core<T, S>::unpackSrc1(TreatAsOrdinal, TreatAsREG) noexcept {
         return getGPRValue(instruction_.reg.src1, TreatAsOrdinal{});
     }
 }
-template<typename T, Ordinal S>
+template<typename T>
 Ordinal 
-Core<T, S>::unpackSrc1(byte offset, TreatAsOrdinal, TreatAsREG) noexcept {
+Core<T>::unpackSrc1(byte offset, TreatAsOrdinal, TreatAsREG) noexcept {
     if (instruction_.reg.m1) {
         // literals should always return zero if offset is greater than zero
         return offset == 0 ? constants_.getValue<Ordinal>(instruction_.reg.src1) : 0;
@@ -1546,9 +1553,9 @@ Core<T, S>::unpackSrc1(byte offset, TreatAsOrdinal, TreatAsREG) noexcept {
         return getGPRValue(instruction_.reg.src1, offset, TreatAsOrdinal{});
     }
 }
-template<typename T, Ordinal S>
+template<typename T>
 Integer 
-Core<T, S>::unpackSrc1(TreatAsInteger, TreatAsREG) noexcept {
+Core<T>::unpackSrc1(TreatAsInteger, TreatAsREG) noexcept {
     if (instruction_.reg.m1) {
         return constants_.getValue<Integer>(instruction_.reg.src1);
     } else if (instruction_.reg.s1) {
@@ -1557,9 +1564,9 @@ Core<T, S>::unpackSrc1(TreatAsInteger, TreatAsREG) noexcept {
         return getGPRValue(instruction_.reg.src1, TreatAsInteger{});
     }
 }
-template<typename T, Ordinal S>
+template<typename T>
 Ordinal 
-Core<T, S>::unpackSrc2(TreatAsOrdinal, TreatAsREG) noexcept {
+Core<T>::unpackSrc2(TreatAsOrdinal, TreatAsREG) noexcept {
     if (instruction_.reg.m2) {
         return constants_.getValue<Ordinal>(instruction_.reg.src2);
     } else if (instruction_.reg.s2) {
@@ -1568,9 +1575,9 @@ Core<T, S>::unpackSrc2(TreatAsOrdinal, TreatAsREG) noexcept {
         return getGPRValue(instruction_.reg.src2, TreatAsOrdinal{});
     }
 }
-template<typename T, Ordinal S>
+template<typename T>
 Integer 
-Core<T, S>::unpackSrc2(TreatAsInteger, TreatAsREG) noexcept {
+Core<T>::unpackSrc2(TreatAsInteger, TreatAsREG) noexcept {
     if (instruction_.reg.m2) {
         return constants_.getValue<Integer>(instruction_.reg.src2);
     } else if (instruction_.reg.s2) {
@@ -1580,9 +1587,9 @@ Core<T, S>::unpackSrc2(TreatAsInteger, TreatAsREG) noexcept {
     }
 }
 
-template<typename T, Ordinal S>
+template<typename T>
 void
-Core<T, S>::scanbyte(Ordinal src2, Ordinal src1) noexcept {
+Core<T>::scanbyte(Ordinal src2, Ordinal src1) noexcept {
     if (Register s2(src2), s1(src1); 
             s1.bytes[0] == s2.bytes[0] ||
             s1.bytes[1] == s2.bytes[1] ||
@@ -1593,9 +1600,9 @@ Core<T, S>::scanbyte(Ordinal src2, Ordinal src1) noexcept {
         ac_.arith.conditionCode = 0;
     }
 }
-template<typename T, Ordinal S>
+template<typename T>
 void
-Core<T, S>::arithmeticWithCarryGeneric(Ordinal result, bool src2MSB, bool src1MSB, bool destMSB) noexcept {
+Core<T>::arithmeticWithCarryGeneric(Ordinal result, bool src2MSB, bool src1MSB, bool destMSB) noexcept {
     // set the carry bit
     ac_.arith.conditionCode = 0;
     // set the overflow bit
@@ -1611,16 +1618,16 @@ Core<T, S>::arithmeticWithCarryGeneric(Ordinal result, bool src2MSB, bool src1MS
     }
 }
 
-template<typename T, Ordinal S>
+template<typename T>
 void
-Core<T, S>::checkForPendingInterrupts() noexcept {
+Core<T>::checkForPendingInterrupts() noexcept {
     static_cast<T*>(this)->checkForPendingInterrupts_impl();
 }
 
 
-template<typename T, Ordinal S>
+template<typename T>
 void
-Core<T, S>::emul(LongRegister& dest, Ordinal src1, Ordinal src2) noexcept {
+Core<T>::emul(LongRegister& dest, Ordinal src1, Ordinal src2) noexcept {
     if (!aligned(instruction_.reg.srcDest, TreatAsLongRegister{})) {
         /// Since this is unaligned and the destination will always be aligned,
         /// we just do an expensive access of the two unaligned registers
@@ -1635,9 +1642,9 @@ Core<T, S>::emul(LongRegister& dest, Ordinal src1, Ordinal src2) noexcept {
     }
 }
 
-template<typename T, Ordinal S>
+template<typename T>
 void
-Core<T, S>::ediv(LongRegister& dest, Ordinal src1, const LongRegister& src2) noexcept {
+Core<T>::ediv(LongRegister& dest, Ordinal src1, const LongRegister& src2) noexcept {
     if (!aligned(instruction_.reg.srcDest, TreatAsLongRegister{}) || !aligned(instruction_.reg.src2, TreatAsLongRegister{})) {
         /// Since this is unaligned and the destination will always be aligned,
         /// we just do an expensive access of the two unaligned registers
@@ -1658,21 +1665,21 @@ Core<T, S>::ediv(LongRegister& dest, Ordinal src1, const LongRegister& src2) noe
     }
 }
 
-template<typename T, Ordinal S>
+template<typename T>
 Ordinal
-Core<T, S>::getSystemProcedureTableBase() const noexcept {
+Core<T>::getSystemProcedureTableBase() const noexcept {
     return load(getSystemAddressTableBase() + 120, TreatAsOrdinal{});
 }
 
-template<typename T, Ordinal S>
+template<typename T>
 Ordinal
-Core<T, S>::getSupervisorStackPointer() const noexcept {
+Core<T>::getSupervisorStackPointer() const noexcept {
     return load((getSystemProcedureTableBase() + 12), TreatAsOrdinal{});
 }
 
-template<typename T, Ordinal S>
+template<typename T>
 Ordinal 
-Core<T, S>::unpackSrc1(TreatAsOrdinal, TreatAsCOBR) noexcept {
+Core<T>::unpackSrc1(TreatAsOrdinal, TreatAsCOBR) noexcept {
     if (instruction_.cobr.m1) {
         // treat src1 as a literal
         return instruction_.cobr.src1;
@@ -1680,9 +1687,9 @@ Core<T, S>::unpackSrc1(TreatAsOrdinal, TreatAsCOBR) noexcept {
         return getGPRValue(instruction_.cobr.src1, TreatAsOrdinal{});
     }
 }
-template<typename T, Ordinal S>
+template<typename T>
 Ordinal
-Core<T, S>::unpackSrc2(TreatAsOrdinal, TreatAsCOBR) noexcept {
+Core<T>::unpackSrc2(TreatAsOrdinal, TreatAsCOBR) noexcept {
     if (instruction_.cobr.s2) {
         // access the contents of the sfrs
         // at this point it is just a simple extra set of 32 registers
@@ -1691,9 +1698,9 @@ Core<T, S>::unpackSrc2(TreatAsOrdinal, TreatAsCOBR) noexcept {
         return getGPRValue(instruction_.cobr.src2, TreatAsOrdinal{});
     }
 }
-template<typename T, Ordinal S>
+template<typename T>
 Integer
-Core<T, S>::unpackSrc1(TreatAsInteger, TreatAsCOBR) noexcept {
+Core<T>::unpackSrc1(TreatAsInteger, TreatAsCOBR) noexcept {
     if (instruction_.cobr.m1) {
         // treat src1 as a literal
         return instruction_.cobr.src1;
@@ -1701,9 +1708,9 @@ Core<T, S>::unpackSrc1(TreatAsInteger, TreatAsCOBR) noexcept {
         return getGPRValue(instruction_.cobr.src1, TreatAsInteger{});
     }
 }
-template<typename T, Ordinal S>
+template<typename T>
 Integer
-Core<T, S>::unpackSrc2(TreatAsInteger, TreatAsCOBR) noexcept {
+Core<T>::unpackSrc2(TreatAsInteger, TreatAsCOBR) noexcept {
     if (instruction_.cobr.s2) {
         // access the contents of the sfrs
         // at this point it is just a simple extra set of 32 registers
@@ -1712,60 +1719,60 @@ Core<T, S>::unpackSrc2(TreatAsInteger, TreatAsCOBR) noexcept {
         return getGPRValue(instruction_.cobr.src2, TreatAsInteger{});
     }
 }
-template<typename T, Ordinal S>
+template<typename T>
 Register& 
-Core<T, S>::getSFR(byte index) noexcept {
+Core<T>::getSFR(byte index) noexcept {
     return sfrs_.get(index);
 }
-template<typename T, Ordinal S>
+template<typename T>
 Register& 
-Core<T, S>::getSFR(byte index, byte offset) noexcept {
+Core<T>::getSFR(byte index, byte offset) noexcept {
     return getSFR((index + offset) & 0b11111);
 }
-template<typename T, Ordinal S>
+template<typename T>
 const Register& 
-Core<T, S>::getSFR(byte index) const noexcept {
+Core<T>::getSFR(byte index) const noexcept {
     return sfrs_.get(index);
 }
-template<typename T, Ordinal S>
+template<typename T>
 const Register& 
-Core<T, S>::getSFR(byte index, byte offset) const noexcept {
+Core<T>::getSFR(byte index, byte offset) const noexcept {
     return getSFR((index + offset) & 0b11111);
 }
-template<typename T, Ordinal S>
+template<typename T>
 void
-Core<T, S>::syncf() noexcept {
+Core<T>::syncf() noexcept {
     // Wait for all faults to be generated that are associated with any prior
     // uncompleted instructions
     /// @todo implement if it makes sense since we don't have a pipeline
     static_cast<T*>(this)->synchronizeFaults();
 }
-template<typename T, Ordinal S>
+template<typename T>
 void
-Core<T, S>::flushreg() noexcept {
+Core<T>::flushreg() noexcept {
     /// @todo implement if it makes sense since we aren't using register frames
     static_cast<T*>(this)->flushRegisters();
 }
-template<typename T, Ordinal S>
+template<typename T>
 void
-Core<T, S>::mark() noexcept {
+Core<T>::mark() noexcept {
     nextInstruction();
     if (pc_.processControls.traceEnable && tc_.trace.breakpointTraceMode) {
         generateFault(MarkTraceFault);
     }
 }
-template<typename T, Ordinal S>
+template<typename T>
 void
-Core<T, S>::fmark() noexcept {
+Core<T>::fmark() noexcept {
     // advance first so that our return value will always be correct
     nextInstruction();
     if (pc_.processControls.traceEnable) {
         generateFault(MarkTraceFault);
     }
 }
-template<typename T, Ordinal S>
+template<typename T>
 void
-Core<T, S>::restoreStandardFrame() noexcept {
+Core<T>::restoreStandardFrame() noexcept {
     // need to leave the current call
     moveGPR(FPIndex, PFPIndex, TreatAsOrdinal{});
     // remember that the lowest 6 bits are ignored so it is important to mask
@@ -1775,9 +1782,9 @@ Core<T, S>::restoreStandardFrame() noexcept {
     setIP(getGPRValue(RIPIndex, TreatAsOrdinal{}), TreatAsOrdinal{});
     advanceInstruction_ = false;
 }
-template<typename T, Ordinal S>
+template<typename T>
 void
-Core<T, S>::ret() {
+Core<T>::ret() {
     syncf();
     auto& pfp = getGPR(PFPIndex);
     switch (pfp.pfp.rt) {
@@ -1833,9 +1840,9 @@ Core<T, S>::ret() {
     }
 }
 
-template<typename T, Ordinal S>
+template<typename T>
 Ordinal
-Core<T, S>::computeAddress() noexcept {
+Core<T>::computeAddress() noexcept {
     if (instruction_.isMEMA()) {
         Ordinal result = instruction_.mem.offset;
         if (instruction_.mema.action) {
@@ -1873,23 +1880,23 @@ Core<T, S>::computeAddress() noexcept {
         }
     }
 }
-template<typename T, Ordinal S>
+template<typename T>
 void
-Core<T, S>::storeBlock(Ordinal baseAddress, byte baseRegister, byte count) noexcept {
+Core<T>::storeBlock(Ordinal baseAddress, byte baseRegister, byte count) noexcept {
     for (byte i = 0; i < count; ++i, baseAddress += 4) {
         store(baseAddress, getGPRValue(baseRegister, i, TreatAsOrdinal{}), TreatAsOrdinal{});
     }
 }
-template<typename T, Ordinal S>
+template<typename T>
 void
-Core<T, S>::loadBlock(Ordinal baseAddress, byte baseRegister, byte count) noexcept {
+Core<T>::loadBlock(Ordinal baseAddress, byte baseRegister, byte count) noexcept {
     for (byte i = 0; i < count; ++i, baseAddress += 4) {
         setGPR(baseRegister, i, load(baseAddress, TreatAsOrdinal{}), TreatAsOrdinal{});
     }
 }
-template<typename T, Ordinal S>
+template<typename T>
 void 
-Core<T, S>::ldl(Address effectiveAddress, LongRegister& destination) noexcept {
+Core<T>::ldl(Address effectiveAddress, LongRegister& destination) noexcept {
     if (!aligned(instruction_.mem.srcDest, TreatAsLongRegister{})) {
         generateFault(InvalidOperandFault);
         /// @todo perform an unaligned load into registers
@@ -1901,9 +1908,9 @@ Core<T, S>::ldl(Address effectiveAddress, LongRegister& destination) noexcept {
     // the instruction is invalid so we should complete after we are done
 }
 
-template<typename T, Ordinal S>
+template<typename T>
 void
-Core<T, S>::stl(Address effectiveAddress, const LongRegister& source) noexcept {
+Core<T>::stl(Address effectiveAddress, const LongRegister& source) noexcept {
     if (!aligned(instruction_.mem.srcDest, TreatAsLongRegister{})) {
         generateFault(InvalidOperandFault);
         /// @todo perform an unaligned load into registers
@@ -1914,9 +1921,9 @@ Core<T, S>::stl(Address effectiveAddress, const LongRegister& source) noexcept {
     }
     // the instruction is invalid so we should complete after we are done
 }
-template<typename T, Ordinal S>
+template<typename T>
 void
-Core<T, S>::ldt(Address effectiveAddress, TripleRegister& destination) noexcept {
+Core<T>::ldt(Address effectiveAddress, TripleRegister& destination) noexcept {
     if (!aligned(instruction_.mem.srcDest, TreatAsTripleRegister{})) {
         generateFault(InvalidOperandFault);
         /// @todo perform an unaligned load into registers
@@ -1929,9 +1936,9 @@ Core<T, S>::ldt(Address effectiveAddress, TripleRegister& destination) noexcept 
     // the instruction is invalid so we should complete after we are done
 }
 
-template<typename T, Ordinal S>
+template<typename T>
 void
-Core<T, S>::stt(Address effectiveAddress, const TripleRegister& source) noexcept {
+Core<T>::stt(Address effectiveAddress, const TripleRegister& source) noexcept {
     if (!aligned(instruction_.mem.srcDest, TreatAsTripleRegister{})) {
         generateFault(InvalidOperandFault);
     } else {
@@ -1943,9 +1950,9 @@ Core<T, S>::stt(Address effectiveAddress, const TripleRegister& source) noexcept
     // the instruction is invalid so we should complete after we are done
 }
 
-template<typename T, Ordinal S>
+template<typename T>
 void
-Core<T, S>::ldq(Address effectiveAddress, QuadRegister& destination) noexcept {
+Core<T>::ldq(Address effectiveAddress, QuadRegister& destination) noexcept {
     if (!aligned(instruction_.mem.srcDest, TreatAsQuadRegister{})) {
         generateFault(InvalidOperandFault);
         /// @todo perform an unaligned load into registers
@@ -1959,9 +1966,9 @@ Core<T, S>::ldq(Address effectiveAddress, QuadRegister& destination) noexcept {
     // the instruction is invalid so we should complete after we are done
 }
 
-template<typename T, Ordinal S>
+template<typename T>
 void
-Core<T, S>::stq(Address effectiveAddress, const QuadRegister& source) noexcept {
+Core<T>::stq(Address effectiveAddress, const QuadRegister& source) noexcept {
     if (!aligned(instruction_.mem.srcDest, TreatAsQuadRegister{})) {
         generateFault(InvalidOperandFault);
     } else {
@@ -1973,67 +1980,67 @@ Core<T, S>::stq(Address effectiveAddress, const QuadRegister& source) noexcept {
     }
     // the instruction is invalid so we should complete after we are done
 }
-template<typename T, Ordinal S>
+template<typename T>
 void
-Core<T, S>::saveReturnAddress(Register& linkRegister) noexcept {
+Core<T>::saveReturnAddress(Register& linkRegister) noexcept {
     linkRegister.setValue<Ordinal>(ip_.getValue(TreatAsOrdinal{}) + instructionLength_);
 }
-template<typename T, Ordinal S>
+template<typename T>
 void
-Core<T, S>::saveReturnAddress(byte linkRegister) noexcept {
+Core<T>::saveReturnAddress(byte linkRegister) noexcept {
     setGPR(linkRegister, ip_.getValue(TreatAsOrdinal{}) + instructionLength_, TreatAsOrdinal{});
 }
-template<typename T, Ordinal S>
+template<typename T>
 void 
-Core<T, S>::balx(byte linkRegister, Ordinal branchTo) noexcept {
+Core<T>::balx(byte linkRegister, Ordinal branchTo) noexcept {
     saveReturnAddress(linkRegister);
     setIP(branchTo, TreatAsOrdinal{});
 }
-template<typename T, Ordinal S>
+template<typename T>
 void 
-Core<T, S>::balx(Register& linkRegister, Ordinal branchTo) noexcept {
+Core<T>::balx(Register& linkRegister, Ordinal branchTo) noexcept {
     saveReturnAddress(linkRegister);
     setIP(branchTo, TreatAsOrdinal{});
 }
-template<typename T, Ordinal S>
+template<typename T>
 bool 
-Core<T, S>::registerSetAvailable() noexcept {
+Core<T>::registerSetAvailable() noexcept {
     return static_cast<T*>(this)->haveAvailableRegisterSet();
 }
-template<typename T, Ordinal S>
+template<typename T>
 void
-Core<T, S>::allocateNewRegisterFrame() noexcept {
+Core<T>::allocateNewRegisterFrame() noexcept {
     static_cast<T*>(this)->makeNewRegisterFrame();
 }
-template<typename T, Ordinal S>
+template<typename T>
 void 
-Core<T, S>::saveRegisterSet(Ordinal fp) noexcept {
+Core<T>::saveRegisterSet(Ordinal fp) noexcept {
     // save the "next" register frame to main memory to reclaim it
     static_cast<T*>(this)->saveRegisters(fp);
 }
-template<typename T, Ordinal S>
+template<typename T>
 void
-Core<T, S>::restoreRegisterSet(Ordinal fp) noexcept {
+Core<T>::restoreRegisterSet(Ordinal fp) noexcept {
     static_cast<T*>(this)->restoreRegisters(fp);
 }
-template<typename T, Ordinal S>
+template<typename T>
 void 
-Core<T, S>::enterCall(Ordinal fp) noexcept {
+Core<T>::enterCall(Ordinal fp) noexcept {
     if (!registerSetAvailable()) {
         saveRegisterSet(fp);
     }
     allocateNewRegisterFrame();
 }
-template<typename T, Ordinal S>
+template<typename T>
 void
-Core<T, S>::setupNewFrameInternals(Ordinal fp, Ordinal temp) noexcept {
+Core<T>::setupNewFrameInternals(Ordinal fp, Ordinal temp) noexcept {
     setGPR(PFPIndex, fp, TreatAsOrdinal{});
     setGPR(FPIndex, temp, TreatAsOrdinal{});
     setStackPointer(temp + 64, TreatAsOrdinal{});
 }
-template<typename T, Ordinal S>
+template<typename T>
 void
-Core<T, S>::callx(Address effectiveAddress) noexcept {
+Core<T>::callx(Address effectiveAddress) noexcept {
     // wait for any uncompleted instructions to finish
     auto temp = getNextFrameBase(); // round stack pointer to next boundary
     auto fp = getGPRValue(FPIndex, TreatAsOrdinal{});
@@ -2042,9 +2049,9 @@ Core<T, S>::callx(Address effectiveAddress) noexcept {
     setupNewFrameInternals(fp, temp);
 }
 
-template<typename T, Ordinal S>
+template<typename T>
 void 
-Core<T, S>::call(Integer displacement) {
+Core<T>::call(Integer displacement) {
     // wait for any uncompleted instructions to finish
     auto temp = getNextFrameBase(); // round stack pointer to next boundary
     auto fp = getGPRValue(FPIndex, TreatAsOrdinal{});
@@ -2053,9 +2060,9 @@ Core<T, S>::call(Integer displacement) {
     branch(displacement);
     setupNewFrameInternals(fp, temp);
 }
-template<typename T, Ordinal S>
+template<typename T>
 void
-Core<T, S>::calls(Ordinal src1) noexcept {
+Core<T>::calls(Ordinal src1) noexcept {
     if (auto targ = src1; targ > 259) {
         generateFault(ProtectionLengthFault);
     } else {
@@ -2087,9 +2094,9 @@ Core<T, S>::calls(Ordinal src1) noexcept {
         setStackPointer(temp + 64, TreatAsOrdinal{});
     }
 }
-template<typename T, Ordinal S>
+template<typename T>
 void
-Core<T, S>::performRegisterTransfer(byte mask, byte count) noexcept {
+Core<T>::performRegisterTransfer(byte mask, byte count) noexcept {
     // perform the register transfer first and then check to see if we were
     // offset at all
     for (byte i = 0; i < count; ++i) {
@@ -2101,30 +2108,30 @@ Core<T, S>::performRegisterTransfer(byte mask, byte count) noexcept {
     }
 }
 
-template<typename T, Ordinal S>
+template<typename T>
 void
-Core<T, S>::lockBus() noexcept {
+Core<T>::lockBus() noexcept {
     static_cast<T*>(this)->busLock();
 }
-template<typename T, Ordinal S>
+template<typename T>
 void
-Core<T, S>::unlockBus() noexcept {
+Core<T>::unlockBus() noexcept {
     static_cast<T*>(this)->busUnlock();
 }
-template<typename T, Ordinal S>
+template<typename T>
 void
-Core<T, S>::signalBootFailure() noexcept {
+Core<T>::signalBootFailure() noexcept {
     static_cast<T*>(this)->raiseBootFailure();
 }
-template<typename T, Ordinal S>
+template<typename T>
 void
-Core<T, S>::branch(Integer displacement) noexcept {
+Core<T>::branch(Integer displacement) noexcept {
     ip_.i += displacement;
     advanceInstruction_ = false;
 }
-template<typename T, Ordinal S>
+template<typename T>
 void
-Core<T, S>::branchConditional(bool condition, Integer displacement) noexcept {
+Core<T>::branchConditional(bool condition, Integer displacement) noexcept {
     if (condition) {
         branch(displacement);
     }
@@ -2135,25 +2142,25 @@ Core<T, S>::branchConditional(bool condition, Integer displacement) noexcept {
  * instruction encoding; returns true if the value returned is not zero
  * @param mask The mask to apply to see if we get a value back
  */
-template<typename T, Ordinal S>
+template<typename T>
 bool
-Core<T, S>::getMaskedConditionCode(uint8_t mask) const noexcept {
+Core<T>::getMaskedConditionCode(uint8_t mask) const noexcept {
     return (ac_.getConditionCode() & mask) != 0;
 }
 
-template<typename T, Ordinal S>
+template<typename T>
 bool
-Core<T, S>::conditionCodeEqualsMask(uint8_t mask) const noexcept {
+Core<T>::conditionCodeEqualsMask(uint8_t mask) const noexcept {
     return ac_.getConditionCode() == mask;
 }
-template<typename T, Ordinal S>
+template<typename T>
 bool
-Core<T, S>::fullConditionCodeCheck() noexcept {
+Core<T>::fullConditionCodeCheck() noexcept {
     return fullConditionCodeCheck(instruction_.getInstructionMask());
 }
-template<typename T, Ordinal S>
+template<typename T>
 bool
-Core<T, S>::fullConditionCodeCheck(uint8_t mask) noexcept {
+Core<T>::fullConditionCodeCheck(uint8_t mask) noexcept {
     // the second condition handles the case where we are looking at unordered
     // output where it is only true if it is equal to zero. So if it turns out
     // that the condition code is zero and the mask is the unordered kind then
@@ -2162,17 +2169,17 @@ Core<T, S>::fullConditionCodeCheck(uint8_t mask) noexcept {
     // masked condition code will be non zero.
     return getMaskedConditionCode(mask) || conditionCodeEqualsMask(mask);
 }
-template<typename T, Ordinal S>
+template<typename T>
 void
-Core<T, S>::faultGeneric() noexcept {
+Core<T>::faultGeneric() noexcept {
     nextInstruction();
     if (fullConditionCodeCheck()) {
         generateFault(ConstraintRangeFault);
     }
 }
-template<typename T, Ordinal S>
+template<typename T>
 void
-Core<T, S>::cycle() noexcept {
+Core<T>::cycle() noexcept {
     instruction_.setValue(load(ip_.a, TreatAsOrdinal{}), TreatAsOrdinal{});
     instructionLength_ = 4;
     advanceInstruction_ = true;
@@ -2214,9 +2221,9 @@ Core<T, S>::cycle() noexcept {
 }
 
 
-template<typename T, Ordinal S>
+template<typename T>
 void
-Core<T, S>::begin() noexcept {
+Core<T>::begin() noexcept {
     // so we need to do any sort of processor setup here
     ip_.clear();
     for (int i = 0; i < 32; ++i) {
@@ -2227,9 +2234,9 @@ Core<T, S>::begin() noexcept {
     static_cast<T*>(this)->begin_impl();
 }
 
-template<typename T, Ordinal S>
+template<typename T>
 void 
-Core<T, S>::synld(Register& dest, Ordinal src) noexcept {
+Core<T>::synld(Register& dest, Ordinal src) noexcept {
     ac_.arith.conditionCode = 0b000;
     if (auto tempa = maskValue<decltype(src), 0xFFFF'FFFC>(src); tempa == 0xFF00'0004) {
         // interrupt control register needs to be read through this
@@ -2242,9 +2249,9 @@ Core<T, S>::synld(Register& dest, Ordinal src) noexcept {
         dest.setValue(load(tempa, TreatAsOrdinal{}), TreatAsOrdinal{});
     }
 }
-template<typename T, Ordinal S>
+template<typename T>
 void 
-Core<T, S>::synmov(const Register& dest, Ordinal src) noexcept {
+Core<T>::synmov(const Register& dest, Ordinal src) noexcept {
     ac_.arith.conditionCode = 0b000;
     if (auto tempa = maskValue<Ordinal, 0xFFFF'FFFC>(dest.getValue(TreatAsOrdinal{})); tempa == 0xFF00'0004) {
         ictl_ = load(src, TreatAsOrdinal{});
@@ -2256,9 +2263,9 @@ Core<T, S>::synmov(const Register& dest, Ordinal src) noexcept {
         ac_.arith.conditionCode = 0b010;
     }
 }
-template<typename T, Ordinal S>
+template<typename T>
 void 
-Core<T, S>::synmovl(const Register& dest, Ordinal src) noexcept {
+Core<T>::synmovl(const Register& dest, Ordinal src) noexcept {
     ac_.arith.conditionCode = 0b000;
     auto tempa = maskValue<Ordinal, 0xFFFF'FFF8>(dest.getValue(TreatAsOrdinal{}));
     auto tempLower = load(src, TreatAsOrdinal{});
@@ -2268,9 +2275,9 @@ Core<T, S>::synmovl(const Register& dest, Ordinal src) noexcept {
     // wait for completion
     ac_.arith.conditionCode = 0b010;
 }
-template<typename T, Ordinal S>
+template<typename T>
 void 
-Core<T, S>::synmovq(const Register& dest, Ordinal src) noexcept {
+Core<T>::synmovq(const Register& dest, Ordinal src) noexcept {
 
     ac_.arith.conditionCode = 0b000;
     auto temp0 = load(src, TreatAsOrdinal{});
@@ -2290,45 +2297,45 @@ Core<T, S>::synmovq(const Register& dest, Ordinal src) noexcept {
     }
 }
 
-template<typename T, Ordinal S>
+template<typename T>
 void 
-Core<T, S>::performSelect(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+Core<T>::performSelect(Register& dest, Ordinal src1, Ordinal src2) noexcept {
     dest.setValue(fullConditionCodeCheck() ? src2 : src1, TreatAsOrdinal{});
 }
-template<typename T, Ordinal S>
+template<typename T>
 void
-Core<T, S>::performConditionalSubtract(Register& dest, Integer src1, Integer src2, TreatAsInteger) noexcept {
+Core<T>::performConditionalSubtract(Register& dest, Integer src1, Integer src2, TreatAsInteger) noexcept {
     if (fullConditionCodeCheck()) {
         subi(dest, src1, src2);
     }
 }
 
-template<typename T, Ordinal S>
+template<typename T>
 void
-Core<T, S>::performConditionalSubtract(Register& dest, Ordinal src1, Ordinal src2, TreatAsOrdinal) noexcept {
+Core<T>::performConditionalSubtract(Register& dest, Ordinal src1, Ordinal src2, TreatAsOrdinal) noexcept {
     if (fullConditionCodeCheck()) {
         subo(dest, src1, src2);
     }
 }
 
-template<typename T, Ordinal S>
+template<typename T>
 void
-Core<T, S>::performConditionalAdd(Register& dest, Integer src1, Integer src2, TreatAsInteger) noexcept {
+Core<T>::performConditionalAdd(Register& dest, Integer src1, Integer src2, TreatAsInteger) noexcept {
     if (fullConditionCodeCheck()) {
         addi(dest, src1, src2);
     }
 }
 
-template<typename T, Ordinal S>
+template<typename T>
 void
-Core<T, S>::performConditionalAdd(Register& dest, Ordinal src1, Ordinal src2, TreatAsOrdinal) noexcept {
+Core<T>::performConditionalAdd(Register& dest, Ordinal src1, Ordinal src2, TreatAsOrdinal) noexcept {
     if (fullConditionCodeCheck()) {
         addo(dest, src1, src2);
     }
 }
-template<typename T, Ordinal S>
+template<typename T>
 BootResult
-Core<T, S>::start() noexcept {
+Core<T>::start() noexcept {
     assertFailureState();
     if (!performSelfTest()) {
         return BootResult::SelfTestFailure;
@@ -2373,84 +2380,84 @@ Core<T, S>::start() noexcept {
     }
 }
 
-template<typename T, Ordinal S>
+template<typename T>
 void
-Core<T, S>::assertFailureState() noexcept {
+Core<T>::assertFailureState() noexcept {
     static_cast<T*>(this)->assertFailureState_impl();
 }
 
-template<typename T, Ordinal S>
+template<typename T>
 void
-Core<T, S>::deassertFailureState() noexcept {
+Core<T>::deassertFailureState() noexcept {
     static_cast<T*>(this)->deassertFailureState_impl();
 }
-template<typename T, Ordinal S>
+template<typename T>
 void
-Core<T, S>::addi(Register& dest, Integer src1, Integer src2) noexcept {
+Core<T>::addi(Register& dest, Integer src1, Integer src2) noexcept {
     add<Integer>(dest, src1, src2, TreatAsInteger{});
     nextInstruction();
     /// @todo implement overflow detection and fault generation
 }
 
-template<typename T, Ordinal S>
+template<typename T>
 void
-Core<T, S>::addo(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+Core<T>::addo(Register& dest, Ordinal src1, Ordinal src2) noexcept {
     add<Ordinal>(dest, src1, src2, TreatAsOrdinal{});
 }
 
-template<typename T, Ordinal S>
+template<typename T>
 void
-Core<T, S>::generateFault(Ordinal faultCode) noexcept {
+Core<T>::generateFault(Ordinal faultCode) noexcept {
     static_cast<T*>(this)->generateFault_impl(faultCode);
 }
 
-template<typename T, Ordinal S>
+template<typename T>
 Ordinal
-Core<T, S>::getStackPointer() const noexcept {
+Core<T>::getStackPointer() const noexcept {
     return getGPRValue(SPIndex, TreatAsOrdinal{});
 }
-template<typename T, Ordinal S>
+template<typename T>
 void
-Core<T, S>::setStackPointer(Ordinal value, TreatAsOrdinal) noexcept {
+Core<T>::setStackPointer(Ordinal value, TreatAsOrdinal) noexcept {
     setGPR(SPIndex, value, TreatAsOrdinal{});
 }
-template<typename T, Ordinal S>
+template<typename T>
 Ordinal
-Core<T, S>::getNextFrameBase() const noexcept {
+Core<T>::getNextFrameBase() const noexcept {
     return (getStackPointer() + C) & NotC;
 }
 
-template<typename T, Ordinal S>
+template<typename T>
 void
-Core<T, S>::nextInstruction() noexcept {
+Core<T>::nextInstruction() noexcept {
     ip_.o += instructionLength_;
     advanceInstruction_ = false;
 }
 
-template<typename T, Ordinal S>
+template<typename T>
 void
-Core<T, S>::setIP(Ordinal value, TreatAsOrdinal) noexcept {
+Core<T>::setIP(Ordinal value, TreatAsOrdinal) noexcept {
     // when we set the ip during this instruction, we need to turn off the
     // automatic advancement!
     ip_.setValue<Ordinal>(value);
     advanceInstruction_ = false;
 }
-template<typename T, Ordinal S>
+template<typename T>
 void
-Core<T, S>::subi(Register& dest, Integer src1, Integer src2) noexcept {
+Core<T>::subi(Register& dest, Integer src1, Integer src2) noexcept {
     sub<Integer>(dest, src1, src2, TreatAsInteger{});
     nextInstruction();
     /// @todo implement overflow fault detection
 }
 
-template<typename T, Ordinal S>
+template<typename T>
 void
-Core<T, S>::subo(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+Core<T>::subo(Register& dest, Ordinal src1, Ordinal src2) noexcept {
     sub<Ordinal>(dest, src1, src2, TreatAsOrdinal{});
 }
-template<typename T, Ordinal S>
+template<typename T>
 void 
-Core<T, S>::processInstruction(Opcodes opcode, Integer displacement, TreatAsCTRL) noexcept {
+Core<T>::processInstruction(Opcodes opcode, Integer displacement, TreatAsCTRL) noexcept {
     switch (opcode) {
         case Opcodes::bal: // bal
             saveReturnAddress(LRIndex);
@@ -2491,9 +2498,9 @@ Core<T, S>::processInstruction(Opcodes opcode, Integer displacement, TreatAsCTRL
             break;
     }
 }
-template<typename T, Ordinal S>
+template<typename T>
 void
-Core<T, S>::processInstruction(Opcodes opcode, uint8_t mask, uint8_t src1, const Register& src2, int16_t displacement, TreatAsCOBR) noexcept {
+Core<T>::processInstruction(Opcodes opcode, uint8_t mask, uint8_t src1, const Register& src2, int16_t displacement, TreatAsCOBR) noexcept {
     switch(opcode) {
         case Opcodes::bbc:
             bbc(src1, src2, displacement);
@@ -2526,9 +2533,9 @@ Core<T, S>::processInstruction(Opcodes opcode, uint8_t mask, uint8_t src1, const
             break;
     }
 }
-template<typename T, Ordinal S>
+template<typename T>
 void 
-Core<T, S>::processInstruction(Opcodes opcode, uint8_t mask, Register& src1, const Register& src2, int16_t displacement, TreatAsCOBR) noexcept {
+Core<T>::processInstruction(Opcodes opcode, uint8_t mask, Register& src1, const Register& src2, int16_t displacement, TreatAsCOBR) noexcept {
     switch(opcode) {
         case Opcodes::bbc:
             bbc(src1, src2, displacement);
@@ -2569,9 +2576,9 @@ Core<T, S>::processInstruction(Opcodes opcode, uint8_t mask, Register& src1, con
             break;
     }
 }
-template<typename T, Ordinal S>
+template<typename T>
 void 
-Core<T, S>::processInstruction(Opcodes opcode, Register& srcDest, Address effectiveAddress, TreatAsMEM) noexcept {
+Core<T>::processInstruction(Opcodes opcode, Register& srcDest, Address effectiveAddress, TreatAsMEM) noexcept {
     switch (opcode) {
         case Opcodes::balx:
             balx(srcDest, effectiveAddress);
@@ -2646,9 +2653,9 @@ Core<T, S>::processInstruction(Opcodes opcode, Register& srcDest, Address effect
             break;
     }
 }
-template<typename T, Ordinal S>
+template<typename T>
 void 
-Core<T, S>::processInstruction(Opcodes opcode, Register& regDest, const Register& src1, const Register& src2, TreatAsREG) noexcept {
+Core<T>::processInstruction(Opcodes opcode, Register& regDest, const Register& src1, const Register& src2, TreatAsREG) noexcept {
     auto src2o = static_cast<Ordinal>(src2);
     auto src1o = static_cast<Ordinal>(src1);
     auto src2i = static_cast<Integer>(src2);
@@ -2925,9 +2932,9 @@ Core<T, S>::processInstruction(Opcodes opcode, Register& regDest, const Register
 }
 
 
-template<typename T, Ordinal S>
+template<typename T>
 void
-Core<T, S>::modpc(Register& regDest, Ordinal src1o, Ordinal src2o) noexcept {
+Core<T>::modpc(Register& regDest, Ordinal src1o, Ordinal src2o) noexcept {
     if (auto mask = src1o; mask != 0) {
         if (!pc_.inSupervisorMode()) {
             generateFault(TypeMismatchFault);
@@ -2941,29 +2948,29 @@ Core<T, S>::modpc(Register& regDest, Ordinal src1o, Ordinal src2o) noexcept {
         regDest.setValue<Ordinal>(pc_.getValue<Ordinal>());
     }
 }
-template<typename T, Ordinal S>
+template<typename T>
 void 
-Core<T, S>::modxc(Register& control, Register& dest, Ordinal src1, Ordinal src2) noexcept {
+Core<T>::modxc(Register& control, Register& dest, Ordinal src1, Ordinal src2) noexcept {
     dest.setValue<Ordinal>(control.modify(src1, src2));
 }
-template<typename T, Ordinal S>
+template<typename T>
 void 
-Core<T, S>::shlo(Register& srcDest, Ordinal src1, Ordinal src2) noexcept {
+Core<T>::shlo(Register& srcDest, Ordinal src1, Ordinal src2) noexcept {
     srcDest.setValue<Ordinal>(src1 < 32 ? src2 << src1 : 0);
 }
-template<typename T, Ordinal S>
+template<typename T>
 void 
-Core<T, S>::shli(Register& srcDest, Integer src1, Integer src2) noexcept {
+Core<T>::shli(Register& srcDest, Integer src1, Integer src2) noexcept {
     srcDest.setValue<Integer>(src2 << src1);
 }
-template<typename T, Ordinal S>
+template<typename T>
 void 
-Core<T, S>::rotate(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+Core<T>::rotate(Register& dest, Ordinal src1, Ordinal src2) noexcept {
     dest.setValue<Ordinal>(rotateOperation(src2, src1));
 }
-template<typename T, Ordinal S>
+template<typename T>
 void 
-Core<T, S>::shri(Register& dest, Integer src1, Integer src2) noexcept {
+Core<T>::shri(Register& dest, Integer src1, Integer src2) noexcept {
     /*
      * if (src >= 0) {
      *  if (len < 32) {
@@ -2985,9 +2992,9 @@ Core<T, S>::shri(Register& dest, Integer src1, Integer src2) noexcept {
 }
 
 
-template<typename T, Ordinal S>
+template<typename T>
 bool
-Core<T, S>::performSelfTest() noexcept {
+Core<T>::performSelfTest() noexcept {
     auto clearRegisters = [this]() {
         for (int i = 0; i < 32; ++i) {
             getGPR(i).clear();
