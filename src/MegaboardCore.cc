@@ -57,8 +57,10 @@ MegaboardCore::sendIAC_impl(const iac::Message& msg) {
 }
 
 void 
-MegaboardCore::synchronizeFaults() {
-
+Core::syncf() {
+    // Wait for all faults to be generated that are associated with any prior
+    // uncompleted instructions
+    /// @todo implement if it makes sense since we don't have a pipeline
 }
 
 void 
