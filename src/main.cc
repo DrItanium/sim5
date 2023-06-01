@@ -29,8 +29,7 @@
 #include "BinaryOperations.h"
 #include "MegaboardCore.h"
 
-//Core core;
-MegaboardCore core;
+Core core;
 void 
 setup() {
     core.begin();
