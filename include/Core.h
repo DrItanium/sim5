@@ -1161,6 +1161,7 @@ class Core {
         void saveRegisterSet(Ordinal fp) noexcept;
         void restoreRegisterSet(Ordinal fp) noexcept;
         void restoreStandardFrame() noexcept;
+    protected:
         void storeBlock(Ordinal baseAddress, byte baseRegister, byte count) noexcept;
         void loadBlock(Ordinal baseAddress, byte baseRegister, byte count) noexcept;
     private:

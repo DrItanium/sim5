@@ -20,28 +20,45 @@
 // ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
+#include <Arduino.h>
 #include "MegaboardCore.h"
 
+// Pins
+constexpr auto LOCKPIN = 12;
+constexpr auto FAILPIN = 13;
+constexpr auto INTPIN = 2;
+constexpr auto BUSYPIN = 3;
+
+void 
+MegaboardCore::begin_impl() noexcept {
+    pinMode(LOCKPIN, OUTPUT);
+    pinMode(FAILPIN, OUTPUT);
+    pinMode(INTPIN, INPUT);
+    pinMode(BUSYPIN, INPUT);
+    // setup the external bus interface and other features too!
+}
 void 
 MegaboardCore::checkForPendingInterrupts_impl() {
 
 }
 
-void MegaboardCore::sendIAC_impl(const iac::Message& msg) {
+void 
+MegaboardCore::sendIAC_impl(const iac::Message& msg) {
 
 }
 
-void MegaboardCore::synchronizeFaults() {
+void 
+MegaboardCore::synchronizeFaults() {
 
 }
 
-void MegaboardCore::flushRegisters() {
+void 
+MegaboardCore::flushRegisters() {
 
 }
 
 bool MegaboardCore::haveAvailableRegisterSet() noexcept {
-
+    return false;
 }
 
 void MegaboardCore::makeNewRegisterFrame() noexcept {
@@ -49,18 +66,19 @@ void MegaboardCore::makeNewRegisterFrame() noexcept {
 }
 
 void MegaboardCore::saveRegisters(Ordinal fp) noexcept {
-
+    storeBlock(fp, 16, 16);
 }
 
 void MegaboardCore::restoreRegisters(Ordinal fp) noexcept {
-
+    loadBlock(fp, 16, 16);
 }
 
 void MegaboardCore::busLock() noexcept {
-
+    digitalWrite(LOCKPIN, LOW);
 }
 
 void MegaboardCore::busUnlock() noexcept {
+    digitalWrite(LOCKPIN, HIGH);
 
 }
 
@@ -117,10 +135,6 @@ void MegaboardCore::store_impl(Address address, ByteInteger value, TreatAsByteIn
 
 }
 
-void MegaboardCore::begin_impl() noexcept {
-
-}
-
 bool MegaboardCore::runExtendedSelfTests() noexcept {
     return true;
 }
@@ -130,11 +144,11 @@ void MegaboardCore::generateFault_impl(Ordinal faultCode) noexcept {
 }
 
 void MegaboardCore::assertFailureState_impl() noexcept {
-
+    digitalWrite(FAILPIN, LOW);
 }
 
 void MegaboardCore::deassertFailureState_impl() noexcept {
-
+    digitalWrite(FAILPIN, HIGH);
 }
 
 
