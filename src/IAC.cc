@@ -25,6 +25,7 @@
 #include "IAC.h"
 #include "Core.h"
 
+#if 0
 void 
 Core::sendIAC(const iac::Message& message) noexcept {
     noInterrupts();
@@ -148,3 +149,4 @@ void
 Core::warmstartProcessor(Ordinal segmentTableBase, Ordinal prcbBase) noexcept {
     // do nothing
 }
+#endif

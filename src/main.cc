@@ -25,98 +25,15 @@
 // Created by jwscoggins on 8/21/21.
 //
 #include <Arduino.h>
-#include <SPI.h>
-#include <Wire.h>
 #include "Types.h"
 #include "BinaryOperations.h"
 #include "Core.h"
-#include "ArduinoJson.h"
-#include "Peripherals.h"
 
-void
-setupTWI() noexcept {
-    Serial.print(F("Configuring TWI..."));
-    Wire.begin();
-    Serial.println(F("DONE"));
-}
-void
-setupSPI() noexcept {
-    Serial.print(F("Configuring SPI..."));
-    SPI.begin();
-    Serial.println(F("DONE"));
-}
-void
-setupSerial(bool displayBootScreen = true) noexcept {
-    Serial.begin(115200);
-    if (displayBootScreen) {
-        Serial.println(F("i960 Simulator (C) 2022 and beyond Joshua Scoggins"));
-        Serial.println(F("This software is open source software"));
-        Serial.println(F("Base Platform: Arduino Mega2560"));
-    }
-}
-Core core;
-constexpr int seedPinSets[] {
-            A0, A1, A2, A3, A4, A5, A6, A7,
-            A8, A9, A10, A11, A12, A13, A14, A15
-};
+//Core core;
 void 
 setup() {
-    int seed = 0;
-    for (auto pin : seedPinSets) {
-        seed += analogRead(pin);
-    }
-    randomSeed(seed);
-    setupSerial();
-    Serial.println(F("Bringing up peripherals"));
-    Serial.println();
-    setupSPI();
-    setupTWI();
-    setupPeripherals();
-    Serial.print(F("Configuring GPIOs..."));
-    pinMode(BANK0, OUTPUT);
-    pinMode(BANK1, OUTPUT);
-    pinMode(BANK2, OUTPUT);
-    pinMode(BANK3, OUTPUT);
-    /// @todo configure ports f and k
-    pinMode(FAILPIN, OUTPUT);
-    digitalWrite(FAILPIN, LOW);
-
-    pinMode(INTPIN, INPUT);
-    pinMode(BUSYPIN, INPUT);
-
-    pinMode(LOCKPIN, OUTPUT);
-    digitalWrite(LOCKPIN, LOW);
-    pinMode(LOCKPIN, INPUT);
-    Serial.println(F("DONE"));
-
-    ebi::begin();
-    core.begin();
-    Serial.println(F("BOOT COMPLETE!!"));
-    bool successfulInit = false;
-    switch(core.start()) {
-        case BootResult::Success:
-            Serial.println(F("Initialization Procedure successful!"));
-            successfulInit = true;
-            break;
-        case BootResult::ChecksumFail:
-            Serial.println(F("Checksum Failure!"));
-            break;
-        case BootResult::SelfTestFailure:
-            Serial.println(F("Self Test Failure!"));
-            break;
-        default:
-            Serial.println(F("Undefined Failure!"));
-            break;
-    }
-    if (!successfulInit) {
-        Serial.println(F("HALTING!"));
-        while (true);
-    }
 }
 void 
 loop() {
-    if (core.running()) {
-        core.cycle();
-    }
 }
 

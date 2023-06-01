@@ -402,6 +402,11 @@ struct TreatAsREG { };
 struct TreatAsCOBR { };
 struct TreatAsCTRL { };
 struct TreatAsMEM { };
+#ifdef __AVR__
+    using BackingUnionType = uint8_t;
+#else
+    using BackingUnionType = Ordinal;
+#endif
 union Register {
     constexpr Register(Ordinal value) : o(value) { }
     Register() = default;
@@ -427,97 +432,97 @@ union Register {
         Integer important : 30;
     } alignedTransfer;
     struct {
-        uint8_t s2 : 1;
-        uint8_t t : 1;
+        BackingUnionType s2 : 1;
+        BackingUnionType t : 1;
         Integer displacement : 11;
-        uint8_t m1: 1;
-        uint8_t src2: 5;
-        uint8_t src1: 5;
-        uint8_t opcode : 8;
+        BackingUnionType m1: 1;
+        BackingUnionType src2: 5;
+        BackingUnionType src1: 5;
+        BackingUnionType opcode : 8;
     } cobr;
     struct {
-        uint8_t src1 : 5;
-        uint8_t s1 : 1;
-        uint8_t s2 : 1;
-        uint8_t opcodeExt : 4;
-        uint8_t m1 : 1;
-        uint8_t m2 : 1;
-        uint8_t m3 : 1;
-        uint8_t src2 : 5;
-        uint8_t srcDest : 5;
-        uint8_t opcode : 8;
+        BackingUnionType src1 : 5;
+        BackingUnionType s1 : 1;
+        BackingUnionType s2 : 1;
+        BackingUnionType opcodeExt : 4;
+        BackingUnionType m1 : 1;
+        BackingUnionType m2 : 1;
+        BackingUnionType m3 : 1;
+        BackingUnionType src2 : 5;
+        BackingUnionType srcDest : 5;
+        BackingUnionType opcode : 8;
     } reg;
     struct {
         Integer displacement : 24;
-        uint8_t opcode : 8;
+        BackingUnionType opcode : 8;
     } ctrl;
     struct {
         Ordinal offset: 12;
-        uint8_t selector : 1;
-        uint8_t selector2 : 1;
-        uint8_t abase : 5;
-        uint8_t srcDest : 5;
-        uint8_t opcode : 8;
+        BackingUnionType selector : 1;
+        BackingUnionType selector2 : 1;
+        BackingUnionType abase : 5;
+        BackingUnionType srcDest : 5;
+        BackingUnionType opcode : 8;
     } mem;
     struct {
         Ordinal offset : 12;
-        uint8_t fixed : 1;
-        uint8_t action : 1;
-        uint8_t abase : 5;
-        uint8_t srcDest : 5;
-        uint8_t opcode : 8;
+        BackingUnionType fixed : 1;
+        BackingUnionType action : 1;
+        BackingUnionType abase : 5;
+        BackingUnionType srcDest : 5;
+        BackingUnionType opcode : 8;
     } mema;
     struct {
-        uint8_t index : 5;
-        uint8_t unused : 2;
-        uint8_t scale : 3;
-        uint8_t modeMinor : 2;
-        uint8_t fixed : 1;
-        uint8_t group: 1;
-        uint8_t abase : 5;
-        uint8_t srcDest : 5;
-        uint8_t opcode : 8;
+        BackingUnionType index : 5;
+        BackingUnionType unused : 2;
+        BackingUnionType scale : 3;
+        BackingUnionType modeMinor : 2;
+        BackingUnionType fixed : 1;
+        BackingUnionType group: 1;
+        BackingUnionType abase : 5;
+        BackingUnionType srcDest : 5;
+        BackingUnionType opcode : 8;
     } memb;
     struct {
-        uint8_t index : 5;
-        uint8_t unused : 2;
-        uint8_t scale : 3;
-        uint8_t registerIndirect : 1;
-        uint8_t useIndex : 1;
-        uint8_t fixed : 1;
-        uint8_t group: 1;
-        uint8_t abase : 5;
-        uint8_t srcDest : 5;
-        uint8_t opcode : 8;
+        BackingUnionType index : 5;
+        BackingUnionType unused : 2;
+        BackingUnionType scale : 3;
+        BackingUnionType registerIndirect : 1;
+        BackingUnionType useIndex : 1;
+        BackingUnionType fixed : 1;
+        BackingUnionType group: 1;
+        BackingUnionType abase : 5;
+        BackingUnionType srcDest : 5;
+        BackingUnionType opcode : 8;
     } memb_grp2;
     struct {
-        uint8_t conditionCode : 3;
-        uint8_t arithmeticStatus : 4;
-        uint8_t unused0 : 1;
-        uint8_t integerOverflowFlag : 1;
-        uint8_t unused1 : 3;
-        uint8_t integerOverflowMask : 1;
-        uint8_t unused2 : 2;
-        uint8_t noImpreciseFaults : 1;
-        uint8_t floatingOverflowFlag : 1;
-        uint8_t floatingUnderflowFlag : 1;
-        uint8_t floatingInvalidOpFlag : 1;
-        uint8_t floatingZeroDivideFlag : 1;
-        uint8_t floatingInexactFlag : 1;
-        uint8_t unused3 : 3;
-        uint8_t floatingOverflowMask : 1;
-        uint8_t floatingUnderflowMask : 1;
-        uint8_t floatingInvalidOpMask : 1;
-        uint8_t floatingZeroDivideMask : 1;
-        uint8_t floatingInexactMask : 1;
-        uint8_t floatingPointNormalizingMode : 1;
-        uint8_t floatingPointRoundingControl : 2;
+        BackingUnionType conditionCode : 3;
+        BackingUnionType arithmeticStatus : 4;
+        BackingUnionType unused0 : 1;
+        BackingUnionType integerOverflowFlag : 1;
+        BackingUnionType unused1 : 3;
+        BackingUnionType integerOverflowMask : 1;
+        BackingUnionType unused2 : 2;
+        BackingUnionType noImpreciseFaults : 1;
+        BackingUnionType floatingOverflowFlag : 1;
+        BackingUnionType floatingUnderflowFlag : 1;
+        BackingUnionType floatingInvalidOpFlag : 1;
+        BackingUnionType floatingZeroDivideFlag : 1;
+        BackingUnionType floatingInexactFlag : 1;
+        BackingUnionType unused3 : 3;
+        BackingUnionType floatingOverflowMask : 1;
+        BackingUnionType floatingUnderflowMask : 1;
+        BackingUnionType floatingInvalidOpMask : 1;
+        BackingUnionType floatingZeroDivideMask : 1;
+        BackingUnionType floatingInexactMask : 1;
+        BackingUnionType floatingPointNormalizingMode : 1;
+        BackingUnionType floatingPointRoundingControl : 2;
     } arith;
 
     struct {
-        uint8_t rt : 3;
-        uint8_t p : 1;
-        uint8_t unused : 2; // according to the Sx manual these bits go unused
+        BackingUnionType rt : 3;
+        BackingUnionType p : 1;
+        BackingUnionType unused : 2; // according to the Sx manual these bits go unused
                             // but in the Hx manual they are used :/
         Ordinal a : 26;
     } pfp;
@@ -526,35 +531,35 @@ union Register {
         Ordinal proper : 26;
     } pfpAddress;
     struct {
-        uint8_t traceEnable : 1;
-        uint8_t executionMode : 1;
-        uint8_t unused : 7;
-        uint8_t resume : 1;
-        uint8_t traceFaultPending : 1;
-        uint8_t unused1 : 2;
-        uint8_t state : 1;
-        uint8_t unused2 : 2;
-        uint8_t priority : 5;
+        BackingUnionType traceEnable : 1;
+        BackingUnionType executionMode : 1;
+        BackingUnionType unused : 7;
+        BackingUnionType resume : 1;
+        BackingUnionType traceFaultPending : 1;
+        BackingUnionType unused1 : 2;
+        BackingUnionType state : 1;
+        BackingUnionType unused2 : 2;
+        BackingUnionType priority : 5;
         Ordinal internalState : 11;
     } processControls;
     struct {
-        uint8_t unused0 : 1; // 0
-        uint8_t instructionTraceMode : 1; // 1
-        uint8_t branchTraceMode : 1; // 2
-        uint8_t callTraceMode : 1; // 3
-        uint8_t returnTraceMode : 1; // 4
-        uint8_t prereturnTraceMode : 1; // 5
-        uint8_t supervisorTraceMode : 1; // 6
-        uint8_t breakpointTraceMode : 1; // 7
+        BackingUnionType unused0 : 1; // 0
+        BackingUnionType instructionTraceMode : 1; // 1
+        BackingUnionType branchTraceMode : 1; // 2
+        BackingUnionType callTraceMode : 1; // 3
+        BackingUnionType returnTraceMode : 1; // 4
+        BackingUnionType prereturnTraceMode : 1; // 5
+        BackingUnionType supervisorTraceMode : 1; // 6
+        BackingUnionType breakpointTraceMode : 1; // 7
         Ordinal unused1 : 9; // 8, 9, 10, 11, 12, 13, 14, 15, 16
-        uint8_t instructionTraceEvent : 1; // 17
-        uint8_t branchTraceEvent : 1; // 18
-        uint8_t callTraceEvent : 1; // 19
-        uint8_t returnTraceEvent : 1; // 20
-        uint8_t prereturnTraceEvent : 1; // 21
-        uint8_t supervisorTraceEvent : 1; // 22
-        uint8_t breakpointTraceEvent : 1; // 23
-        uint8_t unused2 : 8;
+        BackingUnionType instructionTraceEvent : 1; // 17
+        BackingUnionType branchTraceEvent : 1; // 18
+        BackingUnionType callTraceEvent : 1; // 19
+        BackingUnionType returnTraceEvent : 1; // 20
+        BackingUnionType prereturnTraceEvent : 1; // 21
+        BackingUnionType supervisorTraceEvent : 1; // 22
+        BackingUnionType breakpointTraceEvent : 1; // 23
+        BackingUnionType unused2 : 8;
     } trace;
     uint8_t interruptControl[4];
     constexpr auto getConditionCode() const noexcept { return arith.conditionCode; }
