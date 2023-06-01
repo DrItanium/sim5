@@ -2009,13 +2009,11 @@ template<typename T, Ordinal S>
 void 
 Core<T, S>::saveRegisterSet(Ordinal fp) noexcept {
     // save the "next" register frame to main memory to reclaim it
-    //storeBlock(fp, 16, 16);
     static_cast<T*>(this)->saveRegisters(fp);
 }
 template<typename T, Ordinal S>
 void
 Core<T, S>::restoreRegisterSet(Ordinal fp) noexcept {
-    //loadBlock(fp, 16, 16);
     static_cast<T*>(this)->restoreRegisters(fp);
 }
 template<typename T, Ordinal S>

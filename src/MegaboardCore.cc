@@ -28,13 +28,22 @@ constexpr auto LOCKPIN = 12;
 constexpr auto FAILPIN = 13;
 constexpr auto INTPIN = 2;
 constexpr auto BUSYPIN = 3;
-
+constexpr auto Address15 = 30;
+template<typename T>
+volatile T& memoryAddress(uint32_t address) noexcept {
+    return *reinterpret_cast<volatile T*>((static_cast<uint16_t>(address) & 0x7FFF) + 0x8000);
+}
 void 
 MegaboardCore::begin_impl() noexcept {
     pinMode(LOCKPIN, OUTPUT);
     pinMode(FAILPIN, OUTPUT);
     pinMode(INTPIN, INPUT);
     pinMode(BUSYPIN, INPUT);
+    pinMode(Address15, OUTPUT); // A15
+    // Ports K and F are address lines
+    DDRF = 0xFF; // A23:16
+    DDRK = 0xFF; // A31:24
+    setBankRegisters(0);
     // setup the external bus interface and other features too!
 }
 void 
@@ -57,91 +66,103 @@ MegaboardCore::flushRegisters() {
 
 }
 
-bool MegaboardCore::haveAvailableRegisterSet() noexcept {
+bool 
+MegaboardCore::haveAvailableRegisterSet() noexcept {
     return false;
 }
 
-void MegaboardCore::makeNewRegisterFrame() noexcept {
+void 
+MegaboardCore::makeNewRegisterFrame() noexcept {
 
 }
 
-void MegaboardCore::saveRegisters(Ordinal fp) noexcept {
+void 
+MegaboardCore::saveRegisters(Ordinal fp) noexcept {
     storeBlock(fp, 16, 16);
 }
 
-void MegaboardCore::restoreRegisters(Ordinal fp) noexcept {
+void 
+MegaboardCore::restoreRegisters(Ordinal fp) noexcept {
     loadBlock(fp, 16, 16);
 }
 
-void MegaboardCore::busLock() noexcept {
+void 
+MegaboardCore::busLock() noexcept {
     digitalWrite(LOCKPIN, LOW);
 }
 
-void MegaboardCore::busUnlock() noexcept {
+void 
+MegaboardCore::busUnlock() noexcept {
     digitalWrite(LOCKPIN, HIGH);
 
 }
 
-Ordinal MegaboardCore::load_impl(Address address, TreatAsOrdinal) const noexcept {
+Ordinal 
+MegaboardCore::load_impl(Address address, TreatAsOrdinal) const noexcept {
     setBankRegisters(address);
-    return 0;
+    return memoryAddress<Ordinal>(address);
 }
 
-Integer MegaboardCore::load_impl(Address address, TreatAsInteger) const noexcept {
+Integer 
+MegaboardCore::load_impl(Address address, TreatAsInteger) const noexcept {
     setBankRegisters(address);
-    return 0;
+    return memoryAddress<Integer>(address);
 }
 
-ShortOrdinal MegaboardCore::load_impl(Address address, TreatAsShortOrdinal) const noexcept {
+ShortOrdinal 
+MegaboardCore::load_impl(Address address, TreatAsShortOrdinal) const noexcept {
     setBankRegisters(address);
-
-    return 0;
+    return memoryAddress<ShortOrdinal>(address);
 }
 
-ShortInteger MegaboardCore::load_impl(Address address, TreatAsShortInteger) const noexcept {
+ShortInteger 
+MegaboardCore::load_impl(Address address, TreatAsShortInteger) const noexcept {
     setBankRegisters(address);
-
-    return 0;
+    return memoryAddress<ShortInteger>(address);
 }
 
-ByteOrdinal MegaboardCore::load_impl(Address address, TreatAsByteOrdinal) const noexcept {
+ByteOrdinal 
+MegaboardCore::load_impl(Address address, TreatAsByteOrdinal) const noexcept {
     setBankRegisters(address);
-
-    return 0;
+    return memoryAddress<ByteOrdinal>(address);
 }
 
-ByteInteger MegaboardCore::load_impl(Address address, TreatAsByteInteger) const noexcept {
+ByteInteger 
+MegaboardCore::load_impl(Address address, TreatAsByteInteger) const noexcept {
     setBankRegisters(address);
-    return 0;
+    return memoryAddress<ByteInteger>(address);
 }
 
-void MegaboardCore::store_impl(Address address, Ordinal value, TreatAsOrdinal) noexcept {
+void 
+MegaboardCore::store_impl(Address address, Ordinal value, TreatAsOrdinal) noexcept {
     setBankRegisters(address);
-
+    memoryAddress<decltype(value)>(address) = value;
 }
 
 void MegaboardCore::store_impl(Address address, Integer value, TreatAsInteger) noexcept {
     setBankRegisters(address);
-
+    memoryAddress<decltype(value)>(address) = value;
 }
 
 void MegaboardCore::store_impl(Address address, ShortOrdinal value, TreatAsShortOrdinal) noexcept {
     setBankRegisters(address);
+    memoryAddress<decltype(value)>(address) = value;
 
 }
 
 void MegaboardCore::store_impl(Address address, ShortInteger value, TreatAsShortInteger) noexcept {
     setBankRegisters(address);
-
+    memoryAddress<decltype(value)>(address) = value;
 }
 
 void MegaboardCore::store_impl(Address address, ByteOrdinal value, TreatAsByteOrdinal) noexcept {
     setBankRegisters(address);
-
+    memoryAddress<decltype(value)>(address) = value;
 }
 
 void MegaboardCore::store_impl(Address address, ByteInteger value, TreatAsByteInteger) noexcept {
     setBankRegisters(address);
+    memoryAddress<decltype(value)>(address) = value;
 }
 
 bool MegaboardCore::runExtendedSelfTests() noexcept {
@@ -163,4 +184,7 @@ void MegaboardCore::deassertFailureState_impl() noexcept {
 
 void
 MegaboardCore::setBankRegisters(Address address) const noexcept {
+    digitalWrite(Address15, address & 0x0000'8000 ? HIGH : LOW);
+    PORTF = static_cast<uint8_t>(address >> 16);
+    PORTK = static_cast<uint8_t>(address >> 24);
 }
