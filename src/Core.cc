@@ -1650,6 +1650,24 @@ Core::sendIAC(const iac::Message& msg) noexcept {
     /// @todo implement
     switch (msg.messageType) {
         /// @todo implement different message types
+        case 0x40: // dispatch interrupt
+            dispatchInterrupt(msg.field1);
+            break;
+        case 0x89: // purge instruction cache
+            purgeInstructionCache();
+            break;
+        case 0x93: // reinitialize processor
+            reinitializeProcessor(msg.field3, msg.field4, msg.field5);
+            break;
+        case 0x8f: // set breakpoint register
+            setBreakpointRegister(msg.field3, msg.field4);
+            break;
+        case 0x80: // store system base
+            storeSystemBase(msg.field3);
+            break;
+        case 0x41: // test for pending interrupts
+            checkForPendingInterrupts();
+            break;
         default:
             break;
     }

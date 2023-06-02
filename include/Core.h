@@ -1012,13 +1012,13 @@ class Core {
         void performRegisterTransfer(byte mask, byte count) noexcept;
     private:
         void sendIAC(const iac::Message& msg) noexcept;
-#if 0
         void dispatchInterrupt(uint8_t vector) noexcept;
         void purgeInstructionCache() noexcept;
         void reinitializeProcessor(Ordinal satBase, Ordinal prcbBase, Ordinal startIP) noexcept;
         void setBreakpointRegister(Ordinal breakpointIp0, Ordinal breakpointIp1) noexcept;
         void storeSystemBase(Ordinal destinationAddress) noexcept;
         void testPendingInterrupts() noexcept;
+#if 0
         // Kx related IACs
         void freeze() noexcept;
         void continueInitialization() noexcept;
