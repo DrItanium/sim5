@@ -24,17 +24,30 @@
 #include "Core.h"
 #ifdef ESP32
 #ifdef ARDUINO_FEATHERS2
+namespace {
+    uint8_t* psMemory = nullptr;
+}
+constexpr auto LOCKPIN = 33;
+constexpr auto INTPIN = 38;
+constexpr auto BUSYPIN = 1;
+
+constexpr auto FAILPIN = 3;
+constexpr auto LEDPin = 13;
+constexpr auto AmbientLightSensor = 4;
 void 
 Core::nonPortableBegin() noexcept {
-    //pinMode(LOCKPIN, OUTPUT);
-    //pinMode(FAILPIN, OUTPUT);
-    //pinMode(INTPIN, INPUT);
-    //pinMode(BUSYPIN, INPUT);
-    //pinMode(Address15, OUTPUT); // A15
-    //// Ports K and F are address lines
-    //DDRF = 0xFF; // A23:16
-    //DDRK = 0xFF; // A31:24
-    //// setup the external bus interface and other features too!
+    pinMode(LOCKPIN, OUTPUT);
+    pinMode(FAILPIN, OUTPUT);
+    pinMode(INTPIN, INPUT);
+    pinMode(BUSYPIN, INPUT);
+    pinMode(LEDPin, OUTPUT);
+    digitalWrite(LEDPin, LOW);
+
+    if (psramInit()) {
+        // since we have access to 8 megabytes of PSRAM on this board, we need
+        // to allocate the memory space entirely and keep it around
+        psMemory = (uint8_t*)ps_calloc(8 * 1024 * 1024, sizeof(uint8_t));
+    }
 }
 
 
@@ -42,28 +55,28 @@ Core::nonPortableBegin() noexcept {
 
 void 
 Core::lockBus() noexcept {
-    //digitalWrite(LOCKPIN, LOW);
+    digitalWrite(LOCKPIN, LOW);
 }
 
 void 
 Core::unlockBus() noexcept {
-    //digitalWrite(LOCKPIN, HIGH);
+    digitalWrite(LOCKPIN, HIGH);
 }
 
 
 bool 
 Core::runNonPortableSelfTests() noexcept {
-    return true;
+    return psMemory != nullptr;
 }
 
 void 
 Core::assertFailureState() noexcept {
-    //digitalWrite(FAILPIN, LOW);
+    digitalWrite(FAILPIN, LOW);
 }
 
 void 
 Core::deassertFailureState() noexcept {
-    //digitalWrite(FAILPIN, HIGH);
+    digitalWrite(FAILPIN, HIGH);
 }
 
 void
@@ -71,58 +84,91 @@ Core::purgeInstructionCache() noexcept {
     ///@todo implement when we have an instruction cache!
 }
 
+template<typename T>
+T load(Address address) noexcept {
+    switch (static_cast<uint8_t>(address >> 24)) {
+        case 0x00:
+            return *reinterpret_cast<volatile T*>(psMemory[address & 0x007F'FFFF]);
+            /// @todo add support for IO and other memory spaces as well!
+        default:
+            return 0;
+    }
+}
+
+template<typename T>
+void store(Address address, T value) noexcept {
+    switch (static_cast<uint8_t>(address >> 24)) {
+        case 0x00:
+            *reinterpret_cast<volatile T*>(psMemory[address & 0x007F'FFFF]) = value;
+            break;
+            /// @todo add support for IO and other memory spaces as well!
+        default:
+            break;
+    }
+}
+
 Ordinal 
 Core::load(Address address, TreatAsOrdinal) const noexcept {
-    return 0;
+    // we have 8 megabytes total of memory, just do a mirroring operation for
+    // now!
+    // don't check since the self tests will cancel startup if it turns out
+    // that we don't have PSRAM available
+    return ::load<Ordinal>(address);
 }
 
 Integer 
 Core::load(Address address, TreatAsInteger) const noexcept {
-    return 0;
+    return ::load<Integer>(address);
 }
 
 ShortOrdinal 
 Core::load(Address address, TreatAsShortOrdinal) const noexcept {
-    return 0;
+    return ::load<ShortOrdinal>(address);
 }
 
 ShortInteger 
 Core::load(Address address, TreatAsShortInteger) const noexcept {
-    return 0;
+    return ::load<ShortInteger>(address);
 }
 
 ByteOrdinal 
 Core::load(Address address, TreatAsByteOrdinal) const noexcept {
-    return 0;
+    return ::load<ByteOrdinal>(address);
 }
 
 ByteInteger 
 Core::load(Address address, TreatAsByteInteger) const noexcept {
-    return 0;
+    return ::load<ByteInteger>(address);
 }
 
 void 
 Core::store(Address address, Ordinal value, TreatAsOrdinal) noexcept {
+    ::store<decltype(value)>(address, value);
 }
 
 void
 Core::store(Address address, Integer value, TreatAsInteger) noexcept {
+    ::store<decltype(value)>(address, value);
 }
 
 void
 Core::store(Address address, ShortOrdinal value, TreatAsShortOrdinal) noexcept {
+    ::store<decltype(value)>(address, value);
 }
 
 void
 Core::store(Address address, ShortInteger value, TreatAsShortInteger) noexcept {
+    ::store<decltype(value)>(address, value);
 }
 
 void
 Core::store(Address address, ByteOrdinal value, TreatAsByteOrdinal) noexcept {
+    ::store<decltype(value)>(address, value);
 }
 
 void
 Core::store(Address address, ByteInteger value, TreatAsByteInteger) noexcept {
+    ::store<decltype(value)>(address, value);
 }
 #endif /* defined ARDUINO_FEATHERS2 */
 #endif /* defined ESP32 */

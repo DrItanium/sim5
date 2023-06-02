@@ -954,10 +954,8 @@ class Core {
         BootResult start() noexcept;
         void cycle() noexcept;
     private:
-        void lockBus();
-        void unlockBus();
-        void signalBootFailure();
-        void setFaultPort(Ordinal value) noexcept;
+        void lockBus() noexcept;
+        void unlockBus() noexcept;
         /// @todo insert iac dispatch here
         /// @todo insert routines for getting registers and such 
         [[nodiscard]] QuadRegister& getGPR(byte index, TreatAsQuadRegister) noexcept { return gpr_.get(index, TreatAsQuadRegister{}); }
@@ -1174,8 +1172,8 @@ class Core {
         void performSelect(Register& dest, Ordinal src1, Ordinal src2) noexcept;
     protected:
 #define X(type) \
-        type load(Address addr, TreatAs< type > ) const; \
-        void store(Address addr, type value, TreatAs< type > )
+        type load(Address addr, TreatAs< type > ) const noexcept; \
+        void store(Address addr, type value, TreatAs< type > ) noexcept
         X(Integer);
         X(Ordinal);
         X(ByteInteger);
