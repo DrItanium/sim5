@@ -1666,7 +1666,7 @@ Core::sendIAC(const iac::Message& msg) noexcept {
             storeSystemBase(msg.field3);
             break;
         case 0x41: // test for pending interrupts
-            checkForPendingInterrupts();
+            testPendingInterrupts();
             break;
         default:
             break;
@@ -1703,4 +1703,32 @@ Core::restoreRegisterSet(Ordinal fp) noexcept {
 bool 
 Core::registerSetAvailable() noexcept {
     return false;
+}
+
+void
+Core::dispatchInterrupt(uint8_t vector) noexcept {
+
+}
+
+void
+Core::purgeInstructionCache() noexcept {
+
+}
+
+void 
+Core::reinitializeProcessor(Ordinal satBase, Ordinal prcbBase, Ordinal startIP) noexcept {
+
+}
+void 
+Core::setBreakpointRegister(Ordinal breakpointIp0, Ordinal breakpointIp1) noexcept {
+
+}
+
+void 
+Core::storeSystemBase(Ordinal destinationAddress) noexcept {
+}
+
+void 
+Core::testPendingInterrupts() noexcept {
+
 }
