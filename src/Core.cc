@@ -1637,7 +1637,7 @@ Core::performSelfTest() noexcept {
             (makeOrdinalOperation([](Ordinal src1, Ordinal src2, Ordinal dest) { return ::modify(src1, src2, dest); },
                                   [this](auto& dest, auto src1, auto src2) { return modify(dest, src1, src2); },
                                   F("modify")))
-                ) && runExtendedSelfTests();
+                ) && runNonPortableSelfTests();
 }
 
 void
@@ -1707,13 +1707,9 @@ Core::registerSetAvailable() noexcept {
 
 void
 Core::dispatchInterrupt(uint8_t vector) noexcept {
-
+    
 }
 
-void
-Core::purgeInstructionCache() noexcept {
-    ///@todo implement when we have an instruction cache!
-}
 
 void 
 Core::reinitializeProcessor(Ordinal satBase, Ordinal prcbBase, Ordinal startIP) noexcept {

@@ -23,6 +23,7 @@
 #include <Arduino.h>
 #include "Core.h"
 #ifdef __AVR_ATmega2560__
+#ifdef MEGABOARD
 // Pins
 constexpr auto LOCKPIN = 12;
 constexpr auto FAILPIN = 13;
@@ -69,6 +70,93 @@ Core::unlockBus() noexcept {
     digitalWrite(LOCKPIN, HIGH);
 }
 
+
+bool 
+Core::runNonPortableSelfTests() noexcept {
+    return true;
+}
+
+void 
+Core::assertFailureState() noexcept {
+    digitalWrite(FAILPIN, LOW);
+}
+
+void 
+Core::deassertFailureState() noexcept {
+    digitalWrite(FAILPIN, HIGH);
+}
+
+void
+Core::purgeInstructionCache() noexcept {
+    ///@todo implement when we have an instruction cache!
+}
+#elif defined(TYPE103_BOARD)
+constexpr auto LOCKPIN = 12;
+constexpr auto FAILPIN = 13;
+constexpr auto INTPIN = 2;
+constexpr auto BUSYPIN = 3;
+constexpr auto Address15 = 30;
+template<typename T>
+volatile T& memoryAddress(uint32_t address) noexcept {
+    return *reinterpret_cast<volatile T*>((static_cast<uint16_t>(address) & 0x7FFF) + 0x8000);
+}
+namespace {
+    void 
+    setBankRegisters(Address address) noexcept {
+        // the EBI will mask out the value automatically
+        PORTC = static_cast<uint8_t>(address >> 8);
+        PORTF = static_cast<uint8_t>(address >> 16);
+        PORTK = static_cast<uint8_t>(address >> 24);
+    }
+}
+void 
+Core::nonPortableBegin() noexcept {
+    pinMode(LOCKPIN, OUTPUT);
+    pinMode(FAILPIN, OUTPUT);
+    pinMode(INTPIN, INPUT);
+    pinMode(BUSYPIN, INPUT);
+    pinMode(Address15, OUTPUT); // A15
+    // Ports K and F are address lines
+    DDRF = 0xFF; // A23:16
+    DDRK = 0xFF; // A31:24
+    setBankRegisters(0);
+    // setup the external bus interface and other features too!
+}
+
+
+
+
+void 
+Core::lockBus() noexcept {
+    digitalWrite(LOCKPIN, LOW);
+}
+
+void 
+Core::unlockBus() noexcept {
+    digitalWrite(LOCKPIN, HIGH);
+}
+
+
+bool 
+Core::runNonPortableSelfTests() noexcept {
+    return true;
+}
+
+void 
+Core::assertFailureState() noexcept {
+    digitalWrite(FAILPIN, LOW);
+}
+
+void 
+Core::deassertFailureState() noexcept {
+    digitalWrite(FAILPIN, HIGH);
+}
+
+void
+Core::purgeInstructionCache() noexcept {
+    ///@todo implement when we have an instruction cache!
+}
+#endif
 Ordinal 
 Core::load(Address address, TreatAsOrdinal) const noexcept {
     setBankRegisters(address);
@@ -141,22 +229,4 @@ Core::store(Address address, ByteInteger value, TreatAsByteInteger) noexcept {
     setBankRegisters(address);
     memoryAddress<decltype(value)>(address) = value;
 }
-
-bool 
-Core::runExtendedSelfTests() noexcept {
-    return true;
-}
-
-void 
-Core::assertFailureState() noexcept {
-    digitalWrite(FAILPIN, LOW);
-}
-
-void 
-Core::deassertFailureState() noexcept {
-    digitalWrite(FAILPIN, HIGH);
-}
-
-
-
 #endif

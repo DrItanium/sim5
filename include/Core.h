@@ -1459,7 +1459,7 @@ class Core {
             return compose(f, g, compose(h, i));
         }
     private:
-        bool runExtendedSelfTests() noexcept;
+        bool runNonPortableSelfTests() noexcept;
         void nonPortableBegin() noexcept;
     private:
         Ordinal systemAddressTableBase_ = 0;
