@@ -1476,6 +1476,10 @@ class Core {
         byte advanceBy_;
         byte instructionLength_ = 0;
         bool advanceInstruction_ = false;
+        Address breakpoint0_ = 0;
+        bool breakpoint0Active_ = false;
+        Address breakpoint1_ = 0;
+        bool breakpoint1Active_ = false;
 };
 
 

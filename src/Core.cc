@@ -1712,20 +1712,27 @@ Core::dispatchInterrupt(uint8_t vector) noexcept {
 
 void
 Core::purgeInstructionCache() noexcept {
-
+    ///@todo implement when we have an instruction cache!
 }
 
 void 
 Core::reinitializeProcessor(Ordinal satBase, Ordinal prcbBase, Ordinal startIP) noexcept {
-
+    
 }
+
 void 
 Core::setBreakpointRegister(Ordinal breakpointIp0, Ordinal breakpointIp1) noexcept {
-
+    /// @todo do something with the breakpoint data
+    breakpoint0_ = breakpointIp0 & 0xFFFFFFFC;
+    breakpoint0Active_ = (breakpointIp0 & 0b10) != 0;
+    breakpoint1_ = breakpointIp1 & 0xFFFFFFFC;
+    breakpoint1Active_ = (breakpointIp1 & 0b10) != 0;
 }
 
 void 
 Core::storeSystemBase(Ordinal destinationAddress) noexcept {
+    store(destinationAddress, systemAddressTableBase_, TreatAsOrdinal{});
+    store(destinationAddress+4, prcbAddress_, TreatAsOrdinal{});
 }
 
 void 
