@@ -315,7 +315,7 @@ Core::restoreStandardFrame() noexcept {
 }
 
 void
-Core::ret() {
+Core::ret() noexcept {
     syncf();
     auto& pfp = getGPR(PFPIndex);
     switch (pfp.pfp.rt) {
@@ -562,7 +562,7 @@ Core::callx(Address effectiveAddress) noexcept {
 
 
 void 
-Core::call(Integer displacement) {
+Core::call(Integer displacement) noexcept {
     // wait for any uncompleted instructions to finish
     auto temp = getNextFrameBase(); // round stack pointer to next boundary
     auto fp = getGPRValue(FPIndex, TreatAsOrdinal{});
@@ -1674,7 +1674,7 @@ Core::sendIAC(const iac::Message& msg) noexcept {
 }
 
 void 
-Core::syncf() {
+Core::syncf() noexcept {
     // Wait for all faults to be generated that are associated with any prior
     // uncompleted instructions
     /// @todo implement if it makes sense since we don't have a pipeline
