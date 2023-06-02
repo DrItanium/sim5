@@ -124,6 +124,6 @@ Core::store(Address address, ByteOrdinal value, TreatAsByteOrdinal) noexcept {
 void
 Core::store(Address address, ByteInteger value, TreatAsByteInteger) noexcept {
 }
-#endif
-#endif
+#endif /* defined ARDUINO_TEENSY41 */
+#endif /* defined TEENSY_CORE */
 
