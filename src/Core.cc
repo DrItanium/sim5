@@ -1648,6 +1648,11 @@ Core::checkForPendingInterrupts() noexcept {
 void 
 Core::sendIAC(const iac::Message& msg) noexcept {
     /// @todo implement
+    switch (msg.messageType) {
+        /// @todo implement different message types
+        default:
+            break;
+    }
 }
 
 void 
