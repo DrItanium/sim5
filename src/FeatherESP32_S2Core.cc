@@ -43,6 +43,11 @@ Core::nonPortableBegin() noexcept {
     pinMode(LEDPin, OUTPUT);
     digitalWrite(LEDPin, LOW);
 
+    digitalWrite(LEDPin, LOW);
+    delay(1000);
+    digitalWrite(LEDPin, HIGH);
+    delay(1000);
+    digitalWrite(LEDPin, LOW);
     if (psramInit()) {
         // since we have access to 8 megabytes of PSRAM on this board, we need
         // to allocate the memory space entirely and keep it around
