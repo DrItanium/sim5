@@ -27,7 +27,7 @@
 #include <Arduino.h>
 #include "Types.h"
 #include "BinaryOperations.h"
-#include "MegaboardCore.h"
+#include "Core.h"
 
 Core core;
 void 

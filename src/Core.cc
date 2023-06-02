@@ -284,11 +284,6 @@ Core::getSFR(byte index, byte offset) const noexcept {
     return getSFR((index + offset) & 0b11111);
 }
 
-void
-Core::flushreg() noexcept {
-    /// @todo implement if it makes sense since we aren't using register frames
-    static_cast<T*>(this)->flushRegisters();
-}
 
 void
 Core::mark() noexcept {
@@ -539,26 +534,6 @@ Core::balx(Register& linkRegister, Ordinal branchTo) noexcept {
     setIP(branchTo, TreatAsOrdinal{});
 }
 
-bool 
-Core::registerSetAvailable() noexcept {
-    return static_cast<T*>(this)->haveAvailableRegisterSet();
-}
-
-void
-Core::allocateNewRegisterFrame() noexcept {
-    static_cast<T*>(this)->makeNewRegisterFrame();
-}
-
-void 
-Core::saveRegisterSet(Ordinal fp) noexcept {
-    // save the "next" register frame to main memory to reclaim it
-    static_cast<T*>(this)->saveRegisters(fp);
-}
-
-void
-Core::restoreRegisterSet(Ordinal fp) noexcept {
-    static_cast<T*>(this)->restoreRegisters(fp);
-}
 
 void 
 Core::enterCall(Ordinal fp) noexcept {
@@ -644,21 +619,6 @@ Core::performRegisterTransfer(byte mask, byte count) noexcept {
     }
 }
 
-
-void
-Core::lockBus() noexcept {
-    static_cast<T*>(this)->busLock();
-}
-
-void
-Core::unlockBus() noexcept {
-    static_cast<T*>(this)->busUnlock();
-}
-
-void
-Core::signalBootFailure() noexcept {
-    static_cast<T*>(this)->raiseBootFailure();
-}
 
 void
 Core::branch(Integer displacement) noexcept {
@@ -767,7 +727,7 @@ Core::begin() noexcept {
         /// @todo setup SFRs
         constants_.setValue<Ordinal>(i, i);
     }
-    static_cast<T*>(this)->begin_impl();
+    nonPortableBegin();
 }
 
 
@@ -918,17 +878,6 @@ Core::start() noexcept {
 
 
 void
-Core::assertFailureState() noexcept {
-    static_cast<T*>(this)->assertFailureState_impl();
-}
-
-
-void
-Core::deassertFailureState() noexcept {
-    static_cast<T*>(this)->deassertFailureState_impl();
-}
-
-void
 Core::addi(Register& dest, Integer src1, Integer src2) noexcept {
     add<Integer>(dest, src1, src2, TreatAsInteger{});
     nextInstruction();
@@ -944,7 +893,7 @@ Core::addo(Register& dest, Ordinal src1, Ordinal src2) noexcept {
 
 void
 Core::generateFault(Ordinal faultCode) noexcept {
-    static_cast<T*>(this)->generateFault_impl(faultCode);
+    /// @todo implement
 }
 
 
@@ -1689,4 +1638,46 @@ Core::performSelfTest() noexcept {
                                   [this](auto& dest, auto src1, auto src2) { return modify(dest, src1, src2); },
                                   F("modify")))
                 ) && runExtendedSelfTests();
+}
+
+void
+Core::checkForPendingInterrupts() noexcept {
+    /// @todo implement
+}
+
+void 
+Core::sendIAC(const iac::Message& msg) noexcept {
+    /// @todo implement
+}
+
+void 
+Core::syncf() {
+    // Wait for all faults to be generated that are associated with any prior
+    // uncompleted instructions
+    /// @todo implement if it makes sense since we don't have a pipeline
+}
+
+void
+Core::flushreg() noexcept {
+    /// @todo implement if it makes sense since we aren't using register frames
+}
+
+void 
+Core::allocateNewRegisterFrame() noexcept {
+    // making a new register frame is not necessary for this implementation
+}
+
+void 
+Core::saveRegisterSet(Ordinal fp) noexcept {
+    storeBlock(fp, 16, 16);
+}
+
+void 
+Core::restoreRegisterSet(Ordinal fp) noexcept {
+    loadBlock(fp, 16, 16);
+}
+
+bool 
+Core::registerSetAvailable() noexcept {
+    return false;
 }

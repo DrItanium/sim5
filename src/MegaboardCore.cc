@@ -21,7 +21,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <Arduino.h>
-#include "MegaboardCore.h"
+#include "Core.h"
 #ifdef __AVR_ATmega2560__
 // Pins
 constexpr auto LOCKPIN = 12;
@@ -32,6 +32,15 @@ constexpr auto Address15 = 30;
 template<typename T>
 volatile T& memoryAddress(uint32_t address) noexcept {
     return *reinterpret_cast<volatile T*>((static_cast<uint16_t>(address) & 0x7FFF) + 0x8000);
+}
+namespace {
+    void 
+    setBankRegisters(Address address) noexcept {
+        // the EBI will mask out the value automatically
+        PORTC = static_cast<uint8_t>(address >> 8);
+        PORTF = static_cast<uint8_t>(address >> 16);
+        PORTK = static_cast<uint8_t>(address >> 24);
+    }
 }
 void 
 Core::nonPortableBegin() noexcept {
@@ -46,127 +55,89 @@ Core::nonPortableBegin() noexcept {
     setBankRegisters(0);
     // setup the external bus interface and other features too!
 }
-void 
-Core::checkForPendingInterrupts_impl() {
 
-}
 
-void 
-Core::sendIAC_impl(const iac::Message& msg) {
 
-}
 
 void 
-Core::syncf() {
-    // Wait for all faults to be generated that are associated with any prior
-    // uncompleted instructions
-    /// @todo implement if it makes sense since we don't have a pipeline
-}
-
-void 
-Core::flushRegisters() {
-    // no need to flush registers since we aren't caching them!
-}
-
-bool 
-Core::haveAvailableRegisterSet() noexcept {
-    return false;
-}
-
-void 
-Core::makeNewRegisterFrame() noexcept {
-    // making a new register frame is not necessary for this implementation
-}
-
-void 
-Core::saveRegisters(Ordinal fp) noexcept {
-    storeBlock(fp, 16, 16);
-}
-
-void 
-Core::restoreRegisters(Ordinal fp) noexcept {
-    loadBlock(fp, 16, 16);
-}
-
-void 
-Core::busLock() noexcept {
+Core::lockBus() noexcept {
     digitalWrite(LOCKPIN, LOW);
 }
 
 void 
-Core::busUnlock() noexcept {
+Core::unlockBus() noexcept {
     digitalWrite(LOCKPIN, HIGH);
 }
 
 Ordinal 
-Core::load_impl(Address address, TreatAsOrdinal) const noexcept {
+Core::load(Address address, TreatAsOrdinal) const noexcept {
     setBankRegisters(address);
     return memoryAddress<Ordinal>(address);
 }
 
 Integer 
-Core::load_impl(Address address, TreatAsInteger) const noexcept {
+Core::load(Address address, TreatAsInteger) const noexcept {
     setBankRegisters(address);
     return memoryAddress<Integer>(address);
 }
 
 ShortOrdinal 
-Core::load_impl(Address address, TreatAsShortOrdinal) const noexcept {
+Core::load(Address address, TreatAsShortOrdinal) const noexcept {
     setBankRegisters(address);
     return memoryAddress<ShortOrdinal>(address);
 }
 
 ShortInteger 
-Core::load_impl(Address address, TreatAsShortInteger) const noexcept {
+Core::load(Address address, TreatAsShortInteger) const noexcept {
     setBankRegisters(address);
     return memoryAddress<ShortInteger>(address);
 }
 
 ByteOrdinal 
-Core::load_impl(Address address, TreatAsByteOrdinal) const noexcept {
+Core::load(Address address, TreatAsByteOrdinal) const noexcept {
     setBankRegisters(address);
     return memoryAddress<ByteOrdinal>(address);
 }
 
 ByteInteger 
-Core::load_impl(Address address, TreatAsByteInteger) const noexcept {
+Core::load(Address address, TreatAsByteInteger) const noexcept {
     setBankRegisters(address);
     return memoryAddress<ByteInteger>(address);
 }
 
 void 
-Core::store_impl(Address address, Ordinal value, TreatAsOrdinal) noexcept {
+Core::store(Address address, Ordinal value, TreatAsOrdinal) noexcept {
     setBankRegisters(address);
     memoryAddress<decltype(value)>(address) = value;
 }
 
 void
-Core::store_impl(Address address, Integer value, TreatAsInteger) noexcept {
+Core::store(Address address, Integer value, TreatAsInteger) noexcept {
     setBankRegisters(address);
     memoryAddress<decltype(value)>(address) = value;
 }
 
 void
-Core::store_impl(Address address, ShortOrdinal value, TreatAsShortOrdinal) noexcept {
+Core::store(Address address, ShortOrdinal value, TreatAsShortOrdinal) noexcept {
     setBankRegisters(address);
     memoryAddress<decltype(value)>(address) = value;
 
 }
 
 void
-Core::store_impl(Address address, ShortInteger value, TreatAsShortInteger) noexcept {
+Core::store(Address address, ShortInteger value, TreatAsShortInteger) noexcept {
     setBankRegisters(address);
     memoryAddress<decltype(value)>(address) = value;
 }
 
 void
-Core::store_impl(Address address, ByteOrdinal value, TreatAsByteOrdinal) noexcept {
+Core::store(Address address, ByteOrdinal value, TreatAsByteOrdinal) noexcept {
     setBankRegisters(address);
     memoryAddress<decltype(value)>(address) = value;
 }
 
 void
-Core::store_impl(Address address, ByteInteger value, TreatAsByteInteger) noexcept {
+Core::store(Address address, ByteInteger value, TreatAsByteInteger) noexcept {
     setBankRegisters(address);
     memoryAddress<decltype(value)>(address) = value;
 }
@@ -177,25 +148,15 @@ Core::runExtendedSelfTests() noexcept {
 }
 
 void 
-Core::generateFault_impl(Ordinal faultCode) noexcept {
-
-}
-
-void 
-Core::assertFailureState_impl() noexcept {
+Core::assertFailureState() noexcept {
     digitalWrite(FAILPIN, LOW);
 }
 
 void 
-Core::deassertFailureState_impl() noexcept {
+Core::deassertFailureState() noexcept {
     digitalWrite(FAILPIN, HIGH);
 }
 
-void
-Core::setBankRegisters(Address address) const noexcept {
-    // the EBI will mask out the value automatically
-    PORTC = static_cast<uint8_t>(address >> 8);
-    PORTF = static_cast<uint8_t>(address >> 16);
-    PORTK = static_cast<uint8_t>(address >> 24);
-}
+
+
 #endif

@@ -1011,9 +1011,7 @@ class Core {
         Ordinal computeAddress() noexcept;
         void performRegisterTransfer(byte mask, byte count) noexcept;
     private:
-        void sendIAC(const iac::Message& msg) noexcept {
-            static_cast<T*>(this)->sendIAC_impl(msg);
-        }
+        void sendIAC(const iac::Message& msg) noexcept;
 #if 0
         void dispatchInterrupt(uint8_t vector) noexcept;
         void purgeInstructionCache() noexcept;
@@ -1462,6 +1460,7 @@ class Core {
         }
     private:
         bool runExtendedSelfTests() noexcept;
+        void nonPortableBegin() noexcept;
     private:
         Ordinal systemAddressTableBase_ = 0;
         Ordinal prcbAddress_ = 0;
