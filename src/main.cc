@@ -32,6 +32,9 @@
 Core core;
 void 
 setup() {
+    Serial.begin(9600);
+    Serial.println("i960 Simulator System");
+    Serial.println("(C) 2022-2023 Joshua Scoggins");
     core.begin();
     switch (core.start()) {
         case BootResult::SelfTestFailure:

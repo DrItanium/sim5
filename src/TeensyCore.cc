@@ -28,15 +28,12 @@
 #include "Morse.h"
 #include <SD.h>
 constexpr auto PSRAMMemorySize = 16 * 1024 * 1024;
-EXTMEM volatile char memoryBuffer[PSRAMMemorySize]; // 8 megabyte storage area
+EXTMEM volatile char memoryBuffer[PSRAMMemorySize]; // 16 megabyte storage area
 constexpr auto LOCKPIN = 33;
 constexpr auto FAILPIN = 36;
 constexpr auto LEDPin = LED_BUILTIN;
 void 
 Core::nonPortableBegin() noexcept {
-    Serial.begin(9600);
-    Serial.println("i960 Simulator System");
-    Serial.println("(C) 2022-2023 Joshua Scoggins");
     pinMode(LOCKPIN, OUTPUT);
     pinMode(FAILPIN, OUTPUT);
     pinMode(LEDPin, OUTPUT);
