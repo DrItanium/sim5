@@ -54,6 +54,7 @@ Core::nonPortableBegin() noexcept {
             }
         }
     }
+    digitalWrite(LEDPin, LOW);
     volatile uint32_t* buf32= reinterpret_cast<volatile uint32_t*>(memoryBuffer);
     Serial.println("Testing PSRAM in 32-bit memory mode");
     for (int i = 0; i < PSRAMMemorySize / sizeof(uint32_t); ++i) {
@@ -67,15 +68,13 @@ Core::nonPortableBegin() noexcept {
             }
         }
     }
+    digitalWrite(LEDPin, LOW);
     Serial.println("PSRAM Test Successful!");
-#if 0
-    if (!SD.begin()) {
-        while (true) {
-            morse::message("sd initialization failed");
-            delay(1000);
-        }
+    while (!SD.begin(BUILTIN_SDCARD)) {
+        Serial.println("SD Card not found...waiting");
+        delay(1000);
     }
-#endif
+    Serial.println("SD Card Found!");
 }
 
 

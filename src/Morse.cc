@@ -32,11 +32,6 @@ namespace morse {
         constexpr auto LetterDuration = UnitDuration * 3;
         constexpr auto WordDuration = UnitDuration * 7;
     }
-#ifndef LED_BUILTIN
-#ifdef ARDUINO_FEATHERS2
-#define LED_BUILTIN 13
-#endif
-#endif
     void letter(const std::string& v) noexcept;
     void 
     dot() noexcept {
