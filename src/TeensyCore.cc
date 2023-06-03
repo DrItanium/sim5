@@ -30,24 +30,32 @@
 constexpr auto PSRAMMemorySize_Bytes = 16 * 1024 * 1024;
 constexpr auto PSRAMMemorySize_Blocks = PSRAMMemorySize_Bytes / sizeof(SplitWord128);
 EXTMEM volatile SplitWord128 memoryBuffer[PSRAMMemorySize_Blocks];
-//constexpr auto LOCKPIN = 33;
-constexpr auto FAILPIN = 36;
 constexpr auto LEDPin = LED_BUILTIN;
 void 
 Core::nonPortableBegin() noexcept {
-    //pinMode(LOCKPIN, OUTPUT);
-    pinMode(FAILPIN, OUTPUT);
     pinMode(LEDPin, OUTPUT);
     digitalWrite(LEDPin, LOW);
     // clear main memory
     Serial.println("Testing 16-megabytes of PSRAM");
-    for (int i = 0; i < PSRAMMemorySize_Blocks; ++i) {
+    for (uint32_t i = 0; i < PSRAMMemorySize_Blocks; ++i) {
         auto& currentBlock = memoryBuffer[i];
-        for (int j = 0; j < 16; ++j) {
+        for (uint32_t j = 0; j < 16; ++j) {
             digitalWrite(LEDPin, HIGH);
             auto k = static_cast<uint8_t>(random());
             currentBlock.bytes[j] = k;
             if (currentBlock.bytes[j] != k) {
+                while (true) {
+                    delay(1000);
+                }
+            }
+            digitalWrite(LEDPin, LOW);
+        }
+        // test 32-bit values
+        for (uint32_t j = 0; j < 4; ++j) {
+            digitalWrite(LEDPin, HIGH);
+            uint32_t k = static_cast<uint32_t>(random());
+            currentBlock.words[j] = k;
+            if (currentBlock.words[j] != k) {
                 while (true) {
                     delay(1000);
                 }
@@ -85,12 +93,10 @@ Core::nonPortableBegin() noexcept {
 
 void 
 Core::lockBus() noexcept {
-    //digitalWrite(LOCKPIN, LOW);
 }
 
 void 
 Core::unlockBus() noexcept {
-    //digitalWrite(LOCKPIN, HIGH);
 }
 
 
@@ -101,12 +107,10 @@ Core::runNonPortableSelfTests() noexcept {
 
 void 
 Core::assertFailureState() noexcept {
-    digitalWrite(FAILPIN, LOW);
 }
 
 void 
 Core::deassertFailureState() noexcept {
-    digitalWrite(FAILPIN, HIGH);
 }
 
 void
