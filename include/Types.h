@@ -45,34 +45,6 @@ using TreatAsByteInteger = TreatAs<ByteInteger>;
 using TreatAsLongOrdinal = TreatAs<LongOrdinal>;
 using TreatAsLongInteger = TreatAs<LongInteger>;
 
-union SplitWord32 {
-    constexpr SplitWord32 (Ordinal a) : whole(a) { }
-    Ordinal whole;
-    struct {
-        Ordinal lower : 15;
-        Ordinal a15 : 1;
-        Ordinal a16_23 : 8;
-        Ordinal a24_31 : 8;
-    } splitAddress;
-    struct {
-        Ordinal lower : 15;
-        Ordinal bank0 : 1;
-        Ordinal bank1 : 1;
-        Ordinal bank2 : 1;
-        Ordinal bank3 : 1;
-        Ordinal rest : 13;
-    } internalBankAddress;
-    struct {
-        Ordinal offest : 28;
-        Ordinal space : 4;
-    } addressKind;
-    [[nodiscard]] constexpr bool inIOSpace() const noexcept { return addressKind.space == 0b1111; }
-};
-union SplitWord64 {
-    LongOrdinal whole;
-    Ordinal parts[sizeof(LongOrdinal) / sizeof(Ordinal)];
-};
-
 
 template<typename T>
 volatile T& memory(size_t address) noexcept {
@@ -281,4 +253,16 @@ struct [[gnu::packed]] ProcessorControlBlock {
 
 using PRCB = ProcessorControlBlock;
 static_assert(sizeof(ProcessorControlBlock) == 176);
+
+union SplitWord128 {
+    uint64_t longWords[2];
+    uint32_t words[4];
+    uint16_t halfWords[8];
+    uint8_t bytes[16];
+    double longReals[2];
+    float reals[4];
+};
+static_assert(sizeof(double) == 8);
+static_assert(sizeof(float) == 4);
+static_assert(sizeof(SplitWord128) == 16);
 #endif // end SIM5_TYPES_H__

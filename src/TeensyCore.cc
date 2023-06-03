@@ -108,6 +108,28 @@ Core::purgeInstructionCache() noexcept {
     ///@todo implement when we have an instruction cache!
 }
 
+namespace {
+Ordinal
+psramLoad32(Address address, TreatAsOrdinal) noexcept {
+    // allow unaligned loads
+    auto maskedOff = address & 0x00FF'FFFF;
+
+}
+Ordinal
+load32(Address address, TreatAsOrdinal) noexcept {
+    switch (static_cast<uint8_t>(address) >> 24) {
+        case 0x00: // PSRAM itself
+            break;
+        case 0xFE: // io space
+            break;
+        case 0xFF: // onboard devices
+            break;
+        default:
+            return 0;
+    }
+}
+} 
+
 Ordinal 
 Core::load(Address address, TreatAsOrdinal) const noexcept {
     return 0;
