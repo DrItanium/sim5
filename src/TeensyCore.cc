@@ -20,32 +20,36 @@
 // ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#include <Arduino.h>
-#include "Core.h"
 #ifdef CORE_TEENSY
 #ifdef ARDUINO_TEENSY41
+#include <Arduino.h>
+#include "Core.h"
 #include <string>
 #include "Morse.h"
+#include <SD.h>
 constexpr auto PSRAMMemorySize = 8 * 1024 * 1024;
 EXTMEM char memoryBuffer[PSRAMMemorySize]; // 8 megabyte storage area
 constexpr auto LOCKPIN = 33;
-constexpr auto INTPIN = 34;
-constexpr auto BUSYPIN = 35;
-
 constexpr auto FAILPIN = 36;
 constexpr auto LEDPin = LED_BUILTIN;
 void 
 Core::nonPortableBegin() noexcept {
     pinMode(LOCKPIN, OUTPUT);
     pinMode(FAILPIN, OUTPUT);
-    pinMode(INTPIN, INPUT);
-    pinMode(BUSYPIN, INPUT);
     pinMode(LEDPin, OUTPUT);
     digitalWrite(LEDPin, LOW);
     // clear main memory
     for (int i = 0; i < PSRAMMemorySize; ++i) {
         memoryBuffer[i] = 0;
     }
+#if 0
+    if (!SD.begin()) {
+        while (true) {
+            morse::message("sd initialization failed");
+            delay(1000);
+        }
+    }
+#endif
 }
 
 
