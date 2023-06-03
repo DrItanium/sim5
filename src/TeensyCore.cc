@@ -26,6 +26,8 @@
 #ifdef ARDUINO_TEENSY41
 #include <string>
 #include "Morse.h"
+constexpr auto PSRAMMemorySize = 8 * 1024 * 1024;
+EXTMEM char memoryBuffer[PSRAMMemorySize]; // 8 megabyte storage area
 constexpr auto LOCKPIN = 33;
 constexpr auto INTPIN = 34;
 constexpr auto BUSYPIN = 35;
@@ -40,6 +42,10 @@ Core::nonPortableBegin() noexcept {
     pinMode(BUSYPIN, INPUT);
     pinMode(LEDPin, OUTPUT);
     digitalWrite(LEDPin, LOW);
+    // clear main memory
+    for (int i = 0; i < PSRAMMemorySize; ++i) {
+        memoryBuffer[i] = 0;
+    }
 }
 
 
