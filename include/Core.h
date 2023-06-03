@@ -1459,6 +1459,8 @@ class Core {
     private:
         bool runNonPortableSelfTests() noexcept;
         void nonPortableBegin() noexcept;
+    public:
+        [[noreturn]] void failedBoot() noexcept;
     private:
         Ordinal systemAddressTableBase_ = 0;
         Ordinal prcbAddress_ = 0;

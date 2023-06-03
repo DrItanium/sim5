@@ -34,7 +34,7 @@ void
 setup() {
     core.begin();
     if (core.start() != BootResult::Success) {
-        while (true);
+        core.failedBoot();
     }
 }
 void 

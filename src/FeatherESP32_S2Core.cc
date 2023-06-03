@@ -24,8 +24,12 @@
 #include "Core.h"
 #ifdef ESP32
 #ifdef ARDUINO_FEATHERS2
+#include <Adafruit_DotStar.h>
+#include <string>
+
 namespace {
     uint8_t* psMemory = nullptr;
+    Adafruit_DotStar onboard(1, APA_DATA, APA_CLK, DOTSTAR_BRG);
 }
 constexpr auto LOCKPIN = 33;
 constexpr auto INTPIN = 38;
@@ -48,6 +52,9 @@ Core::nonPortableBegin() noexcept {
     digitalWrite(LEDPin, HIGH);
     delay(1000);
     digitalWrite(LEDPin, LOW);
+    onboard.begin();
+    onboard.setBrightness(80);
+    onboard.show();
     if (psramInit()) {
         // since we have access to 8 megabytes of PSRAM on this board, we need
         // to allocate the memory space entirely and keep it around
@@ -174,6 +181,60 @@ Core::store(Address address, ByteOrdinal value, TreatAsByteOrdinal) noexcept {
 void
 Core::store(Address address, ByteInteger value, TreatAsByteInteger) noexcept {
     ::store<decltype(value)>(address, value);
+}
+namespace morse {
+    constexpr auto UnitDuration = 100;
+    constexpr auto DotDuration = UnitDuration;
+    constexpr auto DashDuration = UnitDuration * 3;
+    constexpr auto LetterDuration = UnitDuration * 3;
+    constexpr auto WordDuration = UnitDuration * 7;
+    void 
+    dot() noexcept {
+        digitalWrite(LEDPin, HIGH);
+        delay(DotDuration);
+        digitalWrite(LEDPin, LOW);
+        delay(UnitDuration);
+    }
+    void
+    dash() noexcept {
+        digitalWrite(LEDPin, HIGH);
+        delay(DashDuration);
+        digitalWrite(LEDPin, LOW);
+        delay(UnitDuration);
+    }
+    void parse(const std::string& str) noexcept {
+        for (auto c : str) {
+            switch (c) {
+                case '.':
+                    dot();
+                    break;
+                case '-':
+                    dash();
+                    break;
+                case ' ': // word end
+                    delay(WordDuration);
+                    break;
+                case 's':
+                    parse("...");
+                    delay(LetterDuration);
+                    break;
+                case 'o':
+                    parse("---");
+                    delay(LetterDuration);
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+}
+void 
+Core::failedBoot() noexcept {
+    while(true) {
+        // dot dot dot (S)
+        morse::parse("sos");
+        delay(1000);
+    }
 }
 #endif /* defined ARDUINO_FEATHERS2 */
 #endif /* defined ESP32 */
