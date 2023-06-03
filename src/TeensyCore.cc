@@ -27,21 +27,47 @@
 #include <string>
 #include "Morse.h"
 #include <SD.h>
-constexpr auto PSRAMMemorySize = 8 * 1024 * 1024;
-EXTMEM char memoryBuffer[PSRAMMemorySize]; // 8 megabyte storage area
+constexpr auto PSRAMMemorySize = 16 * 1024 * 1024;
+EXTMEM volatile char memoryBuffer[PSRAMMemorySize]; // 8 megabyte storage area
 constexpr auto LOCKPIN = 33;
 constexpr auto FAILPIN = 36;
 constexpr auto LEDPin = LED_BUILTIN;
 void 
 Core::nonPortableBegin() noexcept {
+    Serial.begin(9600);
+    Serial.println("i960 Simulator System");
+    Serial.println("(C) 2022-2023 Joshua Scoggins");
     pinMode(LOCKPIN, OUTPUT);
     pinMode(FAILPIN, OUTPUT);
     pinMode(LEDPin, OUTPUT);
     digitalWrite(LEDPin, LOW);
     // clear main memory
+    Serial.println("Testing 16-megabytes of PSRAM");
     for (int i = 0; i < PSRAMMemorySize; ++i) {
-        memoryBuffer[i] = 0;
+        digitalWrite(LEDPin, LOW);
+        auto j = static_cast<uint8_t>(i);
+        memoryBuffer[i] = j;
+        digitalWrite(LEDPin, HIGH);
+        if (memoryBuffer[i] != j) {
+            while (true) {
+                delay(1000);
+            }
+        }
     }
+    volatile uint32_t* buf32= reinterpret_cast<volatile uint32_t*>(memoryBuffer);
+    Serial.println("Testing PSRAM in 32-bit memory mode");
+    for (int i = 0; i < PSRAMMemorySize / sizeof(uint32_t); ++i) {
+        digitalWrite(LEDPin, LOW);
+        uint32_t value = random();
+        buf32[i] = value;
+        digitalWrite(LEDPin, HIGH);
+        if (buf32[i] != value) {
+            while (true) {
+                delay(1000);
+            }
+        }
+    }
+    Serial.println("PSRAM Test Successful!");
 #if 0
     if (!SD.begin()) {
         while (true) {
