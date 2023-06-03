@@ -29,12 +29,12 @@
 #include <SD.h>
 constexpr auto PSRAMMemorySize = 16 * 1024 * 1024;
 EXTMEM volatile char memoryBuffer[PSRAMMemorySize]; // 16 megabyte storage area
-constexpr auto LOCKPIN = 33;
+//constexpr auto LOCKPIN = 33;
 constexpr auto FAILPIN = 36;
 constexpr auto LEDPin = LED_BUILTIN;
 void 
 Core::nonPortableBegin() noexcept {
-    pinMode(LOCKPIN, OUTPUT);
+    //pinMode(LOCKPIN, OUTPUT);
     pinMode(FAILPIN, OUTPUT);
     pinMode(LEDPin, OUTPUT);
     digitalWrite(LEDPin, LOW);
@@ -79,12 +79,12 @@ Core::nonPortableBegin() noexcept {
 
 void 
 Core::lockBus() noexcept {
-    digitalWrite(LOCKPIN, LOW);
+    //digitalWrite(LOCKPIN, LOW);
 }
 
 void 
 Core::unlockBus() noexcept {
-    digitalWrite(LOCKPIN, HIGH);
+    //digitalWrite(LOCKPIN, HIGH);
 }
 
 
