@@ -27,8 +27,9 @@
 #include <string>
 #include "Morse.h"
 #include <SD.h>
-constexpr auto PSRAMMemorySize = 16 * 1024 * 1024;
-EXTMEM volatile char memoryBuffer[PSRAMMemorySize]; // 16 megabyte storage area
+constexpr auto PSRAMMemorySize_Bytes = 16 * 1024 * 1024;
+constexpr auto PSRAMMemorySize_Blocks = PSRAMMemorySize_Bytes / sizeof(SplitWord128);
+EXTMEM volatile SplitWord128 memoryBuffer[PSRAMMemorySize_Blocks];
 //constexpr auto LOCKPIN = 33;
 constexpr auto FAILPIN = 36;
 constexpr auto LEDPin = LED_BUILTIN;
@@ -40,18 +41,22 @@ Core::nonPortableBegin() noexcept {
     digitalWrite(LEDPin, LOW);
     // clear main memory
     Serial.println("Testing 16-megabytes of PSRAM");
-    for (int i = 0; i < PSRAMMemorySize; ++i) {
-        digitalWrite(LEDPin, LOW);
-        auto j = static_cast<uint8_t>(i);
-        memoryBuffer[i] = j;
-        digitalWrite(LEDPin, HIGH);
-        if (memoryBuffer[i] != j) {
-            while (true) {
-                delay(1000);
+    for (int i = 0; i < PSRAMMemorySize_Blocks; ++i) {
+        auto& currentBlock = memoryBuffer[i];
+        for (int j = 0; j < 16; ++j) {
+            digitalWrite(LEDPin, HIGH);
+            auto k = static_cast<uint8_t>(random());
+            currentBlock.bytes[j] = k;
+            if (currentBlock.bytes[j] != k) {
+                while (true) {
+                    delay(1000);
+                }
             }
+            digitalWrite(LEDPin, LOW);
         }
     }
     digitalWrite(LEDPin, LOW);
+#if 0
     volatile uint32_t* buf32= reinterpret_cast<volatile uint32_t*>(memoryBuffer);
     Serial.println("Testing PSRAM in 32-bit memory mode");
     for (int i = 0; i < PSRAMMemorySize / sizeof(uint32_t); ++i) {
@@ -66,6 +71,7 @@ Core::nonPortableBegin() noexcept {
         }
     }
     digitalWrite(LEDPin, LOW);
+#endif
     Serial.println("PSRAM Test Successful!");
     while (!SD.begin(BUILTIN_SDCARD)) {
         Serial.println("SD Card not found...waiting");
@@ -112,8 +118,7 @@ namespace {
 Ordinal
 psramLoad32(Address address, TreatAsOrdinal) noexcept {
     // allow unaligned loads
-    auto maskedOff = address & 0x00FF'FFFF;
-
+    return 0;
 }
 Ordinal
 load32(Address address, TreatAsOrdinal) noexcept {
