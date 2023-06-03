@@ -24,6 +24,7 @@
 #include <Arduino.h>
 #include "Types.h"
 #include "Core.h"
+#include "Morse.h"
 Ordinal 
 Register::modify(Ordinal mask, Ordinal src) noexcept {
     auto tmp = o;
@@ -1734,4 +1735,21 @@ Core::storeSystemBase(Ordinal destinationAddress) noexcept {
 void 
 Core::testPendingInterrupts() noexcept {
 
+}
+
+void 
+Core::checksumFail() noexcept {
+    while(true) {
+        // dot dot dot (S)
+        morse::message("checksum failure");
+        delay(1000);
+    }
+}
+void 
+Core::selfTestFailure() noexcept {
+    while(true) {
+        // dot dot dot (S)
+        morse::message("self test failure");
+        delay(1000);
+    }
 }
