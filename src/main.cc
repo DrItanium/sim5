@@ -33,8 +33,15 @@ Core core;
 void 
 setup() {
     core.begin();
-    if (core.start() != BootResult::Success) {
-        core.failedBoot();
+    switch (core.start()) {
+        case BootResult::SelfTestFailure:
+            core.selfTestFailure();
+            break;
+        case BootResult::ChecksumFail:
+            core.checksumFail();
+            break;
+        default:
+            break;
     }
 }
 void 

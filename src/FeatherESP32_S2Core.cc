@@ -202,6 +202,8 @@ namespace morse {
         digitalWrite(LEDPin, LOW);
         delay(UnitDuration);
     }
+    void parse (const std::string& str) noexcept;
+    void letter( const std::string& sequence) noexcept;
     void parse(const std::string& str) noexcept {
         for (auto c : str) {
             switch (c) {
@@ -214,25 +216,164 @@ namespace morse {
                 case ' ': // word end
                     delay(WordDuration);
                     break;
-                case 's':
-                    parse("...");
-                    delay(LetterDuration);
+                case 'A':
+                case 'a':
+                    letter(".-");
                     break;
+                case 'B':
+                case 'b':
+                    letter("-...");
+                    break;
+                case 'C':
+                case 'c':
+                    letter("-.-.");
+                    break;
+                case 'D':
+                case 'd':
+                    letter("-..");
+                    break;
+                case 'E':
+                case 'e':
+                    letter(".");
+                    break;
+                case 'F':
+                case 'f':
+                    letter("..-.");
+                    break;
+                case 'G':
+                case 'g':
+                    letter("--.");
+                    break;
+                case 'H':
+                case 'h':
+                    letter("....");
+                    break;
+                case 'I':
+                case 'i':
+                    letter("..");
+                    break;
+                case 'J':
+                case 'j':
+                    letter(".---");
+                    break;
+                case 'K':
+                case 'k':
+                    letter("-.-");
+                    break;
+                case 'L':
+                case 'l':
+                    letter(".-..");
+                    break;
+                case 'M':
+                case 'm':
+                    letter("--");
+                    break;
+                case 'N':
+                case 'n':
+                    letter("-.");
+                    break;
+                case 'O':
                 case 'o':
-                    parse("---");
-                    delay(LetterDuration);
+                    letter("---");
+                    break;
+                case 'P':
+                case 'p':
+                    letter(".--.");
+                    break;
+                case 'Q':
+                case 'q':
+                    letter("--.-");
+                    break;
+                case 'R':
+                case 'r':
+                    letter(".-.");
+                    break;
+                case 'S':
+                case 's':
+                    letter("...");
+                    break;
+                case 't':
+                case 'T':
+                    letter("-");
+                    break;
+                case 'u':
+                case 'U':
+                    letter("..-");
+                    break;
+                case 'V':
+                case 'v':
+                    letter("...-");
+                    break;
+                case 'W':
+                case 'w':
+                    letter(".--");
+                    break;
+                case 'X':
+                case 'x':
+                    letter("-..-");
+                    break;
+                case 'Y':
+                case 'y':
+                    letter("-.--");
+                    break;
+                case 'Z':
+                case 'z':
+                    letter("--..");
+                    break;
+                case '1':
+                    letter(".----");
+                    break;
+                case '2':
+                    letter("..---");
+                    break;
+                case '3':
+                    letter("...--");
+                    break;
+                case '4':
+                    letter("....-");
+                    break;
+                case '5':
+                    letter(".....");
+                    break;
+                case '6':
+                    letter("-....");
+                    break;
+                case '7':
+                    letter("--...");
+                    break;
+                case '8':
+                    letter("---..");
+                    break;
+                case '9':
+                    letter("----.");
+                    break;
+                case '0':
+                    letter("-----");
                     break;
                 default:
                     break;
             }
         }
     }
+    void 
+    letter(const std::string& message) noexcept {
+        parse(message);
+        delay(LetterDuration);
+    }
 }
 void 
-Core::failedBoot() noexcept {
+Core::checksumFail() noexcept {
     while(true) {
         // dot dot dot (S)
-        morse::parse("sos");
+        morse::parse("checksum failure");
+        delay(1000);
+    }
+}
+void 
+Core::selfTestFailure() noexcept {
+    while(true) {
+        // dot dot dot (S)
+        morse::parse("self test failure");
         delay(1000);
     }
 }

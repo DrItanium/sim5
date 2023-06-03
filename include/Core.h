@@ -1460,7 +1460,8 @@ class Core {
         bool runNonPortableSelfTests() noexcept;
         void nonPortableBegin() noexcept;
     public:
-        [[noreturn]] void failedBoot() noexcept;
+        [[noreturn]] void checksumFail() noexcept;
+        [[noreturn]] void selfTestFailure() noexcept;
     private:
         Ordinal systemAddressTableBase_ = 0;
         Ordinal prcbAddress_ = 0;
