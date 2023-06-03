@@ -20,30 +20,27 @@
 // ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#include <Arduino.h>
-#include "Core.h"
 #ifdef ESP32
 #ifdef ARDUINO_FEATHERS2
+#include <Arduino.h>
 #include <Adafruit_DotStar.h>
 #include <string>
+#include <SD.h>
+#include "Core.h"
+#include "Morse.h"
 
 namespace {
     uint8_t* psMemory = nullptr;
     Adafruit_DotStar onboard(1, APA_DATA, APA_CLK, DOTSTAR_BRG);
 }
 constexpr auto LOCKPIN = 33;
-constexpr auto INTPIN = 38;
-constexpr auto BUSYPIN = 1;
-
-constexpr auto FAILPIN = 3;
+constexpr auto FAILPIN = 1;
+constexpr auto SDPin = 3;
 constexpr auto LEDPin = 13;
-constexpr auto AmbientLightSensor = 4;
 void 
 Core::nonPortableBegin() noexcept {
     pinMode(LOCKPIN, OUTPUT);
     pinMode(FAILPIN, OUTPUT);
-    pinMode(INTPIN, INPUT);
-    pinMode(BUSYPIN, INPUT);
     pinMode(LEDPin, OUTPUT);
     digitalWrite(LEDPin, LOW);
 
@@ -59,6 +56,12 @@ Core::nonPortableBegin() noexcept {
         // since we have access to 8 megabytes of PSRAM on this board, we need
         // to allocate the memory space entirely and keep it around
         psMemory = (uint8_t*)ps_calloc(8 * 1024 * 1024, sizeof(uint8_t));
+    }
+    if (!SD.begin(SDPin)) {
+        while (true) {
+            morse::message("sd initialization failed");
+            delay(1000);
+        }
     }
 }
 
