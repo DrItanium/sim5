@@ -1460,6 +1460,7 @@ class Core {
         bool runNonPortableSelfTests() noexcept;
         void nonPortableBegin() noexcept;
     private:
+        // fault handling components
         void pushFaultRecord(
                 Address baseStorageAddress,
                 Ordinal overrideFaultData[3], 
@@ -1469,6 +1470,7 @@ class Core {
                 Ordinal arithmeticControls,
                 Ordinal faultFlags,
                 Address address) noexcept;
+        Address getFaultTableBaseAddress() const noexcept;
 
     public:
         [[noreturn]] void checksumFail() noexcept;
