@@ -1759,7 +1759,7 @@ Core::pushFaultRecord(
                 Ordinal baseStorageAddress,
                 Ordinal overrideFaultData[3], 
                 Ordinal faultData[3],
-                Ordinal overrrideFlags,
+                Ordinal overrideFlags,
                 Ordinal processControls,
                 Ordinal arithmeticControls,
                 Ordinal faultFlags,
@@ -1772,6 +1772,16 @@ Core::pushFaultRecord(
     //
     // I am not going to push a resumption record onto the stack because I
     // don't need it.
-
-    
+    store(baseStorageAddress, 0, TreatAsOrdinal{});
+    store(baseStorageAddress + 4, overrideFaultData[0], TreatAsOrdinal{});
+    store(baseStorageAddress + 8, overrideFaultData[1], TreatAsOrdinal{});
+    store(baseStorageAddress + 12, overrideFaultData[2], TreatAsOrdinal{});
+    store(baseStorageAddress + 16, faultData[0], TreatAsOrdinal{});
+    store(baseStorageAddress + 20, faultData[1], TreatAsOrdinal{});
+    store(baseStorageAddress + 24, faultData[2], TreatAsOrdinal{});
+    store(baseStorageAddress + 28, overrideFlags, TreatAsOrdinal{});
+    store(baseStorageAddress + 32, processControls, TreatAsOrdinal{});
+    store(baseStorageAddress + 36, arithmeticControls, TreatAsOrdinal{});
+    store(baseStorageAddress + 40, faultFlags, TreatAsOrdinal{});
+    store(baseStorageAddress + 44, address, TreatAsOrdinal{});
 }

@@ -1461,7 +1461,7 @@ class Core {
         void nonPortableBegin() noexcept;
     private:
         void pushFaultRecord(
-                Address newFramePointerAddress,
+                Address baseStorageAddress,
                 Ordinal overrideFaultData[3], 
                 Ordinal faultData[3],
                 Ordinal overrideFlags,
