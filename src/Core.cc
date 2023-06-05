@@ -1753,3 +1753,25 @@ Core::selfTestFailure() noexcept {
         delay(1000);
     }
 }
+
+void
+Core::pushFaultRecord(
+                Ordinal baseStorageAddress,
+                Ordinal overrideFaultData[3], 
+                Ordinal faultData[3],
+                Ordinal overrrideFlags,
+                Ordinal processControls,
+                Ordinal arithmeticControls,
+                Ordinal faultFlags,
+                Ordinal address) noexcept 
+{
+    // okay so we have to stash this fault record into the area _before_ the
+    // current frame pointer, this function assumes that fault table
+    // frame pointer has already been setup. This function just does the store
+    // operation itself
+    //
+    // I am not going to push a resumption record onto the stack because I
+    // don't need it.
+
+    
+}

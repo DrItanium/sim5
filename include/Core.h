@@ -1459,6 +1459,17 @@ class Core {
     private:
         bool runNonPortableSelfTests() noexcept;
         void nonPortableBegin() noexcept;
+    private:
+        void pushFaultRecord(
+                Address newFramePointerAddress,
+                Ordinal overrideFaultData[3], 
+                Ordinal faultData[3],
+                Ordinal overrideFlags,
+                Ordinal processControls,
+                Ordinal arithmeticControls,
+                Ordinal faultFlags,
+                Address address) noexcept;
+
     public:
         [[noreturn]] void checksumFail() noexcept;
         [[noreturn]] void selfTestFailure() noexcept;
