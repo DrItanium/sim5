@@ -910,9 +910,10 @@ template<Ordinal C, Ordinal NotC>
 constexpr Ordinal computeNextFrame(Ordinal base) noexcept {
     return (base + C) & NotC;
 }
-static_assert(computeNextFrame<Core::C, Core::NotC>(0xFDED'0000) == 0xFDED'0040);
-static_assert(computeNextFrame<Core::C*2, Core::NotC>(0xFDED'0000) == 0xFDED'0080);
-static_assert(computeNextFrame<Core::C*3, Core::NotC>(0xFDED'0000) == 0xFDED'00C0);
+static_assert(computeNextFrame<Core::C, Core::NotC>(0xFDED'0000) == 0xFDED'0000);
+static_assert(computeNextFrame<Core::C*2, Core::NotC>(0xFDED'0000) == 0xFDED'0040);
+static_assert(computeNextFrame<Core::C*3, Core::NotC>(0xFDED'0000) == 0xFDED'0080);
+static_assert(computeNextFrame<Core::C*4, Core::NotC>(0xFDED'0000) == 0xFDED'00C0);
 } // end namespace
 Ordinal
 Core::getNextFrameBase() const noexcept {
@@ -1806,8 +1807,18 @@ Core::generateFault(Ordinal faultCode) {
     if (entry.isLocalProcedureEntry()) {
         // first allocate a new frame on the stack that the processor is
         // currently using. Set the frame-return status field to 0b001
-        //auto temp = getNextFrameBase(); // round stack pointer to next boundary
-        //auto fp = getGPRValue(FPIndex, TreatAsOrdinal{});
+        // 
+        // allocate enough space before the start of the frame for the fault
+        // record (and optionally a resumption record if necessary). Be lazy
+        // and just allocate two frames worth of information to be on the safe
+        // side! Three frames worth are necessary to make sure we have enough
+        // padding.
+        auto nextFrame = computeNextFrame<C*3, NotC>(getStackPointer());
+        auto faultRecordStart = nextFrame - 48;
+        auto resumptionRecordStart = nextFrame - 96;
+        Register fp(getGPRValue(FPIndex, TreatAsOrdinal{}));
+        //fp.pfp = 0b001;
+        balx(RIPIndex, entry.getFaultHandlerProcedureAddress());
         //balx(RIPIndex, effectiveAddress);
         //enterCall(fp);
         //setupNewFrameInternals(fp, temp);
