@@ -190,11 +190,25 @@ struct SystemProcedureTable {
 };
 struct [[gnu::packed]] SegmentDescriptor {
     SegmentDescriptor() : reserved{0,0}, address(0), cfg(0) { }
-    constexpr ByteOrdinal getKind() const noexcept { return static_cast<ByteOrdinal>(cfg) & 0b111; }
-    bool invalid() const noexcept { return getKind() == 0; }
+    [[nodiscard]] constexpr bool valid() const noexcept { return cfg.valid; }
+    [[nodiscard]] constexpr ByteOrdinal getPagingMethod() const noexcept { return cfg.bits.pagingMethod; }
+    [[nodiscard]] constexpr ByteOrdinal getAccessStatus() const noexcept { return cfg.bits.accessStatus; }
+    [[nodiscard]] constexpr ByteOrdinal getSize() const noexcept { return cfg.bits.size; }
+    [[nodiscard]] constexpr ByteOrdinal getSegmentType() const noexcept { return cfg.bits.segmentType; }
     Ordinal reserved[2];
     Address address;
-    Ordinal cfg;
+    union {
+        Ordinal raw;
+        struct {
+            Ordinal valid : 1;
+            Ordinal pagingMethod : 2;
+            Ordinal accessStatus : 5;
+            Ordinal reserved0 : 10;
+            Ordinal size : 6;
+            Ordinal reserved1 : 4;
+            Ordinal segmentType : 4;
+        } bits;
+    } cfg;
 };
 static_assert(sizeof(SegmentDescriptor) == 16, "Segment descriptors must be 16 bytes in length");
 
@@ -204,7 +218,8 @@ static_assert(sizeof(SegmentDescriptor) == 16, "Segment descriptors must be 16 b
  * support the Protected Architecture, the use of this table is very
  * limited and is called the "System Address Table" instead; Only entry
  * 8 has a fixed purpose and must point to the first address of this table;
- * The segment table can be very large bu
+ * The segment table can be very large when dealing with the protected
+ * architecture
  */
 struct [[gnu::packed]] SegmentDescriptorTable {
     SegmentDescriptor descriptors[11];

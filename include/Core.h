@@ -1471,6 +1471,7 @@ class Core {
                 Ordinal faultFlags,
                 Address address) noexcept;
         FaultTableEntry getFaultEntry(uint8_t index) const noexcept;
+        Address getFaultHandlerBaseAddress(const FaultTableEntry& entry) const noexcept;
     private:
         template<uint8_t offset>
         Ordinal getFromPRCB() const noexcept { return load(prcbAddress_ + offset, TreatAsOrdinal{}); }
@@ -1482,6 +1483,7 @@ class Core {
         Address getRegion3SegmentSelector() const noexcept { return getFromPRCB<32>(); }
         Address getSystemProcedureTableSegmentSelector() const noexcept { return getFromPRCB<36>(); }
         Address getFaultTableBaseAddress() const noexcept { return getFromPRCB<40>(); }
+    private: // system address table / system procedure table
 
     public:
         [[noreturn]] void checksumFail() noexcept;
