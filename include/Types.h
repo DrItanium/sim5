@@ -137,6 +137,7 @@ struct [[gnu::packed]] FaultTableEntry {
 struct [[gnu::packed]] FaultTable {
     FaultTableEntry entries[32];
 };
+static_assert(sizeof(FaultTable) == 256);
 
 struct [[gnu::packed]] InterruptTable {
     Ordinal pendingPriorities;

@@ -1785,3 +1785,17 @@ Core::pushFaultRecord(
     store(baseStorageAddress + 40, faultFlags, TreatAsOrdinal{});
     store(baseStorageAddress + 44, address, TreatAsOrdinal{});
 }
+
+FaultTableEntry
+Core::getFaultEntry(uint8_t index) const noexcept {
+    auto faultTableBaseAddress = getFaultTableBaseAddress();
+    auto maskedIndex = index & 0b0001'1111;
+    auto realOffset = maskedIndex * 8;
+    auto realAddress = faultTableBaseAddress + realOffset;
+
+    return FaultTableEntry { 
+        load(realAddress, TreatAsOrdinal{}),
+        load(realAddress + 4, TreatAsOrdinal{})
+    };
+}
+

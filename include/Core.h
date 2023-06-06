@@ -1470,6 +1470,7 @@ class Core {
                 Ordinal arithmeticControls,
                 Ordinal faultFlags,
                 Address address) noexcept;
+        FaultTableEntry getFaultEntry(uint8_t index) const noexcept;
     private:
         template<uint8_t offset>
         Ordinal getFromPRCB() const noexcept { return load(prcbAddress_ + offset, TreatAsOrdinal{}); }
