@@ -34,16 +34,23 @@ int main(int argc, char** argv) {
     Core core;
     std::cout << "i960 Simulator System" << std::endl;
     std::cout << "(C) 2022-2023 Joshua Scoggins" << std::endl;
-    core.begin();
-    switch (core.start()) {
-        case BootResult::SelfTestFailure:
-            core.selfTestFailure();
-            break;
-        case BootResult::ChecksumFail:
-            core.checksumFail();
-            break;
-        default:
-            break;
+    try {
+        core.begin();
+        switch (core.start()) {
+            case BootResult::SelfTestFailure:
+                core.selfTestFailure();
+                break;
+            case BootResult::ChecksumFail:
+                core.checksumFail();
+                break;
+            default:
+                break;
+        }
+        while (true) {
+            core.cycle();
+        }
+    } catch(std::runtime_error& ex) {
+        std::cout << ex.what() << std::endl;
     }
     return 0;
 }
