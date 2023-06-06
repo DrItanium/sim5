@@ -189,11 +189,11 @@ struct SystemProcedureTable {
     Address entries[260];
 };
 struct [[gnu::packed]] SegmentDescriptor {
-    SegmentDescriptor() : reserved{0,0}, address(0) { }
-    constexpr SegmentDescriptor(Ordinal addr, Ordinal config, Ordinal reserved0 = 0, Ordinal reserved1 = 0) noexcept 
+    constexpr SegmentDescriptor(Ordinal reserved0, Ordinal reserved1, Ordinal addr, Ordinal config) noexcept 
         : reserved{reserved0, reserved1}, address(addr), cfg{config} {
 
         }
+    constexpr SegmentDescriptor() noexcept : SegmentDescriptor(0, 0, 0, 0) { }
     [[nodiscard]] constexpr bool valid() const noexcept { return cfg.bits.valid; }
     [[nodiscard]] constexpr ByteOrdinal getPagingMethod() const noexcept { return cfg.bits.pagingMethod; }
     [[nodiscard]] constexpr ByteOrdinal getAccessStatus() const noexcept { return cfg.bits.accessStatus; }
