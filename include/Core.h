@@ -1464,6 +1464,9 @@ class Core {
         void pushFaultRecord(Address baseStorageAddress, const FaultRecord& record) noexcept;
         FaultTableEntry getFaultEntry(uint8_t index) const noexcept;
         Address getFaultHandlerBaseAddress(const FaultTableEntry& entry) const noexcept;
+        void localProcedureEntry_FaultCall(Address targetAddress) noexcept;
+        void procedureTableEntry_FaultCall(const FaultTableEntry& entry) noexcept;
+        void traceFaultProcedureTableEntry_FaultCall(const FaultTableEntry& entry) noexcept;
     private:
         template<uint8_t offset>
         Ordinal getFromPRCB() const noexcept { return load(prcbAddress_ + offset, TreatAsOrdinal{}); }

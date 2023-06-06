@@ -892,10 +892,6 @@ Core::addo(Register& dest, Ordinal src1, Ordinal src2) noexcept {
 }
 
 
-void
-Core::generateFault(Ordinal faultCode) noexcept {
-    /// @todo implement
-}
 
 
 Ordinal
@@ -1805,5 +1801,12 @@ Core::loadSegmentDescriptor(SegmentSelector selector) const noexcept {
         load(baseIndex+8, TreatAsOrdinal{}),
         load(baseIndex+12, TreatAsOrdinal{}),
     };
+}
+
+void
+Core::generateFault(Ordinal faultCode) noexcept {
+    auto faultType = static_cast<uint8_t>(faultCode >> 16);
+    auto faultOffset = static_cast<uint8_t>(faultCode);
+    /// @todo implement
 }
 
