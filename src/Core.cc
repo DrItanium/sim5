@@ -1814,13 +1814,21 @@ Core::localProcedureEntry_FaultCall(const FaultRecord& record, const FaultTableE
     // padding.
     auto nextFrame = computeNextFrame<C*3, NotC>(getStackPointer());
     auto faultRecordStart = nextFrame - 48;
-    auto resumptionRecordStart = nextFrame - 96;
-    Register fp(getGPRValue(FPIndex, TreatAsOrdinal{}));
-    //fp.pfp = 0b001;
-    //balx(RIPIndex, entry.getFaultHandlerProcedureAddress());
-    //balx(RIPIndex, effectiveAddress);
-    //enterCall(fp);
-    //setupNewFrameInternals(fp, temp);
+    auto fp = getGPRValue(FPIndex, TreatAsOrdinal{});
+    // save the current registers to the stack
+    enterCall(fp);
+    // manually setup the stack frame as needed
+    auto& pfp = getGPR(PFPIndex);
+    // clear the p bit as well to make sure
+    pfp.setValue(getGPRValue(FPIndex, TreatAsOrdinal{}) & ~0b1'111, TreatAsOrdinal{});
+    pfp.pfp.rt = 0b001;
+    setGPR(FPIndex, nextFrame, TreatAsOrdinal{});
+    setStackPointer(nextFrame + 64, TreatAsOrdinal{});
+    pushFaultRecord(nextFrame - 48, record);
+    // no need to push a resumption record right now and set the resume flag in
+    // the saved process controls
+    setIP(entry.getFaultHandlerProcedureAddress(), TreatAsOrdinal{});
+
 }
 void 
 Core::procedureTableEntry_FaultCall(const FaultRecord& record, const FaultTableEntry& entry) noexcept {
