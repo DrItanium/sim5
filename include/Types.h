@@ -120,6 +120,8 @@ struct [[gnu::packed]] FaultRecord {
      * @brief The address of the faulting instruction
      */
     Address addr;
+    FaultRecord() = default;
+    FaultRecord(Ordinal p, Ordinal a, Ordinal t, Address adr) : unused(0), overrideFaultData{0}, faultData{0}, overrideType(0), pc(p), ac(a), type(t), addr(adr) { }
 };
 static_assert(sizeof(FaultRecord) == 48);
 
@@ -270,16 +272,9 @@ struct [[gnu::packed]] ProcessorControlBlock {
     LongOrdinal idleTime;
     Ordinal systemErrorFault;
     Ordinal reserved4;
-    union {
-        Ordinal scratchSpace[24];
-        struct {
-            Ordinal resumptionRecord[12];
-            FaultRecord systemErrorFaultRecord;
-        };
-    };
-    //Ordinal resumptionRecord[12];
+    Ordinal resumptionRecord[12];
+    FaultRecord systemErrorFaultRecord;
     //static_assert(sizeof(resumptionRecord) == 48);
-    //FaultRecord systemError;
 };
 
 using PRCB = ProcessorControlBlock;

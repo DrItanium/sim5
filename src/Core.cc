@@ -183,7 +183,7 @@ Core::emul(LongRegister& dest, Ordinal src1, Ordinal src2) noexcept {
         auto& upper = getGPR(instruction_.reg.srcDest + 1);
         lower.template setValue<Ordinal>(0xFFFF'FFFF);
         upper.template setValue<Ordinal>(0xFFFF'FFFF);
-        generateFault(InvalidOpcodeFault);
+        invalidOpcodeFault();
     }  else {
         dest.template setValue<LongOrdinal>(static_cast<LongOrdinal>(src2) * static_cast<LongOrdinal>(src1));
     }
@@ -200,7 +200,7 @@ Core::ediv(LongRegister& dest, Ordinal src1, const LongRegister& src2) noexcept 
         auto& upper = getGPR(instruction_.reg.srcDest + 1);
         lower.template setValue<Ordinal>(0xFFFF'FFFF);
         upper.template setValue<Ordinal>(0xFFFF'FFFF);
-        generateFault(InvalidOpcodeFault);
+        invalidOpcodeFault();
     } else if (src1 == 0) {
         // divide by zero
         zeroDivideFault();
@@ -292,7 +292,8 @@ void
 Core::mark() noexcept {
     nextInstruction();
     if (pc_.processControls.traceEnable && tc_.trace.breakpointTraceMode) {
-        generateFault(MarkTraceFault);
+        markTraceFault();
+        //generateFault(MarkTraceFault);
     }
 }
 
@@ -301,7 +302,8 @@ Core::fmark() noexcept {
     // advance first so that our return value will always be correct
     nextInstruction();
     if (pc_.processControls.traceEnable) {
-        generateFault(MarkTraceFault);
+        markTraceFault();
+        //generateFault(MarkTraceFault);
     }
 }
 
@@ -369,7 +371,7 @@ Core::ret() noexcept {
             break;
         default: 
             // undefined!
-            generateFault(UnimplementedFault);
+            unimplementedFault();
             break;
     }
 }
@@ -432,7 +434,7 @@ Core::loadBlock(Ordinal baseAddress, ByteOrdinal baseRegister, ByteOrdinal count
 void 
 Core::ldl(Address effectiveAddress, LongRegister& destination) noexcept {
     if (!aligned(instruction_.mem.srcDest, TreatAsLongRegister{})) {
-        generateFault(InvalidOperandFault);
+        invalidOperandFault();
         /// @todo perform an unaligned load into registers
     } else {
         destination[0] = load(effectiveAddress + 0, TreatAsOrdinal{});
@@ -446,7 +448,7 @@ Core::ldl(Address effectiveAddress, LongRegister& destination) noexcept {
 void
 Core::stl(Address effectiveAddress, const LongRegister& source) noexcept {
     if (!aligned(instruction_.mem.srcDest, TreatAsLongRegister{})) {
-        generateFault(InvalidOperandFault);
+        invalidOperandFault();
         /// @todo perform an unaligned load into registers
     } else {
         // support unaligned accesses
@@ -459,7 +461,7 @@ Core::stl(Address effectiveAddress, const LongRegister& source) noexcept {
 void
 Core::ldt(Address effectiveAddress, TripleRegister& destination) noexcept {
     if (!aligned(instruction_.mem.srcDest, TreatAsTripleRegister{})) {
-        generateFault(InvalidOperandFault);
+        invalidOperandFault();
         /// @todo perform an unaligned load into registers
     } else {
         destination[0] = load(effectiveAddress + 0, TreatAsOrdinal{});
@@ -474,7 +476,7 @@ Core::ldt(Address effectiveAddress, TripleRegister& destination) noexcept {
 void
 Core::stt(Address effectiveAddress, const TripleRegister& source) noexcept {
     if (!aligned(instruction_.mem.srcDest, TreatAsTripleRegister{})) {
-        generateFault(InvalidOperandFault);
+        invalidOperandFault();
     } else {
         // support unaligned accesses
         store(effectiveAddress + 0,  static_cast<Ordinal>(source[0]), TreatAsOrdinal{});
@@ -488,7 +490,7 @@ Core::stt(Address effectiveAddress, const TripleRegister& source) noexcept {
 void
 Core::ldq(Address effectiveAddress, QuadRegister& destination) noexcept {
     if (!aligned(instruction_.mem.srcDest, TreatAsQuadRegister{})) {
-        generateFault(InvalidOperandFault);
+        invalidOperandFault();
         /// @todo perform an unaligned load into registers
     } else {
         destination[0] = load(effectiveAddress + 0, TreatAsOrdinal{});
@@ -504,7 +506,7 @@ Core::ldq(Address effectiveAddress, QuadRegister& destination) noexcept {
 void
 Core::stq(Address effectiveAddress, const QuadRegister& source) noexcept {
     if (!aligned(instruction_.mem.srcDest, TreatAsQuadRegister{})) {
-        generateFault(InvalidOperandFault);
+        invalidOperandFault();
     } else {
         store(effectiveAddress + 0,  static_cast<Ordinal>(source[0]), TreatAsOrdinal{});
         store(effectiveAddress + 4,  static_cast<Ordinal>(source[1]), TreatAsOrdinal{});
@@ -578,7 +580,8 @@ Core::call(Integer displacement) noexcept {
 void
 Core::calls(Ordinal src1) noexcept {
     if (auto targ = src1; targ > 259) {
-        generateFault(ProtectionLengthFault);
+        protectionLengthFault();
+        //generateFault(ProtectionLengthFault);
     } else {
         syncf();
         auto tempPE = load(getSystemProcedureTableBase() + 48 + (4 * targ), TreatAsOrdinal{});
@@ -618,7 +621,7 @@ Core::performRegisterTransfer(ByteOrdinal mask, ByteOrdinal count) noexcept {
     }
     if (((instruction_.reg.srcDest & mask) != 0) || ((instruction_.reg.src1 & mask) != 0)) {
         nextInstruction();
-        generateFault(InvalidOpcodeFault);
+        invalidOpcodeFault();
     }
 }
 
@@ -673,7 +676,7 @@ void
 Core::faultGeneric() noexcept {
     nextInstruction();
     if (fullConditionCodeCheck()) {
-        generateFault(ConstraintRangeFault);
+        constraintRangeFault();
     }
 }
 
@@ -712,7 +715,7 @@ Core::cycle() noexcept {
         const auto& src2 = getSrc2Register(TreatAsREG{});
         processInstruction(opcode, regDest, src1, src2, TreatAsREG{});
     } else {
-        generateFault(UnimplementedFault);
+        unimplementedFault();
     }
     if (advanceInstruction_) {
         nextInstruction();
@@ -987,7 +990,7 @@ Core::processInstruction(Opcodes opcode, Integer displacement, TreatAsCTRL) noex
             faultGeneric();
             break;
         default:
-            generateFault(UnimplementedFault);
+            unimplementedFault();
             break;
     }
 }
@@ -1022,7 +1025,7 @@ Core::processInstruction(Opcodes opcode, uint8_t mask, uint8_t src1, const Regis
         default:
             // test instructions perform modifications to src1 so we must error out
             // in this case!
-            generateFault(UnimplementedFault);
+            unimplementedFault();
             break;
     }
 }
@@ -1065,7 +1068,7 @@ Core::processInstruction(Opcodes opcode, uint8_t mask, Register& src1, const Reg
             cmpibGeneric(mask, src1.getValue<Integer>(), src2.getValue<Integer>(), displacement);
             break;
         default:
-            generateFault(UnimplementedFault);
+            unimplementedFault();
             break;
     }
 }
@@ -1142,7 +1145,7 @@ Core::processInstruction(Opcodes opcode, Register& srcDest, Address effectiveAdd
             srcDest.setValue<Ordinal>(effectiveAddress);
             break;
         default:
-            generateFault(UnimplementedFault);
+            unimplementedFault();
             break;
     }
 }
@@ -1419,7 +1422,7 @@ Core::processInstruction(Opcodes opcode, Register& regDest, const Register& src1
             performConditionalSubtract(regDest, src1i, src2i, TreatAsInteger{});
             break;
         default:
-            generateFault(UnimplementedFault);
+            unimplementedFault();
             break;
     }
 }
@@ -1430,7 +1433,7 @@ void
 Core::modpc(Register& regDest, Ordinal src1o, Ordinal src2o) noexcept {
     if (auto mask = src1o; mask != 0) {
         if (!pc_.inSupervisorMode()) {
-            generateFault(TypeMismatchFault);
+            typeMismatchFault();
         } else {
             regDest.setValue<Ordinal>(pc_.modify(mask, src2o));
             if (regDest.getPriority() > pc_.getPriority()) {
@@ -1762,10 +1765,10 @@ Core::pushFaultRecord(Address baseStorageAddress, const FaultRecord& record) noe
     store(baseStorageAddress + 16, record.faultData[0], TreatAsOrdinal{});
     store(baseStorageAddress + 20, record.faultData[1], TreatAsOrdinal{});
     store(baseStorageAddress + 24, record.faultData[2], TreatAsOrdinal{});
-    store(baseStorageAddress + 28, record.overrideType.raw, TreatAsOrdinal{});
+    store(baseStorageAddress + 28, record.overrideType, TreatAsOrdinal{});
     store(baseStorageAddress + 32, record.pc, TreatAsOrdinal{});
     store(baseStorageAddress + 36, record.ac, TreatAsOrdinal{});
-    store(baseStorageAddress + 40, record.type.raw, TreatAsOrdinal{});
+    store(baseStorageAddress + 40, record.type, TreatAsOrdinal{});
     store(baseStorageAddress + 44, record.addr, TreatAsOrdinal{});
 }
 
@@ -1838,36 +1841,26 @@ Core::generateFault(const FaultRecord& record) {
     } else if (entry.isSystemTableEntry()) {
         procedureTableEntry_FaultCall(record, entry);
     } else {
-        badFault(faultCode);
+        badFault(record);
     }
-}
-void
-Core::generateFault(Ordinal faultCode) {
-    FaultRecord record;
-    record.pc = pc_;
-    record.ac = ac_;
-    record.type = faultCode;
-    generateFault(record);
 }
 
 void
 Core::zeroDivideFault() {
-    FaultRecord record;
-    record.pc = pc_;
-    record.ac = ac_;
-    record.type = ZeroDivideFault;
-    record.addr = ip_;
+    FaultRecord record((Ordinal)pc_, 
+                       (Ordinal)ac_,
+                       ZeroDivideFault,
+                       (Ordinal)ip_);
     saveReturnAddress(RIPIndex);
     generateFault(record);
 }
 
 void
 Core::integerOverflowFault() {
-    FaultRecord record;
-    record.pc = pc_;
-    record.ac = ac_;
-    record.type = IntegerOverflowFault;
-    record.addr = ip_;
+    FaultRecord record((Ordinal)pc_, 
+                       (Ordinal)ac_,
+                       IntegerOverflowFault,
+                       (Ordinal)ip_);
     saveReturnAddress(RIPIndex);
     // saved ip will be the next instruction
     generateFault(record);
@@ -1875,21 +1868,79 @@ Core::integerOverflowFault() {
 
 void
 Core::constraintRangeFault() {
-    FaultRecord record;
-    record.pc = pc_;
-    record.ac = ac_;
-    record.type = ConstraintRangeFault;
-    record.addr = ip_;
+    FaultRecord record((Ordinal)pc_, 
+                       (Ordinal)ac_,
+                       ConstraintRangeFault,
+                       (Ordinal)ip_);
     // saved ip isn't used!
     generateFault(record);
 }
 
 void
 Core::invalidSSFault() {
-    FaultRecord record;
-    record.pc = pc_;
-    record.ac = ac_;
-    record.type = InvalidSSFault;
-    record.addr = ip_;
+    FaultRecord record((Ordinal)pc_, 
+                       (Ordinal)ac_,
+                       InvalidSSFault,
+                       (Ordinal)ip_);
     // saved ip isn't used
+    generateFault(record);
+}
+
+void
+Core::markTraceFault() {
+    FaultRecord record((Ordinal)pc_, 
+                       (Ordinal)ac_,
+                       MarkTraceFault,
+                       (Ordinal)ip_);
+    // saved ip isn't used
+    generateFault(record);
+}
+
+void
+Core::unimplementedFault() {
+    FaultRecord record((Ordinal)pc_, 
+                       (Ordinal)ac_,
+                       UnimplementedFault,
+                       (Ordinal)ip_);
+    // saved ip isn't used
+    generateFault(record);
+}
+
+void
+Core::invalidOpcodeFault() {
+    FaultRecord record((Ordinal)pc_, 
+                       (Ordinal)ac_,
+                       InvalidOpcodeFault,
+                       (Ordinal)ip_);
+    // saved ip isn't used
+    generateFault(record);
+}
+
+void
+Core::invalidOperandFault() {
+    FaultRecord record((Ordinal)pc_, 
+                       (Ordinal)ac_,
+                       InvalidOperandFault,
+                       (Ordinal)ip_);
+    // saved ip isn't used
+    generateFault(record);
+}
+
+void
+Core::protectionLengthFault() {
+    FaultRecord record((Ordinal)pc_, 
+                       (Ordinal)ac_,
+                       SegmentLengthFault,
+                       (Ordinal)ip_);
+    // saved ip isn't used
+    generateFault(record);
+}
+void
+Core::typeMismatchFault() {
+    FaultRecord record((Ordinal)pc_, 
+                       (Ordinal)ac_,
+                       TypeMismatchFault,
+                       (Ordinal)ip_);
+    // saved ip isn't used
+    generateFault(record);
 }

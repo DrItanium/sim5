@@ -1269,7 +1269,7 @@ class Core {
         }
         inline void modi(Register& dest, Integer src1, Integer src2) noexcept {
             if (auto denominator = src1; denominator == 0) {
-                generateFault(ZeroDivideFault);
+                zeroDivideFault();
             } else {
                 auto numerator = src2;
                 auto result = numerator - ((numerator / denominator) * denominator);
@@ -1309,8 +1309,7 @@ class Core {
         template<typename Q>
         void remainderOperation(Register& dest, Q src1, Q src2) noexcept {
             if (src1 == 0) {
-                /// @todo fix this
-                generateFault(ZeroDivideFault);
+                zeroDivideFault();
             } else {
                 // taken from the i960Sx manual
                 //dest.setValue(src2 - ((src2 / src1) * src1), TreatAs<Q>{});
@@ -1329,7 +1328,7 @@ class Core {
         void divideOperation(Register& dest, Q src1, Q src2) noexcept {
             if (src1 == 0) {
                 /// @todo fix this
-                generateFault(ZeroDivideFault);
+                zeroDivideFault();
             } else {
                 dest.setValue(src2 / src1, TreatAs<Q>{});
                 nextInstruction();
@@ -1409,6 +1408,13 @@ class Core {
         void integerOverflowFault() ;
         void constraintRangeFault() ;
         void invalidSSFault() ;
+        void unimplementedFault();
+        void typeMismatchFault();
+        void typeContentsFault();
+        void markTraceFault();
+        void invalidOpcodeFault();
+        void protectionLengthFault();
+        void invalidOperandFault();
         void generateFault(const FaultRecord& record);
         //void generateFault(Ordinal faultCode);
         void addi(Register& dest, Integer src1, Integer src2) noexcept;
@@ -1520,7 +1526,7 @@ class Core {
         void checksumFail();
         void selfTestFailure();
     private:
-        void badFault(Ordinal faultCode);
+        void badFault(const FaultRecord& record);
     private: // protected extensions instructions
         void signal(Register& dest) noexcept;
         void wait(const Register& src) noexcept;

@@ -209,7 +209,7 @@ Core::selfTestFailure() {
     }
 }
 void 
-Core::badFault(Ordinal faultCode) {
+Core::badFault(const FaultRecord& record) {
     while(true) {
         // dot dot dot (S)
         morse::message("bad fault");

@@ -426,7 +426,7 @@ Core::selfTestFailure() {
     throw std::runtime_error("self test failure!");
 }
 void
-Core::badFault(Ordinal faultCode) {
+Core::badFault(const FaultRecord& record) {
     throw std::runtime_error("bad fault");
 }
 #endif
