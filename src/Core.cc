@@ -1790,12 +1790,23 @@ FaultTableEntry
 Core::getFaultEntry(uint8_t index) const noexcept {
     auto faultTableBaseAddress = getFaultTableBaseAddress();
     auto maskedIndex = index & 0b0001'1111;
-    auto realOffset = maskedIndex * 8;
+    auto realOffset = maskedIndex * (sizeof(FaultTableEntry));
     auto realAddress = faultTableBaseAddress + realOffset;
 
     return FaultTableEntry { 
         load(realAddress, TreatAsOrdinal{}),
         load(realAddress + 4, TreatAsOrdinal{})
     };
+}
+
+SegmentDescriptor
+Core::loadSegmentDescriptor(SegmentSelector selector) const noexcept {
+    auto index = translateSegmentDescriptorToOffset(selector);
+    // now that we have the table index, we just need to compute the base
+    // offset
+    auto baseIndex = systemAddressTableBase_;
+    baseIndex += (index * sizeof(SegmentDescriptor));
+    // so now we have the base address of the segment descriptor we want
+
 }
 

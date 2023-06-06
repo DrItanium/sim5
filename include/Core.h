@@ -1484,7 +1484,7 @@ class Core {
         Address getSystemProcedureTableSegmentSelector() const noexcept { return getFromPRCB<36>(); }
         Address getFaultTableBaseAddress() const noexcept { return getFromPRCB<40>(); }
     private: // system address table / system procedure table
-
+        SegmentDescriptor loadSegmentDescriptor(SegmentSelector offset) const noexcept;
     public:
         [[noreturn]] void checksumFail() noexcept;
         [[noreturn]] void selfTestFailure() noexcept;

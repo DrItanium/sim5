@@ -190,14 +190,21 @@ struct SystemProcedureTable {
 };
 struct [[gnu::packed]] SegmentDescriptor {
     SegmentDescriptor() : reserved{0,0}, address(0) { }
+    constexpr SegmentDescriptor(Ordinal addr, Ordinal config, Ordinal reserved0 = 0, Ordinal reserved1 = 0) noexcept 
+        : reserved{reserved0, reserved1}, address(addr), cfg{config} {
+
+        }
     [[nodiscard]] constexpr bool valid() const noexcept { return cfg.bits.valid; }
     [[nodiscard]] constexpr ByteOrdinal getPagingMethod() const noexcept { return cfg.bits.pagingMethod; }
     [[nodiscard]] constexpr ByteOrdinal getAccessStatus() const noexcept { return cfg.bits.accessStatus; }
     [[nodiscard]] constexpr ByteOrdinal getSize() const noexcept { return cfg.bits.size; }
     [[nodiscard]] constexpr ByteOrdinal getSegmentType() const noexcept { return cfg.bits.segmentType; }
+    [[nodiscard]] constexpr bool entryIsInvalid() const noexcept { return (cfg.raw & 0b111) == 0; }
+    [[nodiscard]] constexpr bool isSemaphore() const noexcept { return cfg.raw == 0x4000'0001; }
     Ordinal reserved[2];
     Address address;
-    union {
+    union Configuration {
+        constexpr Configuration(Ordinal value = 0) : raw(value) { }
         Ordinal raw = 0;
         struct {
             Ordinal valid : 1;
