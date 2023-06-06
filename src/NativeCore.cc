@@ -34,20 +34,25 @@ namespace {
         Ordinal ordinals[4];
         Integer integers[4];
         LongOrdinal longOrdinals[2];
-        void setValue(Address address, ByteOrdinal value, TreatAsByteOrdinal) noexcept;
-        void setValue(Address address, ByteInteger value, TreatAsByteInteger) noexcept;
-        void setValue(Address address, ShortOrdinal value, TreatAsShortOrdinal) noexcept;
-        void setValue(Address address, ShortInteger value, TreatAsShortInteger) noexcept;
-        void setValue(Address address, Ordinal value, TreatAsOrdinal) noexcept;
-        void setValue(Address address, Integer value, TreatAsInteger) noexcept;
-        void setValue(Address address, LongOrdinal value, TreatAsLongOrdinal) noexcept;
-        ByteOrdinal getValue(Address address, TreatAsByteOrdinal) const noexcept;
-        ByteInteger getValue(Address address, TreatAsByteInteger) const noexcept;
-        ShortOrdinal getValue(Address address, TreatAsShortOrdinal) const noexcept;
-        ShortInteger getValue(Address address, TreatAsShortInteger) const noexcept;
-        Ordinal getValue(Address address, TreatAsOrdinal) const noexcept;
-        Integer getValue(Address address, TreatAsInteger) const noexcept;
-        LongOrdinal getValue(Address address, TreatAsLongOrdinal) const noexcept;
+        LongInteger longIntegers[2];
+        float reals[4];
+        double realLongs[2];
+        long double extendedReal;
+#define X(type) \
+        void setValue(Address address, type value , TreatAs < type > ) noexcept; \
+        type getValue(Address address, TreatAs < type > ) const noexcept
+        X(ByteOrdinal);
+        X(ByteInteger);
+        X(ShortOrdinal);
+        X(ShortInteger);
+        X(Ordinal);
+        X(Integer);
+        X(LongOrdinal);
+        X(LongInteger);
+        X(float);
+        X(double);
+        X(long double);
+#undef X
     };
     Cell* physicalMemory = nullptr;
 } // end namespace
