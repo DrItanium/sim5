@@ -302,26 +302,32 @@ Core::load(Address address, TreatAsByteInteger) const noexcept {
 
 void 
 Core::store(Address address, Ordinal value, TreatAsOrdinal) noexcept {
+    store32(address, value, TreatAsOrdinal{});
 }
 
 void
 Core::store(Address address, Integer value, TreatAsInteger) noexcept {
+    store32(address, value, TreatAsInteger{});
 }
 
 void
 Core::store(Address address, ShortOrdinal value, TreatAsShortOrdinal) noexcept {
+    store16(address, value, TreatAsShortOrdinal{});
 }
 
 void
 Core::store(Address address, ShortInteger value, TreatAsShortInteger) noexcept {
+    store16(address, value, TreatAsShortInteger{});
 }
 
 void
 Core::store(Address address, ByteOrdinal value, TreatAsByteOrdinal) noexcept {
+    store8(address, value, TreatAsByteOrdinal {});
 }
 
 void
 Core::store(Address address, ByteInteger value, TreatAsByteInteger) noexcept {
+    store8(address, value, TreatAsByteInteger{});
 }
 void 
 Core::checksumFail() noexcept {
