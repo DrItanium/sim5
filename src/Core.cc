@@ -1785,9 +1785,3 @@ Core::pushFaultRecord(
     store(baseStorageAddress + 40, faultFlags, TreatAsOrdinal{});
     store(baseStorageAddress + 44, address, TreatAsOrdinal{});
 }
-
-Address
-Core::getFaultTableBaseAddress() const noexcept {
-    // Offset 40 is the lowest byte of the fault table pointer
-    return load(prcbAddress_ + 40, TreatAsOrdinal{}) ;
-}

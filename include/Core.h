@@ -1470,7 +1470,17 @@ class Core {
                 Ordinal arithmeticControls,
                 Ordinal faultFlags,
                 Address address) noexcept;
-        Address getFaultTableBaseAddress() const noexcept;
+    private:
+        template<uint8_t offset>
+        Ordinal getFromPRCB() const noexcept { return load(prcbAddress_ + offset, TreatAsOrdinal{}); }
+        Ordinal getProcessorControls() const noexcept { return getFromPRCB<4>(); }
+        Ordinal getCurrentProcessSegmentSelector() const noexcept { return getFromPRCB<12>(); }
+        Ordinal getDispatchPortSegmentSelector() const noexcept { return getFromPRCB<16>(); }
+        Address getInterruptTablePointer() const noexcept { return getFromPRCB<20>(); }
+        Address getInterruptStackAddress() const noexcept { return getFromPRCB<24>(); }
+        Address getRegion3SegmentSelector() const noexcept { return getFromPRCB<32>(); }
+        Address getSystemProcedureTableSegmentSelector() const noexcept { return getFromPRCB<36>(); }
+        Address getFaultTableBaseAddress() const noexcept { return getFromPRCB<40>(); }
 
     public:
         [[noreturn]] void checksumFail() noexcept;
