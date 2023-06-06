@@ -23,8 +23,11 @@
 
 #ifndef SIM5_TYPES_H__
 #define SIM5_TYPES_H__
-
+#ifdef ARDUINO
 #include <Arduino.h>
+#else
+#include <cstdint>
+#endif // end defined(ARDUINO)
 
 using Address = uint32_t;
 using ByteOrdinal = uint8_t;
@@ -45,11 +48,6 @@ using TreatAsByteInteger = TreatAs<ByteInteger>;
 using TreatAsLongOrdinal = TreatAs<LongOrdinal>;
 using TreatAsLongInteger = TreatAs<LongInteger>;
 
-
-template<typename T>
-volatile T& memory(size_t address) noexcept {
-    return *reinterpret_cast<volatile T*>(address);
-}
 
 constexpr Ordinal computeChecksumOffset(Address segmentTableBase, Address prcbBase, Address startAddress) noexcept {
     return -(segmentTableBase+prcbBase+startAddress);
