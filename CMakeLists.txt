@@ -21,4 +21,4 @@ target_link_libraries(sim5
 	Boost::program_options)
 install(TARGETS sim5 DESTINATION bin)
 
-target_include_directories(sim5 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_include_directories(core960 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)

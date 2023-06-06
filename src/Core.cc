@@ -21,7 +21,9 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#ifdef ARDUINO
 #include <Arduino.h>
+#endif
 #include "Types.h"
 #include "Core.h"
 #include "Morse.h"
@@ -93,7 +95,7 @@ Core::unpackSrc1(TreatAsOrdinal, TreatAsREG) noexcept {
 }
 
 Ordinal 
-Core::unpackSrc1(byte offset, TreatAsOrdinal, TreatAsREG) noexcept {
+Core::unpackSrc1(ByteOrdinal offset, TreatAsOrdinal, TreatAsREG) noexcept {
     if (instruction_.reg.m1) {
         // literals should always return zero if offset is greater than zero
         return offset == 0 ? constants_.getValue<Ordinal>(instruction_.reg.src1) : 0;
@@ -266,22 +268,22 @@ Core::unpackSrc2(TreatAsInteger, TreatAsCOBR) noexcept {
 }
 
 Register& 
-Core::getSFR(byte index) noexcept {
+Core::getSFR(ByteOrdinal index) noexcept {
     return sfrs_.get(index);
 }
 
 Register& 
-Core::getSFR(byte index, byte offset) noexcept {
+Core::getSFR(ByteOrdinal index, ByteOrdinal offset) noexcept {
     return getSFR((index + offset) & 0b11111);
 }
 
 const Register& 
-Core::getSFR(byte index) const noexcept {
+Core::getSFR(ByteOrdinal index) const noexcept {
     return sfrs_.get(index);
 }
 
 const Register& 
-Core::getSFR(byte index, byte offset) const noexcept {
+Core::getSFR(ByteOrdinal index, ByteOrdinal offset) const noexcept {
     return getSFR((index + offset) & 0b11111);
 }
 
@@ -414,15 +416,15 @@ Core::computeAddress() noexcept {
 }
 
 void
-Core::storeBlock(Ordinal baseAddress, byte baseRegister, byte count) noexcept {
-    for (byte i = 0; i < count; ++i, baseAddress += 4) {
+Core::storeBlock(Ordinal baseAddress, ByteOrdinal baseRegister, ByteOrdinal count) noexcept {
+    for (ByteOrdinal i = 0; i < count; ++i, baseAddress += 4) {
         store(baseAddress, getGPRValue(baseRegister, i, TreatAsOrdinal{}), TreatAsOrdinal{});
     }
 }
 
 void
-Core::loadBlock(Ordinal baseAddress, byte baseRegister, byte count) noexcept {
-    for (byte i = 0; i < count; ++i, baseAddress += 4) {
+Core::loadBlock(Ordinal baseAddress, ByteOrdinal baseRegister, ByteOrdinal count) noexcept {
+    for (ByteOrdinal i = 0; i < count; ++i, baseAddress += 4) {
         setGPR(baseRegister, i, load(baseAddress, TreatAsOrdinal{}), TreatAsOrdinal{});
     }
 }
@@ -519,12 +521,12 @@ Core::saveReturnAddress(Register& linkRegister) noexcept {
 }
 
 void
-Core::saveReturnAddress(byte linkRegister) noexcept {
+Core::saveReturnAddress(ByteOrdinal linkRegister) noexcept {
     setGPR(linkRegister, ip_.getValue(TreatAsOrdinal{}) + instructionLength_, TreatAsOrdinal{});
 }
 
 void 
-Core::balx(byte linkRegister, Ordinal branchTo) noexcept {
+Core::balx(ByteOrdinal linkRegister, Ordinal branchTo) noexcept {
     saveReturnAddress(linkRegister);
     setIP(branchTo, TreatAsOrdinal{});
 }
@@ -586,7 +588,7 @@ Core::calls(Ordinal src1) noexcept {
         // system-procedure table from Initial Memory Image
         balx(RIPIndex, procedureAddress);
         Ordinal temp = 0;
-        byte tempRRR = 0;
+        ByteOrdinal tempRRR = 0;
         if ((type == 0b00) || pc_.inSupervisorMode()) {
             temp = getNextFrameBase();
             tempRRR = 0;
@@ -608,10 +610,10 @@ Core::calls(Ordinal src1) noexcept {
 }
 
 void
-Core::performRegisterTransfer(byte mask, byte count) noexcept {
+Core::performRegisterTransfer(ByteOrdinal mask, ByteOrdinal count) noexcept {
     // perform the register transfer first and then check to see if we were
     // offset at all
-    for (byte i = 0; i < count; ++i) {
+    for (ByteOrdinal i = 0; i < count; ++i) {
         setGPR(instruction_.reg.srcDest, i, unpackSrc1(i, TreatAsOrdinal{}, TreatAsREG{}), TreatAsOrdinal{});
     }
     if (((instruction_.reg.srcDest & mask) != 0) || ((instruction_.reg.src1 & mask) != 0)) {
@@ -1531,9 +1533,9 @@ Core::performSelfTest() noexcept {
         return true;
     };
     auto makeGenericOperation = [this](auto maker, auto doIt, auto converter, auto name, auto genSrc1, auto genSrc2) {
-        return [this, maker, doIt, converter, name, genSrc1, genSrc2](byte gpr0 = random() & 0b11111, 
-                byte gpr1 = random() & 0b11111, 
-                byte gpr2 = random() & 0b11111) -> bool {
+        return [this, maker, doIt, converter, name, genSrc1, genSrc2](ByteOrdinal gpr0 = random() & 0b11111, 
+                ByteOrdinal gpr1 = random() & 0b11111, 
+                ByteOrdinal gpr2 = random() & 0b11111) -> bool {
             auto rs0 = converter(genSrc1());
             auto rs1 = converter(genSrc2());
             auto& src1 = getGPR(gpr0);
@@ -1733,22 +1735,6 @@ Core::testPendingInterrupts() noexcept {
 
 }
 
-void 
-Core::checksumFail() noexcept {
-    while(true) {
-        // dot dot dot (S)
-        morse::message("checksum failure");
-        delay(1000);
-    }
-}
-void 
-Core::selfTestFailure() noexcept {
-    while(true) {
-        // dot dot dot (S)
-        morse::message("self test failure");
-        delay(1000);
-    }
-}
 
 void
 Core::pushFaultRecord(Address baseStorageAddress, const FaultRecord& record) noexcept

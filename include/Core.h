@@ -24,6 +24,9 @@
 #ifndef SIM5_CORE_H__
 #define SIM5_CORE_H__
 
+#ifndef ARDUINO
+#include <cstdlib>
+#endif
 #include "Types.h"
 #include "IAC.h"
 #include "BinaryOperations.h"
@@ -407,7 +410,7 @@ union Register {
     Ordinal o;
     Integer i;
     Address a;
-    byte bytes[sizeof(Ordinal)];
+    ByteOrdinal bytes[sizeof(Ordinal)];
     ShortOrdinal shorts[sizeof(Ordinal)/sizeof(ShortOrdinal)];
     constexpr uint8_t getInstructionMask() const noexcept { 
         return bytes[3] & 0b111;
@@ -595,7 +598,7 @@ union Register {
     }
     bool getCarryBit() const noexcept { return arith.conditionCode & 0b001; }
     [[nodiscard]] Ordinal modify(Ordinal mask, Ordinal src) noexcept;
-    [[nodiscard]] constexpr byte getPriority() const noexcept { return processControls.priority; }
+    [[nodiscard]] constexpr ByteOrdinal getPriority() const noexcept { return processControls.priority; }
 
     void setValue(Ordinal value, TreatAsOrdinal) noexcept { o = value; }
     void setValue(Integer value, TreatAsInteger) noexcept { i = value; }
@@ -619,10 +622,10 @@ union Register {
     explicit constexpr operator Opcodes() const noexcept {
         return getOpcode();
     }
-    byte& operator[](byte index) noexcept {
+    ByteOrdinal& operator[](ByteOrdinal index) noexcept {
         return bytes[index & 0b11];
     }
-    constexpr const byte& operator[](byte index) const noexcept {
+    constexpr const ByteOrdinal& operator[](ByteOrdinal index) const noexcept {
         return bytes[index & 0b11];
     }
     Register& operator=(Ordinal value) noexcept {
@@ -644,15 +647,15 @@ union LongRegister {
         [[nodiscard]] constexpr LongInteger getValue(TreatAsLongInteger) const noexcept { return li; }
         void setValue(LongOrdinal value, TreatAsLongOrdinal) noexcept { lo = value; }
         void setValue(LongInteger value, TreatAsLongInteger) noexcept { li = value; }
-        Register& get(byte index) noexcept { return pair_[index & 0b1]; }
-        const Register& get(byte index) const noexcept { return pair_[index & 0b1]; }
+        Register& get(ByteOrdinal index) noexcept { return pair_[index & 0b1]; }
+        const Register& get(ByteOrdinal index) const noexcept { return pair_[index & 0b1]; }
 
         template<typename T>
-        void setValue(byte index, T value) noexcept {
+        void setValue(ByteOrdinal index, T value) noexcept {
             get(index).setValue<T>(value);
         }
         template<typename T>
-        constexpr T getValue(byte index) const noexcept {
+        constexpr T getValue(ByteOrdinal index) const noexcept {
             return get(index).getValue<T>();
         }
         template<typename T>
@@ -663,10 +666,10 @@ union LongRegister {
         void setValue(T value) noexcept {
             setValue(value, TreatAs<T>{});
         }
-        Register& operator[](byte index) noexcept {
+        Register& operator[](ByteOrdinal index) noexcept {
             return get(index);
         }
-        const Register& operator[](byte index) const noexcept {
+        const Register& operator[](ByteOrdinal index) const noexcept {
             return get(index);
         }
         template<typename T>
@@ -693,17 +696,17 @@ union QuadRegister {
     public:
         QuadRegister() = default;
         template<typename T>
-        void setValue(byte index, T value) noexcept {
+        void setValue(ByteOrdinal index, T value) noexcept {
             get(index). setValue<T>(value);
         }
         template<typename T>
-        constexpr T getValue(byte index) const noexcept {
+        constexpr T getValue(ByteOrdinal index) const noexcept {
             return get(index).getValue<T>();
         }
-        Register& get(byte index) noexcept { return quads_[index & 0b11]; }
-        const Register& get(byte index) const noexcept { return quads_[index & 0b11]; }
-        Register& operator[](byte index) noexcept { return get(index); }
-        const Register& operator[](byte index) const noexcept { return get(index); }
+        Register& get(ByteOrdinal index) noexcept { return quads_[index & 0b11]; }
+        const Register& get(ByteOrdinal index) const noexcept { return quads_[index & 0b11]; }
+        Register& operator[](ByteOrdinal index) noexcept { return get(index); }
+        const Register& operator[](ByteOrdinal index) const noexcept { return get(index); }
         bool operator==(const QuadRegister& other) const noexcept {
             for (int i = 0; i < 4; ++i) {
                 if (quads_[i] != other.quads_[i]) {
@@ -741,17 +744,17 @@ class TripleRegister {
             return *this;
         }
         template<typename T>
-        void setValue(byte index, T value) noexcept {
+        void setValue(ByteOrdinal index, T value) noexcept {
             get(index). setValue<T>(value);
         }
         template<typename T>
-        constexpr T getValue(byte index) const noexcept {
+        constexpr T getValue(ByteOrdinal index) const noexcept {
             return get(index).getValue<T>();
         }
-        Register& get(byte index) noexcept { return backingStore_.get(index % 3); }
-        const Register& get(byte index) const noexcept { return backingStore_.get(index % 3); }
-        Register& operator[](byte index) noexcept { return get(index); }
-        const Register& operator[](byte index) const noexcept { return get(index); }
+        Register& get(ByteOrdinal index) noexcept { return backingStore_.get(index % 3); }
+        const Register& get(ByteOrdinal index) const noexcept { return backingStore_.get(index % 3); }
+        Register& operator[](ByteOrdinal index) noexcept { return get(index); }
+        const Register& operator[](ByteOrdinal index) const noexcept { return get(index); }
         bool operator==(const TripleRegister& other) const noexcept {
             for (int i = 0; i < 3; ++i) {
                 if (backingStore_[i] != other.backingStore_[i]) {
@@ -786,14 +789,14 @@ constexpr auto RIPIndex = 18;
 union RegisterFrame {
     public:
         RegisterFrame() = default;
-        Register& get(byte index, TreatAsRegister) noexcept { return registers[index & 0b1111]; }
-        const Register& get(byte index, TreatAsRegister) const noexcept { return registers[index & 0b1111]; }
-        LongRegister& get(byte index, TreatAsLongRegister) noexcept { return longRegisters[index >> 1]; }
-        const LongRegister& get(byte index, TreatAsLongRegister) const noexcept { return longRegisters[index >> 1]; }
-        QuadRegister& get(byte index, TreatAsQuadRegister) noexcept { return quadRegisters[index >> 2]; }
-        const QuadRegister& get(byte index, TreatAsQuadRegister) const noexcept { return quadRegisters[index >> 2]; }
-        TripleRegister& get(byte index, TreatAsTripleRegister) noexcept { return tripleRegisters[index >> 2]; }
-        const TripleRegister& get(byte index, TreatAsTripleRegister) const noexcept { return tripleRegisters[index >> 2]; }
+        Register& get(ByteOrdinal index, TreatAsRegister) noexcept { return registers[index & 0b1111]; }
+        const Register& get(ByteOrdinal index, TreatAsRegister) const noexcept { return registers[index & 0b1111]; }
+        LongRegister& get(ByteOrdinal index, TreatAsLongRegister) noexcept { return longRegisters[index >> 1]; }
+        const LongRegister& get(ByteOrdinal index, TreatAsLongRegister) const noexcept { return longRegisters[index >> 1]; }
+        QuadRegister& get(ByteOrdinal index, TreatAsQuadRegister) noexcept { return quadRegisters[index >> 2]; }
+        const QuadRegister& get(ByteOrdinal index, TreatAsQuadRegister) const noexcept { return quadRegisters[index >> 2]; }
+        TripleRegister& get(ByteOrdinal index, TreatAsTripleRegister) noexcept { return tripleRegisters[index >> 2]; }
+        const TripleRegister& get(ByteOrdinal index, TreatAsTripleRegister) const noexcept { return tripleRegisters[index >> 2]; }
     private:
         Register registers[16];
         LongRegister longRegisters[8];
@@ -803,77 +806,77 @@ union RegisterFrame {
 /**
  * @brief is the given byte index aligned to long register boundaries?
  */
-constexpr bool aligned(byte index, TreatAsLongRegister) noexcept { return (index & 0b1) == 0; }
+constexpr bool aligned(ByteOrdinal index, TreatAsLongRegister) noexcept { return (index & 0b1) == 0; }
 /**
  * @brief is the given byte index aligned to quad register boundaries?
  */
-constexpr bool aligned(byte index, TreatAsQuadRegister) noexcept { return (index & 0b11) == 0; }
+constexpr bool aligned(ByteOrdinal index, TreatAsQuadRegister) noexcept { return (index & 0b11) == 0; }
 /**
  * @brief is the given byte index aligned to quad register boundaries?
  */
-constexpr bool aligned(byte index, TreatAsTripleRegister) noexcept { return aligned(index, TreatAsQuadRegister{}); }
+constexpr bool aligned(ByteOrdinal index, TreatAsTripleRegister) noexcept { return aligned(index, TreatAsQuadRegister{}); }
 /** 
  * @brief Holds onto two separate register frames
  */ 
 class GPRBlock {
     public:
         GPRBlock() = default;
-        Register& get(byte index, TreatAsRegister) noexcept { 
+        Register& get(ByteOrdinal index, TreatAsRegister) noexcept { 
             if (index < 16) {
                 return globals.get(index, TreatAsRegister{});
             } else {
                 return locals.get(index, TreatAsRegister{});
             }
         }
-        const Register& get(byte index, TreatAsRegister) const noexcept { 
+        const Register& get(ByteOrdinal index, TreatAsRegister) const noexcept { 
             if (index < 16) {
                 return globals.get(index, TreatAsRegister{});
             } else {
                 return locals.get(index, TreatAsRegister{});
             }
         }
-        Register& get(byte index) noexcept { 
+        Register& get(ByteOrdinal index) noexcept { 
             return get(index, TreatAsRegister{});
         }
-        const Register& get(byte index) const noexcept { 
+        const Register& get(ByteOrdinal index) const noexcept { 
             return get(index, TreatAsRegister{});
         }
-        LongRegister& get(byte index, TreatAsLongRegister) noexcept { 
+        LongRegister& get(ByteOrdinal index, TreatAsLongRegister) noexcept { 
             if (index < 16) {
                 return globals.get(index, TreatAsLongRegister{});
             } else {
                 return locals.get(index, TreatAsLongRegister{});
             }
         }
-        const LongRegister& get(byte index, TreatAsLongRegister) const noexcept { 
+        const LongRegister& get(ByteOrdinal index, TreatAsLongRegister) const noexcept { 
             if (index < 16) {
                 return globals.get(index, TreatAsLongRegister{});
             } else {
                 return locals.get(index, TreatAsLongRegister{});
             }
         }
-        QuadRegister& get(byte index, TreatAsQuadRegister) noexcept { 
+        QuadRegister& get(ByteOrdinal index, TreatAsQuadRegister) noexcept { 
             if (index < 16) {
                 return globals.get(index, TreatAsQuadRegister{});
             } else {
                 return locals.get(index, TreatAsQuadRegister{});
             }
         }
-        const QuadRegister& get(byte index, TreatAsQuadRegister) const noexcept { 
+        const QuadRegister& get(ByteOrdinal index, TreatAsQuadRegister) const noexcept { 
             if (index < 16) {
                 return globals.get(index, TreatAsQuadRegister{});
             } else {
                 return locals.get(index, TreatAsQuadRegister{});
             }
         }
-        TripleRegister& get(byte index, TreatAsTripleRegister) noexcept { 
+        TripleRegister& get(ByteOrdinal index, TreatAsTripleRegister) noexcept { 
             if (index < 16) {
                 return globals.get(index, TreatAsTripleRegister{});
             } else {
                 return locals.get(index, TreatAsTripleRegister{});
             }
         }
-        const TripleRegister& get(byte index, TreatAsTripleRegister) const noexcept { 
+        const TripleRegister& get(ByteOrdinal index, TreatAsTripleRegister) const noexcept { 
             if (index < 16) {
                 return globals.get(index, TreatAsTripleRegister{});
             } else {
@@ -883,29 +886,29 @@ class GPRBlock {
 
 
         template<typename T>
-        void setValue(byte index, T value, TreatAsRegister) noexcept {
+        void setValue(ByteOrdinal index, T value, TreatAsRegister) noexcept {
             get(index, TreatAsRegister{}).setValue(value, TreatAs<T>{});
         }
         template<typename T>
-        T getValue(byte index, TreatAsRegister) const noexcept {
+        T getValue(ByteOrdinal index, TreatAsRegister) const noexcept {
             return get(index, TreatAsRegister{}).getValue(TreatAs<T>{});
         }
 
         template<typename T>
-        void setValue(byte index, T value) noexcept {
+        void setValue(ByteOrdinal index, T value) noexcept {
             setValue<T>(index, value, TreatAsRegister{});
         }
         template<typename T>
-        T getValue(byte index) const noexcept {
+        T getValue(ByteOrdinal index) const noexcept {
             return getValue<T>(index, TreatAsRegister{});
         }
 
         template<typename T>
-        void setValue(byte index, T value, TreatAsLongRegister) noexcept {
+        void setValue(ByteOrdinal index, T value, TreatAsLongRegister) noexcept {
             get(index, TreatAsLongRegister{}).setValue(value, TreatAs<T>{});
         }
         template<typename T>
-        T getValue(byte index, TreatAsLongRegister) const noexcept {
+        T getValue(ByteOrdinal index, TreatAsLongRegister) const noexcept {
             return get(index, TreatAsLongRegister{}).getValue(TreatAs<T>{});
         }
 
@@ -917,14 +920,14 @@ class GPRBlock {
 class RegisterBlock32 {
     public:
         RegisterBlock32() = default;
-        Register& get(byte index) noexcept { return registers_[index & 0b11111]; }
-        const Register& get(byte index) const noexcept { return registers_[index & 0b11111]; }
+        Register& get(ByteOrdinal index) noexcept { return registers_[index & 0b11111]; }
+        const Register& get(ByteOrdinal index) const noexcept { return registers_[index & 0b11111]; }
         template<typename T>
-        void setValue(byte index, T value) noexcept {
+        void setValue(ByteOrdinal index, T value) noexcept {
             get(index).setValue(value, TreatAs<T>{});
         }
         template<typename T>
-        T getValue(byte index) const noexcept {
+        T getValue(ByteOrdinal index) const noexcept {
             return get(index).getValue(TreatAs<T>{});
         }
     private:
@@ -954,34 +957,34 @@ class Core {
         void unlockBus() noexcept;
         /// @todo insert iac dispatch here
         /// @todo insert routines for getting registers and such 
-        [[nodiscard]] QuadRegister& getGPR(byte index, TreatAsQuadRegister) noexcept { return gpr_.get(index, TreatAsQuadRegister{}); }
-        [[nodiscard]] const QuadRegister& getGPR(byte index, TreatAsQuadRegister) const noexcept { return gpr_.get(index, TreatAsQuadRegister{}); }
-        [[nodiscard]] TripleRegister& getGPR(byte index, TreatAsTripleRegister) noexcept { return gpr_.get(index, TreatAsTripleRegister{}); }
-        [[nodiscard]] const TripleRegister& getGPR(byte index, TreatAsTripleRegister) const noexcept { return gpr_.get(index, TreatAsTripleRegister{}); }
-        [[nodiscard]] LongRegister& getGPR(byte index, TreatAsLongRegister) noexcept { return gpr_.get(index, TreatAsLongRegister{}); }
-        [[nodiscard]] const LongRegister& getGPR(byte index, TreatAsLongRegister) const noexcept { return gpr_.get(index, TreatAsLongRegister{}); }
-        [[nodiscard]] Register& getGPR(byte index) noexcept { return gpr_.get(index); }
-        [[nodiscard]] Register& getGPR(byte index, byte offset) noexcept { return getGPR((index + offset) & 0b11111); }
-        [[nodiscard]] const Register& getGPR(byte index) const noexcept { return gpr_.get(index); }
-        [[nodiscard]] const Register& getGPR(byte index, byte offset) const noexcept { return getGPR((index + offset) & 0b11111); }
-        [[nodiscard]] inline Ordinal getGPRValue(byte index, TreatAsOrdinal) const noexcept { return getGPR(index).getValue(TreatAsOrdinal{}); }
-        [[nodiscard]] inline Ordinal getGPRValue(byte index, byte offset, TreatAsOrdinal) const noexcept { return getGPR(index, offset).getValue(TreatAsOrdinal{}); }
-        [[nodiscard]] inline Integer getGPRValue(byte index, TreatAsInteger) const noexcept { return getGPR(index).getValue(TreatAsInteger{}); }
+        [[nodiscard]] QuadRegister& getGPR(ByteOrdinal index, TreatAsQuadRegister) noexcept { return gpr_.get(index, TreatAsQuadRegister{}); }
+        [[nodiscard]] const QuadRegister& getGPR(ByteOrdinal index, TreatAsQuadRegister) const noexcept { return gpr_.get(index, TreatAsQuadRegister{}); }
+        [[nodiscard]] TripleRegister& getGPR(ByteOrdinal index, TreatAsTripleRegister) noexcept { return gpr_.get(index, TreatAsTripleRegister{}); }
+        [[nodiscard]] const TripleRegister& getGPR(ByteOrdinal index, TreatAsTripleRegister) const noexcept { return gpr_.get(index, TreatAsTripleRegister{}); }
+        [[nodiscard]] LongRegister& getGPR(ByteOrdinal index, TreatAsLongRegister) noexcept { return gpr_.get(index, TreatAsLongRegister{}); }
+        [[nodiscard]] const LongRegister& getGPR(ByteOrdinal index, TreatAsLongRegister) const noexcept { return gpr_.get(index, TreatAsLongRegister{}); }
+        [[nodiscard]] Register& getGPR(ByteOrdinal index) noexcept { return gpr_.get(index); }
+        [[nodiscard]] Register& getGPR(ByteOrdinal index, ByteOrdinal offset) noexcept { return getGPR((index + offset) & 0b11111); }
+        [[nodiscard]] const Register& getGPR(ByteOrdinal index) const noexcept { return gpr_.get(index); }
+        [[nodiscard]] const Register& getGPR(ByteOrdinal index, ByteOrdinal offset) const noexcept { return getGPR((index + offset) & 0b11111); }
+        [[nodiscard]] inline Ordinal getGPRValue(ByteOrdinal index, TreatAsOrdinal) const noexcept { return getGPR(index).getValue(TreatAsOrdinal{}); }
+        [[nodiscard]] inline Ordinal getGPRValue(ByteOrdinal index, ByteOrdinal offset, TreatAsOrdinal) const noexcept { return getGPR(index, offset).getValue(TreatAsOrdinal{}); }
+        [[nodiscard]] inline Integer getGPRValue(ByteOrdinal index, TreatAsInteger) const noexcept { return getGPR(index).getValue(TreatAsInteger{}); }
         [[nodiscard]] constexpr Ordinal getSystemAddressTableBase() const noexcept { return systemAddressTableBase_; }
         [[nodiscard]] Ordinal getSystemProcedureTableBase() const noexcept;
         [[nodiscard]] Ordinal getSupervisorStackPointer() const noexcept;
         void restoreRegisterSet() noexcept;
-        inline void setGPR(byte index, Ordinal value, TreatAsOrdinal) noexcept { getGPR(index).setValue(value, TreatAsOrdinal{}); }
-        inline void setGPR(byte index, byte offset, Ordinal value, TreatAsOrdinal) noexcept { getGPR(index, offset).setValue(value, TreatAsOrdinal{}); }
-        inline void setGPR(byte index, Integer value, TreatAsInteger) noexcept { getGPR(index).setValue(value, TreatAsInteger{}); }
-        [[nodiscard]] Register& getSFR(byte index) noexcept;
-        [[nodiscard]] Register& getSFR(byte index, byte offset) noexcept;
-        [[nodiscard]] const Register& getSFR(byte index) const noexcept;
-        [[nodiscard]] const Register& getSFR(byte index, byte offset) const noexcept;
+        inline void setGPR(ByteOrdinal index, Ordinal value, TreatAsOrdinal) noexcept { getGPR(index).setValue(value, TreatAsOrdinal{}); }
+        inline void setGPR(ByteOrdinal index, ByteOrdinal offset, Ordinal value, TreatAsOrdinal) noexcept { getGPR(index, offset).setValue(value, TreatAsOrdinal{}); }
+        inline void setGPR(ByteOrdinal index, Integer value, TreatAsInteger) noexcept { getGPR(index).setValue(value, TreatAsInteger{}); }
+        [[nodiscard]] Register& getSFR(ByteOrdinal index) noexcept;
+        [[nodiscard]] Register& getSFR(ByteOrdinal index, ByteOrdinal offset) noexcept;
+        [[nodiscard]] const Register& getSFR(ByteOrdinal index) const noexcept;
+        [[nodiscard]] const Register& getSFR(ByteOrdinal index, ByteOrdinal offset) const noexcept;
         [[nodiscard]] const Register& getSrc1Register(TreatAsREG) const noexcept;
         [[nodiscard]] const Register& getSrc2Register(TreatAsREG) const noexcept;
         [[nodiscard]] Ordinal unpackSrc1(TreatAsOrdinal, TreatAsREG) noexcept;
-        [[nodiscard]] Ordinal unpackSrc1(byte offset, TreatAsOrdinal, TreatAsREG) noexcept;
+        [[nodiscard]] Ordinal unpackSrc1(ByteOrdinal offset, TreatAsOrdinal, TreatAsREG) noexcept;
         [[nodiscard]] Integer unpackSrc1(TreatAsInteger, TreatAsREG) noexcept;
         [[nodiscard]] Ordinal unpackSrc2(TreatAsOrdinal, TreatAsREG) noexcept;
         [[nodiscard]] Integer unpackSrc2(TreatAsInteger, TreatAsREG) noexcept;
@@ -991,11 +994,11 @@ class Core {
         [[nodiscard]] Integer unpackSrc2(TreatAsInteger, TreatAsCOBR) noexcept;
         void checkForPendingInterrupts() noexcept;
         template<typename Q>
-        void moveGPR(byte destIndex, byte srcIndex, TreatAs<Q>) noexcept {
+        void moveGPR(ByteOrdinal destIndex, ByteOrdinal srcIndex, TreatAs<Q>) noexcept {
             setGPR(destIndex, getGPRValue(srcIndex, TreatAs<Q>{}), TreatAs<Q>{});
         }
         template<typename Q>
-        void moveGPR(byte destIndex, byte destOffset, byte srcIndex, byte srcOffset, TreatAs<Q>) noexcept {
+        void moveGPR(ByteOrdinal destIndex, ByteOrdinal destOffset, ByteOrdinal srcIndex, ByteOrdinal srcOffset, TreatAs<Q>) noexcept {
             setGPR(destIndex, destOffset, getGPRValue(srcIndex, srcOffset, TreatAs<Q>{}), TreatAs<Q>{});
         }
         [[nodiscard]] bool getMaskedConditionCode(uint8_t mask) const noexcept;
@@ -1003,7 +1006,7 @@ class Core {
         bool fullConditionCodeCheck() noexcept;
         bool fullConditionCodeCheck(uint8_t mask) noexcept;
         Ordinal computeAddress() noexcept;
-        void performRegisterTransfer(byte mask, byte count) noexcept;
+        void performRegisterTransfer(ByteOrdinal mask, ByteOrdinal count) noexcept;
     private:
         void sendIAC(const iac::Message& msg) noexcept;
         void dispatchInterrupt(uint8_t vector) noexcept;
@@ -1137,7 +1140,7 @@ class Core {
             cmpxbGeneric(mask, src1, src2, displacement, TreatAsInteger{});
         }
         void flushreg() noexcept;
-        void balx(byte linkRegister, Ordinal branchTo) noexcept;
+        void balx(ByteOrdinal linkRegister, Ordinal branchTo) noexcept;
         void calls(Ordinal value) noexcept;
         void ldl(Address address, LongRegister& destination) noexcept;
         void ldq(Address address, QuadRegister& destination) noexcept;
@@ -1158,8 +1161,8 @@ class Core {
         void restoreRegisterSet(Ordinal fp) noexcept;
         void restoreStandardFrame() noexcept;
     protected:
-        void storeBlock(Ordinal baseAddress, byte baseRegister, byte count) noexcept;
-        void loadBlock(Ordinal baseAddress, byte baseRegister, byte count) noexcept;
+        void storeBlock(Ordinal baseAddress, ByteOrdinal baseRegister, ByteOrdinal count) noexcept;
+        void loadBlock(Ordinal baseAddress, ByteOrdinal baseRegister, ByteOrdinal count) noexcept;
     private:
         void performConditionalSubtract(Register& dest, Integer src1, Integer src2, TreatAsInteger) noexcept;
         void performConditionalSubtract(Register& dest, Ordinal src1, Ordinal src2, TreatAsOrdinal) noexcept;
@@ -1382,7 +1385,7 @@ class Core {
         void generateFault(Ordinal faultCode) noexcept;
         void addi(Register& dest, Integer src1, Integer src2) noexcept;
         void addo(Register& dest, Ordinal src1, Ordinal src2) noexcept;
-        void saveReturnAddress(byte registerIndex) noexcept;
+        void saveReturnAddress(ByteOrdinal registerIndex) noexcept;
         void saveReturnAddress(Register& linkRegister) noexcept;
         void setupNewFrameInternals(Ordinal fp, Ordinal temp) noexcept;
         Ordinal getStackPointer() const noexcept;
@@ -1416,11 +1419,19 @@ class Core {
         void extract(Register& dest, Ordinal src1, Ordinal src2) noexcept;
     protected:
         static decltype(auto) doRandom() {
+#ifdef ARDUINO
             return random();
+#else
+            return rand();
+#endif
         }
         static decltype(auto) doRandomDisallow0() {
             while (true) {
+#ifdef ARDUINO
                 auto r = random();
+#else
+                auto r = rand();
+#endif
                 if (r != 0) {
                     return r;
                 }
@@ -1510,8 +1521,8 @@ class Core {
         Register tc_; 
         Register instruction_;
         Register ictl_;
-        byte advanceBy_;
-        byte instructionLength_ = 0;
+        ByteOrdinal advanceBy_;
+        ByteOrdinal instructionLength_ = 0;
         bool advanceInstruction_ = false;
         Address breakpoint0_ = 0;
         bool breakpoint0Active_ = false;

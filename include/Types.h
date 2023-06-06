@@ -27,6 +27,9 @@
 #include <Arduino.h>
 #else
 #include <cstdint>
+#ifndef ARDUINO
+#define F(x) x
+#endif
 #endif // end defined(ARDUINO)
 using Address = uint32_t;
 using ByteOrdinal = uint8_t;

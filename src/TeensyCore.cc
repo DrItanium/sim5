@@ -192,6 +192,22 @@ Core::store(Address address, ByteOrdinal value, TreatAsByteOrdinal) noexcept {
 void
 Core::store(Address address, ByteInteger value, TreatAsByteInteger) noexcept {
 }
+void 
+Core::checksumFail() noexcept {
+    while(true) {
+        // dot dot dot (S)
+        morse::message("checksum failure");
+        delay(1000);
+    }
+}
+void 
+Core::selfTestFailure() noexcept {
+    while(true) {
+        // dot dot dot (S)
+        morse::message("self test failure");
+        delay(1000);
+    }
+}
 #endif /* defined ARDUINO_TEENSY41 */
 #endif /* defined TEENSY_CORE */
 
