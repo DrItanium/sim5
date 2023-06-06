@@ -1944,3 +1944,23 @@ Core::typeMismatchFault() {
     // saved ip isn't used
     generateFault(record);
 }
+
+void
+Core::invalidDescriptorFault(SegmentSelector ss) {
+    FaultRecord record((Ordinal)pc_, 
+                       (Ordinal)ac_,
+                       InvalidDescriptorFault,
+                       (Ordinal)ip_);
+    record.faultData[1] = (ss & ~0b11111);
+    setGPR(RIPIndex, (Ordinal)ip_, TreatAsOrdinal{});
+    generateFault(record);
+}
+void
+Core::eventNoticeFault() {
+    FaultRecord record((Ordinal)pc_, 
+                       (Ordinal)ac_,
+                       EventNoticeFault,
+                       (Ordinal)ip_);
+    saveReturnAddress(RIPIndex);
+    generateFault(record);
+}

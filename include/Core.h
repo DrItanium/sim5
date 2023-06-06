@@ -1415,6 +1415,8 @@ class Core {
         void invalidOpcodeFault();
         void protectionLengthFault();
         void invalidOperandFault();
+        void invalidDescriptorFault(SegmentSelector selector);
+        void eventNoticeFault();
         void generateFault(const FaultRecord& record);
         //void generateFault(Ordinal faultCode);
         void addi(Register& dest, Integer src1, Integer src2) noexcept;
