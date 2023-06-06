@@ -1807,6 +1807,7 @@ void
 Core::generateFault(Ordinal faultCode) noexcept {
     auto faultType = static_cast<uint8_t>(faultCode >> 16);
     auto faultOffset = static_cast<uint8_t>(faultCode);
-    /// @todo implement
+    auto entry = getFaultEntry(faultType);
+    /// @todo implement override support?
 }
 
