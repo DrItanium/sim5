@@ -23,6 +23,8 @@
 #ifndef ARDUINO
 #include "Core.h"
 #include <string>
+#include <iostream>
+#include <stdexcept>
 namespace {
     union Cell {
         ByteOrdinal bytes[16];
@@ -313,32 +315,39 @@ void Cell::setValue(Address address, ShortInteger value, TreatAsShortInteger) no
 void Cell::setValue(Address address, Ordinal value, TreatAsOrdinal) noexcept { ordinals[getOffset(address, TreatAsOrdinal{})] = value; }
 void Cell::setValue(Address address, Integer value, TreatAsInteger) noexcept { integers[getOffset(address, TreatAsInteger{})] = value; }
 void Cell::setValue(Address address, LongOrdinal value, TreatAsLongOrdinal) noexcept { longOrdinals[getOffset(address, TreatAsLongOrdinal{})] = value; }
-ByteOrdinal Cell::getValue(Address address, TreatAsByteOrdinal) const noexcept {
-
+ByteOrdinal 
+Cell::getValue(Address address, TreatAsByteOrdinal) const noexcept {
+    return bytes[getOffset(address, TreatAsByteOrdinal{})];
 }
 
-ByteInteger Cell::getValue(Address address, TreatAsByteInteger) const noexcept {
-
+ByteInteger 
+Cell::getValue(Address address, TreatAsByteInteger) const noexcept {
+    return byteIntegers[getOffset(address, TreatAsByteInteger{})];
 }
 
-ShortOrdinal Cell::getValue(Address address, TreatAsShortOrdinal) const noexcept {
-
+ShortOrdinal 
+Cell::getValue(Address address, TreatAsShortOrdinal) const noexcept {
+    return shortOrdinals[getOffset(address, TreatAsShortOrdinal{})];
 }
 
-ShortInteger Cell::getValue(Address address, TreatAsShortInteger) const noexcept {
+ShortInteger 
+Cell::getValue(Address address, TreatAsShortInteger) const noexcept {
+    return shortIntegers[getOffset(address, TreatAsShortInteger{})];
 
 }
-
-Ordinal Cell::getValue(Address address, TreatAsOrdinal) const noexcept {
-
+Ordinal 
+Cell::getValue(Address address, TreatAsOrdinal) const noexcept {
+    return shortOrdinals[getOffset(address, TreatAsOrdinal{})];
 }
 
-Integer Cell::getValue(Address address, TreatAsInteger) const noexcept {
-
+Integer 
+Cell::getValue(Address address, TreatAsInteger) const noexcept {
+    return shortIntegers[getOffset(address, TreatAsInteger{})];
 }
 
-LongOrdinal Cell::getValue(Address address, TreatAsLongOrdinal) const noexcept {
-
+LongOrdinal 
+Cell::getValue(Address address, TreatAsLongOrdinal) const noexcept {
+    return longOrdinals[getOffset(address, TreatAsLongOrdinal{})];
 }
 
 } 
@@ -404,9 +413,12 @@ Core::store(Address address, ByteInteger value, TreatAsByteInteger) noexcept {
 }
 void 
 Core::checksumFail() noexcept {
+    throw std::runtime_error("checksum fail");
+    // cause termination to happen
 }
 void 
 Core::selfTestFailure() noexcept {
+    throw std::runtime_error("self test failure!");
 }
 #endif
 
