@@ -905,10 +905,18 @@ void
 Core::setStackPointer(Ordinal value, TreatAsOrdinal) noexcept {
     setGPR(SPIndex, value, TreatAsOrdinal{});
 }
-
+namespace {
+template<Ordinal C, Ordinal NotC>
+constexpr Ordinal computeNextFrame(Ordinal base) noexcept {
+    return (base + C) & NotC;
+}
+static_assert(computeNextFrame<Core::C, Core::NotC>(0xFDED'0000) == 0xFDED'0040);
+static_assert(computeNextFrame<Core::C*2, Core::NotC>(0xFDED'0000) == 0xFDED'0080);
+static_assert(computeNextFrame<Core::C*3, Core::NotC>(0xFDED'0000) == 0xFDED'00C0);
+} // end namespace
 Ordinal
 Core::getNextFrameBase() const noexcept {
-    return (getStackPointer() + C) & NotC;
+    return computeNextFrame<C, NotC>(getStackPointer());
 }
 
 
@@ -1796,7 +1804,13 @@ Core::generateFault(Ordinal faultCode) {
     auto entry = getFaultEntry(faultType);
     /// @todo implement override support?
     if (entry.isLocalProcedureEntry()) {
-
+        // first allocate a new frame on the stack that the processor is
+        // currently using. Set the frame-return status field to 0b001
+        //auto temp = getNextFrameBase(); // round stack pointer to next boundary
+        //auto fp = getGPRValue(FPIndex, TreatAsOrdinal{});
+        //balx(RIPIndex, effectiveAddress);
+        //enterCall(fp);
+        //setupNewFrameInternals(fp, temp);
     } else if (entry.isSystemTableEntry()) {
 
     } else {

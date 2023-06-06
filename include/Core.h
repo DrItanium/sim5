@@ -949,8 +949,9 @@ constexpr Ordinal getSALIGNParameter() noexcept {
 class Core {
     public:
         static constexpr Ordinal SALIGN = getSALIGNParameter();
-        static constexpr Ordinal C = (SALIGN * 16) - 1;
-        static constexpr Ordinal NotC = ~C;
+        static constexpr Ordinal CMask = (SALIGN * 16) - 1;
+        static constexpr Ordinal C = CMask + 1;
+        static constexpr Ordinal NotC = ~CMask;
 
     public:
 
