@@ -15,7 +15,9 @@ add_library(core960
 		src/Core.cc
 		src/IAC.cc)
 
-add_executable(sim5 src/main.cc)
+add_executable(sim5 
+	src/main.cc
+	src/NativeCore.cc)
 target_link_libraries(sim5 
 	core960
 	Boost::program_options)
