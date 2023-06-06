@@ -1,5 +1,5 @@
 // sim5
-// Copyright (c) 2022, Joshua Scoggins
+// Copyright (c) 2022-2023, Joshua Scoggins
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -24,6 +24,7 @@
 // The main for the arduino version of the simulator's main
 // Created by jwscoggins on 8/21/21.
 //
+#ifdef ARDUINO
 #include <Arduino.h>
 #include "Types.h"
 #include "BinaryOperations.h"
@@ -52,3 +53,5 @@ loop() {
     core.cycle();
 }
 
+
+#endif
