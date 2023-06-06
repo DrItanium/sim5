@@ -28,7 +28,6 @@
 #else
 #include <cstdint>
 #endif // end defined(ARDUINO)
-
 using Address = uint32_t;
 using ByteOrdinal = uint8_t;
 using ByteInteger = int8_t;

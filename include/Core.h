@@ -400,11 +400,7 @@ struct TreatAsREG { };
 struct TreatAsCOBR { };
 struct TreatAsCTRL { };
 struct TreatAsMEM { };
-#ifdef __AVR__
-    using BackingUnionType = uint8_t;
-#else
-    using BackingUnionType = Ordinal;
-#endif
+using BackingUnionType = Ordinal;
 union Register {
     constexpr Register(Ordinal value) : o(value) { }
     Register() = default;
