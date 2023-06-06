@@ -1762,10 +1762,10 @@ Core::pushFaultRecord(Address baseStorageAddress, const FaultRecord& record) noe
     store(baseStorageAddress + 16, record.faultData[0], TreatAsOrdinal{});
     store(baseStorageAddress + 20, record.faultData[1], TreatAsOrdinal{});
     store(baseStorageAddress + 24, record.faultData[2], TreatAsOrdinal{});
-    store(baseStorageAddress + 28, record.overrideType, TreatAsOrdinal{});
+    store(baseStorageAddress + 28, record.overrideType.raw, TreatAsOrdinal{});
     store(baseStorageAddress + 32, record.pc, TreatAsOrdinal{});
     store(baseStorageAddress + 36, record.ac, TreatAsOrdinal{});
-    store(baseStorageAddress + 40, record.type, TreatAsOrdinal{});
+    store(baseStorageAddress + 40, record.type.raw, TreatAsOrdinal{});
     store(baseStorageAddress + 44, record.addr, TreatAsOrdinal{});
 }
 
@@ -1817,6 +1817,8 @@ Core::generateFault(Ordinal faultCode) {
         auto faultRecordStart = nextFrame - 48;
         auto resumptionRecordStart = nextFrame - 96;
         Register fp(getGPRValue(FPIndex, TreatAsOrdinal{}));
+        FaultRecord frecord;
+        frecord.unused = 0;
         //fp.pfp = 0b001;
         balx(RIPIndex, entry.getFaultHandlerProcedureAddress());
         //balx(RIPIndex, effectiveAddress);

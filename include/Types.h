@@ -93,6 +93,15 @@ static_assert(generateSegmentDescriptor(9) == 0x27f);
 static_assert(generateSegmentDescriptor(8) == 0x23f);
 static_assert(generateSegmentDescriptor(7) == 0x1ff);
 
+union FaultTypeData {
+    Ordinal raw;
+    struct {
+        uint8_t subtype;
+        uint8_t unused;
+        uint8_t type;
+        uint8_t flags;
+    };
+};
 /**
  * @brief the data structure the processor creates upon a fault being
  * triggered.
@@ -101,7 +110,7 @@ struct [[gnu::packed]] FaultRecord {
     Ordinal unused;
     Ordinal overrideFaultData[3];
     Ordinal faultData[3];
-    Ordinal overrideType;
+    FaultTypeData overrideType;
     /**
      * @brief A copy of the ProcessControls register at the time the fault was
      * raised.
@@ -115,7 +124,7 @@ struct [[gnu::packed]] FaultRecord {
     /**
      * @brief the type of the fault
      */
-    Ordinal type;
+    FaultTypeData type;
     /**
      * @brief The address of the faulting instruction
      */
