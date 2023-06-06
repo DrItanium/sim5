@@ -412,12 +412,12 @@ Core::store(Address address, ByteInteger value, TreatAsByteInteger) noexcept {
     store8(address, value, TreatAsByteInteger{});
 }
 void 
-Core::checksumFail() noexcept {
+Core::checksumFail() {
     throw std::runtime_error("checksum fail");
     // cause termination to happen
 }
 void 
-Core::selfTestFailure() noexcept {
+Core::selfTestFailure() {
     throw std::runtime_error("self test failure!");
 }
 #endif

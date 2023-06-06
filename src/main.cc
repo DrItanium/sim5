@@ -28,10 +28,23 @@
 #include "Types.h"
 #include "BinaryOperations.h"
 #include "Core.h"
+#include <iostream>
 
 int main(int argc, char** argv) {
     Core core;
-
+    std::cout << "i960 Simulator System" << std::endl;
+    std::cout << "(C) 2022-2023 Joshua Scoggins" << std::endl;
+    core.begin();
+    switch (core.start()) {
+        case BootResult::SelfTestFailure:
+            core.selfTestFailure();
+            break;
+        case BootResult::ChecksumFail:
+            core.checksumFail();
+            break;
+        default:
+            break;
+    }
     return 0;
 }
 

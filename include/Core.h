@@ -1488,8 +1488,8 @@ class Core {
     private: // system address table / system procedure table
         SegmentDescriptor loadSegmentDescriptor(SegmentSelector offset) const noexcept;
     public:
-        [[noreturn]] void checksumFail() noexcept;
-        [[noreturn]] void selfTestFailure() noexcept;
+        void checksumFail();
+        void selfTestFailure();
     private: // protected extensions instructions
         void signal(Register& dest) noexcept;
         void wait(const Register& src) noexcept;

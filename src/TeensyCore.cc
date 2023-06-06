@@ -193,7 +193,7 @@ void
 Core::store(Address address, ByteInteger value, TreatAsByteInteger) noexcept {
 }
 void 
-Core::checksumFail() noexcept {
+Core::checksumFail() {
     while(true) {
         // dot dot dot (S)
         morse::message("checksum failure");
@@ -201,7 +201,7 @@ Core::checksumFail() noexcept {
     }
 }
 void 
-Core::selfTestFailure() noexcept {
+Core::selfTestFailure() {
     while(true) {
         // dot dot dot (S)
         morse::message("self test failure");
