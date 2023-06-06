@@ -24,13 +24,36 @@
 #include "Core.h"
 #include <string>
 namespace {
-    uint8_t* physicalMemory = nullptr;
+    union Cell {
+        ByteOrdinal bytes[16];
+        ByteInteger byteIntegers[16];
+        ShortOrdinal shortOrdinals[8];
+        ShortInteger shortIntegers[8];
+        Ordinal ordinals[4];
+        Integer integers[4];
+        LongOrdinal longOrdinals[2];
+        void setValue(Address address, ByteOrdinal value, TreatAsByteOrdinal) noexcept;
+        void setValue(Address address, ByteInteger value, TreatAsByteInteger) noexcept;
+        void setValue(Address address, ShortOrdinal value, TreatAsShortOrdinal) noexcept;
+        void setValue(Address address, ShortInteger value, TreatAsShortInteger) noexcept;
+        void setValue(Address address, Ordinal value, TreatAsOrdinal) noexcept;
+        void setValue(Address address, Integer value, TreatAsInteger) noexcept;
+        void setValue(Address address, LongOrdinal value, TreatAsLongOrdinal) noexcept;
+        ByteOrdinal getValue(Address address, TreatAsByteOrdinal) const noexcept;
+        ByteInteger getValue(Address address, TreatAsByteInteger) const noexcept;
+        ShortOrdinal getValue(Address address, TreatAsShortOrdinal) const noexcept;
+        ShortInteger getValue(Address address, TreatAsShortInteger) const noexcept;
+        Ordinal getValue(Address address, TreatAsOrdinal) const noexcept;
+        Integer getValue(Address address, TreatAsInteger) const noexcept;
+        LongOrdinal getValue(Address address, TreatAsLongOrdinal) const noexcept;
+    };
+    Cell* physicalMemory = nullptr;
 } // end namespace
 void 
 Core::nonPortableBegin() noexcept {
     if (!physicalMemory) {
         // allocate 4 gigabytes of memory
-        physicalMemory = new uint8_t[0x1'0000'0000]();
+        physicalMemory = new Cell[(0x1'0000'0000) / sizeof(Cell)]();
     }
 }
 
@@ -65,7 +88,21 @@ Core::purgeInstructionCache() noexcept {
 }
 
 namespace {
-
+constexpr uint8_t getOffset32(Address input) noexcept { return (input >> 2) & 0b11; }
+constexpr uint8_t getOffset16(Address input) noexcept { return (input >> 1) & 0b111; }
+constexpr uint8_t getOffset8(Address input) noexcept { return input & 0b1111; }
+constexpr uint8_t getOffset(Address input, TreatAsLongOrdinal) noexcept { return (input >> 3) & 0b1; }
+constexpr uint8_t getOffset(Address input, TreatAsOrdinal) noexcept { return getOffset32(input); }
+constexpr uint8_t getOffset(Address input, TreatAsInteger) noexcept { return getOffset32(input); }
+constexpr uint8_t getOffset(Address input, TreatAsShortOrdinal) noexcept { return getOffset16(input); }
+constexpr uint8_t getOffset(Address input, TreatAsShortInteger) noexcept { return getOffset16(input); }
+constexpr uint8_t getOffset(Address input, TreatAsByteOrdinal) noexcept { return getOffset8(input); }
+constexpr uint8_t getOffset(Address input, TreatAsByteInteger) noexcept { return getOffset8(input); }
+constexpr Address getCellAddress(Address input) noexcept { return input >> 4; }
+Cell& 
+getCell(Address address) noexcept {
+    return physicalMemory[getCellAddress(address)];
+}
 ByteOrdinal
 load8(Address address, TreatAsByteOrdinal) noexcept {
     switch (static_cast<uint8_t>(address) >> 24) {
@@ -74,7 +111,7 @@ load8(Address address, TreatAsByteOrdinal) noexcept {
         case 0xFF:
             return 0;
         default:
-            return physicalMemory[address];
+            return getCell(address).bytes[getOffset(address, TreatAsByteOrdinal{})];
     }
 }
 ShortOrdinal
@@ -91,7 +128,7 @@ load16(Address address, TreatAsShortOrdinal) noexcept {
             case 0xFF:
                 return 0;
             default:
-                return reinterpret_cast<ShortOrdinal*>(physicalMemory)[address >> 1];
+                return getCell(address).shortOrdinals[getOffset(address, TreatAsShortOrdinal{})];
         }
     }
 }
@@ -103,7 +140,7 @@ load8(Address address, TreatAsByteInteger) noexcept {
         case 0xFF:
             return 0;
         default:
-            return reinterpret_cast<ByteInteger*>(physicalMemory)[address];
+            return getCell(address).byteIntegers[getOffset(address, TreatAsByteInteger{})];
     }
 }
 ShortInteger
@@ -120,7 +157,7 @@ load16(Address address, TreatAsShortInteger) noexcept {
             case 0xFF:
                 return 0;
             default:
-                return reinterpret_cast<ShortInteger*>(physicalMemory)[address >> 1];
+                return getCell(address).shortIntegers[getOffset(address, TreatAsShortInteger{})];
         }
     }
 }
@@ -132,7 +169,7 @@ store8(Address address, ByteOrdinal value, TreatAsByteOrdinal) noexcept {
         case 0xFF:
             break;
         default:
-            physicalMemory[address] = value;
+            getCell(address).bytes[getOffset(address, TreatAsByteOrdinal{})] = value;
             break;
     }
 }
@@ -148,6 +185,7 @@ store16(Address address, ShortOrdinal value, TreatAsShortOrdinal) noexcept {
             case 0xFF:
                 break;
             default:
+            getCell(address).bytes[getOffset(address, TreatAsByteOrdinal{})] = value;
                 reinterpret_cast<ShortOrdinal*>(physicalMemory)[address >> 1] = value;
                 break;
         }
@@ -268,6 +306,41 @@ load32(Address address, TreatAsInteger) noexcept {
         }
     }
 }
+void Cell::setValue(Address address, ByteOrdinal value, TreatAsByteOrdinal) noexcept { bytes[getOffset(address, TreatAsByteOrdinal{})] = value; }
+void Cell::setValue(Address address, ByteInteger value, TreatAsByteInteger) noexcept { byteIntegers[getOffset(address, TreatAsByteInteger{})] = value; }
+void Cell::setValue(Address address, ShortOrdinal value, TreatAsShortOrdinal) noexcept { shortOrdinals[getOffset(address, TreatAsShortOrdinal{})] = value; }
+void Cell::setValue(Address address, ShortInteger value, TreatAsShortInteger) noexcept { shortIntegers[getOffset(address, TreatAsShortInteger{})] = value; }
+void Cell::setValue(Address address, Ordinal value, TreatAsOrdinal) noexcept { ordinals[getOffset(address, TreatAsOrdinal{})] = value; }
+void Cell::setValue(Address address, Integer value, TreatAsInteger) noexcept { integers[getOffset(address, TreatAsInteger{})] = value; }
+void Cell::setValue(Address address, LongOrdinal value, TreatAsLongOrdinal) noexcept { longOrdinals[getOffset(address, TreatAsLongOrdinal{})] = value; }
+ByteOrdinal Cell::getValue(Address address, TreatAsByteOrdinal) const noexcept {
+
+}
+
+ByteInteger Cell::getValue(Address address, TreatAsByteInteger) const noexcept {
+
+}
+
+ShortOrdinal Cell::getValue(Address address, TreatAsShortOrdinal) const noexcept {
+
+}
+
+ShortInteger Cell::getValue(Address address, TreatAsShortInteger) const noexcept {
+
+}
+
+Ordinal Cell::getValue(Address address, TreatAsOrdinal) const noexcept {
+
+}
+
+Integer Cell::getValue(Address address, TreatAsInteger) const noexcept {
+
+}
+
+LongOrdinal Cell::getValue(Address address, TreatAsLongOrdinal) const noexcept {
+
+}
+
 } 
 
 Ordinal 
