@@ -410,6 +410,7 @@ union Register {
     Ordinal o;
     Integer i;
     Address a;
+    Real r;
     ByteOrdinal bytes[sizeof(Ordinal)];
     ShortOrdinal shorts[sizeof(Ordinal)/sizeof(ShortOrdinal)];
     constexpr uint8_t getInstructionMask() const noexcept { 
@@ -599,11 +600,12 @@ union Register {
     bool getCarryBit() const noexcept { return arith.conditionCode & 0b001; }
     [[nodiscard]] Ordinal modify(Ordinal mask, Ordinal src) noexcept;
     [[nodiscard]] constexpr ByteOrdinal getPriority() const noexcept { return processControls.priority; }
-
+    void setValue(Real value, TreatAsReal) noexcept { f = value; }
     void setValue(Ordinal value, TreatAsOrdinal) noexcept { o = value; }
     void setValue(Integer value, TreatAsInteger) noexcept { i = value; }
     [[nodiscard]] Integer getValue(TreatAsInteger) const noexcept { return i; }
     [[nodiscard]] Ordinal getValue(TreatAsOrdinal) const noexcept { return o; }
+    [[nodiscard]] Real getValue(TreatAsReal) const noexcept { return f; }
     template<typename T>
     [[nodiscard]] T getValue() const noexcept {
         return getValue(TreatAs<T>{});
@@ -645,8 +647,10 @@ union LongRegister {
         LongRegister() = default;
         [[nodiscard]] constexpr LongOrdinal getValue(TreatAsLongOrdinal) const noexcept { return lo; }
         [[nodiscard]] constexpr LongInteger getValue(TreatAsLongInteger) const noexcept { return li; }
+        [[nodiscard]] constexpr LongReal getValue(TreatAsLongReal) const noexcept { return lr; }
         void setValue(LongOrdinal value, TreatAsLongOrdinal) noexcept { lo = value; }
         void setValue(LongInteger value, TreatAsLongInteger) noexcept { li = value; }
+        void setValue(LongReal value, TreatAsLongReal) noexcept { lr = value; }
         Register& get(ByteOrdinal index) noexcept { return pair_[index & 0b1]; }
         const Register& get(ByteOrdinal index) const noexcept { return pair_[index & 0b1]; }
 
@@ -686,6 +690,7 @@ union LongRegister {
         Register pair_[2];
         LongOrdinal lo;
         LongInteger li;
+        LongReal lr;
 };
 static_assert(sizeof(LongRegister) == sizeof(LongOrdinal));
 
