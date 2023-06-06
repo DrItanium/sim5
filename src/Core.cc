@@ -203,7 +203,7 @@ Core::ediv(LongRegister& dest, Ordinal src1, const LongRegister& src2) noexcept 
         generateFault(InvalidOpcodeFault);
     } else if (src1 == 0) {
         // divide by zero
-        generateFault(ZeroDivideFault);
+        zeroDivideFault();
     } else {
         //src2.parts[1] = getGPRValue(instruction_.reg.src2, 1, TreatAsOrdinal{});
         auto sl2 = src2.getValue<LongOrdinal>();
@@ -1798,36 +1798,98 @@ Core::loadSegmentDescriptor(SegmentSelector selector) const noexcept {
     };
 }
 
+
+void 
+Core::localProcedureEntry_FaultCall(const FaultRecord& record, const FaultTableEntry& entry) noexcept {
+    // first allocate a new frame on the stack that the processor is
+    // currently using. Set the frame-return status field to 0b001
+    // 
+    // allocate enough space before the start of the frame for the fault
+    // record (and optionally a resumption record if necessary). Be lazy
+    // and just allocate two frames worth of information to be on the safe
+    // side! Three frames worth are necessary to make sure we have enough
+    // padding.
+    auto nextFrame = computeNextFrame<C*3, NotC>(getStackPointer());
+    auto faultRecordStart = nextFrame - 48;
+    auto resumptionRecordStart = nextFrame - 96;
+    Register fp(getGPRValue(FPIndex, TreatAsOrdinal{}));
+    //fp.pfp = 0b001;
+    //balx(RIPIndex, entry.getFaultHandlerProcedureAddress());
+    //balx(RIPIndex, effectiveAddress);
+    //enterCall(fp);
+    //setupNewFrameInternals(fp, temp);
+}
+void 
+Core::procedureTableEntry_FaultCall(const FaultRecord& record, const FaultTableEntry& entry) noexcept {
+
+}
+void Core::traceFaultProcedureTableEntry_FaultCall(const FaultRecord& record, const FaultTableEntry& entry) noexcept {
+
+}
+
 void
-Core::generateFault(Ordinal faultCode) {
-    auto faultType = static_cast<uint8_t>(faultCode >> 16);
-    auto faultOffset = static_cast<uint8_t>(faultCode);
+Core::generateFault(const FaultRecord& record) {
+    auto faultType = static_cast<uint8_t>(record.type >> 16);
+    auto faultOffset = static_cast<uint8_t>(record.type);
     auto entry = getFaultEntry(faultType);
     /// @todo implement override support?
     if (entry.isLocalProcedureEntry()) {
-        // first allocate a new frame on the stack that the processor is
-        // currently using. Set the frame-return status field to 0b001
-        // 
-        // allocate enough space before the start of the frame for the fault
-        // record (and optionally a resumption record if necessary). Be lazy
-        // and just allocate two frames worth of information to be on the safe
-        // side! Three frames worth are necessary to make sure we have enough
-        // padding.
-        auto nextFrame = computeNextFrame<C*3, NotC>(getStackPointer());
-        auto faultRecordStart = nextFrame - 48;
-        auto resumptionRecordStart = nextFrame - 96;
-        Register fp(getGPRValue(FPIndex, TreatAsOrdinal{}));
-        FaultRecord frecord;
-        frecord.unused = 0;
-        //fp.pfp = 0b001;
-        balx(RIPIndex, entry.getFaultHandlerProcedureAddress());
-        //balx(RIPIndex, effectiveAddress);
-        //enterCall(fp);
-        //setupNewFrameInternals(fp, temp);
+        localProcedureEntry_FaultCall(record, entry);
     } else if (entry.isSystemTableEntry()) {
-
+        procedureTableEntry_FaultCall(record, entry);
     } else {
         badFault(faultCode);
     }
 }
+void
+Core::generateFault(Ordinal faultCode) {
+    FaultRecord record;
+    record.pc = pc_;
+    record.ac = ac_;
+    record.type = faultCode;
+    generateFault(record);
+}
 
+void
+Core::zeroDivideFault() {
+    FaultRecord record;
+    record.pc = pc_;
+    record.ac = ac_;
+    record.type = ZeroDivideFault;
+    record.addr = ip_;
+    saveReturnAddress(RIPIndex);
+    generateFault(record);
+}
+
+void
+Core::integerOverflowFault() {
+    FaultRecord record;
+    record.pc = pc_;
+    record.ac = ac_;
+    record.type = IntegerOverflowFault;
+    record.addr = ip_;
+    saveReturnAddress(RIPIndex);
+    // saved ip will be the next instruction
+    generateFault(record);
+}
+
+void
+Core::constraintRangeFault() {
+    FaultRecord record;
+    record.pc = pc_;
+    record.ac = ac_;
+    record.type = ConstraintRangeFault;
+    record.addr = ip_;
+    // saved ip isn't used!
+    generateFault(record);
+}
+
+void
+Core::invalidSSFault() {
+    FaultRecord record;
+    record.pc = pc_;
+    record.ac = ac_;
+    record.type = InvalidSSFault;
+    record.addr = ip_;
+    // saved ip isn't used
+}

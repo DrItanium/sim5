@@ -35,7 +35,7 @@ constexpr Ordinal DEFAULT_SALIGN = 4;
 /// faults
 constexpr Ordinal NoFault = 0xFFFF'FFFF;
 constexpr Ordinal ParallelFault = 0;
-constexpr Ordinal TraceFaultBase = 0x00010000;
+constexpr Ordinal TraceFaultBase = 0x0001'0000;
 template<uint8_t subtype>
 constexpr Ordinal TraceFaultSubType = TraceFaultBase | subtype;
 constexpr Ordinal InstructionTraceFault = TraceFaultSubType<0b00000010>;
@@ -45,18 +45,36 @@ constexpr Ordinal ReturnTraceFault = TraceFaultSubType<0b00010000>;
 constexpr Ordinal PrereturnTraceFault = TraceFaultSubType<0b00100000>;
 constexpr Ordinal SupervisorTraceFault = TraceFaultSubType<0b01000000>;
 constexpr Ordinal MarkTraceFault = TraceFaultSubType<0b10000000>;
+
 constexpr Ordinal InvalidOpcodeFault = 0x00020001;
 constexpr Ordinal UnimplementedFault = 0x00020002;
 constexpr Ordinal UnalignedFault = 0x00020003;
-constexpr Ordinal InvalidOperandFault = 0x00020004;
-constexpr Ordinal ArithmeticOverflowFault = 0x0003'0001;
-constexpr Ordinal ZeroDivideFault = 0x0003'0002;
-constexpr Ordinal ConstraintRangeFault = 0x0005'0001;
-constexpr Ordinal ProtectionLengthFault = 0x0007'0002;
-constexpr Ordinal ProtectionBadAccessFault = 0x0007'0020;
+constexpr Ordinal InvalidOperandFault = 0x0002'0004;
 
+constexpr Ordinal IntegerOverflowFault = 0x0003'0001;
+constexpr Ordinal ZeroDivideFault = 0x0003'0002;
+/// @todo support floating point faults
+constexpr Ordinal ConstraintRangeFault = 0x0005'0001;
+constexpr Ordinal InvalidSSFault = 0x0005'0002;
+constexpr Ordinal InvalidSegmentTableEntryFault = 0x0006'0001;
+constexpr Ordinal InvalidPageTableDirectoryEntryFault = 0x0006'0002;
+constexpr Ordinal InvalidPageTableEntryFault = 0x0006'0003;
+/// @todo support protection faults
+constexpr Ordinal SegmentLengthFault = 0x0007'0002;
+constexpr Ordinal PageRightsFault = 0x0007'0004;
+constexpr Ordinal BadAccessFault = 0x0007'0020;
+constexpr Ordinal Machine_BadAccessFault = 0x0008'0001;
 constexpr Ordinal Machine_ParityErrorFault = 0x0008'0002;
+
+constexpr Ordinal ControlFault = 0x0009'0001;
+constexpr Ordinal DispatchFault = 0x0009'0002;
+constexpr Ordinal IACFault = 0x0009'0003;
+
 constexpr Ordinal TypeMismatchFault = 0x000a'0001;
+constexpr Ordinal ContentsFault = 0x000a'0002;
+constexpr Ordinal TimeSliceFault = 0x000c'0001;
+constexpr Ordinal InvalidDescriptorFault = 0x000d'0001;
+constexpr Ordinal EventNoticeFault = 0x000e'0001;
 constexpr Ordinal OverrideFault = 0x0010'0000;
 
 enum class Opcodes : uint16_t {
@@ -1387,7 +1405,12 @@ class Core {
         bool performSelfTest() noexcept;
         void assertFailureState() noexcept;
         void deassertFailureState() noexcept;
-        void generateFault(Ordinal faultCode);
+        void zeroDivideFault() ;
+        void integerOverflowFault() ;
+        void constraintRangeFault() ;
+        void invalidSSFault() ;
+        void generateFault(const FaultRecord& record);
+        //void generateFault(Ordinal faultCode);
         void addi(Register& dest, Integer src1, Integer src2) noexcept;
         void addo(Register& dest, Ordinal src1, Ordinal src2) noexcept;
         void saveReturnAddress(ByteOrdinal registerIndex) noexcept;
@@ -1476,9 +1499,10 @@ class Core {
         void pushFaultRecord(Address baseStorageAddress, const FaultRecord& record) noexcept;
         FaultTableEntry getFaultEntry(uint8_t index) const noexcept;
         Address getFaultHandlerBaseAddress(const FaultTableEntry& entry) const noexcept;
-        void localProcedureEntry_FaultCall(Address targetAddress) noexcept;
-        void procedureTableEntry_FaultCall(const FaultTableEntry& entry) noexcept;
-        void traceFaultProcedureTableEntry_FaultCall(const FaultTableEntry& entry) noexcept;
+        void populateFaultRecord(FaultRecord& record, uint8_t faultType, uint8_t faultOffset);
+        void localProcedureEntry_FaultCall(const FaultRecord& record, const FaultTableEntry& entry) noexcept;
+        void procedureTableEntry_FaultCall(const FaultRecord& record, const FaultTableEntry& entry) noexcept;
+        void traceFaultProcedureTableEntry_FaultCall(const FaultRecord& record, const FaultTableEntry& entry) noexcept;
     private:
         template<uint8_t offset>
         Ordinal getFromPRCB() const noexcept { return load(prcbAddress_ + offset, TreatAsOrdinal{}); }
