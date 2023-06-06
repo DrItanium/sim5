@@ -122,25 +122,27 @@ struct [[gnu::packed]] FaultRecord {
     Address addr;
     FaultRecord() = default;
     FaultRecord(Ordinal p, Ordinal a, Ordinal t, Address adr) : unused(0), overrideFaultData{0}, faultData{0}, overrideType(0), pc(p), ac(a), type(t), addr(adr) { }
+    [[nodiscard]] constexpr uint8_t getFaultFlags() const noexcept { return static_cast<uint8_t>(type >> 24); }
+    [[nodiscard]] constexpr uint8_t getFaultType() const noexcept { return static_cast<uint8_t>(type >> 16); }
+    [[nodiscard]] constexpr uint8_t getFaultSubtype() const noexcept { return static_cast<uint8_t>(type); }
+    [[nodiscard]] constexpr uint8_t getOverrideFlags() const noexcept { return static_cast<uint8_t>(overrideType >> 24); }
+    [[nodiscard]] constexpr uint8_t getOverrideType() const noexcept { return static_cast<uint8_t>(overrideType >> 16); }
+    [[nodiscard]] constexpr uint8_t getOverrideSubtype() const noexcept { return static_cast<uint8_t>(overrideType); }
 };
 static_assert(sizeof(FaultRecord) == 48);
 
 struct [[gnu::packed]] FaultTableEntry {
-    explicit constexpr FaultTableEntry(Ordinal addr, SegmentSelector selector) noexcept : handlerFunctionAddress_(addr), selector_(selector) { }
-    constexpr FaultTableEntry() noexcept : FaultTableEntry(0, 0) { }
-    constexpr bool isSystemTableEntry() const noexcept { return (handlerFunctionAddress_ & 0b11) == 0b10; }
-    constexpr bool isLocalProcedureEntry() const noexcept { return (handlerFunctionAddress_ & 0b11) == 0; }
-    constexpr auto getSegmentSelector() const noexcept { return selector_; }
-    constexpr auto getFaultHandlerProcedureAddress() const noexcept { return handlerFunctionAddress_; }
-    constexpr auto getFaultHandlerProcedureNumber() const noexcept { return (handlerFunctionAddress_ >> 2); }
-    Ordinal handlerFunctionAddress_;
-    SegmentSelector selector_;
-    static constexpr FaultTableEntry makeLocalEntry(Address targetAddress) noexcept { 
-        return FaultTableEntry{alignTo4ByteBoundaries(targetAddress), 0};
-    }
-    static constexpr FaultTableEntry makeSystemCallEntry(Ordinal index) noexcept {
-        return FaultTableEntry{(index << 2) | 0b10, 0x0000'027F};
-    }
+    public:
+        explicit constexpr FaultTableEntry(Ordinal addr, SegmentSelector selector) noexcept : handlerFunctionAddress_(addr), selector_(selector) { }
+        constexpr FaultTableEntry() noexcept : FaultTableEntry(0, 0) { }
+        constexpr bool isSystemTableEntry() const noexcept { return (handlerFunctionAddress_ & 0b11) == 0b10; }
+        constexpr bool isLocalProcedureEntry() const noexcept { return (handlerFunctionAddress_ & 0b11) == 0; }
+        constexpr auto getSegmentSelector() const noexcept { return selector_; }
+        constexpr auto getFaultHandlerProcedureAddress() const noexcept { return handlerFunctionAddress_; }
+        constexpr auto getFaultHandlerProcedureNumber() const noexcept { return (handlerFunctionAddress_ >> 2); }
+    private:
+        Ordinal handlerFunctionAddress_;
+        SegmentSelector selector_;
 };
 
 

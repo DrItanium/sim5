@@ -1832,10 +1832,12 @@ void Core::traceFaultProcedureTableEntry_FaultCall(const FaultRecord& record, co
 
 void
 Core::generateFault(const FaultRecord& record) {
-    auto faultType = static_cast<uint8_t>(record.type >> 16);
-    auto faultOffset = static_cast<uint8_t>(record.type);
+    auto faultType = record.getFaultType();
     auto entry = getFaultEntry(faultType);
-    /// @todo implement override support?
+    // override faults are generated inside of this method
+    // usually they are virtual memory faults of some kind while saving to disk
+    // When I get to that point, I will then proceed to implement those fault
+    // handlers
     if (entry.isLocalProcedureEntry()) {
         localProcedureEntry_FaultCall(record, entry);
     } else if (entry.isSystemTableEntry()) {

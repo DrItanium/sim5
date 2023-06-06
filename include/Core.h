@@ -1418,7 +1418,6 @@ class Core {
         void invalidDescriptorFault(SegmentSelector selector);
         void eventNoticeFault();
         void generateFault(const FaultRecord& record);
-        //void generateFault(Ordinal faultCode);
         void addi(Register& dest, Integer src1, Integer src2) noexcept;
         void addo(Register& dest, Ordinal src1, Ordinal src2) noexcept;
         void saveReturnAddress(ByteOrdinal registerIndex) noexcept;
