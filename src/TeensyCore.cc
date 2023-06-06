@@ -208,6 +208,14 @@ Core::selfTestFailure() {
         delay(1000);
     }
 }
+void 
+Core::badFault(Ordinal faultCode) {
+    while(true) {
+        // dot dot dot (S)
+        morse::message("bad fault");
+        delay(1000);
+    }
+}
 #endif /* defined ARDUINO_TEENSY41 */
 #endif /* defined TEENSY_CORE */
 

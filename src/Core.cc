@@ -1790,10 +1790,17 @@ Core::loadSegmentDescriptor(SegmentSelector selector) const noexcept {
 }
 
 void
-Core::generateFault(Ordinal faultCode) noexcept {
+Core::generateFault(Ordinal faultCode) {
     auto faultType = static_cast<uint8_t>(faultCode >> 16);
     auto faultOffset = static_cast<uint8_t>(faultCode);
     auto entry = getFaultEntry(faultType);
     /// @todo implement override support?
+    if (entry.isLocalProcedureEntry()) {
+
+    } else if (entry.isSystemTableEntry()) {
+
+    } else {
+        badFault(faultCode);
+    }
 }
 

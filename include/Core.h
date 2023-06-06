@@ -1387,7 +1387,7 @@ class Core {
         bool performSelfTest() noexcept;
         void assertFailureState() noexcept;
         void deassertFailureState() noexcept;
-        void generateFault(Ordinal faultCode) noexcept;
+        void generateFault(Ordinal faultCode);
         void addi(Register& dest, Integer src1, Integer src2) noexcept;
         void addo(Register& dest, Ordinal src1, Ordinal src2) noexcept;
         void saveReturnAddress(ByteOrdinal registerIndex) noexcept;
@@ -1495,6 +1495,8 @@ class Core {
     public:
         void checksumFail();
         void selfTestFailure();
+    private:
+        void badFault(Ordinal faultCode);
     private: // protected extensions instructions
         void signal(Register& dest) noexcept;
         void wait(const Register& src) noexcept;
