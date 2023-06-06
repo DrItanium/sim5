@@ -189,8 +189,8 @@ struct SystemProcedureTable {
     Address entries[260];
 };
 struct [[gnu::packed]] SegmentDescriptor {
-    SegmentDescriptor() : reserved{0,0}, address(0), cfg(0) { }
-    [[nodiscard]] constexpr bool valid() const noexcept { return cfg.valid; }
+    SegmentDescriptor() : reserved{0,0}, address(0) { }
+    [[nodiscard]] constexpr bool valid() const noexcept { return cfg.bits.valid; }
     [[nodiscard]] constexpr ByteOrdinal getPagingMethod() const noexcept { return cfg.bits.pagingMethod; }
     [[nodiscard]] constexpr ByteOrdinal getAccessStatus() const noexcept { return cfg.bits.accessStatus; }
     [[nodiscard]] constexpr ByteOrdinal getSize() const noexcept { return cfg.bits.size; }
@@ -198,7 +198,7 @@ struct [[gnu::packed]] SegmentDescriptor {
     Ordinal reserved[2];
     Address address;
     union {
-        Ordinal raw;
+        Ordinal raw = 0;
         struct {
             Ordinal valid : 1;
             Ordinal pagingMethod : 2;
