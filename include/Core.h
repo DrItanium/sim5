@@ -600,12 +600,12 @@ union Register {
     bool getCarryBit() const noexcept { return arith.conditionCode & 0b001; }
     [[nodiscard]] Ordinal modify(Ordinal mask, Ordinal src) noexcept;
     [[nodiscard]] constexpr ByteOrdinal getPriority() const noexcept { return processControls.priority; }
-    void setValue(Real value, TreatAsReal) noexcept { f = value; }
+    void setValue(Real value, TreatAsReal) noexcept { r = value; }
     void setValue(Ordinal value, TreatAsOrdinal) noexcept { o = value; }
     void setValue(Integer value, TreatAsInteger) noexcept { i = value; }
     [[nodiscard]] Integer getValue(TreatAsInteger) const noexcept { return i; }
     [[nodiscard]] Ordinal getValue(TreatAsOrdinal) const noexcept { return o; }
-    [[nodiscard]] Real getValue(TreatAsReal) const noexcept { return f; }
+    [[nodiscard]] Real getValue(TreatAsReal) const noexcept { return r; }
     template<typename T>
     [[nodiscard]] T getValue() const noexcept {
         return getValue(TreatAs<T>{});

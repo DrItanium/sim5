@@ -126,7 +126,11 @@ static_assert(sizeof(FaultRecord) == 48);
 struct [[gnu::packed]] FaultTableEntry {
     explicit constexpr FaultTableEntry(Ordinal addr, SegmentSelector selector) noexcept : handlerFunctionAddress_(addr), selector_(selector) { }
     constexpr FaultTableEntry() noexcept : FaultTableEntry(0, 0) { }
-    constexpr bool isLocalEntry() const noexcept  { return selector_ == 0; }
+    constexpr bool isTableEntry() const noexcept { return (handlerFunctionAddress_ & 0b11) == 0b10; }
+    constexpr bool isLocalProcedureEntry() const noexcept { return (handlerFunctionAddress_ & 0b11) == 0; }
+    constexpr auto getSegmentSelector() const noexcept { return selector_; }
+    constexpr auto getFaultHandlerProcedureAddress() const noexcept { return handlerFunctionAddress_; }
+    constexpr auto getFaultHandlerProcedureNumber() const noexcept { return (handlerFunctionAddress_ >> 2); }
     Ordinal handlerFunctionAddress_;
     SegmentSelector selector_;
     static constexpr FaultTableEntry makeLocalEntry(Address targetAddress) noexcept { 
