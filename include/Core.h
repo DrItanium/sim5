@@ -1461,15 +1461,7 @@ class Core {
         void nonPortableBegin() noexcept;
     private:
         // fault handling components
-        void pushFaultRecord(
-                Address baseStorageAddress,
-                Ordinal overrideFaultData[3], 
-                Ordinal faultData[3],
-                Ordinal overrideFlags,
-                Ordinal processControls,
-                Ordinal arithmeticControls,
-                Ordinal faultFlags,
-                Address address) noexcept;
+        void pushFaultRecord(Address baseStorageAddress, const FaultRecord& record) noexcept;
         FaultTableEntry getFaultEntry(uint8_t index) const noexcept;
         Address getFaultHandlerBaseAddress(const FaultTableEntry& entry) const noexcept;
     private:

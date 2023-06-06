@@ -1755,15 +1755,7 @@ Core::selfTestFailure() noexcept {
 }
 
 void
-Core::pushFaultRecord(
-                Ordinal baseStorageAddress,
-                Ordinal overrideFaultData[3], 
-                Ordinal faultData[3],
-                Ordinal overrideFlags,
-                Ordinal processControls,
-                Ordinal arithmeticControls,
-                Ordinal faultFlags,
-                Ordinal address) noexcept 
+Core::pushFaultRecord(Address baseStorageAddress, const FaultRecord& record) noexcept
 {
     // okay so we have to stash this fault record into the area _before_ the
     // current frame pointer, this function assumes that fault table
@@ -1772,18 +1764,18 @@ Core::pushFaultRecord(
     //
     // I am not going to push a resumption record onto the stack because I
     // don't need it.
-    store(baseStorageAddress, 0, TreatAsOrdinal{});
-    store(baseStorageAddress + 4, overrideFaultData[0], TreatAsOrdinal{});
-    store(baseStorageAddress + 8, overrideFaultData[1], TreatAsOrdinal{});
-    store(baseStorageAddress + 12, overrideFaultData[2], TreatAsOrdinal{});
-    store(baseStorageAddress + 16, faultData[0], TreatAsOrdinal{});
-    store(baseStorageAddress + 20, faultData[1], TreatAsOrdinal{});
-    store(baseStorageAddress + 24, faultData[2], TreatAsOrdinal{});
-    store(baseStorageAddress + 28, overrideFlags, TreatAsOrdinal{});
-    store(baseStorageAddress + 32, processControls, TreatAsOrdinal{});
-    store(baseStorageAddress + 36, arithmeticControls, TreatAsOrdinal{});
-    store(baseStorageAddress + 40, faultFlags, TreatAsOrdinal{});
-    store(baseStorageAddress + 44, address, TreatAsOrdinal{});
+    store(baseStorageAddress, record.unused, TreatAsOrdinal{});
+    store(baseStorageAddress + 4, record.overrideFaultData[0], TreatAsOrdinal{});
+    store(baseStorageAddress + 8, record.overrideFaultData[1], TreatAsOrdinal{});
+    store(baseStorageAddress + 12, record.overrideFaultData[2], TreatAsOrdinal{});
+    store(baseStorageAddress + 16, record.faultData[0], TreatAsOrdinal{});
+    store(baseStorageAddress + 20, record.faultData[1], TreatAsOrdinal{});
+    store(baseStorageAddress + 24, record.faultData[2], TreatAsOrdinal{});
+    store(baseStorageAddress + 28, record.overrideType, TreatAsOrdinal{});
+    store(baseStorageAddress + 32, record.pc, TreatAsOrdinal{});
+    store(baseStorageAddress + 36, record.ac, TreatAsOrdinal{});
+    store(baseStorageAddress + 40, record.type, TreatAsOrdinal{});
+    store(baseStorageAddress + 44, record.addr, TreatAsOrdinal{});
 }
 
 FaultTableEntry
