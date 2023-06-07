@@ -2066,7 +2066,7 @@ Core::receiveInterrupt(InterruptVector vector) {
     if (priority != 31) {
         auto systemPriority = pc_.processControls.priority;
         if (priority <= systemPriority) {
-            postPendingInterrupt(vector);
+            postInterrupt(vector);
             return;
         }
     } 
@@ -2079,6 +2079,7 @@ Core::getPendingPriorityBit(uint8_t priority) const {
 
 void
 Core::setPendingPriorityBit(uint8_t priority) {
+    /// @todo make sure this is an atomic operation
     auto pp = getInterruptPendingPriorities();
     pp |= computeBitPosition(priority);
     setInterruptPendingPriorities(pp);
@@ -2086,6 +2087,7 @@ Core::setPendingPriorityBit(uint8_t priority) {
 
 void
 Core::clearPendingPriorityBit(uint8_t priority) {
+    /// @todo make sure this is an atomic operation
     auto pp = getInterruptPendingPriorities();
     pp &= (~(computeBitPosition(priority)));
     setInterruptPendingPriorities(pp);
@@ -2093,27 +2095,72 @@ Core::clearPendingPriorityBit(uint8_t priority) {
 
 
 bool
-Core::vectorIsPending(InterruptVector vector) const {
+Core::getPendingInterruptBit(InterruptVector vector) const {
     // need to retrieve the ordinal which contains our corresponding pending bits
     return (getPendingInterruptWord(vector) & computeBitPosition(computeInterruptVectorBitOffset(vector)));
 }
 
 void
-Core::clearPendingVector(InterruptVector vector) {
+Core::clearPendingInterruptBit(InterruptVector vector) {
+    /// @todo make sure this is an atomic operation
     auto pi = getPendingInterruptWord(vector);
     pi &= (~(computeBitPosition(computeInterruptVectorBitOffset(vector))));
     setPendingInterruptWord(vector, pi);
 }
 
 void
-Core::setPendingVector(InterruptVector vector) {
+Core::setPendingInterruptBit(InterruptVector vector) {
+    /// @todo make sure this is an atomic operation
     auto pi = getPendingInterruptWord(vector);
     pi |= computeBitPosition(computeInterruptVectorBitOffset(vector));
     setPendingInterruptWord(vector, pi);
 }
 
 void
-Core::postPendingInterrupt(InterruptVector vector) {
+Core::postInterrupt(InterruptVector vector) {
+    // According to the book the algorithm is as follows:
+    // temp = atomic_read(pending_priorities); 
+    // temp1 = memory(pending_interrupts(i/8));
+    // temp[i/8] = 1;
+    // temp1[i mod 8] = 1;
+    // memory(pending_interrupts(i/8)) = temp1;
+    // atomic_write(pending_priorities) = temp;
+    // -- Pg 53 of The 80960 Microprocessor Architecture by Glenford J. Myers & David L. Budde
+    /// @todo make sure that these assignments are done indivisibly
     setPendingPriorityBit(vector);
-    setPendingVector(vector);
+    setPendingInterruptBit(vector);
+}
+
+bool
+Core::vectorIsPending(InterruptVector vector) const {
+    // an interrupt vector i is considered to be pending when bit i is set in
+    // pending interrupts and bit i/32 is set in pending priorities
+    // 
+    // -- Pg 53 of The 80960 Microprocessor Architecture by Glenford J. Myers & David L. Budde
+    return getPendingPriorityBit(vector) && getPendingInterruptBit(vector);
+}
+
+void
+Core::obtainedPendingVector(InterruptVector vector) {
+    clearPendingInterruptBit(vector);
+    if (pendingInterruptPriorityClear(vector)) {
+        clearPendingPriorityBit(vector);
+    }
+}
+
+bool
+Core::pendingInterruptPriorityClear(InterruptVector vector) const {
+    auto targetWord = getPendingInterruptWord(vector);
+    switch (computeInterruptVectorByteOffset(vector)) {
+        case 0b00:
+            return static_cast<uint8_t>(targetWord) == 0;
+        case 0b01:
+            return static_cast<uint8_t>(targetWord >> 8) == 0;
+        case 0b10:
+            return static_cast<uint8_t>(targetWord >> 16) == 0;
+        case 0b11:
+            return static_cast<uint8_t>(targetWord >> 24) == 0;
+        default:
+            return false;
+    }
 }

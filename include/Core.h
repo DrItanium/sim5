@@ -1549,7 +1549,7 @@ class Core {
         void cmpstr(const Register& src1, const Register& src2, Ordinal len) noexcept;
     private: // interrupt related
         Address getInterruptTableBaseAddress() const;
-        void postPendingInterrupt(InterruptVector vector);
+        void postInterrupt(InterruptVector vector);
         Address getInterruptProcedureEntry(uint8_t index) const;
         Ordinal getInterruptPendingPriorities() const { return load(getInterruptTablePointer(), TreatAsOrdinal{}); }
         void setInterruptPendingPriorities(Ordinal value) { store(getInterruptTablePointer(), value, TreatAsOrdinal{}); }
@@ -1575,10 +1575,12 @@ class Core {
         void clearPendingPriorityBit(InterruptVector vector) { clearPendingPriorityBit(computeInterruptPriority(vector)); }
         bool getPendingPriorityBit(uint8_t priority) const;
         bool getPendingPriorityBit(InterruptVector vector) const { return getPendingPriorityBit(computeInterruptPriority(vector)); }
+        bool getPendingInterruptBit(InterruptVector vector) const;
+        void setPendingInterruptBit(InterruptVector vector);
+        void clearPendingInterruptBit(InterruptVector vector);
         bool vectorIsPending(InterruptVector vector) const;
-        void setPendingVector(InterruptVector vector);
-        void clearPendingVector(InterruptVector vector);
-
+        void obtainedPendingVector(InterruptVector vector);
+        bool pendingInterruptPriorityClear(InterruptVector vector) const;
     private:
         Ordinal systemAddressTableBase_ = 0;
         Ordinal prcbAddress_ = 0;
