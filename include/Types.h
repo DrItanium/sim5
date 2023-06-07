@@ -306,10 +306,27 @@ static_assert(sizeof(SplitWord128) == 16);
 constexpr uint8_t computeInterruptPriority(uint8_t vector) noexcept {
     return vector / 8;
 }
-#define X(index) static_assert(computeInterruptPriority( index ) == (index / 8));
-#include "Entry255.def"
-#undef X
 constexpr uint8_t computeInterruptWordIndex(uint8_t value) noexcept {
     return (value >> 5);
 }
+constexpr uint8_t computeInterruptVectorOffset(uint8_t value) noexcept {
+    return value & 0b111;
+}
+#define X(index) static_assert(computeInterruptPriority( index ) == (index / 8));
+#include "Entry255.def"
+#undef X
+enum class InterruptVector : uint8_t { };
+
+constexpr uint8_t computeInterruptPriority(InterruptVector vector) noexcept {
+    return computeInterruptPriority(static_cast<uint8_t>(vector));
+}
+
+constexpr uint8_t computeInterruptWordIndex(InterruptVector vector) noexcept {
+    return computeInterruptWordIndex(static_cast<uint8_t>(vector));
+}
+
+constexpr uint8_t computeInterruptVectorOffset(InterruptVector vector) noexcept {
+    return computeInterruptVectorOffset(static_cast<uint8_t>(vector));
+}
+
 #endif // end SIM5_TYPES_H__

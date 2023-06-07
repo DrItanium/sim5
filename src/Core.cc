@@ -2047,7 +2047,7 @@ Core::getInterruptTableBaseAddress() const {
 }
 
 void
-Core::postPendingInterrupt(uint8_t vector) {
+Core::postPendingInterrupt(InterruptVector vector) {
 }
 
 Address
@@ -2064,7 +2064,7 @@ Core::getInterruptVectorAddress(uint8_t vector) const {
 }
 
 void
-Core::receiveInterrupt(uint8_t vector) {
+Core::receiveInterrupt(InterruptVector vector) {
     auto priority = computeInterruptPriority(vector);
     if (priority != 31) {
         auto systemPriority = pc_.processControls.priority;
@@ -2094,3 +2094,8 @@ Core::clearPendingPriorityBit(uint8_t priority) {
     setInterruptPendingPriorities(pp);
 }
 
+
+bool
+Core::vectorIsPending(InterruptVector vector) const {
+    
+}

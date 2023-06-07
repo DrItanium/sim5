@@ -1549,22 +1549,35 @@ class Core {
         void cmpstr(const Register& src1, const Register& src2, Ordinal len) noexcept;
     private: // interrupt related
         Address getInterruptTableBaseAddress() const;
-        void postPendingInterrupt(uint8_t vector);
+        void postPendingInterrupt(InterruptVector vector);
         Address getInterruptProcedureEntry(uint8_t index) const;
         Ordinal getInterruptPendingPriorities() const { return load(getInterruptTablePointer(), TreatAsOrdinal{}); }
         void setInterruptPendingPriorities(Ordinal value) { store(getInterruptTablePointer(), value, TreatAsOrdinal{}); }
         Ordinal getPendingInterruptWord(uint8_t index) const {
             return load(getInterruptTableBaseAddress() + 4 + (sizeof(Ordinal) * (index & 0b111)), TreatAsOrdinal{});
         }
+        Ordinal getPendingInterruptWord(InterruptVector vector) const {
+            return getPendingInterruptWord(computeInterruptWordIndex(vector));
+        }
         void setPendingInterruptWord(uint8_t index, Ordinal value) {
             store(getInterruptTableBaseAddress() + 4 + (sizeof(Ordinal) * (index & 0b111)), value, TreatAsOrdinal{});
         }
+        void setPendingInterruptWord(InterruptVector vector, Ordinal value) {
+            setPendingInterruptWord(computeInterruptWordIndex(vector), value);
+        }
 
         Address getInterruptVectorAddress(uint8_t vector) const;
-        void receiveInterrupt(uint8_t vector);
+        Address getInterruptVectorAddress(InterruptVector vector) const { return getInterruptVectorAddress(static_cast<uint8_t>(vector)); }
+        void receiveInterrupt(InterruptVector vector);
         void setPendingPriorityBit(uint8_t priority);
+        void setPendingPriorityBit(InterruptVector vector) { setPendingPriorityBit(computeInterruptPriority(vector)); }
         void clearPendingPriorityBit(uint8_t priority);
+        void clearPendingPriorityBit(InterruptVector vector) { clearPendingPriorityBit(computeInterruptPriority(vector)); }
         bool getPendingPriorityBit(uint8_t priority) const;
+        bool getPendingPriorityBit(InterruptVector vector) const { return getPendingPriorityBit(computeInterruptPriority(vector)); }
+        bool vectorIsPending(InterruptVector vector) const;
+        void setPendingVector(InterruptVector vector);
+        void clearPendingVector(InterruptVector vector);
 
     private:
         Ordinal systemAddressTableBase_ = 0;
