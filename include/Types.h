@@ -302,4 +302,11 @@ union SplitWord128 {
 static_assert(sizeof(double) == 8);
 static_assert(sizeof(float) == 4);
 static_assert(sizeof(SplitWord128) == 16);
+
+consteval uint8_t computeInterruptPriority(uint8_t vector) noexcept {
+    return vector / 8;
+}
+#define X(index) static_assert(computeInterruptPriority( index ) == (index / 8));
+#include "Entry255.def"
+#undef X
 #endif // end SIM5_TYPES_H__
