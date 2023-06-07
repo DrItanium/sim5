@@ -2041,3 +2041,16 @@ Core::supervisorProcedureTableEntry_FaultCall(const FaultRecord& record, Address
     // at this point, it is safe to call the generic handler
     faultCallGeneric(record, procedureAddress, temp);
 }
+Address
+Core::getInterruptTableBaseAddress() const {
+    return getInterruptTablePointer();
+}
+Ordinal 
+Core::getPendingInterruptPriorities() const {
+    return load(getInterruptTableBaseAddress(), TreatAsOrdinal{});
+}
+
+void
+Core::postInterrupt(uint8_t vector) {
+    auto pendingPriorities = getPendingInterruptPriorities();
+}

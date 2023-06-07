@@ -1547,6 +1547,12 @@ class Core {
         void condwait(SegmentSelector src) noexcept;
         void condrec(Register& dest, SegmentSelector src) noexcept;
         void cmpstr(const Register& src1, const Register& src2, Ordinal len) noexcept;
+    private: // interrupt related
+        Address getInterruptTableBaseAddress() const;
+        Ordinal getPendingInterruptPriorities() const;
+        void setPendingInterruptPriorites(Ordinal value);
+        void postInterrupt(uint8_t vector);
+        Address getInterruptProcedureEntry(uint8_t index) const;
 
     private:
         Ordinal systemAddressTableBase_ = 0;
