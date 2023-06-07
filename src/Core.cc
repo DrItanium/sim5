@@ -2047,7 +2047,7 @@ Core::getInterruptTableBaseAddress() const {
 }
 
 void
-Core::postInterrupt(uint8_t vector) {
+Core::postPendingInterrupt(uint8_t vector) {
 }
 
 Address
@@ -2061,4 +2061,16 @@ Core::getInterruptVectorAddress(uint8_t vector) const {
         Address byteOffset = sizeof(Address) * realizedOffset;
         return load(getInterruptTableBaseAddress() + 36 + byteOffset, TreatAsOrdinal{});
     }
+}
+
+void
+Core::receiveInterrupt(uint8_t vector) {
+    auto priority = computeInterruptPriority(vector);
+    if (priority != 31) {
+        auto systemPriority = pc_.processControls.priority;
+        if (priority <= systemPriority) {
+            postPendingInterrupt(vector);
+            return;
+        }
+    } 
 }
