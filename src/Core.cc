@@ -26,7 +26,7 @@
 #endif
 #include "Types.h"
 #include "Core.h"
-#include "Morse.h"
+#include "BinaryOperations.h"
 Ordinal 
 Register::modify(Ordinal mask, Ordinal src) noexcept {
     auto tmp = o;
@@ -2074,3 +2074,23 @@ Core::receiveInterrupt(uint8_t vector) {
         }
     } 
 }
+
+bool
+Core::getPendingPriorityBit(uint8_t priority) const {
+    return (getInterruptPendingPriorities() & computeBitPosition(priority)) != 0;
+}
+
+void
+Core::setPendingPriorityBit(uint8_t priority) {
+    auto pp = getInterruptPendingPriorities();
+    pp |= computeBitPosition(priority);
+    setInterruptPendingPriorities(pp);
+}
+
+void
+Core::clearPendingPriorityBit(uint8_t priority) {
+    auto pp = getInterruptPendingPriorities();
+    pp &= (~(computeBitPosition(priority)));
+    setInterruptPendingPriorities(pp);
+}
+

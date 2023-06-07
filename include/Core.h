@@ -1562,6 +1562,9 @@ class Core {
 
         Address getInterruptVectorAddress(uint8_t vector) const;
         void receiveInterrupt(uint8_t vector);
+        void setPendingPriorityBit(uint8_t priority);
+        void clearPendingPriorityBit(uint8_t priority);
+        bool getPendingPriorityBit(uint8_t priority) const;
 
     private:
         Ordinal systemAddressTableBase_ = 0;
