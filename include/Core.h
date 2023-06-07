@@ -580,8 +580,11 @@ union Register {
     uint8_t interruptControl[4];
     constexpr auto getConditionCode() const noexcept { return arith.conditionCode; }
     void setPriority(Ordinal value) noexcept { processControls.priority = value; }
-    constexpr bool inSupervisorMode() const noexcept { return processControls.executionMode; }
-    constexpr bool inUserMode() const noexcept { return !inSupervisorMode(); }
+    [[nodiscard]] constexpr ByteOrdinal getPriority() const noexcept { return processControls.priority; }
+    [[nodiscard]] constexpr bool inSupervisorMode() const noexcept { return processControls.executionMode; }
+    [[nodiscard]] constexpr bool inUserMode() const noexcept { return !inSupervisorMode(); }
+    [[nodiscard]] constexpr bool inInterruptedState() const noexcept { return processControls.state != 0; }
+    [[nodiscard]] constexpr bool inExecutingState() const noexcept { return processControls.state == 0; }
     constexpr bool isMEMA() const noexcept { return !mem.selector; }
     constexpr bool isMEMB() const noexcept { return mem.selector; }
     constexpr bool isDoubleWide() const noexcept {
@@ -617,7 +620,6 @@ union Register {
     }
     bool getCarryBit() const noexcept { return arith.conditionCode & 0b001; }
     [[nodiscard]] Ordinal modify(Ordinal mask, Ordinal src) noexcept;
-    [[nodiscard]] constexpr ByteOrdinal getPriority() const noexcept { return processControls.priority; }
     void setValue(Real value, TreatAsReal) noexcept { r = value; }
     void setValue(Ordinal value, TreatAsOrdinal) noexcept { o = value; }
     void setValue(Integer value, TreatAsInteger) noexcept { i = value; }

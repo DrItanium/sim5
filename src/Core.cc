@@ -877,7 +877,7 @@ Core::start() noexcept {
             ip_.setValue(x[3], TreatAsOrdinal{});
             // fetch IMI
             setGPR(FPIndex, load(prcbAddress_ + 24, TreatAsOrdinal{}), TreatAsOrdinal{});
-            pc_.processControls.priority = 31;
+            pc_.setPriority(31);
             pc_.processControls.state = 1;
             // clear any latched external interrupt/IAC signals
             // begin execution
@@ -2064,7 +2064,7 @@ void
 Core::receiveInterrupt(InterruptVector vector) {
     auto priority = computeInterruptPriority(vector);
     if (priority != 31) {
-        auto systemPriority = pc_.processControls.priority;
+        auto systemPriority = pc_.getPriority();
         if (priority <= systemPriority) {
             postInterrupt(vector);
             return;
