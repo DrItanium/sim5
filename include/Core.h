@@ -1507,7 +1507,7 @@ class Core {
         FaultTableEntry getFaultEntry(uint8_t index) const noexcept;
         Address getFaultHandlerBaseAddress(const FaultTableEntry& entry) const noexcept;
         void populateFaultRecord(FaultRecord& record, uint8_t faultType, uint8_t faultOffset);
-        void localProcedureEntry_FaultCall(const FaultRecord& record, const FaultTableEntry& entry) noexcept;
+        void localProcedureEntry_FaultCall(const FaultRecord& record, Address address) noexcept;
         void procedureTableEntry_FaultCall(const FaultRecord& record, const FaultTableEntry& entry) noexcept;
         void traceFaultProcedureTableEntry_FaultCall(const FaultRecord& record, const FaultTableEntry& entry) noexcept;
     private:

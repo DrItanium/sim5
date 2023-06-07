@@ -213,6 +213,7 @@ struct [[gnu::packed]] SegmentDescriptor {
     [[nodiscard]] constexpr ByteOrdinal getSegmentType() const noexcept { return cfg.bits.segmentType; }
     [[nodiscard]] constexpr bool entryIsInvalid() const noexcept { return (cfg.raw & 0b111) == 0; }
     [[nodiscard]] constexpr bool isSemaphore() const noexcept { return cfg.raw == 0x4000'0001; }
+    [[nodiscard]] constexpr Address getAddress() const noexcept { return address; }
     Ordinal reserved[2];
     Address address;
     union Configuration {

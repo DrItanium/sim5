@@ -1746,7 +1746,7 @@ void
 Core::testPendingInterrupts() noexcept {
 
 }
-
+// fault handling
 
 void
 Core::pushFaultRecord(Address baseStorageAddress, const FaultRecord& record) noexcept
@@ -1803,7 +1803,7 @@ Core::loadSegmentDescriptor(SegmentSelector selector) const noexcept {
 
 
 void 
-Core::localProcedureEntry_FaultCall(const FaultRecord& record, const FaultTableEntry& entry) noexcept {
+Core::localProcedureEntry_FaultCall(const FaultRecord& record, Address address) noexcept {
     // first allocate a new frame on the stack that the processor is
     // currently using. Set the frame-return status field to 0b001
     // 
@@ -1827,12 +1827,27 @@ Core::localProcedureEntry_FaultCall(const FaultRecord& record, const FaultTableE
     pushFaultRecord(nextFrame - 48, record);
     // no need to push a resumption record right now and set the resume flag in
     // the saved process controls
-    setIP(entry.getFaultHandlerProcedureAddress(), TreatAsOrdinal{});
-
+    setIP(address, TreatAsOrdinal{});
 }
+
 void 
 Core::procedureTableEntry_FaultCall(const FaultRecord& record, const FaultTableEntry& entry) noexcept {
+    // okay, so we can go down different paths here
+    // first thing to do is translate the procedure index into an absolute
+    // address if it is tagged as a local procedure
+    //
+    // before that, we want to get the table entry to see what kind of
+    // operation we are looking at! 
+    //
+    // First, get the segment descriptor
+    auto descriptor = loadSegmentDescriptor(entry.getSegmentSelector());
+    // next, find the procedure number
+    auto index = entry.getFaultHandlerProcedureNumber();
+    /// @todo implement override fault if the segment descriptor is invalid or
+    /// wrong for this target
 
+    // now we can get the base offset table
+    auto tableAddress = descriptor.getAddress();
 }
 void Core::traceFaultProcedureTableEntry_FaultCall(const FaultRecord& record, const FaultTableEntry& entry) noexcept {
 
@@ -1847,7 +1862,7 @@ Core::generateFault(const FaultRecord& record) {
     // When I get to that point, I will then proceed to implement those fault
     // handlers
     if (entry.isLocalProcedureEntry()) {
-        localProcedureEntry_FaultCall(record, entry);
+        localProcedureEntry_FaultCall(record, entry.getFaultHandlerProcedureAddress());
     } else if (entry.isSystemTableEntry()) {
         procedureTableEntry_FaultCall(record, entry);
     } else {
