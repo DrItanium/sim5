@@ -2045,12 +2045,7 @@ Address
 Core::getInterruptTableBaseAddress() const {
     return getInterruptTablePointer();
 }
-Ordinal 
-Core::getPendingInterruptPriorities() const {
-    return load(getInterruptTableBaseAddress(), TreatAsOrdinal{});
-}
 
 void
 Core::postInterrupt(uint8_t vector) {
-    auto pendingPriorities = getPendingInterruptPriorities();
 }

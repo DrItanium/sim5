@@ -1549,10 +1549,16 @@ class Core {
         void cmpstr(const Register& src1, const Register& src2, Ordinal len) noexcept;
     private: // interrupt related
         Address getInterruptTableBaseAddress() const;
-        Ordinal getPendingInterruptPriorities() const;
-        void setPendingInterruptPriorites(Ordinal value);
         void postInterrupt(uint8_t vector);
         Address getInterruptProcedureEntry(uint8_t index) const;
+        Ordinal getInterruptPendingPriorities() const { return load(getInterruptTablePointer(), TreatAsOrdinal{}); }
+        void setInterruptPendingPriorities(Ordinal value) { store(getInterruptTablePointer(), value, TreatAsOrdinal{}); }
+        Ordinal getPendingInterruptWord(uint8_t index) const {
+            return load(getInterruptTableBaseAddress() + 4 + (sizeof(Ordinal) * (index & 0b111)), TreatAsOrdinal{});
+        }
+        void setPendingInterruptWord(uint8_t index, Ordinal value) {
+            store(getInterruptTableBaseAddress() + 4 + (sizeof(Ordinal) * (index & 0b111)), value, TreatAsOrdinal{});
+        }
 
     private:
         Ordinal systemAddressTableBase_ = 0;

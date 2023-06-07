@@ -303,10 +303,13 @@ static_assert(sizeof(double) == 8);
 static_assert(sizeof(float) == 4);
 static_assert(sizeof(SplitWord128) == 16);
 
-consteval uint8_t computeInterruptPriority(uint8_t vector) noexcept {
+constexpr uint8_t computeInterruptPriority(uint8_t vector) noexcept {
     return vector / 8;
 }
 #define X(index) static_assert(computeInterruptPriority( index ) == (index / 8));
 #include "Entry255.def"
 #undef X
+constexpr uint8_t computeInterruptWordIndex(uint8_t value) noexcept {
+    return (value >> 5);
+}
 #endif // end SIM5_TYPES_H__
