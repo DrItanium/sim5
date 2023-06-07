@@ -2046,9 +2046,6 @@ Core::getInterruptTableBaseAddress() const {
     return getInterruptTablePointer();
 }
 
-void
-Core::postPendingInterrupt(InterruptVector vector) {
-}
 
 Address
 Core::getInterruptVectorAddress(uint8_t vector) const {
@@ -2113,4 +2110,10 @@ Core::setPendingVector(InterruptVector vector) {
     auto pi = getPendingInterruptWord(vector);
     pi |= computeBitPosition(computeInterruptVectorBitOffset(vector));
     setPendingInterruptWord(vector, pi);
+}
+
+void
+Core::postPendingInterrupt(InterruptVector vector) {
+    setPendingPriorityBit(vector);
+    setPendingVector(vector);
 }
