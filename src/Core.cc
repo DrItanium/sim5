@@ -600,6 +600,10 @@ Core::calls(Ordinal src1) noexcept {
             tempRRR = 0b010 | (pc_.processControls.traceEnable ? 0b001 : 0);
             pc_.processControls.executionMode = 1;
             pc_.processControls.traceEnable = temp & 0b1;
+            temp &= 0xFFFF'FFFC; // clear the lowest two bits after being done
+                                 // here. If trace is active then that could
+                                 // cause problems overall with the address
+                                 // offset
         }
         enterCall(temp);
         /// @todo expand pfp and fp to accurately model how this works
@@ -1848,6 +1852,20 @@ Core::procedureTableEntry_FaultCall(const FaultRecord& record, const FaultTableE
 
     // now we can get the base offset table
     auto tableAddress = descriptor.getAddress();
+    // get the starting offset to the procedure-table structure entries
+    auto procedureEntry = load(tableAddress + 48 + index, TreatAsOrdinal{});
+    switch (procedureEntry & 0b11) {
+        case 0b00:
+            // okay so it is a local procedure entry, very easy to handle
+            // overall
+            break;
+        case 0b10:
+            break;
+        default:
+            /// @todo handle this bad case!
+            break;
+    }
+    
 }
 void Core::traceFaultProcedureTableEntry_FaultCall(const FaultRecord& record, const FaultTableEntry& entry) noexcept {
 
