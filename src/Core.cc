@@ -1857,18 +1857,18 @@ Core::procedureTableEntry_FaultCall(const FaultRecord& record, const FaultTableE
     switch (procedureEntry & 0b11) {
         case 0b00:
             // okay so it is a local procedure entry, very easy to handle
-            // overall
+            // overall. Just send this address over to the "local procedure"
+            // version of this function
+            localProcedureEntry_FaultCall(record, procedureEntry & 0xFFFF'FFFC);
             break;
         case 0b10:
+            // this one is more complex, this one is like a calls instruction
             break;
         default:
             /// @todo handle this bad case!
             break;
     }
     
-}
-void Core::traceFaultProcedureTableEntry_FaultCall(const FaultRecord& record, const FaultTableEntry& entry) noexcept {
-
 }
 
 void
