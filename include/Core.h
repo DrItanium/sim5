@@ -1560,6 +1560,8 @@ class Core {
             store(getInterruptTableBaseAddress() + 4 + (sizeof(Ordinal) * (index & 0b111)), value, TreatAsOrdinal{});
         }
 
+        Address getInterruptVectorAddress(uint8_t vector) const;
+
     private:
         Ordinal systemAddressTableBase_ = 0;
         Ordinal prcbAddress_ = 0;

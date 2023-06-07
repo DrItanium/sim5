@@ -2049,3 +2049,16 @@ Core::getInterruptTableBaseAddress() const {
 void
 Core::postInterrupt(uint8_t vector) {
 }
+
+Address
+Core::getInterruptVectorAddress(uint8_t vector) const {
+    if (vector < 8) {
+        // vectors 0 - 7 are not useful so just return zero
+        return 0;
+    } else {
+        auto realizedOffset = vector - 8; // make this a clean offset by
+                                        // subtracting 8 
+        Address byteOffset = sizeof(Address) * realizedOffset;
+        return load(getInterruptTableBaseAddress() + 36 + byteOffset, TreatAsOrdinal{});
+    }
+}
