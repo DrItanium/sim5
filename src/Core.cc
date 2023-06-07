@@ -1808,6 +1808,11 @@ Core::loadSegmentDescriptor(SegmentSelector selector) const noexcept {
 
 void 
 Core::localProcedureEntry_FaultCall(const FaultRecord& record, Address address) noexcept {
+    faultCallGeneric(record, address, getStackPointer());
+}
+
+void 
+Core::faultCallGeneric(const FaultRecord& record, Address address, Address stackPointer) noexcept {
     // first allocate a new frame on the stack that the processor is
     // currently using. Set the frame-return status field to 0b001
     // 
@@ -1816,7 +1821,7 @@ Core::localProcedureEntry_FaultCall(const FaultRecord& record, Address address) 
     // and just allocate two frames worth of information to be on the safe
     // side! Three frames worth are necessary to make sure we have enough
     // padding.
-    auto nextFrame = computeNextFrame<C*3, NotC>(getStackPointer());
+    auto nextFrame = computeNextFrame<C*3, NotC>(stackPointer);
     auto faultRecordStart = nextFrame - 48;
     auto fp = getGPRValue(FPIndex, TreatAsOrdinal{});
     // save the current registers to the stack
@@ -1834,42 +1839,6 @@ Core::localProcedureEntry_FaultCall(const FaultRecord& record, Address address) 
     setIP(address, TreatAsOrdinal{});
 }
 
-void 
-Core::procedureTableEntry_FaultCall(const FaultRecord& record, const FaultTableEntry& entry) noexcept {
-    // okay, so we can go down different paths here
-    // first thing to do is translate the procedure index into an absolute
-    // address if it is tagged as a local procedure
-    //
-    // before that, we want to get the table entry to see what kind of
-    // operation we are looking at! 
-    //
-    // First, get the segment descriptor
-    auto descriptor = loadSegmentDescriptor(entry.getSegmentSelector());
-    // next, find the procedure number
-    auto index = entry.getFaultHandlerProcedureNumber();
-    /// @todo implement override fault if the segment descriptor is invalid or
-    /// wrong for this target
-
-    // now we can get the base offset table
-    auto tableAddress = descriptor.getAddress();
-    // get the starting offset to the procedure-table structure entries
-    auto procedureEntry = load(tableAddress + 48 + index, TreatAsOrdinal{});
-    switch (procedureEntry & 0b11) {
-        case 0b00:
-            // okay so it is a local procedure entry, very easy to handle
-            // overall. Just send this address over to the "local procedure"
-            // version of this function
-            localProcedureEntry_FaultCall(record, procedureEntry & 0xFFFF'FFFC);
-            break;
-        case 0b10:
-            // this one is more complex, this one is like a calls instruction
-            break;
-        default:
-            /// @todo handle this bad case!
-            break;
-    }
-    
-}
 
 void
 Core::generateFault(const FaultRecord& record) {
@@ -2006,4 +1975,69 @@ Core::eventNoticeFault() {
                        (Ordinal)ip_);
     saveReturnAddress(RIPIndex);
     generateFault(record);
+}
+void 
+Core::procedureTableEntry_FaultCall(const FaultRecord& record, const FaultTableEntry& entry) noexcept {
+    // okay, so we can go down different paths here
+    // first thing to do is translate the procedure index into an absolute
+    // address if it is tagged as a local procedure
+    //
+    // before that, we want to get the table entry to see what kind of
+    // operation we are looking at! 
+    //
+    // First, get the segment descriptor
+    auto descriptor = loadSegmentDescriptor(entry.getSegmentSelector());
+    // next, find the procedure number
+    auto index = entry.getFaultHandlerProcedureNumber();
+    /// @todo implement override fault if the segment descriptor is invalid or
+    /// wrong for this target
+
+    // now we can get the base offset table
+    auto tableAddress = descriptor.getAddress();
+    // get the starting offset to the procedure-table structure entries
+    auto procedureEntry = load(tableAddress + 48 + index, TreatAsOrdinal{});
+    auto procedureAddress = procedureEntry & 0xFFFF'FFFC;
+    switch (procedureEntry & 0b11) {
+        case 0b00:
+            // okay so it is a local procedure entry, very easy to handle
+            // overall. Just send this address over to the "local procedure"
+            // version of this function
+            localProcedureEntry_FaultCall(record, procedureAddress);
+            break;
+        case 0b10:
+            supervisorProcedureTableEntry_FaultCall(record, procedureAddress, tableAddress);
+            // this one is more complex, this one is like a calls instruction
+            break;
+        default:
+            /// @todo handle this bad case!
+            break;
+    }
+    
+}
+
+void 
+Core::supervisorProcedureTableEntry_FaultCall(const FaultRecord& record, Address procedureAddress, Address baseTableAddress) noexcept {
+    Address baseStackAddress = 0;
+    if (pc_.inSupervisorMode()) {
+        // already in supervisor mode so use the current stack
+        baseStackAddress = getStackPointer();
+    } else {
+        // get the stack pointer from the current address
+        baseStackAddress = load(baseTableAddress + 12, TreatAsOrdinal{});
+        // switch to supervisor mode
+        pc_.processControls.executionMode = 1;
+        // we are now in supervisor mode :D
+    }
+    // do the trace enable actions
+    if (record.clearTraceEnableBit()) {
+        pc_.processControls.traceEnable = 0;
+    } else {
+        // transfer the trace enableBit as needed
+        pc_.processControls.traceEnable = baseStackAddress & 0b1;
+    }
+    // now that we have the right area to be in, lets do the FaultCall as
+    // though it is a local one!
+    auto temp = baseStackAddress & 0xFFFF'FFFC;
+    // at this point, it is safe to call the generic handler
+    faultCallGeneric(record, procedureAddress, temp);
 }

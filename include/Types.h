@@ -128,8 +128,16 @@ struct [[gnu::packed]] FaultRecord {
     [[nodiscard]] constexpr uint8_t getOverrideFlags() const noexcept { return static_cast<uint8_t>(overrideType >> 24); }
     [[nodiscard]] constexpr uint8_t getOverrideType() const noexcept { return static_cast<uint8_t>(overrideType >> 16); }
     [[nodiscard]] constexpr uint8_t getOverrideSubtype() const noexcept { return static_cast<uint8_t>(overrideType); }
+    [[nodiscard]] constexpr bool clearTraceEnableBit() const noexcept {
+        switch (getFaultType()) {
+            case 0: // override or parallel
+            case 1: // trace
+                return true;
+            default:
+                return false;
+        }
+    }
 };
-static_assert(sizeof(FaultRecord) == 48);
 
 struct [[gnu::packed]] FaultTableEntry {
     public:
