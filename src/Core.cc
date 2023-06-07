@@ -2100,3 +2100,17 @@ Core::vectorIsPending(InterruptVector vector) const {
     // need to retrieve the ordinal which contains our corresponding pending bits
     return (getPendingInterruptWord(vector) & computeBitPosition(computeInterruptVectorBitOffset(vector)));
 }
+
+void
+Core::clearPendingVector(InterruptVector vector) {
+    auto pi = getPendingInterruptWord(vector);
+    pi &= (~(computeBitPosition(computeInterruptVectorBitOffset(vector))));
+    setPendingInterruptWord(vector, pi);
+}
+
+void
+Core::setPendingVector(InterruptVector vector) {
+    auto pi = getPendingInterruptWord(vector);
+    pi |= computeBitPosition(computeInterruptVectorBitOffset(vector));
+    setPendingInterruptWord(vector, pi);
+}
