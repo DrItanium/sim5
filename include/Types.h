@@ -312,6 +312,14 @@ constexpr uint8_t computeInterruptWordIndex(uint8_t value) noexcept {
 constexpr uint8_t computeInterruptVectorOffset(uint8_t value) noexcept {
     return value & 0b111;
 }
+constexpr uint8_t computeInterruptVectorByteOffset(uint8_t value) noexcept {
+    // the middle two bits are important for offset purposes
+    return computeInterruptPriority(value) & 0b11;
+}
+constexpr uint8_t computeInterruptVectorBitOffset(uint8_t value) noexcept {
+    // the lower 5 bits are a bit offset
+    return (value & 0b11111);
+}
 #define X(index) static_assert(computeInterruptPriority( index ) == (index / 8));
 #include "Entry255.def"
 #undef X
@@ -327,6 +335,13 @@ constexpr uint8_t computeInterruptWordIndex(InterruptVector vector) noexcept {
 
 constexpr uint8_t computeInterruptVectorOffset(InterruptVector vector) noexcept {
     return computeInterruptVectorOffset(static_cast<uint8_t>(vector));
+}
+
+constexpr uint8_t computeInterruptVectorByteOffset(InterruptVector vector) noexcept {
+    return computeInterruptVectorByteOffset(static_cast<uint8_t>(vector));
+}
+constexpr uint8_t computeInterruptVectorBitOffset(InterruptVector vector) noexcept {
+    return computeInterruptVectorBitOffset(static_cast<uint8_t>(vector));
 }
 
 #endif // end SIM5_TYPES_H__

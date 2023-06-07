@@ -2097,5 +2097,6 @@ Core::clearPendingPriorityBit(uint8_t priority) {
 
 bool
 Core::vectorIsPending(InterruptVector vector) const {
-    
+    // need to retrieve the ordinal which contains our corresponding pending bits
+    return (getPendingInterruptWord(vector) & computeBitPosition(computeInterruptVectorBitOffset(vector)));
 }
