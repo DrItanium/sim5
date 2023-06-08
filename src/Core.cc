@@ -1417,6 +1417,9 @@ Core::processInstruction(Opcodes opcode, Register& regDest, const Register& src1
         case Opcodes::subio:
             performConditionalSubtract(regDest, src1i, src2i, TreatAsInteger{});
             break;
+        case Opcodes::dmovt:
+            dmovt(regDest, src1o);
+            break;
         default:
             unimplementedFault();
             break;
