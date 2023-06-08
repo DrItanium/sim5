@@ -2164,3 +2164,5 @@ Core::pendingInterruptPriorityClear(InterruptVector vector) const {
             return false;
     }
 }
+
+

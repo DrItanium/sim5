@@ -26,6 +26,8 @@
 
 #ifdef ARDUINO
 #include <Arduino.h>
+#else
+#include <bit>
 #endif
 #include "Types.h"
 [[nodiscard]] constexpr Ordinal rotateOperation(Ordinal src, Ordinal length) noexcept {
@@ -69,6 +71,52 @@
     };
     return positionTable[static_cast<uint8_t>(value) & 0b11111];
 }
+
+[[nodiscard]] constexpr int countLeadingZeros(Ordinal value) noexcept {
+#ifdef __AVR__
+    return __builtin_clz(value);
+#else
+    return std::countl_zero(value);
+#endif
+}
+
+[[nodiscard]] constexpr int highestOne(Ordinal value) noexcept {
+    return 31 - countLeadingZeros(value);
+}
+#define X(index) static_assert(highestOne(0xFFFF'FFFF >> (31 - index)) == index)
+X(31);
+X(30);
+X(29);
+X(28);
+X(27);
+X(26);
+X(25);
+X(24);
+X(23);
+X(22);
+X(21);
+X(20);
+X(19);
+X(18);
+X(17);
+X(16);
+X(15);
+X(14);
+X(13);
+X(12);
+X(11);
+X(10);
+X(9);
+X(8);
+X(7);
+X(6);
+X(5);
+X(4);
+X(3);
+X(2);
+X(1);
+X(0);
+#undef X
 
 [[nodiscard]] constexpr Ordinal modify(Ordinal mask, Ordinal src, Ordinal srcDest) noexcept {
     return (src & mask) | (srcDest & ~mask);
