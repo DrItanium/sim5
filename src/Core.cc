@@ -760,7 +760,7 @@ void
 Core::addi(Register& dest, Integer src1, Integer src2) noexcept {
     add<Integer>(dest, src1, src2, TreatAsInteger{});
     nextInstruction();
-    /// @todo implement overflow detection and fault generation
+    faultOnOverflow(dest);
 }
 
 
@@ -808,7 +808,7 @@ void
 Core::subi(Register& dest, Integer src1, Integer src2) noexcept {
     sub<Integer>(dest, src1, src2, TreatAsInteger{});
     nextInstruction();
-    /// @todo implement overflow fault detection
+    faultOnOverflow(dest);
 }
 
 
@@ -973,7 +973,7 @@ Core::processInstruction(Opcodes opcode, Register& srcDest, Address effectiveAdd
             store(effectiveAddress, srcDest.getValue<Integer>(), TreatAs<ShortInteger>{});
             /// @todo fully implement fault detection
             break;
-        case Opcodes::ld: 
+        case Opcodes::ld:
             srcDest.setValue<Ordinal>(load(effectiveAddress, TreatAsOrdinal{}));
             break;
         case Opcodes::ldob:
@@ -1398,10 +1398,6 @@ Core::flushreg() noexcept {
     /// @todo implement if it makes sense since we aren't using register frames
 }
 
-void 
-Core::allocateNewRegisterFrame() noexcept {
-    // making a new register frame is not necessary for this implementation
-}
 
 void 
 Core::saveRegisterSet(Ordinal fp) noexcept {
@@ -1440,3 +1436,8 @@ Core::storeSystemBase(Ordinal destinationAddress) noexcept {
     store(destinationAddress+4, prcbAddress_, TreatAsOrdinal{});
 }
 
+
+void
+Core::faultOnOverflow(Register& dest) {
+  /// @todo implement
+}

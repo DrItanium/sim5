@@ -1600,6 +1600,8 @@ class Core {
         void supervisorReturn(bool traceModeSetting);
 
     private:
+        void faultOnOverflow(Register& dest);
+    private:
         Ordinal systemAddressTableBase_ = 0;
         Ordinal prcbAddress_ = 0;
         GPRBlock gpr_;

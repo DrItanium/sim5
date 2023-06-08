@@ -164,3 +164,8 @@ Core::ret() noexcept {
             break;
     }
 }
+
+void
+Core::allocateNewRegisterFrame() noexcept {
+    // making a new register frame is not necessary for this implementation
+}
