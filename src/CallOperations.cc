@@ -27,6 +27,10 @@
 #include "Core.h"
 #include "BinaryOperations.h"
 
+bool
+Core::registerSetAvailable() noexcept {
+    return false;
+}
 void
 Core::enterCall(Ordinal fp) noexcept {
     if (!registerSetAvailable()) {

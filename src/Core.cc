@@ -1398,10 +1398,6 @@ Core::restoreRegisterSet(Ordinal fp) noexcept {
     loadBlock(fp, 16, 16);
 }
 
-bool 
-Core::registerSetAvailable() noexcept {
-    return false;
-}
 
 
 
