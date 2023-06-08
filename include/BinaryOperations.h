@@ -218,4 +218,9 @@ static_assert(upperHalf(0xFDEDABCD) == 0xFDED);
 static_assert(mostSignificantBit(0xFDEDABCD) == computeBitPosition(31));
 static_assert(mostSignificantByte(0xFDEDABCD) == 0xFD);
 
+template<Ordinal C, Ordinal NotC>
+constexpr Ordinal computeNextFrame(Ordinal base) noexcept {
+    return (base + C) & NotC;
+}
+
 #endif // end SIM5_BINARY_OPERATIONS_H__
