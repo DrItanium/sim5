@@ -224,7 +224,7 @@ struct [[gnu::packed]] SegmentDescriptor {
     [[nodiscard]] constexpr Address getAddress() const noexcept { return address; }
     Ordinal reserved[2];
     Address address;
-    union Configuration {
+    union [[gnu::packed]] Configuration {
         constexpr Configuration(Ordinal value = 0) : raw(value) { }
         Ordinal raw = 0;
         struct {
@@ -237,25 +237,10 @@ struct [[gnu::packed]] SegmentDescriptor {
             Ordinal segmentType : 4;
         } bits;
     } cfg;
+    static_assert(sizeof(Configuration) == sizeof(Ordinal));
 };
 static_assert(sizeof(SegmentDescriptor) == 16, "Segment descriptors must be 16 bytes in length");
 
-/**
- * @brief A table of segment descriptors to give the i960 more information
- * about different parts of the memory space; On processors which do not
- * support the Protected Architecture, the use of this table is very
- * limited and is called the "System Address Table" instead; Only entry
- * 8 has a fixed purpose and must point to the first address of this table;
- * The segment table can be very large when dealing with the protected
- * architecture
- */
-struct [[gnu::packed]] SegmentDescriptorTable {
-    SegmentDescriptor descriptors[11];
-
-    const SegmentDescriptor& getHeadPointer() const noexcept { return descriptors[8]; }
-};
-static_assert(sizeof(SegmentDescriptorTable) == 176);
-using SystemAddressTable = SegmentDescriptorTable;
 /**
  * @brief Write this value to reservedBootArgs of the PRCB; It will disable cpu
  * prefetching which can reduce performance
