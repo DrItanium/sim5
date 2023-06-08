@@ -13,7 +13,7 @@ add_library(core960
 		include/IAC.h
 		include/Types.h
 		src/Core.cc
-		src/IAC.cc)
+		src/IAC.cc src/Interrupts.cc)
 
 add_executable(sim5 
 	src/main.cc
