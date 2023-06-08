@@ -1583,6 +1583,9 @@ class Core {
         bool vectorIsPending(InterruptVector vector) const;
         void obtainedPendingVector(InterruptVector vector);
         bool pendingInterruptPriorityClear(InterruptVector vector) const;
+        ByteOrdinal getPendingInterruptBitsForPriority(uint8_t priority) const;
+        ByteOrdinal getHighestPostedInterruptVectorForPriority(uint8_t priority) const;
+        InterruptVector highestPostedInterruptVector() const;
     private:
         Ordinal systemAddressTableBase_ = 0;
         Ordinal prcbAddress_ = 0;

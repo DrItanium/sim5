@@ -2150,19 +2150,89 @@ Core::obtainedPendingVector(InterruptVector vector) {
 
 bool
 Core::pendingInterruptPriorityClear(InterruptVector vector) const {
-    auto targetWord = getPendingInterruptWord(vector);
-    switch (computeInterruptVectorByteOffset(vector)) {
-        case 0b00:
-            return static_cast<uint8_t>(targetWord) == 0;
-        case 0b01:
-            return static_cast<uint8_t>(targetWord >> 8) == 0;
-        case 0b10:
-            return static_cast<uint8_t>(targetWord >> 16) == 0;
-        case 0b11:
-            return static_cast<uint8_t>(targetWord >> 24) == 0;
-        default:
-            return false;
+    return getPendingInterruptBitsForPriority(computeInterruptPriority(vector)) == 0;
+}
+namespace {
+    constexpr ByteOrdinal getCorrespondingByte(Ordinal value, uint8_t target) noexcept {
+        switch (target & 0b11) {
+            case 0b00:
+                return static_cast<ByteOrdinal>(value);
+            case 0b01:
+                return static_cast<ByteOrdinal>(value >> 8);
+            case 0b10:
+                return static_cast<ByteOrdinal>(value >> 16);
+            case 0b11:
+                return static_cast<ByteOrdinal>(value >> 24);
+        }
+        return 0xFF; // should never get here!
     }
+    static_assert(getCorrespondingByte(0xABCDEF01, 0x00) == 0x01);
+    static_assert(getCorrespondingByte(0xABCDEF01, 0x01) == 0xEF);
+    static_assert(getCorrespondingByte(0xABCDEF01, 0x02) == 0xCD);
+    static_assert(getCorrespondingByte(0xABCDEF01, 0x03) == 0xAB);
+    static_assert(getCorrespondingByte(0xABCDEF01, 0x04) == 0x01);
+    static_assert(getCorrespondingByte(0xABCDEF01, 0x05) == 0xEF);
+    static_assert(getCorrespondingByte(0xABCDEF01, 0x06) == 0xCD);
+    static_assert(getCorrespondingByte(0xABCDEF01, 0x07) == 0xAB);
+    static_assert(getCorrespondingByte(0xABCDEF01, 0x08) == 0x01);
+    static_assert(getCorrespondingByte(0xABCDEF01, 0x09) == 0xEF);
+    static_assert(getCorrespondingByte(0xABCDEF01, 0x0a) == 0xCD);
+    static_assert(getCorrespondingByte(0xABCDEF01, 0x0b) == 0xAB);
+    static_assert(getCorrespondingByte(0xABCDEF01, 0x0c) == 0x01);
+    static_assert(getCorrespondingByte(0xABCDEF01, 0x0d) == 0xEF);
+    static_assert(getCorrespondingByte(0xABCDEF01, 0x0e) == 0xCD);
+    static_assert(getCorrespondingByte(0xABCDEF01, 0x0f) == 0xAB);
+    static_assert(getCorrespondingByte(0xABCDEF01, 0x10) == 0x01);
+    static_assert(getCorrespondingByte(0xABCDEF01, 0x11) == 0xEF);
+    static_assert(getCorrespondingByte(0xABCDEF01, 0x12) == 0xCD);
+    static_assert(getCorrespondingByte(0xABCDEF01, 0x13) == 0xAB);
+    static_assert(getCorrespondingByte(0xABCDEF01, 0x14) == 0x01);
+    static_assert(getCorrespondingByte(0xABCDEF01, 0x15) == 0xEF);
+    static_assert(getCorrespondingByte(0xABCDEF01, 0x16) == 0xCD);
+    static_assert(getCorrespondingByte(0xABCDEF01, 0x17) == 0xAB);
+    static_assert(getCorrespondingByte(0xABCDEF01, 0x18) == 0x01);
+    static_assert(getCorrespondingByte(0xABCDEF01, 0x19) == 0xEF);
+    static_assert(getCorrespondingByte(0xABCDEF01, 0x1a) == 0xCD);
+    static_assert(getCorrespondingByte(0xABCDEF01, 0x1b) == 0xAB);
+    static_assert(getCorrespondingByte(0xABCDEF01, 0x1c) == 0x01);
+    static_assert(getCorrespondingByte(0xABCDEF01, 0x1d) == 0xEF);
+    static_assert(getCorrespondingByte(0xABCDEF01, 0x1e) == 0xCD);
+    static_assert(getCorrespondingByte(0xABCDEF01, 0x1f) == 0xAB);
+    static_assert(getCorrespondingByte(0xABCDEF01, 0x20) == 0x01);
+    static_assert(getCorrespondingByte(0xABCDEF01, 0x21) == 0xEF);
+    static_assert(getCorrespondingByte(0xABCDEF01, 0x22) == 0xCD);
+    static_assert(getCorrespondingByte(0xABCDEF01, 0x23) == 0xAB);
+    static_assert(getCorrespondingByte(0xABCDEF01, 0x24) == 0x01);
+    static_assert(getCorrespondingByte(0xABCDEF01, 0x25) == 0xEF);
+    static_assert(getCorrespondingByte(0xABCDEF01, 0x26) == 0xCD);
+    static_assert(getCorrespondingByte(0xABCDEF01, 0x27) == 0xAB);
+    static_assert(getCorrespondingByte(0xABCDEF01, 0x28) == 0x01);
+    static_assert(getCorrespondingByte(0xABCDEF01, 0x29) == 0xEF);
+    static_assert(getCorrespondingByte(0xABCDEF01, 0x2a) == 0xCD);
+    static_assert(getCorrespondingByte(0xABCDEF01, 0x2b) == 0xAB);
+    static_assert(getCorrespondingByte(0xABCDEF01, 0x2c) == 0x01);
+    static_assert(getCorrespondingByte(0xABCDEF01, 0x2d) == 0xEF);
+    static_assert(getCorrespondingByte(0xABCDEF01, 0x2e) == 0xCD);
+    static_assert(getCorrespondingByte(0xABCDEF01, 0x2f) == 0xAB);
+    static_assert(highestOne(getCorrespondingByte(0xABCDEF01, 0)) == 0);
+    static_assert(highestOne(getCorrespondingByte(0xABCDEF01, 1)) == 7);
+    static_assert(highestOne(getCorrespondingByte(0xABCDEF01, 2)) == 7);
+    static_assert(highestOne(getCorrespondingByte(0xABCDEF01, 3)) == 7);
+}
+ByteOrdinal
+Core::getHighestPostedInterruptVectorForPriority(uint8_t priority) const {
+    return highestOne(getPendingInterruptBitsForPriority(priority));
 }
 
-
+InterruptVector
+Core::highestPostedInterruptVector() const {
+    // find the highest posted priority
+    auto pendingPriorities = getInterruptPendingPriorities();
+    auto targetPriority = highestOne(pendingPriorities);
+    auto vectorOffset = getHighestPostedInterruptVectorForPriority(targetPriority);
+    return static_cast<InterruptVector>((targetPriority << 3) | vectorOffset);
+}
+ByteOrdinal
+Core::getPendingInterruptBitsForPriority(uint8_t priority) const {
+    return getCorrespondingByte(getPendingInterruptWord(priority >> 2), priority);
+}
