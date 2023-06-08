@@ -1038,7 +1038,7 @@ class Core {
         void reinitializeProcessor(Ordinal satBase, Ordinal prcbBase, Ordinal startIP) noexcept;
         void setBreakpointRegister(Ordinal breakpointIp0, Ordinal breakpointIp1) noexcept;
         void storeSystemBase(Ordinal destinationAddress) noexcept;
-        void testPendingInterrupts() noexcept;
+        void testPendingInterrupts();
 #if 0
         // Kx related IACs
         void freeze() noexcept;

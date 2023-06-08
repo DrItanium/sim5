@@ -1742,10 +1742,6 @@ Core::storeSystemBase(Ordinal destinationAddress) noexcept {
     store(destinationAddress+4, prcbAddress_, TreatAsOrdinal{});
 }
 
-void 
-Core::testPendingInterrupts() noexcept {
-
-}
 // fault handling
 
 void
@@ -2246,7 +2242,18 @@ Core::serviceNextInterrupt() {
 void
 Core::checkForPendingInterrupts() {
     // okay so we are checking for pending interrupts, we need to keep servicing valid interrupts until we are done
-    for (auto vector = serviceNextInterrupt(); valid(vector); vector = serviceNextInterrupt()) {
+    if (auto vector = serviceNextInterrupt(); valid(vector)) {
         serviceInterrupt(vector);
     }
+    // So this gets a little strange, I think servicing the interrupt will just
+}
+
+void
+Core::testPendingInterrupts() {
+    checkForPendingInterrupts();
+}
+
+void
+Core::serviceInterrupt(InterruptVector vector) {
+    /// @todo implement
 }
