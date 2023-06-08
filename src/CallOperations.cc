@@ -109,12 +109,12 @@ Core::localReturn() {
 void
 Core::faultReturn() {
     auto fp = getGPRValue(FPIndex, TreatAsOrdinal{});
-    auto x = load(fp - 16, TreatAsOrdinal{});
-    auto y = load(fp - 12, TreatAsOrdinal{});
+    auto oldPC = load(fp - 16, TreatAsOrdinal{});
+    auto oldAC = load(fp - 12, TreatAsOrdinal{});
     restoreStandardFrame();
-    ac_.setValue(y, TreatAsOrdinal{});
+    ac_.setValue(oldAC, TreatAsOrdinal{});
     if (pc_.inSupervisorMode()) {
-        pc_.setValue(x, TreatAsOrdinal{});
+        pc_.setValue(oldPC, TreatAsOrdinal{});
     }
 }
 void
