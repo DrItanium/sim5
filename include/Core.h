@@ -1586,7 +1586,6 @@ class Core {
         ByteOrdinal getHighestPostedInterruptVectorForPriority(uint8_t priority) const;
         InterruptVector highestPostedInterruptVector() const;
         InterruptVector serviceNextInterrupt();
-        bool canDispatchInterrupt(InterruptVector vector) const;
         void serviceInterrupt(InterruptVector vector);
         void checkForPendingInterrupts();
     private:
