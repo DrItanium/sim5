@@ -1586,6 +1586,7 @@ class Core {
         ByteOrdinal getPendingInterruptBitsForPriority(uint8_t priority) const;
         ByteOrdinal getHighestPostedInterruptVectorForPriority(uint8_t priority) const;
         InterruptVector highestPostedInterruptVector() const;
+        InterruptVector serviceNextInterrupt();
     private:
         Ordinal systemAddressTableBase_ = 0;
         Ordinal prcbAddress_ = 0;

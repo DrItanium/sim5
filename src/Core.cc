@@ -2236,3 +2236,16 @@ ByteOrdinal
 Core::getPendingInterruptBitsForPriority(uint8_t priority) const {
     return getCorrespondingByte(getPendingInterruptWord(priority >> 2), priority);
 }
+
+InterruptVector
+Core::serviceNextInterrupt() {
+    auto nextInterrupt = highestPostedInterruptVector();
+    if (static_cast<uint8_t>(nextInterrupt) < 8) {
+        // no interrupts remain
+        return static_cast<InterruptVector>(0);
+    } else {
+        // okay, it is a valid interrupt so obtain it and then return it
+        obtainedPendingVector(nextInterrupt);
+        return nextInterrupt;
+    }
+}
