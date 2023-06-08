@@ -604,6 +604,7 @@ union Register {
         pfp.p = 0;
         pfp.rt = 0;
     }
+    [[nodiscard]] constexpr ByteOrdinal getReturnType() const noexcept { return pfp.rt; }
     [[nodiscard]] constexpr bool isMEMFormat() const noexcept {
         return bytes[3] >= 0x80;
     }
