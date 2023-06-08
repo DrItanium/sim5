@@ -325,6 +325,11 @@ constexpr uint8_t computeInterruptVectorBitOffset(uint8_t value) noexcept {
 #undef X
 enum class InterruptVector : uint8_t { };
 
+constexpr bool valid(InterruptVector vector) noexcept {
+    return static_cast<uint8_t>(vector) >= 8;
+}
+
+
 constexpr uint8_t computeInterruptPriority(InterruptVector vector) noexcept {
     return computeInterruptPriority(static_cast<uint8_t>(vector));
 }
@@ -343,5 +348,15 @@ constexpr uint8_t computeInterruptVectorByteOffset(InterruptVector vector) noexc
 constexpr uint8_t computeInterruptVectorBitOffset(InterruptVector vector) noexcept {
     return computeInterruptVectorBitOffset(static_cast<uint8_t>(vector));
 }
+
+constexpr bool canDispatchVector(InterruptVector vector, uint8_t systemPriority) noexcept {
+    if (auto actualPriority = computeInterruptPriority(vector); actualPriority == 31) {
+        return true;
+    } else {
+        return actualPriority > systemPriority;
+    }
+}
+
+
 
 #endif // end SIM5_TYPES_H__

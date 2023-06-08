@@ -1017,7 +1017,6 @@ class Core {
         [[nodiscard]] Integer unpackSrc1(TreatAsInteger, TreatAsCOBR) noexcept;
         [[nodiscard]] Ordinal unpackSrc2(TreatAsOrdinal, TreatAsCOBR) noexcept;
         [[nodiscard]] Integer unpackSrc2(TreatAsInteger, TreatAsCOBR) noexcept;
-        void checkForPendingInterrupts() noexcept;
         template<typename Q>
         void moveGPR(ByteOrdinal destIndex, ByteOrdinal srcIndex, TreatAs<Q>) noexcept {
             setGPR(destIndex, getGPRValue(srcIndex, TreatAs<Q>{}), TreatAs<Q>{});
@@ -1587,6 +1586,9 @@ class Core {
         ByteOrdinal getHighestPostedInterruptVectorForPriority(uint8_t priority) const;
         InterruptVector highestPostedInterruptVector() const;
         InterruptVector serviceNextInterrupt();
+        bool canDispatchInterrupt(InterruptVector vector) const;
+        void serviceInterrupt(InterruptVector vector);
+        void checkForPendingInterrupts();
     private:
         Ordinal systemAddressTableBase_ = 0;
         Ordinal prcbAddress_ = 0;

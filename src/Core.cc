@@ -1655,10 +1655,6 @@ Core::performSelfTest() noexcept {
                 ) && runNonPortableSelfTests();
 }
 
-void
-Core::checkForPendingInterrupts() noexcept {
-    /// @todo implement
-}
 
 void 
 Core::sendIAC(const iac::Message& msg) noexcept {
@@ -2239,13 +2235,18 @@ Core::getPendingInterruptBitsForPriority(uint8_t priority) const {
 
 InterruptVector
 Core::serviceNextInterrupt() {
-    auto nextInterrupt = highestPostedInterruptVector();
-    if (static_cast<uint8_t>(nextInterrupt) < 8) {
-        // no interrupts remain
-        return static_cast<InterruptVector>(0);
-    } else {
-        // okay, it is a valid interrupt so obtain it and then return it
+    if (auto nextInterrupt = highestPostedInterruptVector(); valid(nextInterrupt) && canDispatchVector(nextInterrupt, pc_.getPriority())) {
+        // okay, it is a valid interrupt and system priority allows it so obtain it and then return it
         obtainedPendingVector(nextInterrupt);
         return nextInterrupt;
+    }
+    return static_cast<InterruptVector>(0);
+}
+
+void
+Core::checkForPendingInterrupts() {
+    // okay so we are checking for pending interrupts, we need to keep servicing valid interrupts until we are done
+    for (auto vector = serviceNextInterrupt(); valid(vector); vector = serviceNextInterrupt()) {
+        serviceInterrupt(vector);
     }
 }
