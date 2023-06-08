@@ -1594,6 +1594,12 @@ class Core {
         void serviceInterrupt(InterruptVector vector);
         void checkForPendingInterrupts();
     private:
+        void localReturn();
+        void faultReturn();
+        void interruptReturn();
+        void supervisorReturn(bool traceModeSetting);
+
+    private:
         Ordinal systemAddressTableBase_ = 0;
         Ordinal prcbAddress_ = 0;
         GPRBlock gpr_;

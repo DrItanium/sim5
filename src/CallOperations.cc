@@ -102,56 +102,61 @@ Core::calls(Ordinal src1) noexcept {
         setStackPointer(temp + 64, TreatAsOrdinal{});
     }
 }
-
+void
+Core::localReturn() {
+   restoreStandardFrame();
+}
+void
+Core::faultReturn() {
+    auto fp = getGPRValue(FPIndex, TreatAsOrdinal{});
+    auto x = load(fp - 16, TreatAsOrdinal{});
+    auto y = load(fp - 12, TreatAsOrdinal{});
+    restoreStandardFrame();
+    ac_.setValue(y, TreatAsOrdinal{});
+    if (pc_.inSupervisorMode()) {
+        pc_.setValue(x, TreatAsOrdinal{});
+    }
+}
+void
+Core::supervisorReturn(bool traceModeSetting) {
+    if (pc_.inSupervisorMode()) {
+        pc_.processControls.traceEnable = traceModeSetting;
+        pc_.processControls.executionMode = 0;
+    }
+    restoreStandardFrame();
+}
+void
+Core::interruptReturn() {
+    // interrupt return
+    auto fp = getGPRValue(FPIndex, TreatAsOrdinal{});
+    auto x = load(fp - 16, TreatAsOrdinal{});
+    auto y = load(fp - 12, TreatAsOrdinal{});
+    restoreStandardFrame();
+    ac_.setValue(y, TreatAsOrdinal{});
+    if (pc_.inSupervisorMode()) {
+        pc_.setValue(x, TreatAsOrdinal{});
+        checkForPendingInterrupts();
+    }
+}
 void
 Core::ret() noexcept {
     syncf();
     auto& pfp = getGPR(PFPIndex);
-    switch (pfp.pfp.rt) {
+    switch (pfp.getReturnType()) {
         case 0b000:
-            restoreStandardFrame();
+            localReturn();
             break;
         case 0b001:
-        {
-            auto fp = getGPRValue(FPIndex, TreatAsOrdinal{});
-            auto x = load(fp - 16, TreatAsOrdinal{});
-            auto y = load(fp - 12, TreatAsOrdinal{});
-            restoreStandardFrame();
-            ac_.setValue(y, TreatAsOrdinal{});
-            if (pc_.inSupervisorMode()) {
-                pc_.setValue(x, TreatAsOrdinal{});
-            }
+            faultReturn();
             break;
-        }
         case 0b010:
-            if (pc_.inSupervisorMode()) {
-                pc_.processControls.traceEnable = 0;
-                pc_.processControls.executionMode = 0;
-            }
-            restoreStandardFrame();
+            supervisorReturn(false);
             break;
         case 0b011:
-            if (pc_.inSupervisorMode()) {
-                pc_.processControls.traceEnable = 1;
-                pc_.processControls.executionMode = 0;
-            }
-            restoreStandardFrame();
+            supervisorReturn(true);
             break;
         case 0b111:
-        {
-            // interrupt return
-            auto fp = getGPRValue(FPIndex, TreatAsOrdinal{});
-            auto x = load(fp - 16, TreatAsOrdinal{});
-            auto y = load(fp - 12, TreatAsOrdinal{});
-            restoreStandardFrame();
-            ac_.setValue(y, TreatAsOrdinal{});
-            if (pc_.inSupervisorMode()) {
-                pc_.setValue(x, TreatAsOrdinal{});
-                checkForPendingInterrupts();
-            }
-            break;
-        }
-
+            interruptReturn();
             break;
         default:
             // undefined!
