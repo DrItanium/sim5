@@ -1716,10 +1716,6 @@ Core::registerSetAvailable() noexcept {
     return false;
 }
 
-void
-Core::dispatchInterrupt(uint8_t vector) noexcept {
-    
-}
 
 
 void 
@@ -2054,14 +2050,13 @@ Core::getInterruptVectorAddress(uint8_t vector) const {
 
 void
 Core::receiveInterrupt(InterruptVector vector) {
-    auto priority = computeInterruptPriority(vector);
-    if (priority != 31) {
-        auto systemPriority = pc_.getPriority();
-        if (priority <= systemPriority) {
+    if (valid(vector)) {
+        if (canDispatchVector(vector, pc_.getPriority())) {
+            serviceInterrupt(vector);
+        } else {
             postInterrupt(vector);
-            return;
         }
-    } 
+    }
 }
 
 bool
@@ -2256,4 +2251,8 @@ Core::testPendingInterrupts() {
 void
 Core::serviceInterrupt(InterruptVector vector) {
     /// @todo implement
+}
+void
+Core::dispatchInterrupt(uint8_t vector) noexcept {
+    receiveInterrupt(static_cast<InterruptVector>(vector));
 }
