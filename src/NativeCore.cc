@@ -367,24 +367,6 @@ Core::load(Address address, TreatAsInteger) const noexcept {
     return load32(address, TreatAsInteger{});
 }
 
-ShortOrdinal 
-Core::load(Address address, TreatAsShortOrdinal) const noexcept {
-    return load16(address, TreatAsShortOrdinal{});
-}
-
-ShortInteger 
-Core::load(Address address, TreatAsShortInteger) const noexcept {
-    return load16(address, TreatAsShortInteger{});
-}
-ByteOrdinal 
-Core::load(Address address, TreatAsByteOrdinal) const noexcept {
-    return load8(address, TreatAsByteOrdinal{});
-}
-
-ByteInteger 
-Core::load(Address address, TreatAsByteInteger) const noexcept {
-    return load8(address, TreatAsByteInteger{});
-}
 
 
 void 

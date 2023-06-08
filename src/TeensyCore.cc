@@ -149,27 +149,7 @@ Core::load(Address address, TreatAsInteger) const noexcept {
     return 0;
 }
 
-ShortOrdinal 
-Core::load(Address address, TreatAsShortOrdinal) const noexcept {
-    return 0;
-}
-
-ShortInteger 
-Core::load(Address address, TreatAsShortInteger) const noexcept {
-    return 0;
-}
-
-ByteOrdinal 
-Core::load(Address address, TreatAsByteOrdinal) const noexcept {
-    return 0;
-}
-
-ByteInteger 
-Core::load(Address address, TreatAsByteInteger) const noexcept {
-    return 0;
-}
-
-void 
+void
 Core::store(Address address, Ordinal value, TreatAsOrdinal) noexcept {
 }
 

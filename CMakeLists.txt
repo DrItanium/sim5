@@ -13,7 +13,7 @@ add_library(core960
 		include/IAC.h
 		include/Types.h
 		src/Core.cc
-		src/IAC.cc src/Interrupts.cc src/Faults.cc src/ProtectedArchitecture.cc src/NumericsArchitecture.cc src/StartupTests.cc)
+		src/IAC.cc src/Interrupts.cc src/Faults.cc src/ProtectedArchitecture.cc src/NumericsArchitecture.cc src/StartupTests.cc src/MemoryArchitecture.cc)
 
 add_executable(sim5 
 	src/main.cc

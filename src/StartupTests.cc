@@ -29,6 +29,7 @@
 #include "Types.h"
 #include "Core.h"
 #include "BinaryOperations.h"
+
 bool
 Core::performSelfTest() noexcept {
     auto clearRegisters = [this]() {
