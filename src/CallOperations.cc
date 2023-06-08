@@ -169,3 +169,23 @@ void
 Core::allocateNewRegisterFrame() noexcept {
     // making a new register frame is not necessary for this implementation
 }
+
+void
+Core::restoreStandardFrame() noexcept {
+    // need to leave the current call
+    restoreFramePointerOnReturn();
+    // remember that the lowest 6 bits are ignored so it is important to mask
+    // them out of the frame pointer address when using the address
+    restoreRegisterSet(getFramePointerAddress() & NotC);
+    restoreRIPToIP();
+    advanceInstruction_ = false;
+}
+void
+Core::restoreFramePointerOnReturn() {
+    moveGPR(FPIndex, PFPIndex, TreatAsOrdinal{});
+}
+
+void
+Core::restoreRIPToIP() {
+    setIP(getGPRValue(RIPIndex, TreatAsOrdinal{}), TreatAsOrdinal {});
+}

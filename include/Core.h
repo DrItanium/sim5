@@ -1598,9 +1598,11 @@ class Core {
         void faultReturn();
         void interruptReturn();
         void supervisorReturn(bool traceModeSetting);
-
+        void restoreFramePointerOnReturn();
     private:
         void faultOnOverflow(Register& dest);
+        [[nodiscard]] Ordinal getFramePointerAddress() const { return getGPRValue(FPIndex, TreatAsOrdinal{}); }
+        void restoreRIPToIP();
     private:
         Ordinal systemAddressTableBase_ = 0;
         Ordinal prcbAddress_ = 0;

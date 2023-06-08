@@ -307,17 +307,6 @@ Core::fmark() noexcept {
     }
 }
 
-void
-Core::restoreStandardFrame() noexcept {
-    // need to leave the current call
-    moveGPR(FPIndex, PFPIndex, TreatAsOrdinal{});
-    // remember that the lowest 6 bits are ignored so it is important to mask
-    // them out of the frame pointer address when using the address
-    auto realAddress = getGPRValue(FPIndex, TreatAsOrdinal{}) & NotC;
-    restoreRegisterSet(realAddress);
-    setIP(getGPRValue(RIPIndex, TreatAsOrdinal{}), TreatAsOrdinal{});
-    advanceInstruction_ = false;
-}
 
 
 
