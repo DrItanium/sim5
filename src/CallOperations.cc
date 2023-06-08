@@ -46,7 +46,7 @@ void
 Core::callx(Address effectiveAddress) noexcept {
     // wait for any uncompleted instructions to finish
     auto temp = getNextFrameBase(); // round stack pointer to next boundary
-    auto fp = getGPRValue(FPIndex, TreatAsOrdinal{});
+    auto fp = getFramePointerAddress();
     balx(RIPIndex, effectiveAddress);
     enterCall(fp);
     setupNewFrameInternals(fp, temp);
@@ -57,7 +57,7 @@ void
 Core::call(Integer displacement) noexcept {
     // wait for any uncompleted instructions to finish
     auto temp = getNextFrameBase(); // round stack pointer to next boundary
-    auto fp = getGPRValue(FPIndex, TreatAsOrdinal{});
+    auto fp = getFramePointerAddress();
     saveReturnAddress(RIPIndex);
     enterCall(fp);
     branch(displacement);
@@ -96,7 +96,7 @@ Core::calls(Ordinal src1) noexcept {
         /// @todo expand pfp and fp to accurately model how this works
         auto& pfp = getGPR(PFPIndex);
         // lowest six bits are ignored
-        pfp.setValue(getGPRValue(FPIndex, TreatAsOrdinal{}) & ~0b1'111, TreatAsOrdinal{});
+        pfp.setValue(getFramePointerAddress() & ~0b1'111, TreatAsOrdinal{});
         pfp.pfp.rt = tempRRR;
         setGPR(FPIndex, temp, TreatAsOrdinal{});
         setStackPointer(temp + 64, TreatAsOrdinal{});
@@ -108,7 +108,7 @@ Core::localReturn() {
 }
 void
 Core::faultReturn() {
-    auto fp = getGPRValue(FPIndex, TreatAsOrdinal{});
+    auto fp = getFramePointerAddress();
     auto oldPC = load(fp - 16, TreatAsOrdinal{});
     auto oldAC = load(fp - 12, TreatAsOrdinal{});
     restoreStandardFrame();
@@ -128,7 +128,7 @@ Core::supervisorReturn(bool traceModeSetting) {
 void
 Core::interruptReturn() {
     // interrupt return
-    auto fp = getGPRValue(FPIndex, TreatAsOrdinal{});
+    auto fp = getFramePointerAddress();
     auto x = load(fp - 16, TreatAsOrdinal{});
     auto y = load(fp - 12, TreatAsOrdinal{});
     restoreStandardFrame();
@@ -187,5 +187,5 @@ Core::restoreFramePointerOnReturn() {
 
 void
 Core::restoreRIPToIP() {
-    setIP(getGPRValue(RIPIndex, TreatAsOrdinal{}), TreatAsOrdinal {});
+    setIP(getRIPContents(), TreatAsOrdinal{});
 }

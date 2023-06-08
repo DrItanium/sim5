@@ -1603,6 +1603,7 @@ class Core {
         void faultOnOverflow(Register& dest);
         [[nodiscard]] Ordinal getFramePointerAddress() const { return getGPRValue(FPIndex, TreatAsOrdinal{}); }
         void restoreRIPToIP();
+        [[nodiscard]] Ordinal getRIPContents() const { return getGPRValue(RIPIndex, TreatAsOrdinal{}); }
     private:
         Ordinal systemAddressTableBase_ = 0;
         Ordinal prcbAddress_ = 0;
