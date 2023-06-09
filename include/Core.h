@@ -26,6 +26,7 @@
 
 #include <cstdlib>
 #include <functional>
+#include <array>
 #include "Types.h"
 #include "IAC.h"
 #include "BinaryOperations.h"
@@ -872,135 +873,64 @@ class Core {
         static constexpr Ordinal NotC = ~C;
         static constexpr uint8_t NumberOfLocalRegisterFrames = 1;
 
+    struct LocalRegisterSet {
+    public:
+        constexpr bool valid() const noexcept { return _valid; }
+        constexpr auto getAddress() const noexcept { return _targetFramePointer; }
+        RegisterFrame& getUnderlyingFrame() noexcept { return _theFrame; }
+        const RegisterFrame& getUnderlyingFrame() const noexcept { return _theFrame; }
+        void relinquishOwnership() noexcept {
+            _valid = false;
+            _targetFramePointer = 0;
+            /// @todo zero out the frame?
+        }
+        using SaveRegistersFunction = std::function<void(const RegisterFrame&, Address)>;
+        using RestoreRegistersFunction = std::function<void(RegisterFrame&, Address)>;
+        void
+        relinquishOwnership(SaveRegistersFunction saveRegisters) {
+            if (_valid) {
+                saveRegisters(_theFrame, _targetFramePointer);
+            }
+            relinquishOwnership();
+        }
+        void
+        takeOwnership(Address newFP, std::function<void(const RegisterFrame&, Address)> saveRegisters) {
+            if (valid()) {
+                saveRegisters(_theFrame, _targetFramePointer);
+            }
+            _valid = true;
+            _targetFramePointer = newFP;
+            // don't clear out the registers
+        }
+        void
+        restoreOwnership(Address newFP,
+                         SaveRegistersFunction saveRegisters,
+                         RestoreRegistersFunction restoreRegisters) {
+            if (valid()) {
+                // okay we have something valid in there right now, so we need to determine if it is valid or not
+                if (newFP == _targetFramePointer) {
+                    // okay so we got a match, great!
+                    // just leave early
+                    return;
+                }
+                // got a mismatch, so spill this frame to memory first
+                saveRegisters(getUnderlyingFrame(), getAddress());
+            }
+            _valid = true;
+            _targetFramePointer = newFP;
+            restoreRegisters(getUnderlyingFrame(), getAddress());
+        }
+        void commit(Core& core);
+        void restore(Core& core);
+    private:
+        RegisterFrame _theFrame;
+        Address _targetFramePointer = 0;
+        bool _valid = false;
+    };
 /**
  * @brief Holds onto two separate register frames
  */
-    class GPRBlock {
-    private:
-        struct RegisterFrameWay {
-            RegisterFrame _theFrame;
-            Address _targetFramePointer = 0;
-            bool _valid = false;
-            void commit(Core& core);
-            void restore(Core& core);
-        };
     public:
-        GPRBlock() = default;
-    private:
-        RegisterFrameWay& currentLocalRegisterEntry() noexcept { return _locals[_currentLocalFrameIndex]; }
-        const RegisterFrameWay& currentLocalRegisterEntry() const noexcept { return _locals[_currentLocalFrameIndex]; }
-        auto& localRegisters() noexcept { return currentLocalRegisterEntry()._theFrame; }
-        auto& localRegister(ByteOrdinal offset) noexcept { return localRegisters().get(offset, TreatAsRegister{}); }
-        const auto& localRegisters() const noexcept { return currentLocalRegisterEntry()._theFrame; }
-        const auto& localRegister(ByteOrdinal offset) const noexcept { return localRegisters().get(offset, TreatAsRegister{}); }
-    public:
-        Register& get(ByteOrdinal index, TreatAsRegister) noexcept {
-            if (index < 16) {
-                return _globals.get(index, TreatAsRegister{});
-            } else {
-                return localRegisters().get(index, TreatAsRegister{});
-            }
-        }
-        const Register& get(ByteOrdinal index, TreatAsRegister) const noexcept {
-            if (index < 16) {
-                return _globals.get(index, TreatAsRegister{});
-            } else {
-                return localRegisters().get(index, TreatAsRegister{});
-            }
-        }
-        Register& get(ByteOrdinal index) noexcept {
-            return get(index, TreatAsRegister{});
-        }
-        const Register& get(ByteOrdinal index) const noexcept {
-            return get(index, TreatAsRegister{});
-        }
-        LongRegister& get(ByteOrdinal index, TreatAsLongRegister) noexcept {
-            if (index < 16) {
-                return _globals.get(index, TreatAsLongRegister{});
-            } else {
-                return localRegisters().get(index, TreatAsLongRegister{});
-            }
-        }
-        const LongRegister& get(ByteOrdinal index, TreatAsLongRegister) const noexcept {
-            if (index < 16) {
-                return _globals.get(index, TreatAsLongRegister{});
-            } else {
-                return localRegisters().get(index, TreatAsLongRegister{});
-            }
-        }
-        QuadRegister& get(ByteOrdinal index, TreatAsQuadRegister) noexcept {
-            if (index < 16) {
-                return _globals.get(index, TreatAsQuadRegister{});
-            } else {
-                return localRegisters().get(index, TreatAsQuadRegister{});
-            }
-        }
-        const QuadRegister& get(ByteOrdinal index, TreatAsQuadRegister) const noexcept {
-            if (index < 16) {
-                return _globals.get(index, TreatAsQuadRegister{});
-            } else {
-                return localRegisters().get(index, TreatAsQuadRegister{});
-            }
-        }
-        TripleRegister& get(ByteOrdinal index, TreatAsTripleRegister) noexcept {
-            if (index < 16) {
-                return _globals.get(index, TreatAsTripleRegister{});
-            } else {
-                return localRegisters().get(index, TreatAsTripleRegister{});
-            }
-        }
-        const TripleRegister& get(ByteOrdinal index, TreatAsTripleRegister) const noexcept {
-            if (index < 16) {
-                return _globals.get(index, TreatAsTripleRegister{});
-            } else {
-                return localRegisters().get(index, TreatAsTripleRegister{});
-            }
-        }
-
-
-        template<typename T>
-        void setValue(ByteOrdinal index, T value, TreatAsRegister) noexcept {
-            get(index, TreatAsRegister{}).setValue(value, TreatAs<T>{});
-        }
-        template<typename T>
-        T getValue(ByteOrdinal index, TreatAsRegister) const noexcept {
-            return get(index, TreatAsRegister{}).getValue(TreatAs<T>{});
-        }
-
-        template<typename T>
-        void setValue(ByteOrdinal index, T value) noexcept {
-            setValue<T>(index, value, TreatAsRegister{});
-        }
-        template<typename T>
-        T getValue(ByteOrdinal index) const noexcept {
-            return getValue<T>(index, TreatAsRegister{});
-        }
-
-        template<typename T>
-        void setValue(ByteOrdinal index, T value, TreatAsLongRegister) noexcept {
-            get(index, TreatAsLongRegister{}).setValue(value, TreatAs<T>{});
-        }
-        template<typename T>
-        T getValue(ByteOrdinal index, TreatAsLongRegister) const noexcept {
-            return get(index, TreatAsLongRegister{}).getValue(TreatAs<T>{});
-        }
-        [[nodiscard]] constexpr auto getNumberOfLocalFrames() const noexcept { return NumberOfLocalRegisterFrames; }
-        // we have two directions for the allocation
-        // a call will increment the frame index
-        // a return will decrement the frame index
-
-        void saveLocalRegisters(Address fp, Core& core);
-        void restoreLocalRegisters(Address fp, Core& core);
-        void enterCall(Ordinal fp, Core& core);
-        void exitCall(Ordinal fp, Core& core);
-        void flushLocalRegisters();
-    private:
-        RegisterFrame _globals;
-        RegisterFrameWay _locals[NumberOfLocalRegisterFrames];
-        uint8_t _currentLocalFrameIndex = 0;
-    };
-    public:
-
         void begin() noexcept;
         BootResult start() noexcept;
         void cycle() noexcept;
@@ -1626,7 +1556,9 @@ class Core {
     private:
         Ordinal systemAddressTableBase_ = 0;
         Ordinal prcbAddress_ = 0;
-        GPRBlock gpr_;
+        RegisterFrame globals_;
+        LocalRegisterSet frames_[NumberOfLocalRegisterFrames];
+        uint8_t localRegisterFrameIndex_ = 0;
         RegisterBlock32 sfrs_;
         RegisterBlock32 constants_;
         Register ip_;

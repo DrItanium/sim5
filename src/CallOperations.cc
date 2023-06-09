@@ -277,3 +277,13 @@ void
 Core::GPRBlock::RegisterFrameWay::restore(Core& core) {
 
 }
+
+
+void
+Core::GPRBlock::reinitializeLocalRegisterCache() {
+    // just go through and clear out all registers
+    for (auto i = 0; i < NumberOfLocalRegisterFrames; ++i) {
+
+    }
+    _locals[0]._valid = true;
+}
