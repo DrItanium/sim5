@@ -30,6 +30,10 @@ Core::registerSetAvailable() noexcept {
 }
 void
 Core::enterCall(Ordinal fp) {
+    getNextPack().takeOwnership(fp, [this](const RegisterFrame& frame, Address address) { saveRegisterFrame(frame, address); });
+    ++localRegisterFrameIndex_;
+    localRegisterFrameIndex_ %= NumberOfLocalRegisterFrames;
+
 }
 void
 Core::leaveCall() {
@@ -39,7 +43,15 @@ Core::leaveCall() {
         tmp.pfpAddress.align = 0;
         return tmp.getValue<Ordinal>();
     };
+    // perform the transfer and modification
     moveGPR<Ordinal>(FPIndex, PFPIndex, fn, TreatAsOrdinal {});
+    auto targetAddress = getFramePointerAddress();
+    frames_[localRegisterFrameIndex_].relinquishOwnership();
+    getPreviousPack().restoreOwnership(targetAddress,
+                                       [this](const RegisterFrame& frame, Address targetAddress) { saveRegisterFrame(frame, targetAddress); },
+                                       [this](RegisterFrame& frame, Address targetAddress) { restoreRegisterFrame(frame, targetAddress); });
+    --localRegisterFrameIndex_;
+    localRegisterFrameIndex_ %= NumberOfLocalRegisterFrames;
 }
 
 void
@@ -184,11 +196,7 @@ Core::allocateNewRegisterFrame() noexcept {
 
 void
 Core::restoreStandardFrame() noexcept {
-    // need to leave the current call
-    restoreFramePointerOnReturn();
-    // remember that the lowest 6 bits are ignored so it is important to mask
-    // them out of the frame pointer address when using the address
-    restoreRegisterSet(getFramePointerAddress() & NotC);
+    leaveCall();
     restoreRIPToIP();
     advanceInstruction_ = false;
 }
@@ -220,6 +228,18 @@ Core::flushreg() noexcept {
     }
 
     // if we only have a single frame then do not bother with flushing as it doesn't make sense at all!
+}
+void
+Core::saveRegisterFrame(const RegisterFrame& theFrame, Address baseAddress) {
+    for (auto i = 0; i < 16; ++i, baseAddress += 4) {
+        store(baseAddress, theFrame.get(i, TreatAsRegister{}).getValue(TreatAsOrdinal{}), TreatAsOrdinal{});
+    }
+}
+void
+Core::restoreRegisterFrame(RegisterFrame& theFrame, Address baseAddress) {
+    for (auto i = 0; i < 16; ++i, baseAddress += 4) {
+        theFrame.get(i, TreatAsRegister{}).setValue(load(baseAddress, TreatAsOrdinal{}), TreatAsOrdinal {});
+    }
 }
 #if 0
 void
