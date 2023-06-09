@@ -197,6 +197,21 @@ Core::restoreRIPToIP() {
     setIP(getRIPContents(), TreatAsOrdinal{});
 }
 void
+Core::saveRegisterSet(Ordinal fp) noexcept {
+
+}
+
+void
+Core::restoreRegisterSet(Ordinal fp) noexcept {
+
+}
+
+void
+Core::flushreg() noexcept {
+    /// @todo implement if it makes sense since we aren't using register frames
+}
+#if 0
+void
 Core::GPRBlock::saveLocalRegisters(Address fp, Core& core) {
     for (int i = 0, j = 0; i < 16; ++i, j+= 4) {
         core.store(fp + j, localRegisters().get(i, TreatAsRegister{}).getValue<Ordinal>(), TreatAsOrdinal{});
@@ -247,21 +262,6 @@ Core::GPRBlock::exitCall(Ordinal fp, Core& core) {
 
 }
 
-void
-Core::saveRegisterSet(Ordinal fp) noexcept {
-    gpr_.saveLocalRegisters(fp, *this);
-}
-
-void
-Core::restoreRegisterSet(Ordinal fp) noexcept {
-    gpr_.restoreLocalRegisters(fp, *this);
-}
-
-void
-Core::flushreg() noexcept {
-    /// @todo implement if it makes sense since we aren't using register frames
-    gpr_.flushLocalRegisters();
-}
 
 void
 Core::GPRBlock::flushLocalRegisters() {
@@ -287,3 +287,4 @@ Core::GPRBlock::reinitializeLocalRegisterCache() {
     }
     _locals[0]._valid = true;
 }
+#endif

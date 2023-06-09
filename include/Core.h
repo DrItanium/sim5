@@ -938,16 +938,30 @@ class Core {
         void lockBus() noexcept;
         void unlockBus() noexcept;
         /// @todo insert iac dispatch here
-        /// @todo insert routines for getting registers and such 
-        [[nodiscard]] QuadRegister& getGPR(ByteOrdinal index, TreatAsQuadRegister) noexcept { return gpr_.get(index, TreatAsQuadRegister{}); }
-        [[nodiscard]] const QuadRegister& getGPR(ByteOrdinal index, TreatAsQuadRegister) const noexcept { return gpr_.get(index, TreatAsQuadRegister{}); }
-        [[nodiscard]] TripleRegister& getGPR(ByteOrdinal index, TreatAsTripleRegister) noexcept { return gpr_.get(index, TreatAsTripleRegister{}); }
-        [[nodiscard]] const TripleRegister& getGPR(ByteOrdinal index, TreatAsTripleRegister) const noexcept { return gpr_.get(index, TreatAsTripleRegister{}); }
-        [[nodiscard]] LongRegister& getGPR(ByteOrdinal index, TreatAsLongRegister) noexcept { return gpr_.get(index, TreatAsLongRegister{}); }
-        [[nodiscard]] const LongRegister& getGPR(ByteOrdinal index, TreatAsLongRegister) const noexcept { return gpr_.get(index, TreatAsLongRegister{}); }
-        [[nodiscard]] Register& getGPR(ByteOrdinal index) noexcept { return gpr_.get(index); }
+        /// @todo insert routines for getting registers and such
+        template<typename T>
+        [[nodiscard]] T& getGPR(ByteOrdinal index, TreatAs<T>) noexcept {
+            if (index < 16) {
+                return globals_.get(index, TreatAs<T>{});
+            } else {
+                return frames_[localRegisterFrameIndex_].getUnderlyingFrame().get(index, TreatAs<T>{});
+            }
+        }
+        template<typename T>
+        [[nodiscard]] const T& getGPR(ByteOrdinal index, TreatAs<T>) const noexcept {
+            if (index < 16) {
+                return globals_.get(index, TreatAs<T>{});
+            } else {
+                return frames_[localRegisterFrameIndex_].getUnderlyingFrame().get(index, TreatAs<T>{});
+            }
+        }
+        [[nodiscard]] Register& getGPR(ByteOrdinal index) noexcept {
+            return getGPR(index, TreatAsRegister{});
+        }
+        [[nodiscard]] const Register& getGPR(ByteOrdinal index) const noexcept {
+            return getGPR(index, TreatAsRegister{});
+        }
         [[nodiscard]] Register& getGPR(ByteOrdinal index, ByteOrdinal offset) noexcept { return getGPR((index + offset) & 0b11111); }
-        [[nodiscard]] const Register& getGPR(ByteOrdinal index) const noexcept { return gpr_.get(index); }
         [[nodiscard]] const Register& getGPR(ByteOrdinal index, ByteOrdinal offset) const noexcept { return getGPR((index + offset) & 0b11111); }
         [[nodiscard]] inline Ordinal getGPRValue(ByteOrdinal index, TreatAsOrdinal) const noexcept { return getGPR(index).getValue(TreatAsOrdinal{}); }
         [[nodiscard]] inline Ordinal getGPRValue(ByteOrdinal index, ByteOrdinal offset, TreatAsOrdinal) const noexcept { return getGPR(index, offset).getValue(TreatAsOrdinal{}); }
