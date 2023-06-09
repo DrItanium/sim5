@@ -208,7 +208,13 @@ Core::restoreRegisterSet(Ordinal fp) noexcept {
 
 void
 Core::flushreg() noexcept {
-    /// @todo implement if it makes sense since we aren't using register frames
+    if constexpr (NumberOfLocalRegisterFrames > 1) {
+        for (auto curr = localRegisterFrameIndex_+ 1; curr != localRegisterFrameIndex_; curr = ((curr + 1) % NumberOfLocalRegisterFrames)) {
+            frames_[curr].relinquishOwnership([this](const RegisterFrame& frame, Address dest) noexcept { saveRegisterFrame(frame, dest); });
+        }
+    }
+
+    // if we only have a single frame then do not bother with flushing as it doesn't make sense at all!
 }
 #if 0
 void

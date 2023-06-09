@@ -939,20 +939,22 @@ class Core {
         void unlockBus() noexcept;
         /// @todo insert iac dispatch here
         /// @todo insert routines for getting registers and such
+        auto& getLocals() noexcept { return frames_[localRegisterFrameIndex_].getUnderlyingFrame(); }
+        const auto& getLocals() const noexcept { return frames_[localRegisterFrameIndex_].getUnderlyingFrame(); }
         template<typename T>
-        [[nodiscard]] T& getGPR(ByteOrdinal index, TreatAs<T>) noexcept {
+        [[nodiscard]] T& getGPR(ByteOrdinal index, TreatAs<T>) {
             if (index < 16) {
                 return globals_.get(index, TreatAs<T>{});
             } else {
-                return frames_[localRegisterFrameIndex_].getUnderlyingFrame().get(index, TreatAs<T>{});
+                return getLocals().get(index, TreatAs<T>{});
             }
         }
         template<typename T>
-        [[nodiscard]] const T& getGPR(ByteOrdinal index, TreatAs<T>) const noexcept {
+        [[nodiscard]] const T& getGPR(ByteOrdinal index, TreatAs<T>) const {
             if (index < 16) {
                 return globals_.get(index, TreatAs<T>{});
             } else {
-                return frames_[localRegisterFrameIndex_].getUnderlyingFrame().get(index, TreatAs<T>{});
+                return getLocals().get(index, TreatAs<T>{});
             }
         }
         [[nodiscard]] Register& getGPR(ByteOrdinal index) noexcept {
@@ -1565,12 +1567,28 @@ class Core {
     private:
         Ordinal restorePCFromStack(Ordinal fp);
         Ordinal restoreACFromStack(Ordinal fp);
-
+    private:
+        void saveRegisterFrame(const RegisterFrame& theFrame, Address baseAddress);
+        void restoreRegisterFrame(RegisterFrame& theFrame, Address baseAddress);
+        LocalRegisterSet& getNextPack() noexcept {
+            if constexpr (NumberOfLocalRegisterFrames > 1) {
+                return frames_[(localRegisterFrameIndex_ + 1) % NumberOfLocalRegisterFrames];
+            } else {
+                return frames_[0];
+            }
+        }
+        LocalRegisterSet& getPreviousPack() noexcept {
+            if constexpr (NumberOfLocalRegisterFrames > 1) {
+                return frames_[(localRegisterFrameIndex_ - 1) % NumberOfLocalRegisterFrames];
+            } else {
+                return frames_[0];
+            }
+        }
     private:
         Ordinal systemAddressTableBase_ = 0;
         Ordinal prcbAddress_ = 0;
         RegisterFrame globals_;
-        LocalRegisterSet frames_[NumberOfLocalRegisterFrames];
+        std::array<LocalRegisterSet, NumberOfLocalRegisterFrames> frames_;
         uint8_t localRegisterFrameIndex_ = 0;
         RegisterBlock32 sfrs_;
         RegisterBlock32 constants_;
