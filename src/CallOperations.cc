@@ -24,10 +24,6 @@
 #include "Core.h"
 #include "BinaryOperations.h"
 
-bool
-Core::registerSetAvailable() noexcept {
-    return false;
-}
 void
 Core::enterCall(Ordinal fp) {
     getNextPack().takeOwnership(fp, [this](const RegisterFrame& frame, Address address) { saveRegisterFrame(frame, address); });
@@ -189,10 +185,6 @@ Core::ret() noexcept {
     }
 }
 
-void
-Core::allocateNewRegisterFrame() noexcept {
-    // making a new register frame is not necessary for this implementation
-}
 
 void
 Core::restoreStandardFrame() noexcept {
@@ -208,15 +200,6 @@ Core::restoreFramePointerOnReturn() {
 void
 Core::restoreRIPToIP() {
     setIP(getRIPContents(), TreatAsOrdinal{});
-}
-void
-Core::saveRegisterSet(Ordinal fp) noexcept {
-
-}
-
-void
-Core::restoreRegisterSet(Ordinal fp) noexcept {
-
 }
 
 void

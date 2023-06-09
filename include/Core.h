@@ -1159,10 +1159,6 @@ class Core {
     private:
         void enterCall(Ordinal fp);
         void leaveCall();
-        void allocateNewRegisterFrame() noexcept;
-        bool registerSetAvailable() noexcept;
-        void saveRegisterSet(Ordinal fp) noexcept;
-        void restoreRegisterSet(Ordinal fp) noexcept;
         void restoreStandardFrame() noexcept;
     private:
         void performConditionalSubtract(Register& dest, Integer src1, Integer src2, TreatAsInteger) noexcept;
