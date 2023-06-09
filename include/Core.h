@@ -969,7 +969,6 @@ class Core {
         [[nodiscard]] constexpr Ordinal getSystemAddressTableBase() const noexcept { return systemAddressTableBase_; }
         [[nodiscard]] Ordinal getSystemProcedureTableBase() const noexcept;
         [[nodiscard]] Ordinal getSupervisorStackPointer() const noexcept;
-        void restoreRegisterSet() noexcept;
         inline void setGPR(ByteOrdinal index, Ordinal value, TreatAsOrdinal) noexcept { getGPR(index).setValue(value, TreatAsOrdinal{}); }
         inline void setGPR(ByteOrdinal index, ByteOrdinal offset, Ordinal value, TreatAsOrdinal) noexcept { getGPR(index, offset).setValue(value, TreatAsOrdinal{}); }
         inline void setGPR(ByteOrdinal index, Integer value, TreatAsInteger) noexcept { getGPR(index).setValue(value, TreatAsInteger{}); }
