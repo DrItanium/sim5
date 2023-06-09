@@ -1365,21 +1365,8 @@ Core::syncf() noexcept {
     /// @todo implement if it makes sense since we don't have a pipeline
 }
 
-void
-Core::flushreg() noexcept {
-    /// @todo implement if it makes sense since we aren't using register frames
-}
 
 
-void 
-Core::saveRegisterSet(Ordinal fp) noexcept {
-    gpr_.saveLocalRegisters(fp, *this);
-}
-
-void 
-Core::restoreRegisterSet(Ordinal fp) noexcept {
-    gpr_.restoreLocalRegisters(fp, *this);
-}
 
 
 

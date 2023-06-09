@@ -30,6 +30,7 @@ Core::registerSetAvailable() noexcept {
 }
 void
 Core::enterCall(Ordinal fp) noexcept {
+    //gpr_.enterCall(fp, *this);
     if (!registerSetAvailable()) {
         saveRegisterSet(fp);
     }
@@ -206,4 +207,73 @@ Core::GPRBlock::restoreLocalRegisters(Address fp, Core& core) {
     for (int i = 0, j = 0; i < 16; ++i, j+= 4) {
         localRegisters().get(i, TreatAsRegister{}) = core.load(fp + j, TreatAsOrdinal{});
     }
+}
+
+void
+Core::GPRBlock::enterCall(Ordinal fp, Core& core) {
+    if constexpr (NumberOfLocalRegisterFrames > 1) {
+        // okay so we actually have a rotating set of elements
+        // first increment the frame index
+        ++_currentLocalFrameIndex;
+        // modulo the number of local register frames
+        _currentLocalFrameIndex %= NumberOfLocalRegisterFrames;
+    }
+    // now we can get this new set and check to see if it is valid or not
+    auto& currentLocalRegisterFrame = currentLocalRegisterEntry();
+    if (currentLocalRegisterFrame._valid) {
+        currentLocalRegisterFrame.commit(core);
+    }
+    currentLocalRegisterFrame._valid = true;
+    currentLocalRegisterFrame._targetFramePointer = fp;
+}
+
+void
+Core::GPRBlock::exitCall(Ordinal fp, Core& core) {
+    if constexpr (NumberOfLocalRegisterFrames > 1) {
+        // since we are exiting a call, decrement the frame index (with wraparound) to simulate the call chain
+        --_currentLocalFrameIndex;
+        _currentLocalFrameIndex %= NumberOfLocalRegisterFrames;
+    }
+    // get the current local register frame
+    auto& currentLocalRegisterFrame = currentLocalRegisterEntry();
+    if (currentLocalRegisterFrame._targetFramePointer != fp) {
+        if (currentLocalRegisterFrame._valid) {
+            currentLocalRegisterFrame.commit(core);
+        }
+        currentLocalRegisterFrame._valid = true;
+        currentLocalRegisterFrame._targetFramePointer = fp;
+        currentLocalRegisterFrame.restore(core);
+    }
+
+}
+
+void
+Core::saveRegisterSet(Ordinal fp) noexcept {
+    gpr_.saveLocalRegisters(fp, *this);
+}
+
+void
+Core::restoreRegisterSet(Ordinal fp) noexcept {
+    gpr_.restoreLocalRegisters(fp, *this);
+}
+
+void
+Core::flushreg() noexcept {
+    /// @todo implement if it makes sense since we aren't using register frames
+    gpr_.flushLocalRegisters();
+}
+
+void
+Core::GPRBlock::flushLocalRegisters() {
+
+}
+
+void
+Core::GPRBlock::RegisterFrameWay::commit(Core& core) {
+
+}
+
+void
+Core::GPRBlock::RegisterFrameWay::restore(Core& core) {
+
 }

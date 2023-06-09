@@ -876,11 +876,23 @@ class Core {
  * @brief Holds onto two separate register frames
  */
     class GPRBlock {
+    private:
+        struct RegisterFrameWay {
+            RegisterFrame _theFrame;
+            Address _targetFramePointer = 0;
+            bool _valid = false;
+            void commit(Core& core);
+            void restore(Core& core);
+        };
     public:
         GPRBlock() = default;
     private:
-        RegisterFrame& localRegisters() noexcept { return _locals[_currentLocalFrameIndex]; }
-        const RegisterFrame& localRegisters() const noexcept { return _locals[_currentLocalFrameIndex]; }
+        RegisterFrameWay& currentLocalRegisterEntry() noexcept { return _locals[_currentLocalFrameIndex]; }
+        const RegisterFrameWay& currentLocalRegisterEntry() const noexcept { return _locals[_currentLocalFrameIndex]; }
+        auto& localRegisters() noexcept { return currentLocalRegisterEntry()._theFrame; }
+        auto& localRegister(ByteOrdinal offset) noexcept { return localRegisters().get(offset, TreatAsRegister{}); }
+        const auto& localRegisters() const noexcept { return currentLocalRegisterEntry()._theFrame; }
+        const auto& localRegister(ByteOrdinal offset) const noexcept { return localRegisters().get(offset, TreatAsRegister{}); }
     public:
         Register& get(ByteOrdinal index, TreatAsRegister) noexcept {
             if (index < 16) {
@@ -979,11 +991,12 @@ class Core {
 
         void saveLocalRegisters(Address fp, Core& core);
         void restoreLocalRegisters(Address fp, Core& core);
+        void enterCall(Ordinal fp, Core& core);
+        void exitCall(Ordinal fp, Core& core);
+        void flushLocalRegisters();
     private:
         RegisterFrame _globals;
-        RegisterFrame _locals[NumberOfLocalRegisterFrames];
-        Address _correspondingFrames[NumberOfLocalRegisterFrames];
-        bool _valid[NumberOfLocalRegisterFrames] = { false };
+        RegisterFrameWay _locals[NumberOfLocalRegisterFrames];
         uint8_t _currentLocalFrameIndex = 0;
     };
     public:
