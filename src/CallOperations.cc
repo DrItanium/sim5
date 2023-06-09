@@ -46,6 +46,7 @@ Core::setupNewFrameInternals(Ordinal fp, Ordinal temp) noexcept {
     setStackPointer(temp + 64, TreatAsOrdinal{});
 }
 
+
 void
 Core::callx(Address effectiveAddress) noexcept {
     // wait for any uncompleted instructions to finish
@@ -64,8 +65,8 @@ Core::call(Integer displacement) noexcept {
     auto fp = getFramePointerAddress();
     saveReturnAddress(RIPIndex);
     enterCall(fp);
-    branch(displacement);
     setupNewFrameInternals(fp, temp);
+    branch(displacement);
 }
 
 void
@@ -82,13 +83,14 @@ Core::calls(Ordinal src1) noexcept {
         // system-procedure table from Initial Memory Image
         balx(RIPIndex, procedureAddress);
         Ordinal temp = 0;
-        ByteOrdinal tempRRR = 0;
+        auto fp = getFramePointerAddress();
+        Register copy(fp);
         if ((type == 0b00) || pc_.inSupervisorMode()) {
             temp = getNextFrameBase();
-            tempRRR = 0;
+            copy.pfp.rt = 0;
         } else {
             temp = getSupervisorStackPointer();
-            tempRRR = 0b010 | (pc_.processControls.traceEnable ? 0b001 : 0);
+            copy.pfp.rt = 0b010 | (pc_.processControls.traceEnable ? 0b001 : 0);
             pc_.processControls.executionMode = 1;
             pc_.processControls.traceEnable = temp & 0b1;
             temp &= 0xFFFF'FFFC; // clear the lowest two bits after being done
@@ -96,25 +98,28 @@ Core::calls(Ordinal src1) noexcept {
             // cause problems overall with the address
             // offset
         }
-        enterCall(temp);
-        /// @todo expand pfp and fp to accurately model how this works
-        auto& pfp = getGPR(PFPIndex);
-        // lowest six bits are ignored
-        pfp.setValue(getFramePointerAddress() & ~0b1'111, TreatAsOrdinal{});
-        pfp.pfp.rt = tempRRR;
-        setGPR(FPIndex, temp, TreatAsOrdinal{});
-        setStackPointer(temp + 64, TreatAsOrdinal{});
+        // make a copy of the frame pointer and then modify it
+        enterCall(fp);
+        setupNewFrameInternals(copy.getValue<Ordinal>(), temp);
     }
 }
 void
 Core::localReturn() {
    restoreStandardFrame();
 }
+Ordinal
+Core::restoreACFromStack(Ordinal fp) {
+    return load(fp - 12, TreatAsOrdinal{});
+}
+Ordinal
+Core::restorePCFromStack(Ordinal fp) {
+    return load(fp - 16, TreatAsOrdinal{});
+}
 void
 Core::faultReturn() {
     auto fp = getFramePointerAddress();
-    auto oldPC = load(fp - 16, TreatAsOrdinal{});
-    auto oldAC = load(fp - 12, TreatAsOrdinal{});
+    auto oldPC = restorePCFromStack(fp);
+    auto oldAC = restoreACFromStack(fp);
     restoreStandardFrame();
     ac_.setValue(oldAC, TreatAsOrdinal{});
     if (pc_.inSupervisorMode()) {
@@ -133,12 +138,12 @@ void
 Core::interruptReturn() {
     // interrupt return
     auto fp = getFramePointerAddress();
-    auto x = load(fp - 16, TreatAsOrdinal{});
-    auto y = load(fp - 12, TreatAsOrdinal{});
+    auto oldPC = restorePCFromStack(fp);
+    auto oldAC = restoreACFromStack(fp);
     restoreStandardFrame();
-    ac_.setValue(y, TreatAsOrdinal{});
+    ac_.setValue(oldAC, TreatAsOrdinal{});
     if (pc_.inSupervisorMode()) {
-        pc_.setValue(x, TreatAsOrdinal{});
+        pc_.setValue(oldPC, TreatAsOrdinal{});
         checkForPendingInterrupts();
     }
 }

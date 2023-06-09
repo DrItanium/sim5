@@ -1605,6 +1605,10 @@ class Core {
         void restoreRIPToIP();
         [[nodiscard]] Ordinal getRIPContents() const { return getGPRValue(RIPIndex, TreatAsOrdinal{}); }
     private:
+        Ordinal restorePCFromStack(Ordinal fp);
+        Ordinal restoreACFromStack(Ordinal fp);
+
+    private:
         Ordinal systemAddressTableBase_ = 0;
         Ordinal prcbAddress_ = 0;
         GPRBlock gpr_;
