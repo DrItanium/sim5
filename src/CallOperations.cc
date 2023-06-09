@@ -33,14 +33,8 @@ Core::enterCall(Ordinal fp) {
 }
 void
 Core::leaveCall() {
-    auto fn = [](Ordinal input) -> Ordinal {
-        // we need to clear the lowest 6 bits
-        Register tmp{input};
-        tmp.pfpAddress.align = 0;
-        return tmp.getValue<Ordinal>();
-    };
     // perform the transfer and modification
-    moveGPR<Ordinal>(FPIndex, PFPIndex, fn, TreatAsOrdinal {});
+    moveGPR<Ordinal>(FPIndex, PFPIndex, [](Ordinal input) -> Ordinal { return Register{input}.getPFPAddress(); } , TreatAsOrdinal {});
     auto targetAddress = getFramePointerAddress();
     frames_[localRegisterFrameIndex_].relinquishOwnership();
     getPreviousPack().restoreOwnership(targetAddress,
