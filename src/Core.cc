@@ -1010,6 +1010,8 @@ Core::processInstruction(Opcodes opcode, Register& regDest, const Register& src1
     auto src1o = static_cast<Ordinal>(src1);
     auto src2i = static_cast<Integer>(src2);
     auto src1i = static_cast<Integer>(src1);
+    auto src1r = static_cast<Real>(src1);
+    auto src2r = static_cast<Real>(src2);
     switch (opcode) {
         case Opcodes::nand: // nand
             nand(regDest, src1o, src2o);
@@ -1277,6 +1279,9 @@ Core::processInstruction(Opcodes opcode, Register& regDest, const Register& src1
             break;
         case Opcodes::dmovt:
             dmovt(regDest, src1o);
+            break;
+        case Opcodes::classr:
+            classr(src1r);
             break;
         default:
             unimplementedFault();

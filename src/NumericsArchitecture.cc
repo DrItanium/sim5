@@ -27,6 +27,7 @@
 #include "Types.h"
 #include "Core.h"
 #include "BinaryOperations.h"
+#include <cmath>
 
 void
 Core::dmovt(Register& dest, Ordinal src) noexcept {
@@ -35,5 +36,52 @@ Core::dmovt(Register& dest, Ordinal src) noexcept {
         ac_.arith.conditionCode = 0b000;
     } else {
         ac_.arith.conditionCode = 0b010;
+    }
+}
+
+void
+Core::classr(Real src) noexcept {
+    switch(std::fpclassify(src)) {
+        case FP_ZERO:
+            ac_.arith.arithmeticStatus = 0;
+            break;
+        case FP_SUBNORMAL:
+            ac_.arith.arithmeticStatus = 0b001;
+            break;
+        case FP_NORMAL:
+            ac_.arith.arithmeticStatus = 0b010;
+            break;
+        case FP_INFINITE:
+            ac_.arith.arithmeticStatus = 0b011;
+            break;
+        case FP_NAN:
+            ac_.arith.arithmeticStatus = issignaling(src) ? 0b101 : 0b100;
+            break;
+        default:
+            ac_.arith.arithmeticStatus = 0b110;
+            break;
+    }
+}
+void
+Core::classrl(LongReal src) noexcept {
+    switch(std::fpclassify(src)) {
+        case FP_ZERO:
+            ac_.arith.arithmeticStatus = 0;
+            break;
+        case FP_SUBNORMAL:
+            ac_.arith.arithmeticStatus = 0b001;
+            break;
+        case FP_NORMAL:
+            ac_.arith.arithmeticStatus = 0b010;
+            break;
+        case FP_INFINITE:
+            ac_.arith.arithmeticStatus = 0b011;
+            break;
+        case FP_NAN:
+            ac_.arith.arithmeticStatus = issignaling(src) ? 0b101 : 0b100;
+            break;
+        default:
+            ac_.arith.arithmeticStatus = 0b110;
+            break;
     }
 }

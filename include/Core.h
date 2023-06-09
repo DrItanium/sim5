@@ -1503,9 +1503,9 @@ class Core {
     private:
         void badFault(const FaultRecord& record);
     private: // numerics extensions
-        void daddc(Register& dest, Ordinal src1, Ordinal src2) noexcept;
-        void dsubc(Register& dest, Ordinal src1, Ordinal src2) noexcept;
         void dmovt(Register& dest, Ordinal src) noexcept;
+        void classr(Real src) noexcept;
+        void classrl(LongReal src) noexcept;
     private: // protected extensions instructions
         void signal(Register& dest) noexcept;
         void wait(const Register& src) noexcept;
