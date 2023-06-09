@@ -1618,6 +1618,7 @@ class Core {
         bool breakpoint0Active_ = false;
         Address breakpoint1_ = 0;
         bool breakpoint1Active_ = false;
+        /// @todo implement onboard instruction cache
 };
 
 static_assert(computeNextFrame<Core::C, Core::NotC>(0xFDED'0000) == 0xFDED'0000);
