@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 find_package(Boost
 	REQUIRED
 	COMPONENTS program_options)
+find_package(elfio)
 
 add_library(core960
 		include/BinaryOperations.h
@@ -18,9 +19,10 @@ add_library(core960
 add_executable(sim5 
 	src/main.cc
 	src/NativeCore.cc)
-target_link_libraries(sim5 
-	core960
-	Boost::program_options)
+target_link_libraries(sim5
+		core960
+		elfio::elfio
+		Boost::program_options)
 install(TARGETS sim5 DESTINATION bin)
 
 target_include_directories(core960 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)

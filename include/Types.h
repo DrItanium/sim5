@@ -24,7 +24,6 @@
 #ifndef SIM5_TYPES_H__
 #define SIM5_TYPES_H__
 #include <cstdint>
-#define F(x) x
 using Address = uint32_t;
 using ByteOrdinal = uint8_t;
 using ByteInteger = int8_t;

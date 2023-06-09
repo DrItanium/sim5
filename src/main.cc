@@ -24,16 +24,56 @@
 // The main for the arduino version of the simulator's main
 // Created by jwscoggins on 8/21/21.
 //
-#ifndef ARDUINO
 #include "Types.h"
 #include "BinaryOperations.h"
 #include "Core.h"
 #include <iostream>
+#include <elfio/elfio.hpp>
+#include <boost/program_options.hpp>
+#include <filesystem>
 
-int main(int argc, char** argv) {
+int
+main(int argc, char** argv) {
     Core core;
     std::cout << "i960 Simulator System" << std::endl;
     std::cout << "(C) 2022-2023 Joshua Scoggins" << std::endl;
+    boost::program_options::options_description desc("Allowed options");
+    desc.add_options()
+            ("help,h", "produce help message")
+            ("bootloader", boost::program_options::value<std::filesystem::path>(), "bootstrap elf program")
+            ;
+    boost::program_options::variables_map vm;
+    boost::program_options::store(boost::program_options::parse_command_line(argc, argv, desc), vm);
+    boost::program_options::notify(vm);
+
+    if (vm.count("help")) {
+        std::cout << desc << std::endl;
+        return 1;
+    }
+    if (vm.count("bootloader")) {
+        ELFIO::elfio reader;
+        if (!reader.load(argv[1])) {
+            std::cout << "Could not process " << argv[1] << std::endl;
+            return 2;
+        }
+        std::cout << "ELF file class: ";
+        if (reader.get_class() == ELFIO::ELFCLASS32) {
+            std::cout << "ELF32" << std::endl;
+        } else {
+            std::cout << "ELF64" << std::endl;
+        }
+        std::cout << "File encoding: ";
+        if (reader.get_encoding() == ELFIO::ELFDATA2LSB) {
+            std::cout << "Little endian" << std::endl;
+        } else {
+            std::cout << "Big endian" << std::endl;
+        }
+        /// @todo install the bootloader image into main memory
+    } else {
+        std::cout << "No bootloader provided! Running with memory completely empty!" << std::endl;
+    }
+
+    // setup the memory image as needed
     try {
         core.begin();
         switch (core.start()) {
@@ -55,4 +95,3 @@ int main(int argc, char** argv) {
     return 0;
 }
 
-#endif
