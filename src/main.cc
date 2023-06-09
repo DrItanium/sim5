@@ -75,6 +75,23 @@ main(int argc, char** argv) {
         } else {
             std::cout << "unknown (" << reader.get_machine() << ")" << std::endl;
         }
+        auto numberOfSections = reader.sections.size();
+        std::cout << "Number of sections: " << numberOfSections << std::endl;
+        std::cout << "Number | name | size " << std::endl;
+        for (int i = 0; i < numberOfSections; ++i) {
+            auto* currentSection = reader.sections[i];
+            std::cout << "  [" << i << "] " << currentSection->get_name() << '\t' << currentSection->get_size() << std::endl;
+        }
+        auto numberOfSegments = reader.segments.size();
+        std::cout << "Number of segments: " << numberOfSegments << std::endl;
+        for (int i = 0; i < numberOfSegments; ++i) {
+            const auto* curr = reader.segments[i];
+            std::cout << "  [" << i << "] 0x" << std::hex << curr->get_flags()
+            << "\t0x" << curr->get_virtual_address()
+            << "\t0x" << curr->get_file_size()
+            << "\t0x" << curr->get_memory_size()
+            << std::endl;
+        }
         /// @todo install the bootloader image into main memory
     } else {
         std::cout << "No bootloader provided! Running with memory completely empty!" << std::endl;
