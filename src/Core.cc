@@ -698,9 +698,9 @@ Core::boot0(Address sat, Address pcb, Address startIP) noexcept {
     auto theStackPointer = getInterruptStackAddress();
     // set the frame pointer to the start of the interrupt stack
     setGPR(FPIndex, theStackPointer, TreatAsOrdinal{});
-
+    // the current local register window needs to be owned on startup
     getCurrentPack().takeOwnership(theStackPointer, [](const auto&, auto) noexcept {});
-    setGPR(SPIndex, theStackPointer + 64, TreatAsOrdinal{});
+    setStackPointer(theStackPointer + 64, TreatAsOrdinal{});
     setGPR(PFPIndex, theStackPointer, TreatAsOrdinal{});
     /// @todo clear the pending interrupts?
     // clear any latched external interrupt/IAC signals
