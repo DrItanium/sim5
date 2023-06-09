@@ -1595,6 +1595,8 @@ class Core {
                 return frames_[0];
             }
         }
+        [[nodiscard]] LocalRegisterSet& getCurrentPack() noexcept { return frames_[localRegisterFrameIndex_]; }
+        void boot0(Address sat, Address pcb, Address startIP) noexcept;
     private:
         Ordinal systemAddressTableBase_ = 0;
         Ordinal prcbAddress_ = 0;

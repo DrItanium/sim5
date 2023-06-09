@@ -680,7 +680,31 @@ Core::performConditionalAdd(Register& dest, Ordinal src1, Ordinal src2, TreatAsO
         addo(dest, src1, src2);
     }
 }
+void
+Core::boot0(Address sat, Address pcb, Address startIP) noexcept {
+    systemAddressTableBase_ = sat;
+    prcbAddress_ = pcb;
+    setIP(startIP, TreatAsOrdinal{});
+    // fetch IMI
+    setGPR(FPIndex, load(prcbAddress_ + 24, TreatAsOrdinal{}), TreatAsOrdinal{});
+    pc_.setPriority(31);
+    pc_.processControls.state = 1;
+    localRegisterFrameIndex_ = 0;
+    for (auto& a : frames_) {
+        a.relinquishOwnership();
+        a.clear();
+    }
+    // get the interrupt stack pointer base since we are starting in an interrupted context
+    auto theStackPointer = getInterruptStackAddress();
+    // set the frame pointer to the start of the interrupt stack
+    setGPR(FPIndex, theStackPointer, TreatAsOrdinal{});
 
+    getCurrentPack().takeOwnership(theStackPointer, [](const auto&, auto) noexcept {});
+    setGPR(SPIndex, theStackPointer + 64, TreatAsOrdinal{});
+    setGPR(PFPIndex, theStackPointer, TreatAsOrdinal{});
+    // clear any latched external interrupt/IAC signals
+    // begin execution
+}
 BootResult
 Core::start() noexcept {
     assertFailureState();
@@ -713,20 +737,7 @@ Core::start() noexcept {
             assertFailureState();
             return BootResult::ChecksumFail;
         } else {
-            systemAddressTableBase_ = x[0];
-            prcbAddress_ = x[1];
-            ip_.setValue(x[3], TreatAsOrdinal{});
-            // fetch IMI
-            setGPR(FPIndex, load(prcbAddress_ + 24, TreatAsOrdinal{}), TreatAsOrdinal{});
-            pc_.setPriority(31);
-            pc_.processControls.state = 1;
-            localRegisterFrameIndex_ = 0;
-            for (auto& a : frames_) {
-                a.relinquishOwnership();
-                a.clear();
-            }
-            // clear any latched external interrupt/IAC signals
-            // begin execution
+            boot0(x[0], x[1], x[3]);
             return BootResult::Success;
         }
     }
