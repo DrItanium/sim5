@@ -52,8 +52,9 @@ main(int argc, char** argv) {
     }
     if (vm.count("bootloader")) {
         ELFIO::elfio reader;
-        if (!reader.load(argv[1])) {
-            std::cout << "Could not process " << argv[1] << std::endl;
+        auto path = vm["bootloader"].as<std::filesystem::path>();
+        if (!reader.load(path)) {
+            std::cout << "Could not process " << path << std::endl;
             return 2;
         }
         std::cout << "ELF file class: ";
@@ -67,6 +68,12 @@ main(int argc, char** argv) {
             std::cout << "Little endian" << std::endl;
         } else {
             std::cout << "Big endian" << std::endl;
+        }
+        std::cout << "Target Architecture: ";
+        if (reader.get_machine() == ELFIO::EM_960) {
+            std::cout << "i960" << std::endl;
+        } else {
+            std::cout << "unknown (" << reader.get_machine() << ")" << std::endl;
         }
         /// @todo install the bootloader image into main memory
     } else {
