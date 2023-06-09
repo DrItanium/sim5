@@ -968,6 +968,10 @@ class Core {
         [[nodiscard]] inline Ordinal getGPRValue(ByteOrdinal index, TreatAsOrdinal) const noexcept { return getGPR(index).getValue(TreatAsOrdinal{}); }
         [[nodiscard]] inline Ordinal getGPRValue(ByteOrdinal index, ByteOrdinal offset, TreatAsOrdinal) const noexcept { return getGPR(index, offset).getValue(TreatAsOrdinal{}); }
         [[nodiscard]] inline Integer getGPRValue(ByteOrdinal index, TreatAsInteger) const noexcept { return getGPR(index).getValue(TreatAsInteger{}); }
+        template<typename T>
+        [[nodiscard]] T getGPRValue(ByteOrdinal index) const noexcept {
+            return getGPRValue(index, TreatAs<T>{});
+        }
         [[nodiscard]] constexpr Ordinal getSystemAddressTableBase() const noexcept { return systemAddressTableBase_; }
         [[nodiscard]] Ordinal getSystemProcedureTableBase() const noexcept;
         [[nodiscard]] Ordinal getSupervisorStackPointer() const noexcept;
@@ -989,6 +993,10 @@ class Core {
         [[nodiscard]] Integer unpackSrc1(TreatAsInteger, TreatAsCOBR) noexcept;
         [[nodiscard]] Ordinal unpackSrc2(TreatAsOrdinal, TreatAsCOBR) noexcept;
         [[nodiscard]] Integer unpackSrc2(TreatAsInteger, TreatAsCOBR) noexcept;
+        template<typename Q>
+        void moveGPR(ByteOrdinal destIndex, ByteOrdinal srcIndex, std::function<Q(Q)> transform, TreatAs<Q>) noexcept {
+            setGPR(destIndex, transform( getGPRValue(srcIndex, TreatAs<Q>{}) ), TreatAs<Q>{});
+        }
         template<typename Q>
         void moveGPR(ByteOrdinal destIndex, ByteOrdinal srcIndex, TreatAs<Q>) noexcept {
             setGPR(destIndex, getGPRValue(srcIndex, TreatAs<Q>{}), TreatAs<Q>{});
@@ -1149,8 +1157,8 @@ class Core {
         void callx() noexcept;
         void callx(Address effectiveAddress) noexcept;
     private:
-        void enterCall(Ordinal fp) noexcept;
-        void leaveCall() noexcept;
+        void enterCall(Ordinal fp);
+        void leaveCall();
         void allocateNewRegisterFrame() noexcept;
         bool registerSetAvailable() noexcept;
         void saveRegisterSet(Ordinal fp) noexcept;

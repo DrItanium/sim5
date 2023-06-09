@@ -29,12 +29,17 @@ Core::registerSetAvailable() noexcept {
     return false;
 }
 void
-Core::enterCall(Ordinal fp) noexcept {
-    //gpr_.enterCall(fp, *this);
-    if (!registerSetAvailable()) {
-        saveRegisterSet(fp);
-    }
-    allocateNewRegisterFrame();
+Core::enterCall(Ordinal fp) {
+}
+void
+Core::leaveCall() {
+    auto fn = [](Ordinal input) -> Ordinal {
+        // we need to clear the lowest 6 bits
+        Register tmp{input};
+        tmp.pfpAddress.align = 0;
+        return tmp.getValue<Ordinal>();
+    };
+    moveGPR<Ordinal>(FPIndex, PFPIndex, fn, TreatAsOrdinal {});
 }
 
 void
