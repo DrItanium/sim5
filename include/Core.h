@@ -843,22 +843,27 @@ constexpr bool aligned(ByteOrdinal index, TreatAsQuadRegister) noexcept { return
 constexpr bool aligned(ByteOrdinal index, TreatAsTripleRegister) noexcept { return aligned(index, TreatAsQuadRegister{}); }
 /** 
  * @brief Holds onto two separate register frames
- */ 
+ */
+template<uint8_t localFrameCount = 4>
 class GPRBlock {
     public:
         GPRBlock() = default;
+    private:
+        RegisterFrame& localRegisters() noexcept { return _locals[_currentLocalFrameIndex]; }
+        const RegisterFrame& localRegisters() const noexcept { return _locals[_currentLocalFrameIndex]; }
+    public:
         Register& get(ByteOrdinal index, TreatAsRegister) noexcept { 
             if (index < 16) {
-                return globals.get(index, TreatAsRegister{});
+                return _globals.get(index, TreatAsRegister{});
             } else {
-                return locals.get(index, TreatAsRegister{});
+                return localRegisters().get(index, TreatAsRegister{});
             }
         }
         const Register& get(ByteOrdinal index, TreatAsRegister) const noexcept { 
             if (index < 16) {
-                return globals.get(index, TreatAsRegister{});
+                return _globals.get(index, TreatAsRegister{});
             } else {
-                return locals.get(index, TreatAsRegister{});
+                return localRegisters().get(index, TreatAsRegister{});
             }
         }
         Register& get(ByteOrdinal index) noexcept { 
@@ -869,44 +874,44 @@ class GPRBlock {
         }
         LongRegister& get(ByteOrdinal index, TreatAsLongRegister) noexcept { 
             if (index < 16) {
-                return globals.get(index, TreatAsLongRegister{});
+                return _globals.get(index, TreatAsLongRegister{});
             } else {
-                return locals.get(index, TreatAsLongRegister{});
+                return localRegisters().get(index, TreatAsLongRegister{});
             }
         }
         const LongRegister& get(ByteOrdinal index, TreatAsLongRegister) const noexcept { 
             if (index < 16) {
-                return globals.get(index, TreatAsLongRegister{});
+                return _globals.get(index, TreatAsLongRegister{});
             } else {
-                return locals.get(index, TreatAsLongRegister{});
+                return localRegisters().get(index, TreatAsLongRegister{});
             }
         }
         QuadRegister& get(ByteOrdinal index, TreatAsQuadRegister) noexcept { 
             if (index < 16) {
-                return globals.get(index, TreatAsQuadRegister{});
+                return _globals.get(index, TreatAsQuadRegister{});
             } else {
-                return locals.get(index, TreatAsQuadRegister{});
+                return localRegisters().get(index, TreatAsQuadRegister{});
             }
         }
         const QuadRegister& get(ByteOrdinal index, TreatAsQuadRegister) const noexcept { 
             if (index < 16) {
-                return globals.get(index, TreatAsQuadRegister{});
+                return _globals.get(index, TreatAsQuadRegister{});
             } else {
-                return locals.get(index, TreatAsQuadRegister{});
+                return localRegisters().get(index, TreatAsQuadRegister{});
             }
         }
         TripleRegister& get(ByteOrdinal index, TreatAsTripleRegister) noexcept { 
             if (index < 16) {
-                return globals.get(index, TreatAsTripleRegister{});
+                return _globals.get(index, TreatAsTripleRegister{});
             } else {
-                return locals.get(index, TreatAsTripleRegister{});
+                return localRegisters().get(index, TreatAsTripleRegister{});
             }
         }
         const TripleRegister& get(ByteOrdinal index, TreatAsTripleRegister) const noexcept { 
             if (index < 16) {
-                return globals.get(index, TreatAsTripleRegister{});
+                return _globals.get(index, TreatAsTripleRegister{});
             } else {
-                return locals.get(index, TreatAsTripleRegister{});
+                return localRegisters().get(index, TreatAsTripleRegister{});
             }
         }
 
@@ -937,10 +942,14 @@ class GPRBlock {
         T getValue(ByteOrdinal index, TreatAsLongRegister) const noexcept {
             return get(index, TreatAsLongRegister{}).getValue(TreatAs<T>{});
         }
-
+        [[nodiscard]] constexpr auto getNumberOfLocalFrames() const noexcept { return localFrameCount; }
+        void newRegisterFrame(Address fp, )
     private:
-        RegisterFrame globals;
-        RegisterFrame locals;
+        RegisterFrame _globals;
+        RegisterFrame _locals[localFrameCount];
+        Address _correspondingFrames[localFrameCount];
+        bool _valid[localFrameCount] = { false };
+        uint8_t _currentLocalFrameIndex = 0;
 };
 
 class RegisterBlock32 {
