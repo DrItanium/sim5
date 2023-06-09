@@ -23,33 +23,3 @@
 #include "Types.h"
 #include "Core.h"
 #include "BinaryOperations.h"
-
-#if 0
-
-        template<typename T>
-        void setValue(ByteOrdinal index, T value, TreatAsRegister) noexcept {
-            get(index, TreatAsRegister{}).setValue(value, TreatAs<T>{});
-        }
-        template<typename T>
-        T getValue(ByteOrdinal index, TreatAsRegister) const noexcept {
-            return get(index, TreatAsRegister{}).getValue(TreatAs<T>{});
-        }
-
-        template<typename T>
-        void setValue(ByteOrdinal index, T value) noexcept {
-            setValue<T>(index, value, TreatAsRegister{});
-        }
-        template<typename T>
-        T getValue(ByteOrdinal index) const noexcept {
-            return getValue<T>(index, TreatAsRegister{});
-        }
-
-        template<typename T>
-        void setValue(ByteOrdinal index, T value, TreatAsLongRegister) noexcept {
-            get(index, TreatAsLongRegister{}).setValue(value, TreatAs<T>{});
-        }
-        template<typename T>
-        T getValue(ByteOrdinal index, TreatAsLongRegister) const noexcept {
-            return get(index, TreatAsLongRegister{}).getValue(TreatAs<T>{});
-        }
-#endif

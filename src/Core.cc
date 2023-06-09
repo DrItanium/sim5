@@ -702,6 +702,7 @@ Core::boot0(Address sat, Address pcb, Address startIP) noexcept {
     getCurrentPack().takeOwnership(theStackPointer, [](const auto&, auto) noexcept {});
     setGPR(SPIndex, theStackPointer + 64, TreatAsOrdinal{});
     setGPR(PFPIndex, theStackPointer, TreatAsOrdinal{});
+    /// @todo clear the pending interrupts?
     // clear any latched external interrupt/IAC signals
     // begin execution
 }
@@ -1389,7 +1390,7 @@ Core::syncf() noexcept {
 
 void 
 Core::reinitializeProcessor(Ordinal satBase, Ordinal prcbBase, Ordinal startIP) noexcept {
-    
+    boot0(satBase, prcbBase, startIP);
 }
 
 void 
