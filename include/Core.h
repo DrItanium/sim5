@@ -24,9 +24,7 @@
 #ifndef SIM5_CORE_H__
 #define SIM5_CORE_H__
 
-#ifndef ARDUINO
 #include <cstdlib>
-#endif
 #include "Types.h"
 #include "IAC.h"
 #include "BinaryOperations.h"
@@ -943,7 +941,7 @@ class GPRBlock {
             return get(index, TreatAsLongRegister{}).getValue(TreatAs<T>{});
         }
         [[nodiscard]] constexpr auto getNumberOfLocalFrames() const noexcept { return localFrameCount; }
-        void newRegisterFrame(Address fp, )
+        //void newRegisterFrame(Address fp, )
     private:
         RegisterFrame _globals;
         RegisterFrame _locals[localFrameCount];
@@ -1465,19 +1463,11 @@ class Core {
         void extract(Register& dest, Ordinal src1, Ordinal src2) noexcept;
     protected:
         static decltype(auto) doRandom() {
-#ifdef ARDUINO
-            return random();
-#else
             return rand();
-#endif
         }
         static decltype(auto) doRandomDisallow0() {
             while (true) {
-#ifdef ARDUINO
-                auto r = random();
-#else
                 auto r = rand();
-#endif
                 if (r != 0) {
                     return r;
                 }
@@ -1620,7 +1610,7 @@ class Core {
     private:
         Ordinal systemAddressTableBase_ = 0;
         Ordinal prcbAddress_ = 0;
-        GPRBlock gpr_;
+        GPRBlock<> gpr_;
         RegisterBlock32 sfrs_;
         RegisterBlock32 constants_;
         Register ip_;

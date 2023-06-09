@@ -24,11 +24,7 @@
 #ifndef SIM5_BINARY_OPERATIONS_H__
 #define SIM5_BINARY_OPERATIONS_H__
 
-#ifdef ARDUINO
-#include <Arduino.h>
-#else
 #include <bit>
-#endif
 #include "Types.h"
 [[nodiscard]] constexpr Ordinal rotateOperation(Ordinal src, Ordinal length) noexcept {
     return (src << length)  | (src >> ((-length) & 31u));

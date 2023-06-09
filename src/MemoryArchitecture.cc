@@ -23,9 +23,6 @@
 //
 // Created by jwscoggins on 6/8/23.
 //
-#ifdef ARDUINO
-#include <Arduino.h>
-#endif
 #include "Types.h"
 #include "Core.h"
 #include "BinaryOperations.h"
