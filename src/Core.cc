@@ -720,6 +720,11 @@ Core::start() noexcept {
             setGPR(FPIndex, load(prcbAddress_ + 24, TreatAsOrdinal{}), TreatAsOrdinal{});
             pc_.setPriority(31);
             pc_.processControls.state = 1;
+            localRegisterFrameIndex_ = 0;
+            for (auto& a : frames_) {
+                a.relinquishOwnership();
+                a.clear();
+            }
             // clear any latched external interrupt/IAC signals
             // begin execution
             return BootResult::Success;

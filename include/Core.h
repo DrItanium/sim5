@@ -823,6 +823,11 @@ union RegisterFrame {
         const QuadRegister& get(ByteOrdinal index, TreatAsQuadRegister) const noexcept { return quadRegisters[index >> 2]; }
         TripleRegister& get(ByteOrdinal index, TreatAsTripleRegister) noexcept { return tripleRegisters[index >> 2]; }
         const TripleRegister& get(ByteOrdinal index, TreatAsTripleRegister) const noexcept { return tripleRegisters[index >> 2]; }
+        void clear() noexcept {
+            for (auto& a : registers) {
+                a.clear();
+            }
+        }
     private:
         Register registers[16];
         LongRegister longRegisters[8];
@@ -920,8 +925,10 @@ class Core {
             _targetFramePointer = newFP;
             restoreRegisters(getUnderlyingFrame(), getAddress());
         }
-        void commit(Core& core);
-        void restore(Core& core);
+        void
+        clear() noexcept {
+            _theFrame.clear();
+        }
     private:
         RegisterFrame _theFrame;
         Address _targetFramePointer = 0;
