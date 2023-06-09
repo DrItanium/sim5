@@ -195,3 +195,15 @@ void
 Core::restoreRIPToIP() {
     setIP(getRIPContents(), TreatAsOrdinal{});
 }
+void
+Core::GPRBlock::saveLocalRegisters(Address fp, Core& core) {
+    for (int i = 0, j = 0; i < 16; ++i, j+= 4) {
+        core.store(fp + j, localRegisters().get(i, TreatAsRegister{}).getValue<Ordinal>(), TreatAsOrdinal{});
+    }
+}
+void
+Core::GPRBlock::restoreLocalRegisters(Address fp, Core& core) {
+    for (int i = 0, j = 0; i < 16; ++i, j+= 4) {
+        localRegisters().get(i, TreatAsRegister{}) = core.load(fp + j, TreatAsOrdinal{});
+    }
+}

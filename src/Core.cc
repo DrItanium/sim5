@@ -348,20 +348,6 @@ Core::computeAddress() noexcept {
 }
 
 void
-Core::storeBlock(Ordinal baseAddress, ByteOrdinal baseRegister, ByteOrdinal count) noexcept {
-    for (ByteOrdinal i = 0; i < count; ++i, baseAddress += 4) {
-        store(baseAddress, getGPRValue(baseRegister, i, TreatAsOrdinal{}), TreatAsOrdinal{});
-    }
-}
-
-void
-Core::loadBlock(Ordinal baseAddress, ByteOrdinal baseRegister, ByteOrdinal count) noexcept {
-    for (ByteOrdinal i = 0; i < count; ++i, baseAddress += 4) {
-        setGPR(baseRegister, i, load(baseAddress, TreatAsOrdinal{}), TreatAsOrdinal{});
-    }
-}
-
-void 
 Core::ldl(Address effectiveAddress, LongRegister& destination) noexcept {
     if (!aligned(instruction_.mem.srcDest, TreatAsLongRegister{})) {
         invalidOperandFault();
@@ -1387,12 +1373,12 @@ Core::flushreg() noexcept {
 
 void 
 Core::saveRegisterSet(Ordinal fp) noexcept {
-    storeBlock(fp, 16, 16);
+    gpr_.saveLocalRegisters(fp, *this);
 }
 
 void 
 Core::restoreRegisterSet(Ordinal fp) noexcept {
-    loadBlock(fp, 16, 16);
+    gpr_.restoreLocalRegisters(fp, *this);
 }
 
 

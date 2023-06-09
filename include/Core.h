@@ -25,6 +25,7 @@
 #define SIM5_CORE_H__
 
 #include <cstdlib>
+#include <functional>
 #include "Types.h"
 #include "IAC.h"
 #include "BinaryOperations.h"
@@ -839,73 +840,104 @@ constexpr bool aligned(ByteOrdinal index, TreatAsQuadRegister) noexcept { return
  * @brief is the given byte index aligned to quad register boundaries?
  */
 constexpr bool aligned(ByteOrdinal index, TreatAsTripleRegister) noexcept { return aligned(index, TreatAsQuadRegister{}); }
-/** 
+
+class RegisterBlock32 {
+    public:
+        RegisterBlock32() = default;
+        Register& get(ByteOrdinal index) noexcept { return registers_[index & 0b11111]; }
+        const Register& get(ByteOrdinal index) const noexcept { return registers_[index & 0b11111]; }
+        template<typename T>
+        void setValue(ByteOrdinal index, T value) noexcept {
+            get(index).setValue(value, TreatAs<T>{});
+        }
+        template<typename T>
+        T getValue(ByteOrdinal index) const noexcept {
+            return get(index).getValue(TreatAs<T>{});
+        }
+    private:
+        Register registers_[32];
+};
+constexpr Ordinal getSALIGNParameter() noexcept {
+#ifdef SALIGN960
+    return SALIGN960;
+#else
+    return DEFAULT_SALIGN;
+#endif
+}
+
+class Core {
+    public:
+        static constexpr Ordinal SALIGN = getSALIGNParameter();
+        static constexpr Ordinal C = (SALIGN * 16) - 1;
+        static constexpr Ordinal NotC = ~C;
+        static constexpr uint8_t NumberOfLocalRegisterFrames = 1;
+
+/**
  * @brief Holds onto two separate register frames
  */
-template<uint8_t localFrameCount = 4>
-class GPRBlock {
+    class GPRBlock {
     public:
         GPRBlock() = default;
     private:
         RegisterFrame& localRegisters() noexcept { return _locals[_currentLocalFrameIndex]; }
         const RegisterFrame& localRegisters() const noexcept { return _locals[_currentLocalFrameIndex]; }
     public:
-        Register& get(ByteOrdinal index, TreatAsRegister) noexcept { 
+        Register& get(ByteOrdinal index, TreatAsRegister) noexcept {
             if (index < 16) {
                 return _globals.get(index, TreatAsRegister{});
             } else {
                 return localRegisters().get(index, TreatAsRegister{});
             }
         }
-        const Register& get(ByteOrdinal index, TreatAsRegister) const noexcept { 
+        const Register& get(ByteOrdinal index, TreatAsRegister) const noexcept {
             if (index < 16) {
                 return _globals.get(index, TreatAsRegister{});
             } else {
                 return localRegisters().get(index, TreatAsRegister{});
             }
         }
-        Register& get(ByteOrdinal index) noexcept { 
+        Register& get(ByteOrdinal index) noexcept {
             return get(index, TreatAsRegister{});
         }
-        const Register& get(ByteOrdinal index) const noexcept { 
+        const Register& get(ByteOrdinal index) const noexcept {
             return get(index, TreatAsRegister{});
         }
-        LongRegister& get(ByteOrdinal index, TreatAsLongRegister) noexcept { 
+        LongRegister& get(ByteOrdinal index, TreatAsLongRegister) noexcept {
             if (index < 16) {
                 return _globals.get(index, TreatAsLongRegister{});
             } else {
                 return localRegisters().get(index, TreatAsLongRegister{});
             }
         }
-        const LongRegister& get(ByteOrdinal index, TreatAsLongRegister) const noexcept { 
+        const LongRegister& get(ByteOrdinal index, TreatAsLongRegister) const noexcept {
             if (index < 16) {
                 return _globals.get(index, TreatAsLongRegister{});
             } else {
                 return localRegisters().get(index, TreatAsLongRegister{});
             }
         }
-        QuadRegister& get(ByteOrdinal index, TreatAsQuadRegister) noexcept { 
+        QuadRegister& get(ByteOrdinal index, TreatAsQuadRegister) noexcept {
             if (index < 16) {
                 return _globals.get(index, TreatAsQuadRegister{});
             } else {
                 return localRegisters().get(index, TreatAsQuadRegister{});
             }
         }
-        const QuadRegister& get(ByteOrdinal index, TreatAsQuadRegister) const noexcept { 
+        const QuadRegister& get(ByteOrdinal index, TreatAsQuadRegister) const noexcept {
             if (index < 16) {
                 return _globals.get(index, TreatAsQuadRegister{});
             } else {
                 return localRegisters().get(index, TreatAsQuadRegister{});
             }
         }
-        TripleRegister& get(ByteOrdinal index, TreatAsTripleRegister) noexcept { 
+        TripleRegister& get(ByteOrdinal index, TreatAsTripleRegister) noexcept {
             if (index < 16) {
                 return _globals.get(index, TreatAsTripleRegister{});
             } else {
                 return localRegisters().get(index, TreatAsTripleRegister{});
             }
         }
-        const TripleRegister& get(ByteOrdinal index, TreatAsTripleRegister) const noexcept { 
+        const TripleRegister& get(ByteOrdinal index, TreatAsTripleRegister) const noexcept {
             if (index < 16) {
                 return _globals.get(index, TreatAsTripleRegister{});
             } else {
@@ -940,46 +972,20 @@ class GPRBlock {
         T getValue(ByteOrdinal index, TreatAsLongRegister) const noexcept {
             return get(index, TreatAsLongRegister{}).getValue(TreatAs<T>{});
         }
-        [[nodiscard]] constexpr auto getNumberOfLocalFrames() const noexcept { return localFrameCount; }
-        //void newRegisterFrame(Address fp, )
+        [[nodiscard]] constexpr auto getNumberOfLocalFrames() const noexcept { return NumberOfLocalRegisterFrames; }
+        // we have two directions for the allocation
+        // a call will increment the frame index
+        // a return will decrement the frame index
+
+        void saveLocalRegisters(Address fp, Core& core);
+        void restoreLocalRegisters(Address fp, Core& core);
     private:
         RegisterFrame _globals;
-        RegisterFrame _locals[localFrameCount];
-        Address _correspondingFrames[localFrameCount];
-        bool _valid[localFrameCount] = { false };
+        RegisterFrame _locals[NumberOfLocalRegisterFrames];
+        Address _correspondingFrames[NumberOfLocalRegisterFrames];
+        bool _valid[NumberOfLocalRegisterFrames] = { false };
         uint8_t _currentLocalFrameIndex = 0;
-};
-
-class RegisterBlock32 {
-    public:
-        RegisterBlock32() = default;
-        Register& get(ByteOrdinal index) noexcept { return registers_[index & 0b11111]; }
-        const Register& get(ByteOrdinal index) const noexcept { return registers_[index & 0b11111]; }
-        template<typename T>
-        void setValue(ByteOrdinal index, T value) noexcept {
-            get(index).setValue(value, TreatAs<T>{});
-        }
-        template<typename T>
-        T getValue(ByteOrdinal index) const noexcept {
-            return get(index).getValue(TreatAs<T>{});
-        }
-    private:
-        Register registers_[32];
-};
-constexpr Ordinal getSALIGNParameter() noexcept {
-#ifdef SALIGN960
-    return SALIGN960;
-#else
-    return DEFAULT_SALIGN;
-#endif
-}
-
-class Core {
-    public:
-        static constexpr Ordinal SALIGN = getSALIGNParameter();
-        static constexpr Ordinal C = (SALIGN * 16) - 1;
-        static constexpr Ordinal NotC = ~C;
-
+    };
     public:
 
         void begin() noexcept;
@@ -1192,9 +1198,6 @@ class Core {
         void saveRegisterSet(Ordinal fp) noexcept;
         void restoreRegisterSet(Ordinal fp) noexcept;
         void restoreStandardFrame() noexcept;
-    protected:
-        void storeBlock(Ordinal baseAddress, ByteOrdinal baseRegister, ByteOrdinal count) noexcept;
-        void loadBlock(Ordinal baseAddress, ByteOrdinal baseRegister, ByteOrdinal count) noexcept;
     private:
         void performConditionalSubtract(Register& dest, Integer src1, Integer src2, TreatAsInteger) noexcept;
         void performConditionalSubtract(Register& dest, Ordinal src1, Ordinal src2, TreatAsOrdinal) noexcept;
@@ -1610,7 +1613,7 @@ class Core {
     private:
         Ordinal systemAddressTableBase_ = 0;
         Ordinal prcbAddress_ = 0;
-        GPRBlock<> gpr_;
+        GPRBlock gpr_;
         RegisterBlock32 sfrs_;
         RegisterBlock32 constants_;
         Register ip_;
