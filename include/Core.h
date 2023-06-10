@@ -32,6 +32,8 @@
 #include "BinaryOperations.h"
 #include <istream>
 #include <iostream>
+#define DEBUG_ENTER_FUNCTION if constexpr (EnableDebugLogging) std::cout << "Entering Function: " << __PRETTY_FUNCTION__ << std::endl
+#define DEBUG_LEAVE_FUNCTION if constexpr (EnableDebugLogging) std::cout << "Leaving Function: " << __PRETTY_FUNCTION__ << std::endl
 
 constexpr Ordinal DEFAULT_SALIGN = 4;
 /// faults
@@ -1604,6 +1606,10 @@ class Core {
         }
         [[nodiscard]] LocalRegisterSet& getCurrentPack() noexcept { return frames_[localRegisterFrameIndex_]; }
         void boot0(Address sat, Address pcb, Address startIP) noexcept;
+    private:
+        void bx(Address effectiveAddress);
+        void bal(Integer displacement);
+
     private:
         Ordinal systemAddressTableBase_ = 0;
         Ordinal prcbAddress_ = 0;

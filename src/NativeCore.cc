@@ -208,6 +208,9 @@ store16(Address address, ShortInteger value, TreatAsShortInteger) noexcept {
 }
 void
 store32(Address address, Ordinal value, TreatAsOrdinal) noexcept {
+    if constexpr (Core::EnableDebugLogging) {
+        std::cout << "store32<Ordinal>(0x" << std::hex << address << ", 0x" << std::hex << value << ");" << std::endl;
+    }
     if ((address & 0b11) != 0) {
         store16(address, value, TreatAsShortOrdinal{});
         store16(address+2, static_cast<ShortOrdinal>(value >> 16), TreatAsShortOrdinal{});
@@ -226,6 +229,9 @@ store32(Address address, Ordinal value, TreatAsOrdinal) noexcept {
 }
 void
 store32(Address address, Integer value, TreatAsInteger) noexcept {
+    if constexpr (Core::EnableDebugLogging) {
+        std::cout << "store32<Integer>(0x" << std::hex << address << ", 0x" << std::hex << value << ");" << std::endl;
+    }
     if ((address & 0b11) != 0) {
         store16(address, value, TreatAsShortInteger{});
         store16(address+2, static_cast<ShortInteger>(value >> 16), TreatAsShortInteger{});
@@ -244,6 +250,9 @@ store32(Address address, Integer value, TreatAsInteger) noexcept {
 }
 Ordinal
 load32(Address address, TreatAsOrdinal) noexcept {
+    if constexpr (Core::EnableDebugLogging) {
+        std::cout << "load32<Ordinal>(0x" << std::hex << address << ");" << std::endl;
+    }
     if ((address & 0b11) != 0) {
         // unaligned 32-bit load so make sure that we break it up into
         // component pieces by loading each byte individually
@@ -270,6 +279,9 @@ load32(Address address, TreatAsOrdinal) noexcept {
 }
 Integer
 load32(Address address, TreatAsInteger) noexcept {
+    if constexpr (Core::EnableDebugLogging) {
+        std::cout << "load32<Integer>(0x" << std::hex << address << ");" << std::endl;
+    }
     if ((address & 0b11) != 0) {
         // unaligned 32-bit load so make sure that we break it up into
         // component pieces by loading each byte individually

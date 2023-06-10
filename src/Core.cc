@@ -405,6 +405,7 @@ Core::stt(Address effectiveAddress, const TripleRegister& source) noexcept {
 
 void
 Core::ldq(Address effectiveAddress, QuadRegister& destination) noexcept {
+    DEBUG_ENTER_FUNCTION;
     if (!aligned(instruction_.mem.srcDest, TreatAsQuadRegister{})) {
         invalidOperandFault();
         /// @todo perform an unaligned load into registers
@@ -415,12 +416,14 @@ Core::ldq(Address effectiveAddress, QuadRegister& destination) noexcept {
         destination[3] = load(effectiveAddress + 12, TreatAsOrdinal{});
         // support unaligned accesses
     }
+    DEBUG_LEAVE_FUNCTION;
     // the instruction is invalid so we should complete after we are done
 }
 
 
 void
 Core::stq(Address effectiveAddress, const QuadRegister& source) noexcept {
+    DEBUG_ENTER_FUNCTION;
     if (!aligned(instruction_.mem.srcDest, TreatAsQuadRegister{})) {
         invalidOperandFault();
     } else {
@@ -430,6 +433,7 @@ Core::stq(Address effectiveAddress, const QuadRegister& source) noexcept {
         store(effectiveAddress + 12, static_cast<Ordinal>(source[3]), TreatAsOrdinal{});
         // support unaligned accesses
     }
+    DEBUG_LEAVE_FUNCTION;
     // the instruction is invalid so we should complete after we are done
 }
 
@@ -625,7 +629,7 @@ Core::synmovl(const Register& dest, Ordinal src) noexcept {
 
 void 
 Core::synmovq(const Register& dest, Ordinal src) noexcept {
-
+    DEBUG_ENTER_FUNCTION;
     ac_.arith.conditionCode = 0b000;
     auto temp0 = load(src, TreatAsOrdinal{});
     auto temp1 = load(src+4, TreatAsOrdinal{});
@@ -642,6 +646,7 @@ Core::synmovq(const Register& dest, Ordinal src) noexcept {
         // wait for completion
         ac_.arith.conditionCode = 0b010;
     }
+    DEBUG_LEAVE_FUNCTION;
 }
 
 
@@ -708,8 +713,10 @@ Core::boot0(Address sat, Address pcb, Address startIP) noexcept {
 }
 BootResult
 Core::start() noexcept {
+    DEBUG_ENTER_FUNCTION;
     assertFailureState();
     if (!performSelfTest()) {
+        DEBUG_LEAVE_FUNCTION;
         return BootResult::SelfTestFailure;
     } else {
         // start execution at this point, according to the docs this is what we
@@ -764,9 +771,11 @@ Core::start() noexcept {
         }
         if (temp_.getValue(TreatAsOrdinal{}) != 0) {
             assertFailureState();
+            DEBUG_LEAVE_FUNCTION;
             return BootResult::ChecksumFail;
         } else {
             boot0(x[0], x[1], x[3]);
+            DEBUG_LEAVE_FUNCTION;
             return BootResult::Success;
         }
     }
@@ -833,13 +842,19 @@ void
 Core::subo(Register& dest, Ordinal src1, Ordinal src2) noexcept {
     sub<Ordinal>(dest, src1, src2, TreatAsOrdinal{});
 }
-
+void
+Core::bal(Integer displacement) {
+    DEBUG_ENTER_FUNCTION;
+    saveReturnAddress(LRIndex);
+    branch(displacement);
+    DEBUG_LEAVE_FUNCTION;
+}
 void 
 Core::processInstruction(Opcodes opcode, Integer displacement, TreatAsCTRL) noexcept {
     switch (opcode) {
         case Opcodes::bal: // bal
-            saveReturnAddress(LRIndex);
-            // then fallthrough and take the branch
+            bal(displacement);
+            break;
         case Opcodes::b: // b
             branch(displacement);
             break;
@@ -954,7 +969,12 @@ Core::processInstruction(Opcodes opcode, uint8_t mask, Register& src1, const Reg
             break;
     }
 }
-
+void
+Core::bx(Address effectiveAddress) {
+    DEBUG_ENTER_FUNCTION;
+    setIP(effectiveAddress, TreatAsOrdinal{});
+    DEBUG_LEAVE_FUNCTION;
+}
 void 
 Core::processInstruction(Opcodes opcode, Register& srcDest, Address effectiveAddress, TreatAsMEM) noexcept {
     switch (opcode) {
@@ -962,7 +982,7 @@ Core::processInstruction(Opcodes opcode, Register& srcDest, Address effectiveAdd
             balx(srcDest, effectiveAddress);
             break;
         case Opcodes::bx:
-            setIP(effectiveAddress, TreatAsOrdinal{});
+            bx(effectiveAddress);
             break;
         case Opcodes::callx:
             callx(effectiveAddress);
