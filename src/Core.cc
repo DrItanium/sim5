@@ -309,12 +309,13 @@ Core::fmark() noexcept {
 
 Ordinal
 Core::computeAddress() noexcept {
+    DEBUG_ENTER_FUNCTION;
+    Ordinal result = 0;
     if (instruction_.isMEMA()) {
-        Ordinal result = instruction_.mem.offset;
+        result = instruction_.mem.offset;
         if (instruction_.mema.action) {
             result += getGPRValue(instruction_.mem.abase, TreatAsOrdinal{});
         }
-        return result;
     } else {
         // okay so we need to figure out the minor mode after figuring out if
         // it is a double wide operation or not
@@ -322,29 +323,38 @@ Core::computeAddress() noexcept {
             // okay so it is going to be the displacement versions
             // load 32-bits into the optionalDisplacement field
             instructionLength_ = 8;
-            Integer result = static_cast<Integer>(load(ip_.a + 4, TreatAsOrdinal{})); // load the optional displacement
+            Integer iresult = static_cast<Integer>(load(ip_.a + 4, TreatAsOrdinal{})); // load the optional displacement
             if (instruction_.memb_grp2.useIndex) {
-                result += (getGPRValue(instruction_.memb_grp2.index, TreatAsInteger{}) << static_cast<Integer>(instruction_.memb_grp2.scale));
+                iresult += (getGPRValue(instruction_.memb_grp2.index, TreatAsInteger{}) << static_cast<Integer>(instruction_.memb_grp2.scale));
             }
             if (instruction_.memb_grp2.registerIndirect) {
-                result += getGPRValue(instruction_.memb_grp2.abase, TreatAsInteger{});
+                iresult += getGPRValue(instruction_.memb_grp2.abase, TreatAsInteger{});
             }
-            return static_cast<Ordinal>(result);
+            result = static_cast<Ordinal>(iresult);
         } else {
             // okay so the other group isn't as cleanly designed
             switch (instruction_.memb.modeMinor) {
                 case 0b00: // Register Indirect
-                    return getGPRValue(instruction_.memb.abase, TreatAsOrdinal{});
+                    result = getGPRValue(instruction_.memb.abase, TreatAsOrdinal{});
+                    break;
                 case 0b01: // IP With Displacement 
                     instructionLength_ = 8;
-                    return static_cast<Ordinal>(ip_.i + load(ip_.a + 4, TreatAsInteger{}) + 8);
+                    result = static_cast<Ordinal>(ip_.i + load(ip_.a + 4, TreatAsInteger{}) + 8);
+                    break;
                 case 0b11: // Register Indirect With Index
-                    return getGPRValue(instruction_.memb.abase, TreatAsOrdinal{}) + (getGPRValue(instruction_.memb.index, TreatAsOrdinal{}) << instruction_.memb.scale);
+                    result = getGPRValue(instruction_.memb.abase, TreatAsOrdinal{}) + (getGPRValue(instruction_.memb.index, TreatAsOrdinal{}) << instruction_.memb.scale);
+                    break;
                 default:
-                    return -1;
+                    result = -1;
+                    break;
             }
         }
     }
+    if constexpr (EnableDebugLogging) {
+        std::cout << "\t\t" << __PRETTY_FUNCTION__ << ": result = 0x" << std::hex << result << std::endl;
+    }
+    DEBUG_LEAVE_FUNCTION;
+    return result;
 }
 
 void
