@@ -208,8 +208,9 @@ store16(Address address, ShortInteger value, TreatAsShortInteger) noexcept {
 }
 void
 store32(Address address, Ordinal value, TreatAsOrdinal) noexcept {
-    if constexpr (Core::EnableDebugLogging) {
-        std::cout << "store32<Ordinal>(0x" << std::hex << address << ", 0x" << std::hex << value << ");" << std::endl;
+    DEBUG_ENTER_FUNCTION;
+    if constexpr (EnableDebugLogging) {
+        std::cout << __PRETTY_FUNCTION__ << "(0x" << std::hex << address << ", 0x" << std::hex << value << ");" << std::endl;
     }
     if ((address & 0b11) != 0) {
         store16(address, value, TreatAsShortOrdinal{});
@@ -226,12 +227,11 @@ store32(Address address, Ordinal value, TreatAsOrdinal) noexcept {
                 break;
         }
     }
+    DEBUG_LEAVE_FUNCTION;
 }
 void
 store32(Address address, Integer value, TreatAsInteger) noexcept {
-    if constexpr (Core::EnableDebugLogging) {
-        std::cout << "store32<Integer>(0x" << std::hex << address << ", 0x" << std::hex << value << ");" << std::endl;
-    }
+    DEBUG_ENTER_FUNCTION;
     if ((address & 0b11) != 0) {
         store16(address, value, TreatAsShortInteger{});
         store16(address+2, static_cast<ShortInteger>(value >> 16), TreatAsShortInteger{});
@@ -247,12 +247,12 @@ store32(Address address, Integer value, TreatAsInteger) noexcept {
                 break;
         }
     }
+    DEBUG_LEAVE_FUNCTION;
 }
 Ordinal
 load32(Address address, TreatAsOrdinal) noexcept {
-    if constexpr (Core::EnableDebugLogging) {
-        std::cout << "load32<Ordinal>(0x" << std::hex << address << ");" << std::endl;
-    }
+    DEBUG_ENTER_FUNCTION;
+    Ordinal result = 0;
     if ((address & 0b11) != 0) {
         // unaligned 32-bit load so make sure that we break it up into
         // component pieces by loading each byte individually
@@ -262,50 +262,57 @@ load32(Address address, TreatAsOrdinal) noexcept {
         auto lower = load8(address + 1, TreatAsByteOrdinal{});
         auto higher = load8(address + 2, TreatAsByteOrdinal{});
         auto highest = load8(address + 3, TreatAsByteOrdinal{});
-        return static_cast<Ordinal>(lowest) | 
+        result = static_cast<Ordinal>(lowest) |
                (static_cast<Ordinal>(lower) << 8) |
                (static_cast<Ordinal>(higher) << 16) |
                (static_cast<Ordinal>(highest) << 24);
     } else {
         switch (static_cast<uint8_t>(address >> 24)) {
             case 0xFE: // io space
-                return ioLoad<Ordinal>(address & 0xFF'FFFF, TreatAs<Ordinal>{});
+                result = ioLoad<Ordinal>(address & 0xFF'FFFF, TreatAs<Ordinal>{});
+                break;
             case 0xFF: // onboard devices
-                return 0;
+                break;
             default:
-                return getCell(address).getValue(address, TreatAs<Ordinal>{});
+                result = getCell(address).getValue(address, TreatAs<Ordinal>{});
+                break;
         }
     }
+    DEBUG_LEAVE_FUNCTION;
+    return result;
 }
-Integer
-load32(Address address, TreatAsInteger) noexcept {
-    if constexpr (Core::EnableDebugLogging) {
-        std::cout << "load32<Integer>(0x" << std::hex << address << ");" << std::endl;
-    }
-    if ((address & 0b11) != 0) {
-        // unaligned 32-bit load so make sure that we break it up into
-        // component pieces by loading each byte individually
-        // this will make sure that we will automatically wrap around on an
-        // unaligned load at the top of memory
-        auto lowest = load8(address, TreatAsByteInteger{});
-        auto lower = load8(address + 1, TreatAsByteInteger{});
-        auto higher = load8(address + 2, TreatAsByteInteger{});
-        auto highest = load8(address + 3, TreatAsByteInteger{});
-        return static_cast<Integer>(lowest) | 
-               (static_cast<Integer>(lower) << 8) |
-               (static_cast<Integer>(higher) << 16) |
-               (static_cast<Integer>(highest) << 24);
-    } else {
-        switch (static_cast<uint8_t>(address >> 24)) {
-            case 0xFE: // io space
-                return ioLoad<Integer>(address & 0xFF'FFFF, TreatAs<Integer>{});
-            case 0xFF: // onboard devices
-                return 0;
-            default:
-                return getCell(address).getValue(address, TreatAs<Integer>{});
+    Integer
+    load32(Address address, TreatAsInteger) noexcept {
+        DEBUG_ENTER_FUNCTION;
+        Integer result = 0;
+        if ((address & 0b11) != 0) {
+            // unaligned 32-bit load so make sure that we break it up into
+            // component pieces by loading each byte individually
+            // this will make sure that we will automatically wrap around on an
+            // unaligned load at the top of memory
+            auto lowest = load8(address, TreatAsByteInteger{});
+            auto lower = load8(address + 1, TreatAsByteInteger{});
+            auto higher = load8(address + 2, TreatAsByteInteger{});
+            auto highest = load8(address + 3, TreatAsByteInteger{});
+            result = static_cast<Integer>(lowest) |
+                     (static_cast<Integer>(lower) << 8) |
+                     (static_cast<Integer>(higher) << 16) |
+                     (static_cast<Integer>(highest) << 24);
+        } else {
+            switch (static_cast<uint8_t>(address >> 24)) {
+                case 0xFE: // io space
+                    result = ioLoad<Integer>(address & 0xFF'FFFF, TreatAs<Integer>{});
+                    break;
+                case 0xFF: // onboard devices
+                    break;
+                default:
+                    result = getCell(address).getValue(address, TreatAs<Integer>{});
+                    break;
+            }
         }
+        DEBUG_LEAVE_FUNCTION;
+        return result;
     }
-}
 void Cell::setValue(Address address, ByteOrdinal value, TreatAsByteOrdinal) noexcept { bytes[getOffset(address, TreatAsByteOrdinal{})] = value; }
 void Cell::setValue(Address address, ByteInteger value, TreatAsByteInteger) noexcept { byteIntegers[getOffset(address, TreatAsByteInteger{})] = value; }
 void Cell::setValue(Address address, ShortOrdinal value, TreatAsShortOrdinal) noexcept { shortOrdinals[getOffset(address, TreatAsShortOrdinal{})] = value; }

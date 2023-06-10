@@ -721,6 +721,7 @@ Core::performConditionalAdd(Register& dest, Ordinal src1, Ordinal src2, TreatAsO
 }
 void
 Core::boot0(Address sat, Address pcb, Address startIP) noexcept {
+    DEBUG_ENTER_FUNCTION;
     systemAddressTableBase_ = sat;
     prcbAddress_ = pcb;
     setIP(startIP, TreatAsOrdinal{});
@@ -744,6 +745,7 @@ Core::boot0(Address sat, Address pcb, Address startIP) noexcept {
     /// @todo clear the pending interrupts?
     // clear any latched external interrupt/IAC signals
     // begin execution
+    DEBUG_LEAVE_FUNCTION;
 }
 BootResult
 Core::start() noexcept {
@@ -1439,6 +1441,7 @@ Core::shri(Register& dest, Integer src1, Integer src2) noexcept {
 
 void 
 Core::sendIAC(const iac::Message& msg) noexcept {
+    DEBUG_ENTER_FUNCTION;
     /// @todo implement
     switch (msg.messageType) {
         /// @todo implement different message types
@@ -1463,6 +1466,7 @@ Core::sendIAC(const iac::Message& msg) noexcept {
         default:
             break;
     }
+    DEBUG_LEAVE_FUNCTION;
 }
 
 void 
@@ -1480,7 +1484,9 @@ Core::syncf() noexcept {
 
 void 
 Core::reinitializeProcessor(Ordinal satBase, Ordinal prcbBase, Ordinal startIP) noexcept {
+    DEBUG_ENTER_FUNCTION;
     boot0(satBase, prcbBase, startIP);
+    DEBUG_LEAVE_FUNCTION;
 }
 
 void 

@@ -876,6 +876,7 @@ constexpr Ordinal getSALIGNParameter() noexcept {
     return DEFAULT_SALIGN;
 #endif
 }
+constexpr bool EnableDebugLogging = true;
 
 class Core {
     public:
@@ -883,7 +884,6 @@ class Core {
         static constexpr Ordinal C = (SALIGN * 16) - 1;
         static constexpr Ordinal NotC = ~C;
         static constexpr uint8_t NumberOfLocalRegisterFrames = 1;
-        static constexpr bool EnableDebugLogging = true;
 
     struct LocalRegisterSet {
     public:
