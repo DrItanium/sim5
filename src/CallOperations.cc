@@ -35,14 +35,22 @@ void
 Core::leaveCall() {
     DEBUG_ENTER_FUNCTION;
     // perform the transfer and modification
-    moveGPR<Ordinal>(FPIndex, PFPIndex, [](Ordinal input) -> Ordinal { return Register{input}.getPFPAddress(); } , TreatAsOrdinal {});
-    auto targetAddress = getFramePointerAddress();
-    frames_[localRegisterFrameIndex_].relinquishOwnership();
-    getPreviousPack().restoreOwnership(targetAddress,
-                                       [this](const RegisterFrame& frame, Address targetAddress) { saveRegisterFrame(frame, targetAddress); },
-                                       [this](RegisterFrame& frame, Address targetAddress) { restoreRegisterFrame(frame, targetAddress); });
-    --localRegisterFrameIndex_;
-    localRegisterFrameIndex_ %= NumberOfLocalRegisterFrames;
+    {
+        moveGPR<Ordinal>(FPIndex, PFPIndex, [](Ordinal input) -> Ordinal { return Register{input}.getPFPAddress(); }, TreatAsOrdinal{});
+        auto targetAddress = getFramePointerAddress();
+        frames_[localRegisterFrameIndex_].relinquishOwnership();
+        getPreviousPack().restoreOwnership(targetAddress,
+                                           [this](const RegisterFrame& frame, Address targetAddress) {
+                                               saveRegisterFrame(frame, targetAddress);
+                                           },
+                                           [this](RegisterFrame& frame, Address targetAddress) {
+                                               restoreRegisterFrame(frame, targetAddress);
+                                           });
+    }
+    {
+        --localRegisterFrameIndex_;
+        localRegisterFrameIndex_ %= NumberOfLocalRegisterFrames;
+    }
     DEBUG_LEAVE_FUNCTION;
 }
 
