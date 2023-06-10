@@ -1306,7 +1306,8 @@ class Core {
         }
         void remi(Register& dest, Integer src1, Integer src2) noexcept {
             remainderOperation<Integer>(dest, src1, src2);
-            /// @todo implement overflow checks
+            nextInstruction();
+            faultOnOverflow(dest);
         }
         void remo(Register& dest, Ordinal src1, Ordinal src2) noexcept {
             remainderOperation<Ordinal>(dest, src1, src2);
@@ -1323,7 +1324,7 @@ class Core {
         }
         void divi(Register& dest, Integer src1, Integer src2) noexcept {
             divideOperation<Integer>(dest, src1, src2);
-            /// @todo implement overflow fault checking
+            faultOnOverflow(dest);
         }
         void divo(Register& dest, Ordinal src1, Ordinal src2) noexcept {
             divideOperation<Ordinal>(dest, src1, src2);
