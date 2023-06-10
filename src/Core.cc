@@ -312,14 +312,23 @@ Core::computeAddress() noexcept {
     DEBUG_ENTER_FUNCTION;
     Ordinal result = 0;
     if (instruction_.isMEMA()) {
+        if constexpr (EnableDebugLogging) {
+            std::cout << '\t' << __PRETTY_FUNCTION__ << ": ismema operation" << std::endl;
+        }
         result = instruction_.mem.offset;
         if (instruction_.mema.action) {
             result += getGPRValue(instruction_.mem.abase, TreatAsOrdinal{});
         }
     } else {
+        if constexpr (EnableDebugLogging) {
+            std::cout << '\t' << __PRETTY_FUNCTION__ << ": ismemb operation" << std::endl;
+        }
         // okay so we need to figure out the minor mode after figuring out if
         // it is a double wide operation or not
         if (instruction_.memb.group) {
+            if constexpr (EnableDebugLogging) {
+                std::cout << "\t\t" << __PRETTY_FUNCTION__ << ": group bit is high" << std::endl;
+            }
             // okay so it is going to be the displacement versions
             // load 32-bits into the optionalDisplacement field
             instructionLength_ = 8;
@@ -332,16 +341,29 @@ Core::computeAddress() noexcept {
             }
             result = static_cast<Ordinal>(iresult);
         } else {
+            if constexpr (EnableDebugLogging) {
+                std::cout << "\t\t" << __PRETTY_FUNCTION__ << ": group bit is low" << std::endl;
+            }
             // okay so the other group isn't as cleanly designed
             switch (instruction_.memb.modeMinor) {
                 case 0b00: // Register Indirect
+                    if constexpr (EnableDebugLogging) {
+                        std::cout << "\t\t\t" << __PRETTY_FUNCTION__ << ": register indirect" << std::endl;
+                        std::cout << "\t\t\t" << __PRETTY_FUNCTION__ << ": abase 0x" << std::hex << instruction_.memb.abase << std::endl;
+                    }
                     result = getGPRValue(instruction_.memb.abase, TreatAsOrdinal{});
                     break;
                 case 0b01: // IP With Displacement 
+                    if constexpr (EnableDebugLogging) {
+                        std::cout << "\t\t\t" << __PRETTY_FUNCTION__ << ": ip with displacement" << std::endl;
+                    }
                     instructionLength_ = 8;
                     result = static_cast<Ordinal>(ip_.i + load(ip_.a + 4, TreatAsInteger{}) + 8);
                     break;
                 case 0b11: // Register Indirect With Index
+                    if constexpr (EnableDebugLogging) {
+                        std::cout << "\t\t\t" << __PRETTY_FUNCTION__ << ": register indirect with index" << std::endl;
+                    }
                     result = getGPRValue(instruction_.memb.abase, TreatAsOrdinal{}) + (getGPRValue(instruction_.memb.index, TreatAsOrdinal{}) << instruction_.memb.scale);
                     break;
                 default:
@@ -541,6 +563,7 @@ Core::faultGeneric() noexcept {
 
 void
 Core::cycle() noexcept {
+    DEBUG_ENTER_FUNCTION;
     instruction_.setValue(load(ip_.a, TreatAsOrdinal{}), TreatAsOrdinal{});
     instructionLength_ = 4;
     advanceInstruction_ = true;
@@ -579,6 +602,7 @@ Core::cycle() noexcept {
     if (advanceInstruction_) {
         nextInstruction();
     }
+    DEBUG_LEAVE_FUNCTION;
 }
 
 
@@ -856,6 +880,9 @@ void
 Core::bal(Integer displacement) {
     DEBUG_ENTER_FUNCTION;
     saveReturnAddress(LRIndex);
+    if constexpr (EnableDebugLogging) {
+        std::cout << "\t" << __PRETTY_FUNCTION__ << ", lr: 0x" << getGPRValue(LRIndex, TreatAsOrdinal{}) << std::endl;
+    }
     branch(displacement);
     DEBUG_LEAVE_FUNCTION;
 }

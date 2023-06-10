@@ -955,7 +955,7 @@ class Core {
         const auto& getLocals() const noexcept { return frames_[localRegisterFrameIndex_].getUnderlyingFrame(); }
         template<typename T>
         [[nodiscard]] T& getGPR(ByteOrdinal index, TreatAs<T>) {
-            if (index < 16) {
+            if (index >= 16) {
                 return globals_.get(index, TreatAs<T>{});
             } else {
                 return getLocals().get(index, TreatAs<T>{});
@@ -963,7 +963,7 @@ class Core {
         }
         template<typename T>
         [[nodiscard]] const T& getGPR(ByteOrdinal index, TreatAs<T>) const {
-            if (index < 16) {
+            if (index >= 16) {
                 return globals_.get(index, TreatAs<T>{});
             } else {
                 return getLocals().get(index, TreatAs<T>{});
