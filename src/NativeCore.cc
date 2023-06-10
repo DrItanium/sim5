@@ -110,71 +110,35 @@ getCell(Address address) noexcept {
 }
 ByteOrdinal
 load8(Address address, TreatAsByteOrdinal) noexcept {
-    switch (static_cast<uint8_t>(address) >> 24) {
+    switch (static_cast<uint8_t>(address >> 24)) {
         case 0xFE:
             return 0;
         case 0xFF:
             return 0;
         default:
-            return getCell(address).bytes[getOffset(address, TreatAsByteOrdinal{})];
-    }
-}
-ShortOrdinal
-load16(Address address, TreatAsShortOrdinal) noexcept {
-    if ((address & 0b1) != 0) {
-        auto lower = load8(address, TreatAsByteOrdinal{});
-        auto upper = load8(address+1, TreatAsByteOrdinal{});
-        return static_cast<ShortOrdinal>(lower) |
-              (static_cast<ShortOrdinal>(upper) << 8);
-    } else {
-        switch (static_cast<uint8_t>(address) >> 24) {
-            case 0xFE:
-                return 0;
-            case 0xFF:
-                return 0;
-            default:
-                return getCell(address).shortOrdinals[getOffset(address, TreatAsShortOrdinal{})];
-        }
+            return getCell(address).getValue(address, TreatAsByteOrdinal{});
     }
 }
 ByteInteger
 load8(Address address, TreatAsByteInteger) noexcept {
-    switch (static_cast<uint8_t>(address) >> 24) {
+    switch (static_cast<uint8_t>(address >> 24)) {
         case 0xFE:
             return 0;
         case 0xFF:
             return 0;
         default:
-            return getCell(address).byteIntegers[getOffset(address, TreatAsByteInteger{})];
-    }
-}
-ShortInteger
-load16(Address address, TreatAsShortInteger) noexcept {
-    if ((address & 0b1) != 0) {
-        auto lower = load8(address, TreatAsByteInteger{});
-        auto upper = load8(address+1, TreatAsByteInteger{});
-        return static_cast<ShortInteger>(lower) |
-              (static_cast<ShortInteger>(upper) << 8);
-    } else {
-        switch (static_cast<uint8_t>(address) >> 24) {
-            case 0xFE:
-                return 0;
-            case 0xFF:
-                return 0;
-            default:
-                return getCell(address).shortIntegers[getOffset(address, TreatAsShortInteger{})];
-        }
+            return getCell(address).getValue(address, TreatAsByteInteger{});
     }
 }
 void
 store8(Address address, ByteOrdinal value, TreatAsByteOrdinal) noexcept {
-    switch (static_cast<uint8_t>(address) >> 24) {
+    switch (static_cast<uint8_t>(address >> 24)) {
         case 0xFE:
             break;
         case 0xFF:
             break;
         default:
-            getCell(address).bytes[getOffset(address, TreatAsByteOrdinal{})] = value;
+            getCell(address).setValue(address, value, TreatAsByteOrdinal{});
             break;
     }
 }
@@ -184,27 +148,26 @@ store16(Address address, ShortOrdinal value, TreatAsShortOrdinal) noexcept {
         store8(address, value, TreatAsByteOrdinal{});
         store8(address+1, static_cast<ByteOrdinal>(value >> 8), TreatAsByteOrdinal{});
     } else {
-        switch (static_cast<uint8_t>(address) >> 24) {
+        switch (static_cast<uint8_t>(address >> 24)) {
             case 0xFE:
                 break;
             case 0xFF:
                 break;
             default:
-            getCell(address).bytes[getOffset(address, TreatAsByteOrdinal{})] = value;
-                reinterpret_cast<ShortOrdinal*>(physicalMemory)[address >> 1] = value;
+                getCell(address).setValue(address, value, TreatAsShortOrdinal{});
                 break;
         }
     }
 }
 void
 store8(Address address, ByteInteger value, TreatAsByteInteger) noexcept {
-    switch (static_cast<uint8_t>(address) >> 24) {
+    switch (static_cast<uint8_t>(address >> 24)) {
         case 0xFE:
             break;
         case 0xFF:
             break;
         default:
-            reinterpret_cast<ByteInteger*>(physicalMemory)[address] = value;
+            getCell(address).setValue(address, value, TreatAsByteInteger{});
             break;
     }
 }
@@ -214,13 +177,13 @@ store16(Address address, ShortInteger value, TreatAsShortInteger) noexcept {
         store8(address, value, TreatAsByteInteger{});
         store8(address+1, static_cast<ByteInteger>(value >> 8), TreatAsByteInteger{});
     } else {
-        switch (static_cast<uint8_t>(address) >> 24) {
+        switch (static_cast<uint8_t>(address >> 24)) {
             case 0xFE:
                 break;
             case 0xFF:
                 break;
             default:
-                reinterpret_cast<ShortInteger*>(physicalMemory)[address >> 1] = value;
+                getCell(address).setValue(address, value, TreatAsShortInteger{});
                 break;
         }
     }
@@ -231,13 +194,13 @@ store32(Address address, Ordinal value, TreatAsOrdinal) noexcept {
         store16(address, value, TreatAsShortOrdinal{});
         store16(address+2, static_cast<ShortOrdinal>(value >> 16), TreatAsShortOrdinal{});
     } else {
-        switch (static_cast<uint8_t>(address) >> 24) {
+        switch (static_cast<uint8_t>(address >> 24)) {
             case 0xFE:
                 break;
             case 0xFF:
                 break;
             default:
-                reinterpret_cast<Ordinal*>(physicalMemory)[address >> 2] = value;
+                getCell(address).setValue(address, value, TreatAsOrdinal{});
                 break;
         }
     }
@@ -248,13 +211,13 @@ store32(Address address, Integer value, TreatAsInteger) noexcept {
         store16(address, value, TreatAsShortInteger{});
         store16(address+2, static_cast<ShortInteger>(value >> 16), TreatAsShortInteger{});
     } else {
-        switch (static_cast<uint8_t>(address) >> 24) {
+        switch (static_cast<uint8_t>(address >> 24)) {
             case 0xFE:
                 break;
             case 0xFF:
                 break;
             default:
-                reinterpret_cast<Integer*>(physicalMemory)[address >> 2] = value;
+                getCell(address).setValue(address, value, TreatAsInteger{});
                 break;
         }
     }
@@ -275,13 +238,13 @@ load32(Address address, TreatAsOrdinal) noexcept {
                (static_cast<Ordinal>(higher) << 16) |
                (static_cast<Ordinal>(highest) << 24);
     } else {
-        switch (static_cast<uint8_t>(address) >> 24) {
+        switch (static_cast<uint8_t>(address >> 24)) {
             case 0xFE: // io space
                 return 0;
             case 0xFF: // onboard devices
                 return 0;
             default:
-                return reinterpret_cast<Ordinal*>(physicalMemory)[address >> 2];
+                return getCell(address).getValue(address, TreatAs<Ordinal>{});
         }
     }
 }
@@ -301,13 +264,13 @@ load32(Address address, TreatAsInteger) noexcept {
                (static_cast<Integer>(higher) << 16) |
                (static_cast<Integer>(highest) << 24);
     } else {
-        switch (static_cast<uint8_t>(address) >> 24) {
+        switch (static_cast<uint8_t>(address >> 24)) {
             case 0xFE: // io space
                 return 0;
             case 0xFF: // onboard devices
                 return 0;
             default:
-                return reinterpret_cast<Integer*>(physicalMemory)[address >> 2];
+                return getCell(address).getValue(address, TreatAs<Integer>{});
         }
     }
 }
@@ -340,12 +303,12 @@ Cell::getValue(Address address, TreatAsShortInteger) const noexcept {
 }
 Ordinal 
 Cell::getValue(Address address, TreatAsOrdinal) const noexcept {
-    return shortOrdinals[getOffset(address, TreatAsOrdinal{})];
+    return ordinals[getOffset(address, TreatAsOrdinal{})];
 }
 
 Integer 
 Cell::getValue(Address address, TreatAsInteger) const noexcept {
-    return shortIntegers[getOffset(address, TreatAsInteger{})];
+    return integers[getOffset(address, TreatAsInteger{})];
 }
 
 LongOrdinal 
