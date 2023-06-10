@@ -31,6 +31,7 @@
 #include "IAC.h"
 #include "BinaryOperations.h"
 #include <istream>
+#include <iostream>
 
 constexpr Ordinal DEFAULT_SALIGN = 4;
 /// faults
@@ -620,7 +621,7 @@ union Register {
             return static_cast<Opcodes>(getMajorOpcode());
         }
     }
-    bool getCarryBit() const noexcept { return arith.conditionCode & 0b001; }
+    bool getCarryBit() const noexcept { return arith.conditionCode & 0b010; }
     [[nodiscard]] Ordinal modify(Ordinal mask, Ordinal src) noexcept;
     void setValue(Real value, TreatAsReal) noexcept { r = value; }
     void setValue(Ordinal value, TreatAsOrdinal) noexcept { o = value; }
@@ -878,6 +879,7 @@ class Core {
         static constexpr Ordinal C = (SALIGN * 16) - 1;
         static constexpr Ordinal NotC = ~C;
         static constexpr uint8_t NumberOfLocalRegisterFrames = 1;
+        static constexpr bool EnableDebugLogging = false;
 
     struct LocalRegisterSet {
     public:
@@ -1274,7 +1276,8 @@ class Core {
             LongOrdinal result = static_cast<LongOrdinal>(src2) + static_cast<LongOrdinal>(src1);
             result += (ac_.getCarryBit() ? 1 : 0);
             dest.setValue(result, TreatAsOrdinal{});
-            arithmeticWithCarryGeneric(static_cast<Ordinal>(result >> 32), 
+            std::cout << "addc result: 0x" << std::hex << result << std::endl;
+            arithmeticWithCarryGeneric(static_cast<Ordinal>(result >> 32),
                     mostSignificantBit(src2),
                     mostSignificantBit(src1),
                     mostSignificantBit(dest.getValue<Ordinal>()));

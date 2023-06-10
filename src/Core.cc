@@ -153,18 +153,17 @@ Core::scanbyte(Ordinal src2, Ordinal src1) noexcept {
 
 void
 Core::arithmeticWithCarryGeneric(Ordinal result, bool src2MSB, bool src1MSB, bool destMSB) noexcept {
-    // set the carry bit
+    // since we are clearing the conditionCode we should just do an assignment
     ac_.arith.conditionCode = 0;
     // set the overflow bit
     if ((src2MSB == src1MSB) && (src2MSB != destMSB)) {
         ac_.arith.conditionCode |= 0b001;
-    } else {
-        ac_.arith.conditionCode &= 0b110;
     }
     if (result != 0) {
+        if constexpr (EnableDebugLogging) {
+            std::cout << "carry bit set" << std::endl;
+        }
         ac_.arith.conditionCode |= 0b010;
-    } else {
-        ac_.arith.conditionCode &= 0b101;
     }
 }
 
@@ -722,20 +721,47 @@ Core::start() noexcept {
         Ordinal x[8] = { 0 };
         for (int i = 0, j = 0; i < 8; ++i, j+=4) {
             x[i] = load(j, TreatAsOrdinal{});
-            std::cout << "x[" << i << "]: 0x" << std::hex << x[i] << std::endl;
+            if constexpr (EnableDebugLogging) {
+                std::cout << "x[" << i << "]: 0x" << std::hex << x[i] << std::endl;
+            }
         }
         
 
         ac_.arith.conditionCode = 0b000; // clear condition code
         Register temp_{0};
         addc(temp_, 0xFFFF'FFFF, x[0]);
-        addc(temp_, temp_.getValue(TreatAsOrdinal{}), x[1]);
-        addc(temp_, temp_.getValue(TreatAsOrdinal{}), x[2]);
-        addc(temp_, temp_.getValue(TreatAsOrdinal{}), x[3]);
-        addc(temp_, temp_.getValue(TreatAsOrdinal{}), x[4]);
-        addc(temp_, temp_.getValue(TreatAsOrdinal{}), x[5]);
-        addc(temp_, temp_.getValue(TreatAsOrdinal{}), x[6]);
-        addc(temp_, temp_.getValue(TreatAsOrdinal{}), x[7]);
+        if constexpr (EnableDebugLogging) {
+            std::cout << "checksum p0: 0x" << std::hex << temp_.getValue<Ordinal>() << std::endl;
+        }
+        addc(temp_, temp_.getValue<Ordinal>(), x[1]);
+        if constexpr (EnableDebugLogging) {
+            std::cout << "checksum p1: 0x" << std::hex << temp_.getValue<Ordinal>() << std::endl;
+        }
+        addc(temp_, temp_.getValue<Ordinal>(), x[2]);
+        if constexpr (EnableDebugLogging) {
+            std::cout << "checksum p2: 0x" << std::hex << temp_.getValue<Ordinal>() << std::endl;
+        }
+        addc(temp_, temp_.getValue<Ordinal>(), x[3]);
+        if constexpr (EnableDebugLogging) {
+            std::cout << "checksum p3: 0x" << std::hex << temp_.getValue<Ordinal>() << std::endl;
+        }
+        addc(temp_, temp_.getValue<Ordinal>(), x[4]);
+        if constexpr (EnableDebugLogging) {
+            std::cout << "checksum p4: 0x" << std::hex << temp_.getValue<Ordinal>() << std::endl;
+        }
+        addc(temp_, temp_.getValue<Ordinal>(), x[5]);
+
+        if constexpr (EnableDebugLogging) {
+            std::cout << "checksum p5: 0x" << std::hex << temp_.getValue<Ordinal>() << std::endl;
+        }
+        addc(temp_, temp_.getValue<Ordinal>(), x[6]);
+        if constexpr (EnableDebugLogging) {
+            std::cout << "checksum p6: 0x" << std::hex << temp_.getValue<Ordinal>() << std::endl;
+        }
+        addc(temp_, temp_.getValue<Ordinal>(), x[7]);
+        if constexpr (EnableDebugLogging) {
+            std::cout << "checksum p7: 0x" << std::hex << temp_.getValue<Ordinal>() << std::endl;
+        }
         if (temp_.getValue(TreatAsOrdinal{}) != 0) {
             assertFailureState();
             return BootResult::ChecksumFail;
