@@ -1276,7 +1276,9 @@ class Core {
             LongOrdinal result = static_cast<LongOrdinal>(src2) + static_cast<LongOrdinal>(src1);
             result += (ac_.getCarryBit() ? 1 : 0);
             dest.setValue(result, TreatAsOrdinal{});
-            std::cout << "addc result: 0x" << std::hex << result << std::endl;
+            if constexpr (EnableDebugLogging) {
+                std::cout << "addc result: 0x" << std::hex << result << std::endl;
+            }
             arithmeticWithCarryGeneric(static_cast<Ordinal>(result >> 32),
                     mostSignificantBit(src2),
                     mostSignificantBit(src1),
