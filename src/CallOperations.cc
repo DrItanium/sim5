@@ -33,6 +33,7 @@ Core::enterCall(Ordinal fp) {
 }
 void
 Core::leaveCall() {
+    DEBUG_ENTER_FUNCTION;
     // perform the transfer and modification
     moveGPR<Ordinal>(FPIndex, PFPIndex, [](Ordinal input) -> Ordinal { return Register{input}.getPFPAddress(); } , TreatAsOrdinal {});
     auto targetAddress = getFramePointerAddress();
@@ -42,6 +43,7 @@ Core::leaveCall() {
                                        [this](RegisterFrame& frame, Address targetAddress) { restoreRegisterFrame(frame, targetAddress); });
     --localRegisterFrameIndex_;
     localRegisterFrameIndex_ %= NumberOfLocalRegisterFrames;
+    DEBUG_LEAVE_FUNCTION;
 }
 
 void
