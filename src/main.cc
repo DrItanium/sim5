@@ -31,6 +31,7 @@
 #include <elfio/elfio.hpp>
 #include <boost/program_options.hpp>
 #include <filesystem>
+#include <fstream>
 
 int
 main(int argc, char** argv) {
@@ -50,9 +51,30 @@ main(int argc, char** argv) {
         std::cout << desc << std::endl;
         return 1;
     }
-    if (vm.count("bootloader")) {
-        ELFIO::elfio reader;
-        auto path = vm["bootloader"].as<std::filesystem::path>();
+    try {
+        core.begin();
+        if (vm.count("bootloader")) {
+            auto path = vm["bootloader"].as<std::filesystem::path>();
+            if (!std::filesystem::exists(path)) {
+                std::cout << "File: "  << path << " does not exist!" << std::endl;
+                return 1;
+            } else if (std::filesystem::is_directory(path)) {
+                std::cout << "File: " << path << " is a directory!" << std::endl;
+            }
+
+            // okay so we know it is a valid file and not a directory
+            std::ifstream inputStream;
+            inputStream.open(path, std::ios::binary | std::ios::in);
+            if (inputStream.is_open()) {
+                installToMainMemory(inputStream, 0);
+            } else {
+                std::cout << "could not open " << path << std::endl;
+                return 1;
+            }
+            inputStream.close();
+
+#if 0
+            ELFIO::elfio reader;
         if (!reader.load(path)) {
             std::cout << "Could not process " << path << std::endl;
             return 2;
@@ -93,13 +115,12 @@ main(int argc, char** argv) {
             << std::endl;
         }
         /// @todo install the bootloader image into main memory
-    } else {
-        std::cout << "No bootloader provided! Running with memory completely empty!" << std::endl;
-    }
+#endif
+        } else {
+            std::cout << "No bootloader provided! Running with memory completely empty!" << std::endl;
+        }
 
-    // setup the memory image as needed
-    try {
-        core.begin();
+        // setup the memory image as needed
         switch (core.start()) {
             case BootResult::SelfTestFailure:
                 core.selfTestFailure();

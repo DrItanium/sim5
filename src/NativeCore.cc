@@ -65,7 +65,6 @@ Core::nonPortableBegin() noexcept {
 
 
 
-
 void 
 Core::lockBus() noexcept {
 }
@@ -411,3 +410,10 @@ Core::badFault(const FaultRecord& record) {
     throw std::runtime_error("bad fault");
 }
 
+void
+installToMainMemory(std::istream& stream, Address baseAddress) {
+    while (stream.good()) {
+        store8(baseAddress, stream.get(), TreatAsByteOrdinal {});
+        ++baseAddress;
+    }
+}

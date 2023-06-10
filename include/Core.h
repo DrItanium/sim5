@@ -30,6 +30,7 @@
 #include "Types.h"
 #include "IAC.h"
 #include "BinaryOperations.h"
+#include <istream>
 
 constexpr Ordinal DEFAULT_SALIGN = 4;
 /// faults
@@ -1626,4 +1627,5 @@ static_assert(computeNextFrame<Core::C*2, Core::NotC>(0xFDED'0000) == 0xFDED'004
 static_assert(computeNextFrame<Core::C*3, Core::NotC>(0xFDED'0000) == 0xFDED'0080);
 static_assert(computeNextFrame<Core::C*4, Core::NotC>(0xFDED'0000) == 0xFDED'00C0);
 
+void installToMainMemory(std::istream& stream, Address baseAddress);
 #endif // end SIM5_CORE_H__

@@ -24,6 +24,7 @@
 #include "Types.h"
 #include "Core.h"
 #include "BinaryOperations.h"
+#include <iostream>
 Ordinal 
 Register::modify(Ordinal mask, Ordinal src) noexcept {
     auto tmp = o;
@@ -721,6 +722,7 @@ Core::start() noexcept {
         Ordinal x[8] = { 0 };
         for (int i = 0, j = 0; i < 8; ++i, j+=4) {
             x[i] = load(j, TreatAsOrdinal{});
+            std::cout << "x[" << i << "]: 0x" << std::hex << x[i] << std::endl;
         }
         
 
