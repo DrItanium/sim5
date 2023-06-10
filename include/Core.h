@@ -811,11 +811,13 @@ using TreatAsTripleRegister = TreatAs<TripleRegister>;
 // operations. However, to simplify things I am not keeping any extra sets on
 // chip for the time being so there is just a single register block to work
 // with
-constexpr auto LRIndex = 14;
-constexpr auto FPIndex = 15;
-constexpr auto PFPIndex = 16;
-constexpr auto SPIndex = 17;
-constexpr auto RIPIndex = 18;
+constexpr auto LocalRegisterBase = 0;
+constexpr auto GlobalRegisterBase = 16;
+constexpr auto LRIndex = GlobalRegisterBase + 14;
+constexpr auto FPIndex = GlobalRegisterBase + 15;
+constexpr auto PFPIndex = LocalRegisterBase + 0;
+constexpr auto SPIndex = LocalRegisterBase + 1;
+constexpr auto RIPIndex = LocalRegisterBase + 2;
 union RegisterFrame {
     public:
         RegisterFrame() = default;
