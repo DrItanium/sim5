@@ -108,6 +108,24 @@ Cell&
 getCell(Address address) noexcept {
     return physicalMemory[getCellAddress(address)];
 }
+    template<typename T>
+    T ioLoad(Address offset, TreatAs<T>) {
+        switch (offset) {
+            case 0x00'0000: return 10 * 1024 * 1024;
+            case 0x00'0004: return 20 * 1024 * 1024;
+            case 0x00'0008: return static_cast<T>(std::cin.get());
+            default: return 0;
+        }
+    }
+    template<typename T>
+    void ioStore(Address offset, T value, TreatAs<T>) {
+        switch (offset) {
+            case 0x00'0008: std::cout.put(static_cast<char>(value)); break;
+            case 0x00'000C: std::cout.flush(); break;
+            default:
+                break;
+        }
+    }
 ByteOrdinal
 load8(Address address, TreatAsByteOrdinal) noexcept {
     switch (static_cast<uint8_t>(address >> 24)) {
@@ -196,6 +214,7 @@ store32(Address address, Ordinal value, TreatAsOrdinal) noexcept {
     } else {
         switch (static_cast<uint8_t>(address >> 24)) {
             case 0xFE:
+                ioStore<Ordinal>(address, value, TreatAsOrdinal{});
                 break;
             case 0xFF:
                 break;
@@ -213,6 +232,7 @@ store32(Address address, Integer value, TreatAsInteger) noexcept {
     } else {
         switch (static_cast<uint8_t>(address >> 24)) {
             case 0xFE:
+                ioStore<Integer>(address, value, TreatAsInteger{});
                 break;
             case 0xFF:
                 break;
@@ -240,7 +260,7 @@ load32(Address address, TreatAsOrdinal) noexcept {
     } else {
         switch (static_cast<uint8_t>(address >> 24)) {
             case 0xFE: // io space
-                return 0;
+                return ioLoad<Ordinal>(address & 0xFF'FFFF, TreatAs<Ordinal>{});
             case 0xFF: // onboard devices
                 return 0;
             default:
@@ -266,7 +286,7 @@ load32(Address address, TreatAsInteger) noexcept {
     } else {
         switch (static_cast<uint8_t>(address >> 24)) {
             case 0xFE: // io space
-                return 0;
+                return ioLoad<Integer>(address & 0xFF'FFFF, TreatAs<Integer>{});
             case 0xFF: // onboard devices
                 return 0;
             default:
