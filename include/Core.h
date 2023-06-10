@@ -876,7 +876,8 @@ constexpr Ordinal getSALIGNParameter() noexcept {
     return DEFAULT_SALIGN;
 #endif
 }
-constexpr bool EnableDebugLogging = true;
+constexpr bool EnableDebugLogging = false;
+
 
 class Core {
     public:

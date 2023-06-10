@@ -564,9 +564,16 @@ Core::faultGeneric() noexcept {
 void
 Core::cycle() noexcept {
     DEBUG_ENTER_FUNCTION;
+    std::cout << "IP: 0x" << std::hex << ip_.getValue<Ordinal>() << std::endl;
+    if constexpr (EnableDebugLogging) {
+        std::cout << "\tGETTING INSTRUCTION CONTENTS" << std::endl;
+    }
     instruction_.setValue(load(ip_.a, TreatAsOrdinal{}), TreatAsOrdinal{});
     instructionLength_ = 4;
     advanceInstruction_ = true;
+    if constexpr (EnableDebugLogging) {
+        std::cout << "\tGOT INSTRUCTION CONTENTS" << std::endl;
+    }
     if (auto opcode = instruction_.getOpcode(); instruction_.isCTRL()) {
         processInstruction(opcode, instruction_.ctrl.displacement, TreatAsCTRL{});
     } else if (instruction_.isCOBR()) {
@@ -622,6 +629,7 @@ Core::begin() noexcept {
 
 void 
 Core::synld(Register& dest, Ordinal src) noexcept {
+    DEBUG_ENTER_FUNCTION;
     ac_.arith.conditionCode = 0b000;
     if (auto tempa = maskValue<decltype(src), 0xFFFF'FFFC>(src); tempa == 0xFF00'0004) {
         // interrupt control register needs to be read through this
@@ -633,10 +641,12 @@ Core::synld(Register& dest, Ordinal src) noexcept {
         ac_.arith.conditionCode = 0b010;
         dest.setValue(load(tempa, TreatAsOrdinal{}), TreatAsOrdinal{});
     }
+    DEBUG_LEAVE_FUNCTION;
 }
 
 void 
 Core::synmov(const Register& dest, Ordinal src) noexcept {
+    DEBUG_ENTER_FUNCTION;
     ac_.arith.conditionCode = 0b000;
     if (auto tempa = maskValue<Ordinal, 0xFFFF'FFFC>(dest.getValue(TreatAsOrdinal{})); tempa == 0xFF00'0004) {
         ictl_ = load(src, TreatAsOrdinal{});
@@ -647,6 +657,7 @@ Core::synmov(const Register& dest, Ordinal src) noexcept {
         // wait for completion
         ac_.arith.conditionCode = 0b010;
     }
+    DEBUG_LEAVE_FUNCTION;
 }
 
 void 
@@ -726,7 +737,10 @@ Core::boot0(Address sat, Address pcb, Address startIP) noexcept {
     prcbAddress_ = pcb;
     setIP(startIP, TreatAsOrdinal{});
     // fetch IMI
-    setGPR(FPIndex, load(prcbAddress_ + 24, TreatAsOrdinal{}), TreatAsOrdinal{});
+    auto theStackPointer = getInterruptStackAddress();
+    // get the interrupt stack pointer base since we are starting in an interrupted context
+    // set the frame pointer to the start of the interrupt stack
+    setGPR(FPIndex, theStackPointer, TreatAsOrdinal{});
     pc_.setPriority(31);
     pc_.processControls.state = 1;
     localRegisterFrameIndex_ = 0;
@@ -734,10 +748,6 @@ Core::boot0(Address sat, Address pcb, Address startIP) noexcept {
         a.relinquishOwnership();
         a.clear();
     }
-    // get the interrupt stack pointer base since we are starting in an interrupted context
-    auto theStackPointer = getInterruptStackAddress();
-    // set the frame pointer to the start of the interrupt stack
-    setGPR(FPIndex, theStackPointer, TreatAsOrdinal{});
     // the current local register window needs to be owned on startup
     getCurrentPack().takeOwnership(theStackPointer, [](const auto&, auto) noexcept {});
     setStackPointer(theStackPointer + 64, TreatAsOrdinal{});

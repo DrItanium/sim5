@@ -210,7 +210,7 @@ void
 store32(Address address, Ordinal value, TreatAsOrdinal) noexcept {
     DEBUG_ENTER_FUNCTION;
     if constexpr (EnableDebugLogging) {
-        std::cout << __PRETTY_FUNCTION__ << "(0x" << std::hex << address << ", 0x" << std::hex << value << ");" << std::endl;
+        std::cout << "\t\t" << __PRETTY_FUNCTION__ << "(0x" << std::hex << address << ", 0x" << std::hex << value << ");" << std::endl;
     }
     if ((address & 0b11) != 0) {
         store16(address, value, TreatAsShortOrdinal{});
@@ -232,6 +232,9 @@ store32(Address address, Ordinal value, TreatAsOrdinal) noexcept {
 void
 store32(Address address, Integer value, TreatAsInteger) noexcept {
     DEBUG_ENTER_FUNCTION;
+    if constexpr (EnableDebugLogging) {
+        std::cout << "\t\t" << __PRETTY_FUNCTION__ << "(0x" << std::hex << address << ", 0x" << std::hex << value << ");" << std::endl;
+    }
     if ((address & 0b11) != 0) {
         store16(address, value, TreatAsShortInteger{});
         store16(address+2, static_cast<ShortInteger>(value >> 16), TreatAsShortInteger{});
@@ -278,6 +281,9 @@ load32(Address address, TreatAsOrdinal) noexcept {
                 break;
         }
     }
+    if constexpr (EnableDebugLogging) {
+        std::cout << "\t\t" << __PRETTY_FUNCTION__ << "(0x" << std::hex << address << ") = 0x"<< std::hex << result << ";" << std::endl;
+    }
     DEBUG_LEAVE_FUNCTION;
     return result;
 }
@@ -309,6 +315,9 @@ load32(Address address, TreatAsOrdinal) noexcept {
                     result = getCell(address).getValue(address, TreatAs<Integer>{});
                     break;
             }
+        }
+        if constexpr (EnableDebugLogging) {
+            std::cout << "\t\t" << __PRETTY_FUNCTION__ << "(0x" << std::hex << address << ") = 0x"<< std::hex << result << ";" << std::endl;
         }
         DEBUG_LEAVE_FUNCTION;
         return result;
