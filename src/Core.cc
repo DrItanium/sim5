@@ -160,7 +160,7 @@ Core::arithmeticWithCarryGeneric(Ordinal result, bool src2MSB, bool src1MSB, boo
         ac_.arith.conditionCode |= 0b001;
     }
     if (result != 0) {
-        if constexpr (EnableDebugLogging) {
+        DEBUG_LOG_LEVEL(4) {
             std::cout << "carry bit set" << std::endl;
         }
         ac_.arith.conditionCode |= 0b010;
@@ -312,7 +312,7 @@ Core::computeAddress() noexcept {
     DEBUG_ENTER_FUNCTION;
     Ordinal result = 0;
     if (instruction_.isMEMA()) {
-        if constexpr (EnableDebugLogging) {
+        DEBUG_LOG_LEVEL(4) {
             std::cout << '\t' << __PRETTY_FUNCTION__ << ": ismema operation" << std::endl;
         }
         result = instruction_.mem.offset;
@@ -320,13 +320,13 @@ Core::computeAddress() noexcept {
             result += getGPRValue(instruction_.mem.abase, TreatAsOrdinal{});
         }
     } else {
-        if constexpr (EnableDebugLogging) {
+        DEBUG_LOG_LEVEL(4) {
             std::cout << '\t' << __PRETTY_FUNCTION__ << ": ismemb operation" << std::endl;
         }
         // okay so we need to figure out the minor mode after figuring out if
         // it is a double wide operation or not
         if (instruction_.memb.group) {
-            if constexpr (EnableDebugLogging) {
+            DEBUG_LOG_LEVEL(4) {
                 std::cout << "\t\t" << __PRETTY_FUNCTION__ << ": group bit is high" << std::endl;
             }
             // okay so it is going to be the displacement versions
@@ -341,27 +341,27 @@ Core::computeAddress() noexcept {
             }
             result = static_cast<Ordinal>(iresult);
         } else {
-            if constexpr (EnableDebugLogging) {
+            DEBUG_LOG_LEVEL(4) {
                 std::cout << "\t\t" << __PRETTY_FUNCTION__ << ": group bit is low" << std::endl;
             }
             // okay so the other group isn't as cleanly designed
             switch (instruction_.memb.modeMinor) {
                 case 0b00: // Register Indirect
-                    if constexpr (EnableDebugLogging) {
+                    DEBUG_LOG_LEVEL(4) {
                         std::cout << "\t\t\t" << __PRETTY_FUNCTION__ << ": register indirect" << std::endl;
                         std::cout << "\t\t\t" << __PRETTY_FUNCTION__ << ": abase 0x" << std::hex << instruction_.memb.abase << std::endl;
                     }
                     result = getGPRValue(instruction_.memb.abase, TreatAsOrdinal{});
                     break;
                 case 0b01: // IP With Displacement 
-                    if constexpr (EnableDebugLogging) {
+                    DEBUG_LOG_LEVEL(4){
                         std::cout << "\t\t\t" << __PRETTY_FUNCTION__ << ": ip with displacement" << std::endl;
                     }
                     instructionLength_ = 8;
                     result = static_cast<Ordinal>(ip_.i + load(ip_.a + 4, TreatAsInteger{}) + 8);
                     break;
                 case 0b11: // Register Indirect With Index
-                    if constexpr (EnableDebugLogging) {
+                    DEBUG_LOG_LEVEL(4) {
                         std::cout << "\t\t\t" << __PRETTY_FUNCTION__ << ": register indirect with index" << std::endl;
                     }
                     result = getGPRValue(instruction_.memb.abase, TreatAsOrdinal{}) + (getGPRValue(instruction_.memb.index, TreatAsOrdinal{}) << instruction_.memb.scale);
@@ -372,7 +372,7 @@ Core::computeAddress() noexcept {
             }
         }
     }
-    if constexpr (EnableDebugLogging) {
+    DEBUG_LOG_LEVEL(4) {
         std::cout << "\t\t" << __PRETTY_FUNCTION__ << ": result = 0x" << std::hex << result << std::endl;
     }
     DEBUG_LEAVE_FUNCTION;
@@ -564,14 +564,14 @@ Core::faultGeneric() noexcept {
 void
 Core::cycle() noexcept {
     DEBUG_ENTER_FUNCTION;
-    std::cout << "IP: 0x" << std::hex << ip_.getValue<Ordinal>() << std::endl;
-    if constexpr (EnableDebugLogging) {
+    DEBUG_LOG_LEVEL(3) {
+        std::cout << "IP: 0x" << std::hex << ip_.getValue<Ordinal>() << std::endl;
         std::cout << "\tGETTING INSTRUCTION CONTENTS" << std::endl;
     }
     instruction_.setValue(load(ip_.a, TreatAsOrdinal{}), TreatAsOrdinal{});
     instructionLength_ = 4;
     advanceInstruction_ = true;
-    if constexpr (EnableDebugLogging) {
+    DEBUG_LOG_LEVEL(3) {
         std::cout << "\tGOT INSTRUCTION CONTENTS" << std::endl;
     }
     if (auto opcode = instruction_.getOpcode(); instruction_.isCTRL()) {
@@ -774,45 +774,43 @@ Core::start() noexcept {
         Ordinal x[8] = { 0 };
         for (int i = 0, j = 0; i < 8; ++i, j+=4) {
             x[i] = load(j, TreatAsOrdinal{});
-            if constexpr (EnableDebugLogging) {
-                std::cout << "x[" << i << "]: 0x" << std::hex << x[i] << std::endl;
-            }
+            DEBUG_LOG_LEVEL(4) std::cout << "x[" << i << "]: 0x" << std::hex << x[i] << std::endl;
         }
         
 
         ac_.arith.conditionCode = 0b000; // clear condition code
         Register temp_{0};
         addc(temp_, 0xFFFF'FFFF, x[0]);
-        if constexpr (EnableDebugLogging) {
+        DEBUG_LOG_LEVEL(4) {
             std::cout << "checksum p0: 0x" << std::hex << temp_.getValue<Ordinal>() << std::endl;
         }
         addc(temp_, temp_.getValue<Ordinal>(), x[1]);
-        if constexpr (EnableDebugLogging) {
+        DEBUG_LOG_LEVEL(4) {
             std::cout << "checksum p1: 0x" << std::hex << temp_.getValue<Ordinal>() << std::endl;
         }
         addc(temp_, temp_.getValue<Ordinal>(), x[2]);
-        if constexpr (EnableDebugLogging) {
+        DEBUG_LOG_LEVEL(4) {
             std::cout << "checksum p2: 0x" << std::hex << temp_.getValue<Ordinal>() << std::endl;
         }
         addc(temp_, temp_.getValue<Ordinal>(), x[3]);
-        if constexpr (EnableDebugLogging) {
+        DEBUG_LOG_LEVEL(4) {
             std::cout << "checksum p3: 0x" << std::hex << temp_.getValue<Ordinal>() << std::endl;
         }
         addc(temp_, temp_.getValue<Ordinal>(), x[4]);
-        if constexpr (EnableDebugLogging) {
+        DEBUG_LOG_LEVEL(4) {
             std::cout << "checksum p4: 0x" << std::hex << temp_.getValue<Ordinal>() << std::endl;
         }
         addc(temp_, temp_.getValue<Ordinal>(), x[5]);
 
-        if constexpr (EnableDebugLogging) {
+        DEBUG_LOG_LEVEL(4) {
             std::cout << "checksum p5: 0x" << std::hex << temp_.getValue<Ordinal>() << std::endl;
         }
         addc(temp_, temp_.getValue<Ordinal>(), x[6]);
-        if constexpr (EnableDebugLogging) {
+        DEBUG_LOG_LEVEL(4) {
             std::cout << "checksum p6: 0x" << std::hex << temp_.getValue<Ordinal>() << std::endl;
         }
         addc(temp_, temp_.getValue<Ordinal>(), x[7]);
-        if constexpr (EnableDebugLogging) {
+        DEBUG_LOG_LEVEL(4) {
             std::cout << "checksum p7: 0x" << std::hex << temp_.getValue<Ordinal>() << std::endl;
         }
         if (temp_.getValue(TreatAsOrdinal{}) != 0) {
@@ -892,7 +890,7 @@ void
 Core::bal(Integer displacement) {
     DEBUG_ENTER_FUNCTION;
     saveReturnAddress(LRIndex);
-    if constexpr (EnableDebugLogging) {
+    DEBUG_LOG_LEVEL(3) {
         std::cout << "\t" << __PRETTY_FUNCTION__ << ", lr: 0x" << getGPRValue(LRIndex, TreatAsOrdinal{}) << std::endl;
     }
     branch(displacement);

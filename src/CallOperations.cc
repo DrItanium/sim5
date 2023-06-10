@@ -54,24 +54,39 @@ Core::setupNewFrameInternals(Ordinal fp, Ordinal temp) noexcept {
 
 void
 Core::callx(Address effectiveAddress) noexcept {
+    DEBUG_ENTER_FUNCTION;
     // wait for any uncompleted instructions to finish
     auto temp = getNextFrameBase(); // round stack pointer to next boundary
     auto fp = getFramePointerAddress();
+    DEBUG_LOG_LEVEL(2) {
+        std::cout << __PRETTY_FUNCTION__ << ": (fp): 0x" << std::hex << fp << std::endl;
+        std::cout << __PRETTY_FUNCTION__ << ": (ea): 0x" << std::hex << effectiveAddress << std::endl;
+        std::cout << __PRETTY_FUNCTION__ << ": (rip before): 0x" << std::hex << getGPRValue<Ordinal>(RIPIndex) << std::endl;
+    }
     balx(RIPIndex, effectiveAddress);
+    DEBUG_LOG_LEVEL(2) {
+        std::cout << __PRETTY_FUNCTION__ << ": (rip after): 0x" << std::hex << getGPRValue<Ordinal>(RIPIndex) << std::endl;
+    }
     enterCall(fp);
     setupNewFrameInternals(fp, temp);
+    DEBUG_LEAVE_FUNCTION;
 }
 
 
 void
 Core::call(Integer displacement) noexcept {
+    DEBUG_ENTER_FUNCTION;
     // wait for any uncompleted instructions to finish
     auto temp = getNextFrameBase(); // round stack pointer to next boundary
     auto fp = getFramePointerAddress();
+    DEBUG_LOG_LEVEL(2) {
+        std::cout << __PRETTY_FUNCTION__ << ": (fp): 0x" << std::hex << fp << std::endl;
+    }
     saveReturnAddress(RIPIndex);
     enterCall(fp);
     setupNewFrameInternals(fp, temp);
     branch(displacement);
+    DEBUG_LEAVE_FUNCTION;
 }
 
 void
@@ -110,7 +125,13 @@ Core::calls(Ordinal src1) noexcept {
 }
 void
 Core::localReturn() {
+    DEBUG_LOG_LEVEL(2) {
+        std::cout << __PRETTY_FUNCTION__ << ": (rip before): 0x" << std::hex << getGPRValue<Ordinal>(RIPIndex) << std::endl;
+    }
    restoreStandardFrame();
+    DEBUG_LOG_LEVEL(2) {
+        std::cout << __PRETTY_FUNCTION__ << ": (rip after): 0x" << std::hex << getGPRValue<Ordinal>(RIPIndex) << std::endl;
+    }
 }
 Ordinal
 Core::restoreACFromStack(Ordinal fp) {
@@ -154,22 +175,28 @@ Core::interruptReturn() {
 }
 void
 Core::ret() noexcept {
+    DEBUG_ENTER_FUNCTION;
     syncf();
     auto& pfp = getGPR(PFPIndex);
     switch (pfp.getReturnType()) {
         case 0b000:
+            DEBUG_LOG_LEVEL(2) std::cout << __PRETTY_FUNCTION__ << ": local return" << std::endl;
             localReturn();
             break;
         case 0b001:
+            DEBUG_LOG_LEVEL(2) std::cout << __PRETTY_FUNCTION__ << ": fault return" << std::endl;
             faultReturn();
             break;
         case 0b010:
+            DEBUG_LOG_LEVEL(2) std::cout << __PRETTY_FUNCTION__ << ": supervisor return" << std::endl;
             supervisorReturn(false);
             break;
         case 0b011:
+            DEBUG_LOG_LEVEL(2) std::cout << __PRETTY_FUNCTION__ << ": supervisor-trace return" << std::endl;
             supervisorReturn(true);
             break;
         case 0b111:
+            DEBUG_LOG_LEVEL(2) std::cout << __PRETTY_FUNCTION__ << ": interrupt return" << std::endl;
             interruptReturn();
             break;
         default:
@@ -177,6 +204,7 @@ Core::ret() noexcept {
             unimplementedFault();
             break;
     }
+    DEBUG_LEAVE_FUNCTION;
 }
 
 
@@ -185,10 +213,6 @@ Core::restoreStandardFrame() noexcept {
     leaveCall();
     restoreRIPToIP();
     advanceInstruction_ = false;
-}
-void
-Core::restoreFramePointerOnReturn() {
-    moveGPR(FPIndex, PFPIndex, TreatAsOrdinal{});
 }
 
 void
@@ -218,81 +242,3 @@ Core::restoreRegisterFrame(RegisterFrame& theFrame, Address baseAddress) {
         theFrame.get(i, TreatAsRegister{}).setValue(load(baseAddress, TreatAsOrdinal{}), TreatAsOrdinal {});
     }
 }
-#if 0
-void
-Core::GPRBlock::saveLocalRegisters(Address fp, Core& core) {
-    for (int i = 0, j = 0; i < 16; ++i, j+= 4) {
-        core.store(fp + j, localRegisters().get(i, TreatAsRegister{}).getValue<Ordinal>(), TreatAsOrdinal{});
-    }
-}
-void
-Core::GPRBlock::restoreLocalRegisters(Address fp, Core& core) {
-    for (int i = 0, j = 0; i < 16; ++i, j+= 4) {
-        localRegisters().get(i, TreatAsRegister{}) = core.load(fp + j, TreatAsOrdinal{});
-    }
-}
-
-void
-Core::GPRBlock::enterCall(Ordinal fp, Core& core) {
-    if constexpr (NumberOfLocalRegisterFrames > 1) {
-        // okay so we actually have a rotating set of elements
-        // first increment the frame index
-        ++_currentLocalFrameIndex;
-        // modulo the number of local register frames
-        _currentLocalFrameIndex %= NumberOfLocalRegisterFrames;
-    }
-    // now we can get this new set and check to see if it is valid or not
-    auto& currentLocalRegisterFrame = currentLocalRegisterEntry();
-    if (currentLocalRegisterFrame._valid) {
-        currentLocalRegisterFrame.commit(core);
-    }
-    currentLocalRegisterFrame._valid = true;
-    currentLocalRegisterFrame._targetFramePointer = fp;
-}
-
-void
-Core::GPRBlock::exitCall(Ordinal fp, Core& core) {
-    if constexpr (NumberOfLocalRegisterFrames > 1) {
-        // since we are exiting a call, decrement the frame index (with wraparound) to simulate the call chain
-        --_currentLocalFrameIndex;
-        _currentLocalFrameIndex %= NumberOfLocalRegisterFrames;
-    }
-    // get the current local register frame
-    auto& currentLocalRegisterFrame = currentLocalRegisterEntry();
-    if (currentLocalRegisterFrame._targetFramePointer != fp) {
-        if (currentLocalRegisterFrame._valid) {
-            currentLocalRegisterFrame.commit(core);
-        }
-        currentLocalRegisterFrame._valid = true;
-        currentLocalRegisterFrame._targetFramePointer = fp;
-        currentLocalRegisterFrame.restore(core);
-    }
-
-}
-
-
-void
-Core::GPRBlock::flushLocalRegisters() {
-
-}
-
-void
-Core::GPRBlock::RegisterFrameWay::commit(Core& core) {
-
-}
-
-void
-Core::GPRBlock::RegisterFrameWay::restore(Core& core) {
-
-}
-
-
-void
-Core::GPRBlock::reinitializeLocalRegisterCache() {
-    // just go through and clear out all registers
-    for (auto i = 0; i < NumberOfLocalRegisterFrames; ++i) {
-
-    }
-    _locals[0]._valid = true;
-}
-#endif

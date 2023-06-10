@@ -32,8 +32,9 @@
 #include "BinaryOperations.h"
 #include <istream>
 #include <iostream>
-#define DEBUG_ENTER_FUNCTION if constexpr (EnableDebugLogging) std::cout << "Entering Function: " << __PRETTY_FUNCTION__ << std::endl
-#define DEBUG_LEAVE_FUNCTION if constexpr (EnableDebugLogging) std::cout << "Leaving Function: " << __PRETTY_FUNCTION__ << std::endl
+#define DEBUG_LOG_LEVEL(lvl) if constexpr (DebugLoggingLevel >= lvl)
+#define DEBUG_ENTER_FUNCTION DEBUG_LOG_LEVEL(5) std::cout << "Entering Function: " << __PRETTY_FUNCTION__ << std::endl
+#define DEBUG_LEAVE_FUNCTION DEBUG_LOG_LEVEL(5) std::cout << "Leaving Function: " << __PRETTY_FUNCTION__ << std::endl
 
 constexpr Ordinal DEFAULT_SALIGN = 4;
 /// faults
@@ -876,7 +877,7 @@ constexpr Ordinal getSALIGNParameter() noexcept {
     return DEFAULT_SALIGN;
 #endif
 }
-constexpr bool EnableDebugLogging = false;
+constexpr uint8_t DebugLoggingLevel = 2;
 
 
 class Core {
@@ -884,7 +885,7 @@ class Core {
         static constexpr Ordinal SALIGN = getSALIGNParameter();
         static constexpr Ordinal C = (SALIGN * 16) - 1;
         static constexpr Ordinal NotC = ~C;
-        static constexpr uint8_t NumberOfLocalRegisterFrames = 1;
+        static constexpr uint8_t NumberOfLocalRegisterFrames = 4;
 
     struct LocalRegisterSet {
     public:
@@ -1281,7 +1282,7 @@ class Core {
             LongOrdinal result = static_cast<LongOrdinal>(src2) + static_cast<LongOrdinal>(src1);
             result += (ac_.getCarryBit() ? 1 : 0);
             dest.setValue(result, TreatAsOrdinal{});
-            if constexpr (EnableDebugLogging) {
+            DEBUG_LOG_LEVEL(4) {
                 std::cout << "addc result: 0x" << std::hex << result << std::endl;
             }
             arithmeticWithCarryGeneric(static_cast<Ordinal>(result >> 32),
