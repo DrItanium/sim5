@@ -885,7 +885,7 @@ class Core {
         static constexpr Ordinal SALIGN = getSALIGNParameter();
         static constexpr Ordinal C = (SALIGN * 16) - 1;
         static constexpr Ordinal NotC = ~C;
-        static constexpr uint8_t NumberOfLocalRegisterFrames = 4;
+        static constexpr uint8_t NumberOfLocalRegisterFrames = 1;
 
     struct LocalRegisterSet {
     public:
@@ -903,40 +903,76 @@ class Core {
         void
         relinquishOwnership(SaveRegistersFunction saveRegisters) {
             if (_valid) {
+                DEBUG_LOG_LEVEL(2) {
+                    std::cout << __PRETTY_FUNCTION__ << ": saving to " << _targetFramePointer << std::endl;
+                }
                 saveRegisters(_theFrame, _targetFramePointer);
             }
             relinquishOwnership();
         }
         void
-        takeOwnership(Address newFP, std::function<void(const RegisterFrame&, Address)> saveRegisters) {
+        takeOwnership(Address newFP, SaveRegistersFunction saveRegisters) {
+            DEBUG_ENTER_FUNCTION;
             if (valid()) {
+                DEBUG_LOG_LEVEL(2) {
+                    std::cout << __PRETTY_FUNCTION__ << ": saving to " << _targetFramePointer << std::endl;
+                }
                 saveRegisters(_theFrame, _targetFramePointer);
             }
             _valid = true;
             _targetFramePointer = newFP;
             // don't clear out the registers
+            DEBUG_LEAVE_FUNCTION;
         }
         void
         restoreOwnership(Address newFP,
                          SaveRegistersFunction saveRegisters,
                          RestoreRegistersFunction restoreRegisters) {
+            DEBUG_ENTER_FUNCTION;
+            DEBUG_LOG_LEVEL(2) {
+                std::cout << __PRETTY_FUNCTION__ << ": newFramePointer is 0x" << newFP << std::endl;
+            }
             if (valid()) {
+                DEBUG_LOG_LEVEL(2) {
+                    std::cout << __PRETTY_FUNCTION__ << ": targetFramePointer currently 0x" << _targetFramePointer << std::endl;
+                    std::cout << __PRETTY_FUNCTION__ << ": Current frame is valid" << std::endl;
+                }
                 // okay we have something valid in there right now, so we need to determine if it is valid or not
                 if (newFP == _targetFramePointer) {
+                    DEBUG_LOG_LEVEL(2) {
+                        std::cout << __PRETTY_FUNCTION__ << ": match found!" << std::endl;
+                    }
                     // okay so we got a match, great!
                     // just leave early
+                    DEBUG_LEAVE_FUNCTION;
                     return;
+                }
+                DEBUG_LOG_LEVEL(2) {
+                    std::cout << __PRETTY_FUNCTION__ << ": no match found!" << std::endl;
+                    std::cout << __PRETTY_FUNCTION__ << ": saving registers!" << std::endl;
                 }
                 // got a mismatch, so spill this frame to memory first
                 saveRegisters(getUnderlyingFrame(), getAddress());
             }
+            DEBUG_LOG_LEVEL(2) {
+                std::cout << __PRETTY_FUNCTION__ << ": Setting up frame!" << std::endl;
+            }
             _valid = true;
             _targetFramePointer = newFP;
             restoreRegisters(getUnderlyingFrame(), getAddress());
+            DEBUG_LEAVE_FUNCTION;
         }
         void
         clear() noexcept {
             _theFrame.clear();
+        }
+        /**
+         * Makes sure that this set has an up to date frame pointer
+         * @param fp The frame pointer to update the targetFramePointer field to
+         */
+        void
+        synchronizeOwnership(Ordinal fp) noexcept {
+            _targetFramePointer = fp;
         }
     private:
         RegisterFrame _theFrame;
@@ -955,8 +991,10 @@ class Core {
         void unlockBus() noexcept;
         /// @todo insert iac dispatch here
         /// @todo insert routines for getting registers and such
-        auto& getLocals() noexcept { return frames_[localRegisterFrameIndex_].getUnderlyingFrame(); }
-        const auto& getLocals() const noexcept { return frames_[localRegisterFrameIndex_].getUnderlyingFrame(); }
+        auto& currentLocalRegisterSet() noexcept { return frames_[localRegisterFrameIndex_]; }
+        const auto& currentLocalRegisterSet() const noexcept { return frames_[localRegisterFrameIndex_]; }
+        auto& getLocals() noexcept { return currentLocalRegisterSet().getUnderlyingFrame(); }
+        const auto& getLocals() const noexcept { return currentLocalRegisterSet().getUnderlyingFrame(); }
         template<typename T>
         [[nodiscard]] T& getGPR(ByteOrdinal index, TreatAs<T>) {
             if (index >= 16) {
@@ -1582,7 +1620,6 @@ class Core {
         void faultReturn();
         void interruptReturn();
         void supervisorReturn(bool traceModeSetting);
-        void restoreFramePointerOnReturn();
     private:
         void faultOnOverflow(Register& dest);
         [[nodiscard]] Ordinal getFramePointerAddress() const { return getGPRValue(FPIndex, TreatAsOrdinal{}); }

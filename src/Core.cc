@@ -564,6 +564,9 @@ Core::faultGeneric() noexcept {
 void
 Core::cycle() noexcept {
     DEBUG_ENTER_FUNCTION;
+    DEBUG_LOG_LEVEL(2) {
+        std::cout << "{" << std::endl;
+    }
     DEBUG_LOG_LEVEL(3) {
         std::cout << "IP: 0x" << std::hex << ip_.getValue<Ordinal>() << std::endl;
         std::cout << "\tGETTING INSTRUCTION CONTENTS" << std::endl;
@@ -609,6 +612,9 @@ Core::cycle() noexcept {
     if (advanceInstruction_) {
         nextInstruction();
     }
+    DEBUG_LOG_LEVEL(2) {
+        std::cout << "}" << std::endl;
+    }
     DEBUG_LEAVE_FUNCTION;
 }
 
@@ -622,6 +628,9 @@ Core::begin() noexcept {
         getGPR(i).clear();
         /// @todo setup SFRs
         constants_.setValue<Ordinal>(i, i);
+    }
+    for (int i = 0; i < NumberOfLocalRegisterFrames; ++i) {
+        frames_[i].clear();
     }
     nonPortableBegin();
 }

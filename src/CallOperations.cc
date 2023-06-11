@@ -26,31 +26,44 @@
 
 void
 Core::enterCall(Ordinal fp) {
+    DEBUG_ENTER_FUNCTION;
+    DEBUG_LOG_LEVEL(2) {
+        std::cout << __PRETTY_FUNCTION__ << ": FP is now 0x" << fp << std::endl;
+    }
+    // make sure that we synchronize the frame pointer at the time of entering the call
+    // this makes sure that the key we tie the set to is properly synchronized with system state
+    // if you don't do this, then the old key will be used to save registers
+    currentLocalRegisterSet().synchronizeOwnership(fp);
     getNextPack().takeOwnership(fp, [this](const RegisterFrame& frame, Address address) { saveRegisterFrame(frame, address); });
     ++localRegisterFrameIndex_;
     localRegisterFrameIndex_ %= NumberOfLocalRegisterFrames;
+    DEBUG_LEAVE_FUNCTION;
 
 }
 void
 Core::leaveCall() {
     DEBUG_ENTER_FUNCTION;
     // perform the transfer and modification
-    {
-        moveGPR<Ordinal>(FPIndex, PFPIndex, [](Ordinal input) -> Ordinal { return Register{input}.getPFPAddress(); }, TreatAsOrdinal{});
-        auto targetAddress = getFramePointerAddress();
-        frames_[localRegisterFrameIndex_].relinquishOwnership();
-        getPreviousPack().restoreOwnership(targetAddress,
-                                           [this](const RegisterFrame& frame, Address targetAddress) {
-                                               saveRegisterFrame(frame, targetAddress);
-                                           },
-                                           [this](RegisterFrame& frame, Address targetAddress) {
-                                               restoreRegisterFrame(frame, targetAddress);
-                                           });
+    DEBUG_LOG_LEVEL(2) {
+        std::cout << __PRETTY_FUNCTION__ << ": FP is now 0x" << getFramePointerAddress() << std::endl;
+        std::cout << __PRETTY_FUNCTION__ << ": transferring PFP back to FP" << std::endl;
     }
-    {
-        --localRegisterFrameIndex_;
-        localRegisterFrameIndex_ %= NumberOfLocalRegisterFrames;
+    moveGPR<Ordinal>(FPIndex, PFPIndex, [](Ordinal input) -> Ordinal { return Register{input}.getPFPAddress(); }, TreatAsOrdinal{});
+    DEBUG_LOG_LEVEL(2) {
+        std::cout << __PRETTY_FUNCTION__ << ": FP is now 0x" << getFramePointerAddress() << std::endl;
     }
+    auto saveRegistersToStack = [this](const RegisterFrame& frame, Address targetAddress) {
+        saveRegisterFrame(frame, targetAddress);
+    };
+    // we are done with the current frame so just relinquish ownership of it
+    frames_[localRegisterFrameIndex_].relinquishOwnership();
+    getPreviousPack().restoreOwnership(getFramePointerAddress(),
+                                       saveRegistersToStack,
+                                       [this](RegisterFrame& frame, Address targetAddress) {
+                                           restoreRegisterFrame(frame, targetAddress);
+                                       });
+    --localRegisterFrameIndex_;
+    localRegisterFrameIndex_ %= NumberOfLocalRegisterFrames;
     DEBUG_LEAVE_FUNCTION;
 }
 
@@ -220,9 +233,18 @@ Core::ret() noexcept {
 
 void
 Core::restoreStandardFrame() noexcept {
+    DEBUG_ENTER_FUNCTION;
+    DEBUG_LOG_LEVEL(2) {
+        std::cout << __PRETTY_FUNCTION__ << ": calling leaveCall" << std::endl;
+    }
+
     leaveCall();
+    DEBUG_LOG_LEVEL(2) {
+        std::cout << __PRETTY_FUNCTION__ << ": calling restoreRIPToIP" << std::endl;
+    }
     restoreRIPToIP();
     advanceInstruction_ = false;
+    DEBUG_LEAVE_FUNCTION;
 }
 
 void
