@@ -23,12 +23,10 @@
 //
 // Created by jwscoggins on 6/8/23.
 //
-#ifdef ARDUINO
-#include <Arduino.h>
-#endif
 #include "Types.h"
 #include "Core.h"
 #include "BinaryOperations.h"
+#include <type_traits>
 
 bool
 Core::performSelfTest() noexcept {
@@ -87,9 +85,6 @@ Core::performSelfTest() noexcept {
         return true;
     };
     auto testScanbyteOperation = [this]() {
-        ac_.arith.conditionCode = 0;
-        auto& g0 = getGPR(0);
-        auto& g1 = getGPR(1);
         auto scanbyte_reference = [](Ordinal src1, Ordinal src2) noexcept {
             return ((src1 & 0x000000FF) == (src2 & 0x000000FF)) ||
                    ((src1 & 0x0000FF00) == (src2 & 0x0000FF00)) ||
@@ -116,7 +111,43 @@ Core::performSelfTest() noexcept {
                exec(rand0, rand0) &&
                exec(random(), random()) &&
                exec(0xFFFF'FFFF, 0xFFFF'FF00) &&
-               exec(0x01010101, 0x02020202);
+               exec(0x01010101, 0x02020202) &&
+               exec(0, random()) &&
+               exec(random(), 0);
+
+    };
+    auto testCompares = [this]() {
+        auto compareReference = [](auto src1, auto src2) {
+            if (src1 < src2) {
+                return 0b100;
+            } else if (src1 == src2) {
+                return 0b010;
+            } else {
+                // src1 > src2
+                return 0b001;
+            }
+        };
+        auto execOrdinal = [this, op = compareReference](auto a0, auto a1) noexcept {
+            ac_.arith.conditionCode = 0;
+            auto r0 = op(a0, a1);
+            cmpo(a0, a1);
+            return ac_.getConditionCode() == r0;
+        };
+        auto execInteger = [this, op = compareReference](Integer a0, Integer a1) noexcept {
+            ac_.arith.conditionCode = 0;
+            auto r0 = op(a0, a1);
+            cmpi(a0, a1);
+            return ac_.getConditionCode() == r0;
+        };
+        Ordinal testEqualityOrd = random();
+        Integer testEqualityInt = random();
+        return execOrdinal(random(), random()) &&
+               execInteger(random(), random()) &&
+               execOrdinal(testEqualityOrd, testEqualityOrd) &&
+               execInteger(testEqualityInt, testEqualityInt) &&
+                execOrdinal(0, 0) &&
+                execInteger(0, 0);
+
     };
     auto makeGenericOperation = [this](auto maker, auto doIt, auto converter, auto name, auto genSrc1, auto genSrc2) {
         return [this, maker, doIt, converter, name, genSrc1, genSrc2](ByteOrdinal gpr0 = random() & 0b11111,
@@ -156,6 +187,7 @@ Core::performSelfTest() noexcept {
                         testMoveOperations,
                         testRegisters,
                         testScanbyteOperation,
+                        testCompares,
                         (makeOrdinalOperation([this](Ordinal bitpos, Ordinal src, Ordinal) {
                             // implement it separately for comparison purposes
                                                   ac_.arith.conditionCode = random() & 0b111;
