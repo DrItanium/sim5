@@ -481,6 +481,7 @@ union Register {
         BackingUnionType opcode : 8;
     } reg;
     struct {
+        /// @todo check the bp and sfr bits eventually
         Integer displacement : 24;
         BackingUnionType opcode : 8;
     } ctrl;
