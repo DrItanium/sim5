@@ -29,6 +29,7 @@ Core::enterCall(Ordinal fp) {
     DEBUG_ENTER_FUNCTION;
     DEBUG_LOG_LEVEL(2) {
         std::cout << __PRETTY_FUNCTION__ << ": FP is now 0x" << std::hex << fp << std::endl;
+        std::cout << __PRETTY_FUNCTION__ << ": Frame Index: 0x" << std::hex << static_cast<int>(localRegisterFrameIndex_) << std::endl;
     }
     // make sure that we synchronize the frame pointer at the time of entering the call
     // this makes sure that the key we tie the set to is properly synchronized with system state
@@ -37,6 +38,9 @@ Core::enterCall(Ordinal fp) {
     getNextPack().takeOwnership(fp, [this](const RegisterFrame& frame, Address address) { saveRegisterFrame(frame, address); });
     ++localRegisterFrameIndex_;
     localRegisterFrameIndex_ %= NumberOfLocalRegisterFrames;
+    DEBUG_LOG_LEVEL(2) {
+        std::cout << __PRETTY_FUNCTION__ << ": Frame Index: 0x" << std::hex << static_cast<int>(localRegisterFrameIndex_) << std::endl;
+    }
     DEBUG_LEAVE_FUNCTION;
 
 }
@@ -49,6 +53,9 @@ Core::leaveCall() {
         std::cout << __PRETTY_FUNCTION__ << ": FP is now 0x" << std::hex << fp << std::endl;
         std::cout << __PRETTY_FUNCTION__ << ": transferring PFP back to FP" << std::endl;
     }
+    DEBUG_LOG_LEVEL(2) {
+        std::cout << __PRETTY_FUNCTION__ << ": Frame Index: 0x" << std::hex << static_cast<int>(localRegisterFrameIndex_) << std::endl;
+    }
     moveGPR<Ordinal>(FPIndex, PFPIndex, [](Ordinal input) -> Ordinal { return Register{input}.getPFPAddress(); }, TreatAsOrdinal{});
     DEBUG_LOG_LEVEL(2) {
         auto fp = getFramePointerAddress();
@@ -58,7 +65,7 @@ Core::leaveCall() {
         saveRegisterFrame(frame, targetAddress);
     };
     // we are done with the current frame so just relinquish ownership of it
-    frames_[localRegisterFrameIndex_].relinquishOwnership();
+    currentLocalRegisterSet().relinquishOwnership();
     getPreviousPack().restoreOwnership(getFramePointerAddress(),
                                        saveRegistersToStack,
                                        [this](RegisterFrame& frame, Address targetAddress) {
@@ -66,6 +73,9 @@ Core::leaveCall() {
                                        });
     --localRegisterFrameIndex_;
     localRegisterFrameIndex_ %= NumberOfLocalRegisterFrames;
+    DEBUG_LOG_LEVEL(2) {
+        std::cout << __PRETTY_FUNCTION__ << ": Frame Index: 0x" << std::hex << static_cast<int>(localRegisterFrameIndex_) << std::endl;
+    }
     DEBUG_LEAVE_FUNCTION;
 }
 
@@ -162,11 +172,13 @@ Core::calls(Ordinal src1) noexcept {
 void
 Core::localReturn() {
     DEBUG_LOG_LEVEL(2) {
-        std::cout << __PRETTY_FUNCTION__ << ": (rip before): 0x" << std::hex << getGPRValue<Ordinal>(RIPIndex) << std::endl;
+        auto value = getGPRValue<Ordinal>(RIPIndex);
+        std::cout << __PRETTY_FUNCTION__ << ": (rip before): 0x" << std::hex << value << std::endl;
     }
    restoreStandardFrame();
     DEBUG_LOG_LEVEL(2) {
-        std::cout << __PRETTY_FUNCTION__ << ": (rip after): 0x" << std::hex << getGPRValue<Ordinal>(RIPIndex) << std::endl;
+        auto value = getGPRValue<Ordinal>(RIPIndex);
+        std::cout << __PRETTY_FUNCTION__ << ": (rip after): 0x" << std::hex << value <<  std::endl;
     }
 }
 Ordinal

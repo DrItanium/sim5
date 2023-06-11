@@ -922,8 +922,15 @@ class Core {
         RegisterFrame& getUnderlyingFrame() noexcept { return _theFrame; }
         const RegisterFrame& getUnderlyingFrame() const noexcept { return _theFrame; }
         void relinquishOwnership() noexcept {
+            DEBUG_LOG_LEVEL(2) {
+                std::cout << __PRETTY_FUNCTION__ << ": {" << std::endl;
+                std::cout << __PRETTY_FUNCTION__ << ": &this: 0x" << std::hex << reinterpret_cast<uintptr_t>(this) << std::endl;
+            }
             _valid = false;
-            _targetFramePointer = 0;
+            synchronizeOwnership(0);
+            DEBUG_LOG_LEVEL(2) {
+                std::cout << __PRETTY_FUNCTION__ << ": }" << std::endl;
+            }
             /// @todo zero out the frame?
         }
         using SaveRegistersFunction = std::function<void(const RegisterFrame&, Address)>;
@@ -948,7 +955,7 @@ class Core {
                 saveRegisters(_theFrame, _targetFramePointer);
             }
             _valid = true;
-            _targetFramePointer = newFP;
+            synchronizeOwnership(newFP);
             // don't clear out the registers
             DEBUG_LEAVE_FUNCTION;
         }
@@ -958,6 +965,7 @@ class Core {
                          RestoreRegistersFunction restoreRegisters) {
             DEBUG_ENTER_FUNCTION;
             DEBUG_LOG_LEVEL(2) {
+                std::cout << __PRETTY_FUNCTION__ << ": &this: 0x" << std::hex << reinterpret_cast<uintptr_t>(this) << std::endl;
                 std::cout << __PRETTY_FUNCTION__ << ": newFramePointer is 0x" << std::hex << newFP << std::endl;
             }
             if (valid()) {
@@ -977,7 +985,7 @@ class Core {
                 }
                 DEBUG_LOG_LEVEL(2) {
                     std::cout << __PRETTY_FUNCTION__ << ": no match found!" << std::endl;
-                    std::cout << __PRETTY_FUNCTION__ << ": saving registers to " << getAddress() << std::endl;
+                    std::cout << __PRETTY_FUNCTION__ << ": saving to 0x" << std::hex << getAddress() << std::endl;
                 }
                 // got a mismatch, so spill this frame to memory first
                 saveRegisters(getUnderlyingFrame(), getAddress());
@@ -986,7 +994,7 @@ class Core {
                 std::cout << __PRETTY_FUNCTION__ << ": Setting up frame!" << std::endl;
             }
             _valid = true;
-            _targetFramePointer = newFP;
+            synchronizeOwnership(newFP);
             restoreRegisters(getUnderlyingFrame(), getAddress());
             DEBUG_LEAVE_FUNCTION;
         }
@@ -1000,6 +1008,9 @@ class Core {
          */
         void
         synchronizeOwnership(Ordinal fp) noexcept {
+            DEBUG_LOG_LEVEL(2) {
+                std::cout << __PRETTY_FUNCTION__ << ": 0x" << std::hex << _targetFramePointer << " -> 0x" << fp << std::endl;
+            }
             _targetFramePointer = fp;
         }
     private:
@@ -1251,7 +1262,6 @@ class Core {
         void stl(Address address, const LongRegister& src) noexcept;
         void ret() noexcept;
         void call(Integer displacement) noexcept;
-        void callx() noexcept;
         void callx(Address effectiveAddress) noexcept;
     private:
         void enterCall(Ordinal fp);
@@ -1676,14 +1686,23 @@ class Core {
         void restoreRegisterFrame(RegisterFrame& theFrame, Address baseAddress);
         LocalRegisterSet& getNextPack() noexcept {
             if constexpr (NumberOfLocalRegisterFrames > 1) {
-                return frames_[(localRegisterFrameIndex_ + 1) % NumberOfLocalRegisterFrames];
+                // do these as separate operations, otherwise gcc generates garbage
+                uint8_t result = (localRegisterFrameIndex_ + 1);
+                result %= NumberOfLocalRegisterFrames;
+                return frames_[result];
             } else {
                 return frames_[0];
             }
         }
         LocalRegisterSet& getPreviousPack() noexcept {
             if constexpr (NumberOfLocalRegisterFrames > 1) {
-                return frames_[(localRegisterFrameIndex_ - 1) % NumberOfLocalRegisterFrames];
+                // do these as separate operations, otherwise gcc generates garbage
+                uint8_t result = (localRegisterFrameIndex_ - 1);
+                result %= NumberOfLocalRegisterFrames;
+                DEBUG_LOG_LEVEL(2) {
+                    std::cout << __PRETTY_FUNCTION__ << ": 0x" << std::hex << static_cast<int>(result) << std::endl;
+                }
+                return frames_[result];
             } else {
                 return frames_[0];
             }
