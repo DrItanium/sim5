@@ -32,7 +32,10 @@
 #include "BinaryOperations.h"
 #include <istream>
 #include <iostream>
-#define DEBUG_LOG_LEVEL(lvl) if constexpr (DebugLoggingLevel >= lvl)
+constexpr uint8_t getDebugLoggingLevel() noexcept {
+    return 0;
+}
+#define DEBUG_LOG_LEVEL(lvl) if constexpr (getDebugLoggingLevel() >= lvl)
 #define DEBUG_ENTER_FUNCTION DEBUG_LOG_LEVEL(5) std::cout << "Entering Function: " << __PRETTY_FUNCTION__ << std::endl
 #define DEBUG_LEAVE_FUNCTION DEBUG_LOG_LEVEL(5) std::cout << "Leaving Function: " << __PRETTY_FUNCTION__ << std::endl
 
@@ -893,7 +896,6 @@ constexpr Ordinal getSALIGNParameter() noexcept {
     return DEFAULT_SALIGN;
 #endif
 }
-constexpr uint8_t DebugLoggingLevel = 5;
 
 
 class Core {
