@@ -110,7 +110,10 @@ getCell(Address address) noexcept {
 }
     template<typename T>
     T ioLoad(Address offset, TreatAs<T>) {
-        switch (offset) {
+        DEBUG_LOG_LEVEL(1) {
+            std::cout << __PRETTY_FUNCTION__ << "(0x" << std::hex << offset << ")" << std::endl;
+        }
+        switch (offset & 0xFF'FFFF) {
             case 0x00'0000: return 10 * 1024 * 1024;
             case 0x00'0004: return 20 * 1024 * 1024;
             case 0x00'0008: return static_cast<T>(std::cin.get());
@@ -119,8 +122,13 @@ getCell(Address address) noexcept {
     }
     template<typename T>
     void ioStore(Address offset, T value, TreatAs<T>) {
-        switch (offset) {
-            case 0x00'0008: std::cout.put(static_cast<char>(value)); break;
+        DEBUG_LOG_LEVEL(1) {
+            std::cout << __PRETTY_FUNCTION__ << "(0x" << std::hex << offset << ", 0x" << std::hex << value << ")" << std::endl;
+        }
+        switch (offset & 0xFF'FFFF) {
+            case 0x00'0008:
+                std::cout.put(static_cast<char>(value));
+                break;
             case 0x00'000C: std::cout.flush(); break;
             default:
                 break;
