@@ -28,7 +28,7 @@ void
 Core::enterCall(Ordinal fp) {
     DEBUG_ENTER_FUNCTION;
     DEBUG_LOG_LEVEL(2) {
-        std::cout << __PRETTY_FUNCTION__ << ": FP is now 0x" << fp << std::endl;
+        std::cout << __PRETTY_FUNCTION__ << ": FP is now 0x" << std::hex << fp << std::endl;
     }
     // make sure that we synchronize the frame pointer at the time of entering the call
     // this makes sure that the key we tie the set to is properly synchronized with system state
@@ -45,12 +45,14 @@ Core::leaveCall() {
     DEBUG_ENTER_FUNCTION;
     // perform the transfer and modification
     DEBUG_LOG_LEVEL(2) {
-        std::cout << __PRETTY_FUNCTION__ << ": FP is now 0x" << getFramePointerAddress() << std::endl;
+        auto fp = getFramePointerAddress();
+        std::cout << __PRETTY_FUNCTION__ << ": FP is now 0x" << std::hex << fp << std::endl;
         std::cout << __PRETTY_FUNCTION__ << ": transferring PFP back to FP" << std::endl;
     }
     moveGPR<Ordinal>(FPIndex, PFPIndex, [](Ordinal input) -> Ordinal { return Register{input}.getPFPAddress(); }, TreatAsOrdinal{});
     DEBUG_LOG_LEVEL(2) {
-        std::cout << __PRETTY_FUNCTION__ << ": FP is now 0x" << getFramePointerAddress() << std::endl;
+        auto fp = getFramePointerAddress();
+        std::cout << __PRETTY_FUNCTION__ << ": FP is now 0x" << std::hex << fp << std::endl;
     }
     auto saveRegistersToStack = [this](const RegisterFrame& frame, Address targetAddress) {
         saveRegisterFrame(frame, targetAddress);
@@ -85,11 +87,13 @@ Core::callx(Address effectiveAddress) noexcept {
         std::cout << __PRETTY_FUNCTION__ << ": (fp): 0x" << std::hex << fp << std::endl;
         std::cout << __PRETTY_FUNCTION__ << ": (ea): 0x" << std::hex << effectiveAddress << std::endl;
         std::cout << __PRETTY_FUNCTION__ << ": (newFP): 0x" << std::hex << temp << std::endl;
-        std::cout << __PRETTY_FUNCTION__ << ": (rip before): 0x" << std::hex << getGPRValue<Ordinal>(RIPIndex) << std::endl;
+        auto rip = getGPRValue<Ordinal>(RIPIndex);
+        std::cout << __PRETTY_FUNCTION__ << ": (rip before): 0x" << std::hex << rip << std::endl;
     }
     balx(RIPIndex, effectiveAddress);
     DEBUG_LOG_LEVEL(2) {
-        std::cout << __PRETTY_FUNCTION__ << ": (rip after): 0x" << std::hex << getGPRValue<Ordinal>(RIPIndex) << std::endl;
+        auto rip = getGPRValue<Ordinal>(RIPIndex);
+        std::cout << __PRETTY_FUNCTION__ << ": (rip after): 0x" << std::hex << rip << std::endl;
     }
     enterCall(fp);
     setupNewFrameInternals(fp, temp);
@@ -105,8 +109,16 @@ Core::call(Integer displacement) noexcept {
     auto fp = getFramePointerAddress();
     DEBUG_LOG_LEVEL(2) {
         std::cout << __PRETTY_FUNCTION__ << ": (fp): 0x" << std::hex << fp << std::endl;
+        std::cout << __PRETTY_FUNCTION__ << ": (disp): 0x" << std::hex << displacement << std::endl;
+        std::cout << __PRETTY_FUNCTION__ << ": (newFP): 0x" << std::hex << temp << std::endl;
+        auto rip = getGPRValue<Ordinal>(RIPIndex);
+        std::cout << __PRETTY_FUNCTION__ << ": (rip before): 0x" << std::hex << rip << std::endl;
     }
     saveReturnAddress(RIPIndex);
+    DEBUG_LOG_LEVEL(2) {
+        auto rip = getGPRValue<Ordinal>(RIPIndex);
+        std::cout << __PRETTY_FUNCTION__ << ": (rip after): 0x" << std::hex << rip << std::endl;
+    }
     enterCall(fp);
     setupNewFrameInternals(fp, temp);
     branch(displacement);

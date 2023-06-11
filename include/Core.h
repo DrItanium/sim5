@@ -638,8 +638,18 @@ union Register {
     bool getCarryBit() const noexcept { return arith.conditionCode & 0b010; }
     [[nodiscard]] Ordinal modify(Ordinal mask, Ordinal src) noexcept;
     void setValue(Real value, TreatAsReal) noexcept { r = value; }
-    void setValue(Ordinal value, TreatAsOrdinal) noexcept { o = value; }
-    void setValue(Integer value, TreatAsInteger) noexcept { i = value; }
+    void setValue(Ordinal value, TreatAsOrdinal) noexcept {
+        DEBUG_LOG_LEVEL(4)  {
+            std::cout << __PRETTY_FUNCTION__ << ": 0x" << std::hex << o << " -> 0x" << std::hex << value << std::endl;
+        }
+        o = value;
+    }
+    void setValue(Integer value, TreatAsInteger) noexcept {
+        DEBUG_LOG_LEVEL(4)  {
+            std::cout << __PRETTY_FUNCTION__ << ": 0x" << std::hex << o << " -> 0x" << std::hex << value << std::endl;
+        }
+        i = value;
+    }
     [[nodiscard]] Integer getValue(TreatAsInteger) const noexcept { return i; }
     [[nodiscard]] Ordinal getValue(TreatAsOrdinal) const noexcept { return o; }
     [[nodiscard]] Real getValue(TreatAsReal) const noexcept { return r; }
@@ -922,7 +932,7 @@ class Core {
         relinquishOwnership(SaveRegistersFunction saveRegisters) {
             if (_valid) {
                 DEBUG_LOG_LEVEL(2) {
-                    std::cout << __PRETTY_FUNCTION__ << ": saving to 0x" << _targetFramePointer << std::endl;
+                    std::cout << __PRETTY_FUNCTION__ << ": saving to 0x" << std::hex << _targetFramePointer << std::endl;
                 }
                 saveRegisters(_theFrame, _targetFramePointer);
             }
@@ -933,7 +943,7 @@ class Core {
             DEBUG_ENTER_FUNCTION;
             if (valid()) {
                 DEBUG_LOG_LEVEL(2) {
-                    std::cout << __PRETTY_FUNCTION__ << ": saving to 0x" << _targetFramePointer << std::endl;
+                    std::cout << __PRETTY_FUNCTION__ << ": saving to 0x" << std::hex << _targetFramePointer << std::endl;
                 }
                 saveRegisters(_theFrame, _targetFramePointer);
             }
@@ -948,11 +958,11 @@ class Core {
                          RestoreRegistersFunction restoreRegisters) {
             DEBUG_ENTER_FUNCTION;
             DEBUG_LOG_LEVEL(2) {
-                std::cout << __PRETTY_FUNCTION__ << ": newFramePointer is 0x" << newFP << std::endl;
+                std::cout << __PRETTY_FUNCTION__ << ": newFramePointer is 0x" << std::hex << newFP << std::endl;
             }
             if (valid()) {
                 DEBUG_LOG_LEVEL(2) {
-                    std::cout << __PRETTY_FUNCTION__ << ": targetFramePointer currently 0x" << _targetFramePointer << std::endl;
+                    std::cout << __PRETTY_FUNCTION__ << ": targetFramePointer currently 0x" << std::hex << _targetFramePointer << std::endl;
                     std::cout << __PRETTY_FUNCTION__ << ": Current frame is valid" << std::endl;
                 }
                 // okay we have something valid in there right now, so we need to determine if it is valid or not
@@ -1015,17 +1025,29 @@ class Core {
         const auto& getLocals() const noexcept { return currentLocalRegisterSet().getUnderlyingFrame(); }
         template<typename T>
         [[nodiscard]] T& getGPR(ByteOrdinal index, TreatAs<T>) {
+            DEBUG_ENTER_FUNCTION;
+            DEBUG_LOG_LEVEL(3) {
+                std::cout << __PRETTY_FUNCTION__ << ": index is 0x" << std::hex << static_cast<int>(index) << std::endl;
+            }
             if (index >= 16) {
+                DEBUG_LEAVE_FUNCTION;
                 return globals_.get(index, TreatAs<T>{});
             } else {
+                DEBUG_LEAVE_FUNCTION;
                 return getLocals().get(index, TreatAs<T>{});
             }
         }
         template<typename T>
         [[nodiscard]] const T& getGPR(ByteOrdinal index, TreatAs<T>) const {
+            DEBUG_ENTER_FUNCTION;
+            DEBUG_LOG_LEVEL(3) {
+                std::cout << __PRETTY_FUNCTION__ << ": index is 0x" << std::hex << static_cast<int>(index) << std::endl;
+            }
             if (index >= 16) {
+                DEBUG_LEAVE_FUNCTION;
                 return globals_.get(index, TreatAs<T>{});
             } else {
+                DEBUG_LEAVE_FUNCTION;
                 return getLocals().get(index, TreatAs<T>{});
             }
         }
@@ -1070,7 +1092,7 @@ class Core {
             DEBUG_ENTER_FUNCTION;
             auto result = transform(getGPRValue(srcIndex, TreatAs<Q>{}));
             DEBUG_LOG_LEVEL(4) {
-                std::cout << __PRETTY_FUNCTION__ << ": transformation result 0x" << result << std::endl;
+                std::cout << __PRETTY_FUNCTION__ << ": transformation result 0x" << std::hex << result << std::endl;
             }
             setGPR(destIndex, result, TreatAs<Q>{});
             DEBUG_LEAVE_FUNCTION;
