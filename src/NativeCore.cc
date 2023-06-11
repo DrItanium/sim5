@@ -138,7 +138,7 @@ ByteOrdinal
 load8(Address address, TreatAsByteOrdinal) noexcept {
     switch (static_cast<uint8_t>(address >> 24)) {
         case 0xFE:
-            return 0;
+            return ioLoad(address, TreatAsByteOrdinal{});
         case 0xFF:
             return 0;
         default:
@@ -149,7 +149,7 @@ ByteInteger
 load8(Address address, TreatAsByteInteger) noexcept {
     switch (static_cast<uint8_t>(address >> 24)) {
         case 0xFE:
-            return 0;
+            return ioLoad(address, TreatAsByteInteger{});
         case 0xFF:
             return 0;
         default:
@@ -160,6 +160,7 @@ void
 store8(Address address, ByteOrdinal value, TreatAsByteOrdinal) noexcept {
     switch (static_cast<uint8_t>(address >> 24)) {
         case 0xFE:
+            ioStore<ByteOrdinal>(address, value, TreatAsByteOrdinal{});
             break;
         case 0xFF:
             break;
@@ -176,6 +177,7 @@ store16(Address address, ShortOrdinal value, TreatAsShortOrdinal) noexcept {
     } else {
         switch (static_cast<uint8_t>(address >> 24)) {
             case 0xFE:
+                ioStore<ShortOrdinal>(address, value, TreatAsShortOrdinal{});
                 break;
             case 0xFF:
                 break;
@@ -189,6 +191,7 @@ void
 store8(Address address, ByteInteger value, TreatAsByteInteger) noexcept {
     switch (static_cast<uint8_t>(address >> 24)) {
         case 0xFE:
+            ioStore<ByteInteger>(address, value, TreatAsByteInteger{});
             break;
         case 0xFF:
             break;
@@ -205,6 +208,7 @@ store16(Address address, ShortInteger value, TreatAsShortInteger) noexcept {
     } else {
         switch (static_cast<uint8_t>(address >> 24)) {
             case 0xFE:
+                ioStore<ShortInteger>(address, value, TreatAsShortInteger{});
                 break;
             case 0xFF:
                 break;
