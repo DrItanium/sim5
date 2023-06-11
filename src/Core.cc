@@ -578,7 +578,7 @@ Core::cycle() noexcept {
         std::cout << "\tGOT INSTRUCTION CONTENTS" << std::endl;
     }
     if (auto opcode = instruction_.getOpcode(); instruction_.isCTRL()) {
-        processInstruction(opcode, instruction_.ctrl.displacement, TreatAsCTRL{});
+        processInstruction(opcode, instruction_.getDisplacement(TreatAsCTRL{}), TreatAsCTRL{});
     } else if (instruction_.isCOBR()) {
         Register& src2 = instruction_.cobr.s2 ? getSFR(instruction_.cobr.src2) : getGPR(instruction_.cobr.src2);
         if (instruction_.cobr.m1) {
@@ -587,14 +587,14 @@ Core::cycle() noexcept {
                     instruction_.getInstructionMask(),
                     src1Value, 
                     src2,
-                    instruction_.cobr.displacement,
+                    instruction_.getDisplacement(TreatAsCOBR{}),
                     TreatAsCOBR{});
         } else {
             processInstruction(opcode,
                     instruction_.getInstructionMask(),
                     getGPR(instruction_.cobr.src1),
                     src2,
-                    instruction_.cobr.displacement,
+                    instruction_.getDisplacement(TreatAsCOBR{}),
                     TreatAsCOBR{});
         }
     } else if (instruction_.isMEMFormat()) {

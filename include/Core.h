@@ -462,6 +462,13 @@ union Register {
         BackingUnionType opcode : 8;
     } cobr;
     struct {
+        Integer displacement : 13;
+        BackingUnionType m1: 1;
+        BackingUnionType src2: 5;
+        BackingUnionType src1: 5;
+        BackingUnionType opcode : 8;
+    } cobrDisplacement;
+    struct {
         BackingUnionType src1 : 5;
         BackingUnionType s1 : 1;
         BackingUnionType s2 : 1;
@@ -665,6 +672,14 @@ union Register {
     }
     constexpr bool operator!=(const Register& other) const noexcept {
         return other.o != o;
+    }
+    constexpr auto getDisplacement(TreatAsCTRL) const noexcept {
+        // clear the lowest two bits since those can be reserved for other things
+        return ctrl.displacement & 0xFFFF'FFFC;
+    }
+    constexpr auto getDisplacement(TreatAsCOBR) const noexcept {
+        // clear the lowest two bits
+        return cobrDisplacement.displacement & 0xFFFF'FFFC;
     }
 };
 static_assert(sizeof(Register) == sizeof(Ordinal));
@@ -877,7 +892,7 @@ constexpr Ordinal getSALIGNParameter() noexcept {
     return DEFAULT_SALIGN;
 #endif
 }
-constexpr uint8_t DebugLoggingLevel = 0;
+constexpr uint8_t DebugLoggingLevel = 5;
 
 
 class Core {
