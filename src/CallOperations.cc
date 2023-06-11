@@ -84,6 +84,7 @@ Core::callx(Address effectiveAddress) noexcept {
     DEBUG_LOG_LEVEL(2) {
         std::cout << __PRETTY_FUNCTION__ << ": (fp): 0x" << std::hex << fp << std::endl;
         std::cout << __PRETTY_FUNCTION__ << ": (ea): 0x" << std::hex << effectiveAddress << std::endl;
+        std::cout << __PRETTY_FUNCTION__ << ": (newFP): 0x" << std::hex << temp << std::endl;
         std::cout << __PRETTY_FUNCTION__ << ": (rip before): 0x" << std::hex << getGPRValue<Ordinal>(RIPIndex) << std::endl;
     }
     balx(RIPIndex, effectiveAddress);

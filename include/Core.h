@@ -33,7 +33,7 @@
 #include <istream>
 #include <iostream>
 constexpr uint8_t getDebugLoggingLevel() noexcept {
-    return 5;
+    return 0;
 }
 #define DEBUG_LOG_LEVEL(lvl) if constexpr (getDebugLoggingLevel() >= lvl)
 #define DEBUG_ENTER_FUNCTION DEBUG_LOG_LEVEL(6) std::cout << "Entering Function: " << __PRETTY_FUNCTION__ << std::endl
@@ -922,7 +922,7 @@ class Core {
         relinquishOwnership(SaveRegistersFunction saveRegisters) {
             if (_valid) {
                 DEBUG_LOG_LEVEL(2) {
-                    std::cout << __PRETTY_FUNCTION__ << ": saving to " << _targetFramePointer << std::endl;
+                    std::cout << __PRETTY_FUNCTION__ << ": saving to 0x" << _targetFramePointer << std::endl;
                 }
                 saveRegisters(_theFrame, _targetFramePointer);
             }
@@ -933,7 +933,7 @@ class Core {
             DEBUG_ENTER_FUNCTION;
             if (valid()) {
                 DEBUG_LOG_LEVEL(2) {
-                    std::cout << __PRETTY_FUNCTION__ << ": saving to " << _targetFramePointer << std::endl;
+                    std::cout << __PRETTY_FUNCTION__ << ": saving to 0x" << _targetFramePointer << std::endl;
                 }
                 saveRegisters(_theFrame, _targetFramePointer);
             }
@@ -967,7 +967,7 @@ class Core {
                 }
                 DEBUG_LOG_LEVEL(2) {
                     std::cout << __PRETTY_FUNCTION__ << ": no match found!" << std::endl;
-                    std::cout << __PRETTY_FUNCTION__ << ": saving registers!" << std::endl;
+                    std::cout << __PRETTY_FUNCTION__ << ": saving registers to " << getAddress() << std::endl;
                 }
                 // got a mismatch, so spill this frame to memory first
                 saveRegisters(getUnderlyingFrame(), getAddress());
@@ -1067,7 +1067,13 @@ class Core {
         [[nodiscard]] Integer unpackSrc2(TreatAsInteger, TreatAsCOBR) noexcept;
         template<typename Q>
         void moveGPR(ByteOrdinal destIndex, ByteOrdinal srcIndex, std::function<Q(Q)> transform, TreatAs<Q>) noexcept {
-            setGPR(destIndex, transform( getGPRValue(srcIndex, TreatAs<Q>{}) ), TreatAs<Q>{});
+            DEBUG_ENTER_FUNCTION;
+            auto result = transform(getGPRValue(srcIndex, TreatAs<Q>{}));
+            DEBUG_LOG_LEVEL(4) {
+                std::cout << __PRETTY_FUNCTION__ << ": transformation result 0x" << result << std::endl;
+            }
+            setGPR(destIndex, result, TreatAs<Q>{});
+            DEBUG_LEAVE_FUNCTION;
         }
         template<typename Q>
         void moveGPR(ByteOrdinal destIndex, ByteOrdinal srcIndex, TreatAs<Q>) noexcept {
@@ -1153,11 +1159,8 @@ class Core {
         void emul(LongRegister& dest, Ordinal src1, Ordinal src2) noexcept;
         void ediv(LongRegister& dest, Ordinal src1, const LongRegister& src2) noexcept;
         void arithmeticWithCarryGeneric(Ordinal result, bool src2MSB, bool src1MSB, bool destMSB) noexcept;
-        inline void advanceCOBRDisplacement(int16_t displacement) noexcept {
-            Register temp{0};
-            temp.alignedTransfer.important = displacement;
-            ip_.alignedTransfer.important += temp.alignedTransfer.important;
-            ip_.alignedTransfer.aligned = 0;
+        inline void advanceCOBRDisplacement(Integer displacement) noexcept {
+            ip_.i += displacement;
             advanceInstruction_ = false;
         }
         template<bool checkClear>
