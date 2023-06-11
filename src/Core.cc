@@ -564,17 +564,17 @@ Core::faultGeneric() noexcept {
 void
 Core::cycle() noexcept {
     DEBUG_ENTER_FUNCTION;
-    DEBUG_LOG_LEVEL(2) {
+    DEBUG_LOG_LEVEL(4) {
         std::cout << "{" << std::endl;
     }
-    DEBUG_LOG_LEVEL(3) {
+    DEBUG_LOG_LEVEL(5) {
         std::cout << "IP: 0x" << std::hex << ip_.getValue<Ordinal>() << std::endl;
         std::cout << "\tGETTING INSTRUCTION CONTENTS" << std::endl;
     }
     instruction_.setValue(load(ip_.a, TreatAsOrdinal{}), TreatAsOrdinal{});
     instructionLength_ = 4;
     advanceInstruction_ = true;
-    DEBUG_LOG_LEVEL(3) {
+    DEBUG_LOG_LEVEL(5) {
         std::cout << "\tGOT INSTRUCTION CONTENTS" << std::endl;
     }
     if (auto opcode = instruction_.getOpcode(); instruction_.isCTRL()) {
@@ -612,7 +612,7 @@ Core::cycle() noexcept {
     if (advanceInstruction_) {
         nextInstruction();
     }
-    DEBUG_LOG_LEVEL(2) {
+    DEBUG_LOG_LEVEL(3) {
         std::cout << "}" << std::endl;
     }
     DEBUG_LEAVE_FUNCTION;

@@ -33,11 +33,11 @@
 #include <istream>
 #include <iostream>
 constexpr uint8_t getDebugLoggingLevel() noexcept {
-    return 0;
+    return 5;
 }
 #define DEBUG_LOG_LEVEL(lvl) if constexpr (getDebugLoggingLevel() >= lvl)
-#define DEBUG_ENTER_FUNCTION DEBUG_LOG_LEVEL(5) std::cout << "Entering Function: " << __PRETTY_FUNCTION__ << std::endl
-#define DEBUG_LEAVE_FUNCTION DEBUG_LOG_LEVEL(5) std::cout << "Leaving Function: " << __PRETTY_FUNCTION__ << std::endl
+#define DEBUG_ENTER_FUNCTION DEBUG_LOG_LEVEL(6) std::cout << "Entering Function: " << __PRETTY_FUNCTION__ << std::endl
+#define DEBUG_LEAVE_FUNCTION DEBUG_LOG_LEVEL(6) std::cout << "Leaving Function: " << __PRETTY_FUNCTION__ << std::endl
 
 constexpr Ordinal DEFAULT_SALIGN = 4;
 /// faults
@@ -903,7 +903,7 @@ class Core {
         static constexpr Ordinal SALIGN = getSALIGNParameter();
         static constexpr Ordinal C = (SALIGN * 16) - 1;
         static constexpr Ordinal NotC = ~C;
-        static constexpr uint8_t NumberOfLocalRegisterFrames = 1;
+        static constexpr uint8_t NumberOfLocalRegisterFrames = 4;
 
     struct LocalRegisterSet {
     public:
