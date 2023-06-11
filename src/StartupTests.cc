@@ -86,6 +86,38 @@ Core::performSelfTest() noexcept {
         }
         return true;
     };
+    auto testScanbyteOperation = [this]() {
+        ac_.arith.conditionCode = 0;
+        auto& g0 = getGPR(0);
+        auto& g1 = getGPR(1);
+        auto scanbyte_reference = [](Ordinal src1, Ordinal src2) noexcept {
+            return ((src1 & 0x000000FF) == (src2 & 0x000000FF)) ||
+                   ((src1 & 0x0000FF00) == (src2 & 0x0000FF00)) ||
+                   ((src1 & 0x00FF0000) == (src2 & 0x00FF0000)) ||
+                   ((src1 & 0xFF000000) == (src2 & 0xFF000000));
+        };
+        auto exec = [this, scanbyte_reference](Ordinal a0, Ordinal a1) noexcept {
+            ac_.arith.conditionCode = 0;
+            auto r0 = scanbyte_reference(a0, a1);
+            scanbyte(a0, a1);
+            switch(ac_.getConditionCode()) {
+                case 0b000:
+                    return !r0;
+                case 0b010:
+                    return r0;
+                default: // we got something else
+                    return false;
+            }
+        };
+        Ordinal rand0 = static_cast<Ordinal>(random());
+        return exec(0, 0) &&
+               exec(0x11AB1100, 0x00AB0011) &&
+               exec(0x00AB0011, 0x11AB1100) &&
+               exec(rand0, rand0) &&
+               exec(random(), random()) &&
+               exec(0xFFFF'FFFF, 0xFFFF'FF00) &&
+               exec(0x01010101, 0x02020202);
+    };
     auto makeGenericOperation = [this](auto maker, auto doIt, auto converter, auto name, auto genSrc1, auto genSrc2) {
         return [this, maker, doIt, converter, name, genSrc1, genSrc2](ByteOrdinal gpr0 = random() & 0b11111,
                                                                       ByteOrdinal gpr1 = random() & 0b11111,
@@ -123,6 +155,7 @@ Core::performSelfTest() noexcept {
     return runTestCases(runTest,
                         testMoveOperations,
                         testRegisters,
+                        testScanbyteOperation,
                         (makeOrdinalOperation([this](Ordinal bitpos, Ordinal src, Ordinal) {
                             // implement it separately for comparison purposes
                                                   ac_.arith.conditionCode = random() & 0b111;
