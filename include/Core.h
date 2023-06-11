@@ -877,7 +877,7 @@ constexpr Ordinal getSALIGNParameter() noexcept {
     return DEFAULT_SALIGN;
 #endif
 }
-constexpr uint8_t DebugLoggingLevel = 2;
+constexpr uint8_t DebugLoggingLevel = 0;
 
 
 class Core {
