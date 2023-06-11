@@ -359,14 +359,15 @@ enum class Opcodes : uint16_t {
     cpyrsre = 0x6e3,
     movre = 0x6e9,
 
-    mulo = 0x700,
+    mulo = 0x701,
     remo = 0x708,
     divo = 0x70b,
 
-    muli = 0x710,
     remi = 0x718,
     modi = 0x719,
     divi = 0x71b,
+
+    muli = 0x741,
 
     divr = 0x78b,
     mulr = 0x78c,
