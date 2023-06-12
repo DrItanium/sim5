@@ -26,7 +26,6 @@
 #include "Types.h"
 #include "Core.h"
 #include "BinaryOperations.h"
-#include <type_traits>
 
 bool
 Core::performSelfTest() noexcept {
@@ -104,7 +103,7 @@ Core::performSelfTest() noexcept {
                     return false;
             }
         };
-        Ordinal rand0 = static_cast<Ordinal>(random());
+        auto rand0 = static_cast<Ordinal>(random());
         return exec(0, 0) &&
                exec(0x11AB1100, 0x00AB0011) &&
                exec(0x00AB0011, 0x11AB1100) &&
@@ -139,10 +138,10 @@ Core::performSelfTest() noexcept {
             cmpi(a0, a1);
             return ac_.getConditionCode() == r0;
         };
-        Ordinal testEqualityOrd = random();
-        Integer testEqualityInt = random();
-        return execOrdinal(random(), random()) &&
-               execInteger(random(), random()) &&
+        auto testEqualityOrd = static_cast<Ordinal>(random());
+        auto testEqualityInt = static_cast<Integer>(random());
+        return execOrdinal(static_cast<Ordinal>(random()), static_cast<Ordinal>(random())) &&
+               execInteger(static_cast<Integer>(random()), static_cast<Integer>(random())) &&
                execOrdinal(testEqualityOrd, testEqualityOrd) &&
                execInteger(testEqualityInt, testEqualityInt) &&
                 execOrdinal(0, 0) &&
@@ -150,7 +149,7 @@ Core::performSelfTest() noexcept {
 
     };
     auto makeGenericOperation = [this](auto maker, auto doIt, auto converter, auto name, auto genSrc1, auto genSrc2) {
-        return [this, maker, doIt, converter, name, genSrc1, genSrc2](ByteOrdinal gpr0 = random() & 0b11111,
+        return [this, maker, doIt, converter, genSrc1, genSrc2](ByteOrdinal gpr0 = random() & 0b11111,
                                                                       ByteOrdinal gpr1 = random() & 0b11111,
                                                                       ByteOrdinal gpr2 = random() & 0b11111) -> bool {
             auto rs0 = converter(genSrc1());
@@ -168,19 +167,19 @@ Core::performSelfTest() noexcept {
             return true;
         };
     };
-    auto genericIntegerOperation = [this, makeGenericOperation](auto maker, auto doIt, auto name, auto genSrc1, auto genSrc2) {
+    auto genericIntegerOperation = [makeGenericOperation](auto maker, auto doIt, auto name, auto genSrc1, auto genSrc2) {
         return makeGenericOperation(maker, doIt, [](auto value) { return static_cast<Integer>(value); }, name, genSrc1, genSrc2);
     };
-    auto genericOrdinalOperation = [this, makeGenericOperation](auto maker, auto doIt, auto name, auto genSrc1, auto genSrc2) {
+    auto genericOrdinalOperation = [makeGenericOperation](auto maker, auto doIt, auto name, auto genSrc1, auto genSrc2) {
         return makeGenericOperation(maker, doIt, [](auto value) { return static_cast<Ordinal>(value); }, name, genSrc1, genSrc2);
     };
-    auto makeIntegerOperation = [this, genericIntegerOperation](auto maker, auto doIt, auto name) {
+    auto makeIntegerOperation = [genericIntegerOperation](auto maker, auto doIt, auto name) {
         return genericIntegerOperation(maker, doIt, name, doRandom, doRandom);
     };
-    auto makeOrdinalOperation = [this, genericOrdinalOperation](auto maker, auto doIt, auto name) {
+    auto makeOrdinalOperation = [genericOrdinalOperation](auto maker, auto doIt, auto name) {
         return genericOrdinalOperation(maker, doIt, name, doRandom, doRandom);
     };
-    auto runTest = [this, clearRegisters](auto fn) {
+    auto runTest = [clearRegisters](auto fn) {
         return makeTestRunner(fn, clearRegisters, clearRegisters);
     };
     return runTestCases(runTest,

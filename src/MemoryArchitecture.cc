@@ -25,7 +25,6 @@
 //
 #include "Types.h"
 #include "Core.h"
-#include "BinaryOperations.h"
 
 ShortOrdinal
 Core::load(Address address, TreatAsShortOrdinal) const noexcept {

@@ -114,8 +114,8 @@ getCell(Address address) noexcept {
             std::cout << __PRETTY_FUNCTION__ << "(0x" << std::hex << offset << ")" << std::endl;
         }
         switch (offset & 0xFF'FFFF) {
-            case 0x00'0000: return 10 * 1024 * 1024;
-            case 0x00'0004: return 20 * 1024 * 1024;
+            case 0x00'0000: return static_cast<T>(10 * 1024 * 1024);
+            case 0x00'0004: return static_cast<T>(20 * 1024 * 1024);
             case 0x00'0008: return static_cast<T>(std::cin.get());
             default: return 0;
         }
@@ -203,7 +203,7 @@ store8(Address address, ByteInteger value, TreatAsByteInteger) noexcept {
 void
 store16(Address address, ShortInteger value, TreatAsShortInteger) noexcept {
     if ((address & 0b1) != 0) {
-        store8(address, value, TreatAsByteInteger{});
+        store8(address, static_cast<ByteInteger>(value), TreatAsByteInteger{});
         store8(address+1, static_cast<ByteInteger>(value >> 8), TreatAsByteInteger{});
     } else {
         switch (static_cast<uint8_t>(address >> 24)) {
@@ -248,7 +248,7 @@ store32(Address address, Integer value, TreatAsInteger) noexcept {
         std::cout << "\t\t" << __PRETTY_FUNCTION__ << "(0x" << std::hex << address << ", 0x" << std::hex << value << ");" << std::endl;
     }
     if ((address & 0b11) != 0) {
-        store16(address, value, TreatAsShortInteger{});
+        store16(address, static_cast<ShortInteger>(value), TreatAsShortInteger{});
         store16(address+2, static_cast<ShortInteger>(value >> 16), TreatAsShortInteger{});
     } else {
         switch (static_cast<uint8_t>(address >> 24)) {

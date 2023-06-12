@@ -96,7 +96,6 @@ Core::faultCallGeneric(const FaultRecord& record, Address address, Address stack
     // side! Three frames worth are necessary to make sure we have enough
     // padding.
     auto nextFrame = computeNextFrame<C*3, NotC>(stackPointer);
-    auto faultRecordStart = nextFrame - 48;
     auto fp = getGPRValue(FPIndex, TreatAsOrdinal{});
     // save the current registers to the stack
     enterCall(fp);
@@ -294,7 +293,7 @@ Core::procedureTableEntry_FaultCall(const FaultRecord& record, const FaultTableE
 
 void
 Core::supervisorProcedureTableEntry_FaultCall(const FaultRecord& record, Address procedureAddress, Address baseTableAddress) noexcept {
-    Address baseStackAddress = 0;
+    Address baseStackAddress;
     if (pc_.inSupervisorMode()) {
         // already in supervisor mode so use the current stack
         baseStackAddress = getStackPointer();

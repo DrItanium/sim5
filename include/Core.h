@@ -432,7 +432,7 @@ struct TreatAsCTRL { };
 struct TreatAsMEM { };
 using BackingUnionType = Ordinal;
 union Register {
-    constexpr Register(Ordinal value) : o(value) { }
+    constexpr explicit Register(Ordinal value) : o(value) { }
     Register() = default;
     Ordinal o;
     Integer i;
@@ -440,16 +440,16 @@ union Register {
     Real r;
     ByteOrdinal bytes[sizeof(Ordinal)];
     ShortOrdinal shorts[sizeof(Ordinal)/sizeof(ShortOrdinal)];
-    constexpr uint8_t getInstructionMask() const noexcept { 
+    [[nodiscard]] constexpr uint8_t getInstructionMask() const noexcept {
         return bytes[3] & 0b111;
     }
-    constexpr uint8_t getMajorOpcode() const noexcept {
+    [[nodiscard]] constexpr uint8_t getMajorOpcode() const noexcept {
         return bytes[3];
     }
-    constexpr bool isCTRL() const noexcept {
+    [[nodiscard]] constexpr bool isCTRL() const noexcept {
         return bytes[3] < 0x20;
     }
-    constexpr bool isCOBR() const noexcept {
+    [[nodiscard]] constexpr bool isCOBR() const noexcept {
         return (bytes[3] & 0b1110'0000) == 0b0010'0000;
     }
     struct {
@@ -595,7 +595,7 @@ union Register {
         BackingUnionType unused2 : 8;
     } trace;
     uint8_t interruptControl[4];
-    constexpr auto getConditionCode() const noexcept { return arith.conditionCode; }
+    [[nodiscard]] constexpr auto getConditionCode() const noexcept { return arith.conditionCode; }
     void setPriority(Ordinal value) noexcept { processControls.priority = value; }
     [[nodiscard]] constexpr ByteOrdinal getPriority() const noexcept { return processControls.priority; }
     [[nodiscard]] constexpr bool inSupervisorMode() const noexcept { return processControls.executionMode; }
@@ -1701,7 +1701,6 @@ class Core {
         bool getPendingInterruptBit(InterruptVector vector) const;
         void setPendingInterruptBit(InterruptVector vector);
         void clearPendingInterruptBit(InterruptVector vector);
-        bool vectorIsPending(InterruptVector vector) const;
         void obtainedPendingVector(InterruptVector vector);
         bool pendingInterruptPriorityClear(InterruptVector vector) const;
         ByteOrdinal getPendingInterruptBitsForPriority(uint8_t priority) const;

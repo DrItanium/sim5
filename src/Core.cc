@@ -80,17 +80,6 @@ Core::getSrc2Register(TreatAsREG) const noexcept {
     }
 }
 
-Ordinal 
-Core::unpackSrc1(TreatAsOrdinal, TreatAsREG) noexcept {
-    if (instruction_.reg.m1) {
-        /// @todo what to do if s1 is also set?
-        return constants_.getValue<Ordinal>(instruction_.reg.src1);
-    } else if (instruction_.reg.s1) {
-        return getSFR(instruction_.reg.src1).o;
-    } else {
-        return getGPRValue(instruction_.reg.src1, TreatAsOrdinal{});
-    }
-}
 
 Ordinal 
 Core::unpackSrc1(ByteOrdinal offset, TreatAsOrdinal, TreatAsREG) noexcept {
@@ -103,40 +92,6 @@ Core::unpackSrc1(ByteOrdinal offset, TreatAsOrdinal, TreatAsREG) noexcept {
         return getGPRValue(instruction_.reg.src1, offset, TreatAsOrdinal{});
     }
 }
-
-Integer 
-Core::unpackSrc1(TreatAsInteger, TreatAsREG) noexcept {
-    if (instruction_.reg.m1) {
-        return constants_.getValue<Integer>(instruction_.reg.src1);
-    } else if (instruction_.reg.s1) {
-        return getSFR(instruction_.reg.src1).i;
-    } else {
-        return getGPRValue(instruction_.reg.src1, TreatAsInteger{});
-    }
-}
-
-Ordinal 
-Core::unpackSrc2(TreatAsOrdinal, TreatAsREG) noexcept {
-    if (instruction_.reg.m2) {
-        return constants_.getValue<Ordinal>(instruction_.reg.src2);
-    } else if (instruction_.reg.s2) {
-        return getSFR(instruction_.reg.src2).o;
-    } else {
-        return getGPRValue(instruction_.reg.src2, TreatAsOrdinal{});
-    }
-}
-
-Integer 
-Core::unpackSrc2(TreatAsInteger, TreatAsREG) noexcept {
-    if (instruction_.reg.m2) {
-        return constants_.getValue<Integer>(instruction_.reg.src2);
-    } else if (instruction_.reg.s2) {
-        return getSFR(instruction_.reg.src2).i;
-    } else {
-        return getGPRValue(instruction_.reg.src2, TreatAsInteger{});
-    }
-}
-
 
 void
 Core::scanbyte(Ordinal src1, Ordinal src2) noexcept {
@@ -221,49 +176,6 @@ Core::getSupervisorStackPointer() const noexcept {
     return load((getSystemProcedureTableBase() + 12), TreatAsOrdinal{});
 }
 
-
-Ordinal 
-Core::unpackSrc1(TreatAsOrdinal, TreatAsCOBR) noexcept {
-    if (instruction_.cobr.m1) {
-        // treat src1 as a literal
-        return instruction_.cobr.src1;
-    } else {
-        return getGPRValue(instruction_.cobr.src1, TreatAsOrdinal{});
-    }
-}
-
-Ordinal
-Core::unpackSrc2(TreatAsOrdinal, TreatAsCOBR) noexcept {
-    if (instruction_.cobr.s2) {
-        // access the contents of the sfrs
-        // at this point it is just a simple extra set of 32 registers
-        return getSFR(instruction_.cobr.src2).o;
-    } else {
-        return getGPRValue(instruction_.cobr.src2, TreatAsOrdinal{});
-    }
-}
-
-Integer
-Core::unpackSrc1(TreatAsInteger, TreatAsCOBR) noexcept {
-    if (instruction_.cobr.m1) {
-        // treat src1 as a literal
-        return instruction_.cobr.src1;
-    } else {
-        return getGPRValue(instruction_.cobr.src1, TreatAsInteger{});
-    }
-}
-
-Integer
-Core::unpackSrc2(TreatAsInteger, TreatAsCOBR) noexcept {
-    if (instruction_.cobr.s2) {
-        // access the contents of the sfrs
-        // at this point it is just a simple extra set of 32 registers
-        return getSFR(instruction_.cobr.src2).i;
-    } else {
-        return getGPRValue(instruction_.cobr.src2, TreatAsInteger{});
-    }
-}
-
 Register& 
 Core::getSFR(ByteOrdinal index) noexcept {
     return sfrs_.get(index);
@@ -278,12 +190,6 @@ const Register&
 Core::getSFR(ByteOrdinal index) const noexcept {
     return sfrs_.get(index);
 }
-
-const Register& 
-Core::getSFR(ByteOrdinal index, ByteOrdinal offset) const noexcept {
-    return getSFR((index + offset) & 0b11111);
-}
-
 
 void
 Core::mark() noexcept {
@@ -332,7 +238,7 @@ Core::computeAddress() noexcept {
             // okay so it is going to be the displacement versions
             // load 32-bits into the optionalDisplacement field
             instructionLength_ = 8;
-            Integer iresult = static_cast<Integer>(load(ip_.a + 4, TreatAsOrdinal{})); // load the optional displacement
+            auto iresult = static_cast<Integer>(load(ip_.a + 4, TreatAsOrdinal{})); // load the optional displacement
             if (instruction_.memb_grp2.useIndex) {
                 iresult += (getGPRValue(instruction_.memb_grp2.index, TreatAsInteger{}) << static_cast<Integer>(instruction_.memb_grp2.scale));
             }
@@ -579,7 +485,7 @@ Core::cycle() noexcept {
         std::cout << "\tGOT INSTRUCTION CONTENTS" << std::endl;
     }
     if (auto opcode = instruction_.getOpcode(); instruction_.isCTRL()) {
-        processInstruction(opcode, instruction_.getDisplacement(TreatAsCTRL{}), TreatAsCTRL{});
+        processInstruction(opcode, static_cast<Integer>(instruction_.getDisplacement(TreatAsCTRL{})), TreatAsCTRL{});
     } else if (instruction_.isCOBR()) {
         Register& src2 = instruction_.cobr.s2 ? getSFR(instruction_.cobr.src2) : getGPR(instruction_.cobr.src2);
         if (instruction_.cobr.m1) {
@@ -588,14 +494,14 @@ Core::cycle() noexcept {
                     instruction_.getInstructionMask(),
                     src1Value, 
                     src2,
-                    instruction_.getDisplacement(TreatAsCOBR{}),
+                    static_cast<ShortInteger>(instruction_.getDisplacement(TreatAsCOBR{})),
                     TreatAsCOBR{});
         } else {
             processInstruction(opcode,
                     instruction_.getInstructionMask(),
                     getGPR(instruction_.cobr.src1),
                     src2,
-                    instruction_.getDisplacement(TreatAsCOBR{}),
+                    static_cast<ShortInteger>(instruction_.getDisplacement(TreatAsCOBR{})),
                     TreatAsCOBR{});
         }
     } else if (instruction_.isMEMFormat()) {
@@ -1058,13 +964,13 @@ Core::processInstruction(Opcodes opcode, Register& srcDest, Address effectiveAdd
             // short word, the value is truncated and the integer overflow
             // condition is signalled.
             /// @todo fully implement fault detection
-            store(effectiveAddress, srcDest.getValue<Integer>(), TreatAs<ByteInteger>());
+            store(effectiveAddress, static_cast<ByteInteger>(srcDest.getValue<Integer>()), TreatAs<ByteInteger>());
             break;
         case Opcodes::stis:
             // If the register data is too large to be stored as a byte or
             // short word, the value is truncated and the integer overflow
             // condition is signalled.
-            store(effectiveAddress, srcDest.getValue<Integer>(), TreatAs<ShortInteger>{});
+            store(effectiveAddress, static_cast<ShortInteger>(srcDest.getValue<Integer>()), TreatAs<ShortInteger>{});
             /// @todo fully implement fault detection
             break;
         case Opcodes::ld:
@@ -1179,7 +1085,7 @@ Core::processInstruction(Opcodes opcode, Register& regDest, const Register& src1
             break;
         case Opcodes::shrdi: // shrdi
                              // according to the manual, equivalent to divi value, 2 so that is what we're going to do for correctness sake
-            regDest.setValue<Integer>( static_cast<Integer>(src1) < 32 && static_cast<Integer>(src1) >= 0 ? static_cast<Integer>(src2) / computeBitPosition(static_cast<Integer>(src1)) : 0);
+            regDest.setValue<Integer>( static_cast<Integer>(src1) < 32 && static_cast<Integer>(src1) >= 0 ? static_cast<Integer>(src2) / static_cast<Integer>(computeBitPosition(static_cast<Integer>(src1))) : 0);
             break;
         case Opcodes::shri: 
             shri(regDest, static_cast<Integer>(src1), static_cast<Integer>(src2));
@@ -1197,7 +1103,7 @@ Core::processInstruction(Opcodes opcode, Register& regDest, const Register& src1
             cmpo(static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
             break;
         case Opcodes::cmpi: // cmpi
-            cmpi(static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
+            cmpi(static_cast<Integer>(src1), static_cast<Integer>(src2));
             break;
         case Opcodes::concmpo: // concmpo
             concmpo(static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));

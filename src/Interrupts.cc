@@ -116,14 +116,10 @@ Core::postInterrupt(InterruptVector vector) {
     setPendingInterruptBit(vector);
 }
 
-bool
-Core::vectorIsPending(InterruptVector vector) const {
-    // an interrupt vector i is considered to be pending when bit i is set in
-    // pending interrupts and bit i/32 is set in pending priorities
-    //
-    // -- Pg 53 of The 80960 Microprocessor Architecture by Glenford J. Myers & David L. Budde
-    return getPendingPriorityBit(vector) && getPendingInterruptBit(vector);
-}
+// an interrupt vector i is considered to be pending when bit i is set in
+// pending interrupts and bit i/32 is set in pending priorities
+//
+// -- Pg 53 of The 80960 Microprocessor Architecture by Glenford J. Myers & David L. Budde
 
 void
 Core::obtainedPendingVector(InterruptVector vector) {
