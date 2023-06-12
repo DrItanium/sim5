@@ -93,9 +93,29 @@ Core::callx(Address effectiveAddress) noexcept {
     // wait for any uncompleted instructions to finish
     auto temp = getNextFrameBase(); // round stack pointer to next boundary
     auto fp = getFramePointerAddress();
+    DEBUG_LOG_LEVEL(1) {
+        auto g0 = getGPRValue<Ordinal>(GlobalRegisterBase + 0);
+        auto g1 = getGPRValue<Ordinal>(GlobalRegisterBase + 1);
+        auto g2 = getGPRValue<Ordinal>(GlobalRegisterBase + 2);
+        auto g3 = getGPRValue<Ordinal>(GlobalRegisterBase + 3);
+        auto g4 = getGPRValue<Ordinal>(GlobalRegisterBase + 4);
+        auto g5 = getGPRValue<Ordinal>(GlobalRegisterBase + 5);
+        auto g6 = getGPRValue<Ordinal>(GlobalRegisterBase + 6);
+        auto g7 = getGPRValue<Ordinal>(GlobalRegisterBase + 7);
+        std::cout << __PRETTY_FUNCTION__ << ": (0x" << g0 <<
+        ", 0x" << g1 <<
+        ", 0x" << g2 <<
+        ", 0x" << g3 <<
+        ", 0x" << g4 <<
+        ", 0x" << g5 <<
+        ", 0x" << g6 <<
+        ", 0x" << g7 <<
+        ")" << std::endl;
+
+        std::cout << __PRETTY_FUNCTION__ << ": (ea): 0x" << std::hex << effectiveAddress << std::endl;
+    }
     DEBUG_LOG_LEVEL(2) {
         std::cout << __PRETTY_FUNCTION__ << ": (fp): 0x" << std::hex << fp << std::endl;
-        std::cout << __PRETTY_FUNCTION__ << ": (ea): 0x" << std::hex << effectiveAddress << std::endl;
         std::cout << __PRETTY_FUNCTION__ << ": (newFP): 0x" << std::hex << temp << std::endl;
         auto rip = getGPRValue<Ordinal>(RIPIndex);
         std::cout << __PRETTY_FUNCTION__ << ": (rip before): 0x" << std::hex << rip << std::endl;
@@ -117,6 +137,25 @@ Core::call(Integer displacement) noexcept {
     // wait for any uncompleted instructions to finish
     auto temp = getNextFrameBase(); // round stack pointer to next boundary
     auto fp = getFramePointerAddress();
+    DEBUG_LOG_LEVEL(1) {
+        auto g0 = getGPRValue<Ordinal>(GlobalRegisterBase + 0);
+        auto g1 = getGPRValue<Ordinal>(GlobalRegisterBase + 1);
+        auto g2 = getGPRValue<Ordinal>(GlobalRegisterBase + 2);
+        auto g3 = getGPRValue<Ordinal>(GlobalRegisterBase + 3);
+        auto g4 = getGPRValue<Ordinal>(GlobalRegisterBase + 4);
+        auto g5 = getGPRValue<Ordinal>(GlobalRegisterBase + 5);
+        auto g6 = getGPRValue<Ordinal>(GlobalRegisterBase + 6);
+        auto g7 = getGPRValue<Ordinal>(GlobalRegisterBase + 7);
+        std::cout << __PRETTY_FUNCTION__ << ": (0x" << g0 <<
+                  ", 0x" << g1 <<
+                  ", 0x" << g2 <<
+                  ", 0x" << g3 <<
+                  ", 0x" << g4 <<
+                  ", 0x" << g5 <<
+                  ", 0x" << g6 <<
+                  ", 0x" << g7 <<
+                  ")" << std::endl;
+    }
     DEBUG_LOG_LEVEL(2) {
         std::cout << __PRETTY_FUNCTION__ << ": (fp): 0x" << std::hex << fp << std::endl;
         std::cout << __PRETTY_FUNCTION__ << ": (disp): 0x" << std::hex << displacement << std::endl;
@@ -167,6 +206,25 @@ Core::calls(Ordinal src1) noexcept {
         // make a copy of the frame pointer and then modify it
         enterCall(fp);
         setupNewFrameInternals(copy.getValue<Ordinal>(), temp);
+        DEBUG_LOG_LEVEL(1) {
+            auto g0 = getGPRValue<Ordinal>(GlobalRegisterBase + 0);
+            auto g1 = getGPRValue<Ordinal>(GlobalRegisterBase + 1);
+            auto g2 = getGPRValue<Ordinal>(GlobalRegisterBase + 2);
+            auto g3 = getGPRValue<Ordinal>(GlobalRegisterBase + 3);
+            auto g4 = getGPRValue<Ordinal>(GlobalRegisterBase + 4);
+            auto g5 = getGPRValue<Ordinal>(GlobalRegisterBase + 5);
+            auto g6 = getGPRValue<Ordinal>(GlobalRegisterBase + 6);
+            auto g7 = getGPRValue<Ordinal>(GlobalRegisterBase + 7);
+            std::cout << __PRETTY_FUNCTION__ << ": (0x" << g0 <<
+                      ", 0x" << g1 <<
+                      ", 0x" << g2 <<
+                      ", 0x" << g3 <<
+                      ", 0x" << g4 <<
+                      ", 0x" << g5 <<
+                      ", 0x" << g6 <<
+                      ", 0x" << g7 <<
+                      ")" << std::endl;
+        }
     }
 }
 void

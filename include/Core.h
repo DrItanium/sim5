@@ -33,7 +33,7 @@
 #include <istream>
 #include <iostream>
 constexpr uint8_t getDebugLoggingLevel() noexcept {
-    return 5;
+    return 1;
 }
 #define DEBUG_LOG_LEVEL(lvl) if constexpr (getDebugLoggingLevel() >= lvl)
 #define DEBUG_ENTER_FUNCTION DEBUG_LOG_LEVEL(6) std::cout << "Entering Function: " << __PRETTY_FUNCTION__ << std::endl
@@ -363,11 +363,11 @@ enum class Opcodes : uint16_t {
     remo = 0x708,
     divo = 0x70b,
 
-    remi = 0x718,
-    modi = 0x719,
-    divi = 0x71b,
-
     muli = 0x741,
+    remi = 0x748,
+    modi = 0x749,
+    divi = 0x74b,
+
 
     divr = 0x78b,
     mulr = 0x78c,
@@ -651,9 +651,24 @@ union Register {
         }
         i = value;
     }
-    [[nodiscard]] Integer getValue(TreatAsInteger) const noexcept { return i; }
-    [[nodiscard]] Ordinal getValue(TreatAsOrdinal) const noexcept { return o; }
-    [[nodiscard]] Real getValue(TreatAsReal) const noexcept { return r; }
+    [[nodiscard]] Integer getValue(TreatAsInteger) const noexcept {
+        DEBUG_LOG_LEVEL(4)  {
+            std::cout << __PRETTY_FUNCTION__ << ": 0x" << std::hex << i << std::endl;
+        }
+        return i;
+    }
+    [[nodiscard]] Ordinal getValue(TreatAsOrdinal) const noexcept {
+        DEBUG_LOG_LEVEL(4)  {
+            std::cout << __PRETTY_FUNCTION__ << ": 0x" << std::hex << o << std::endl;
+        }
+        return o;
+    }
+    [[nodiscard]] Real getValue(TreatAsReal) const noexcept {
+        DEBUG_LOG_LEVEL(4)  {
+            std::cout << __PRETTY_FUNCTION__ << ": 0x" << std::hex << reinterpret_cast<Ordinal>(o) << std::endl;
+        }
+        return r;
+    }
     template<typename T>
     [[nodiscard]] T getValue() const noexcept {
         return getValue(TreatAs<T>{});
@@ -1200,9 +1215,11 @@ class Core {
         template<bool checkClear>
         void 
         branchIfBitGeneric(Ordinal bitpos, const Register& src2 , int16_t displacement) {
-            //Ordinal bitpos = computeBitPosition(unpackSrc1(TreatAsOrdinal{}, TreatAsCOBR{}));
-            //Ordinal against = unpackSrc2(TreatAsOrdinal{}, TreatAsCOBR{});
             Ordinal against = src2.getValue<Ordinal>();
+            DEBUG_LOG_LEVEL(1) {
+                std::cout << __PRETTY_FUNCTION__ << ": bitpos: 0x" << std::hex << bitpos
+                << ", src2: 0x" << std::hex << against << std::endl;
+            }
             bool condition = false;
             // Branch if bit set
             if constexpr (checkClear) {
@@ -1241,7 +1258,15 @@ class Core {
         }
         template<typename Q>
         void cmpxbGeneric(uint8_t mask, Q src1, Q src2, int16_t displacement, TreatAs<Q>) noexcept {
+            DEBUG_LOG_LEVEL(1) {
+                std::cout << __PRETTY_FUNCTION__ << ": src1: 0x" << std::hex << src1
+                << ", src2: 0x" << std::hex << src2
+                << ", displacement: 0x" << std::hex << displacement << std::endl;
+            }
             cmpGeneric<Q>(src1, src2);
+            DEBUG_LOG_LEVEL(1) {
+                std::cout << __PRETTY_FUNCTION__ << ": ac result: 0x" << std::hex << ac_.getConditionCode() << std::endl;
+            }
             if ((mask & ac_.getConditionCode()) != 0) {
                 advanceCOBRDisplacement(displacement);
             } 
@@ -1300,11 +1325,27 @@ class Core {
         }
         template<typename Q>
         void add(Register& destination, Q src1, Q src2, TreatAs<Q>) noexcept {
-            destination.setValue(::addOperation<Q>(src2, src1), TreatAs<Q>{});
+            auto result = ::addOperation<Q>(src2, src1);
+            DEBUG_LOG_LEVEL(1) {
+                std::cout << __PRETTY_FUNCTION__ << ": (+ 0x"
+                          << std::hex << src2
+                          << " 0x" << std::hex << src1
+                          << ") -> 0x" << std::hex << result
+                          << std::endl;
+            }
+            destination.setValue(result, TreatAs<Q>{});
         }
         template<typename Q>
         void sub(Register& destination, Q src1, Q src2, TreatAs<Q>) noexcept {
-            destination.setValue(::subOperation<Q>(src2, src1), TreatAs<Q>{});
+            auto result = ::subOperation<Q>(src2, src1);
+            DEBUG_LOG_LEVEL(1) {
+                std::cout << __PRETTY_FUNCTION__ << ": (- 0x"
+                          << std::hex << src2
+                          << " 0x" << std::hex << src1
+                          << ") -> 0x" << std::hex << result
+                          << std::endl;
+            }
+            destination.setValue(result, TreatAs<Q>{});
         }
         template<typename Q>
         void mult(Register& destination, Q src1, Q src2, TreatAs<Q>) noexcept {
