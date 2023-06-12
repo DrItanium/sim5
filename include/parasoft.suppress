@@ -1,0 +1,159 @@
+# Define suppressions to prevent reporting of selected violations
+# detected by Parasoft analysis.
+# Note: One suppression entry can affect more than one violation.
+#
+# Example:
+#
+# suppression-begin
+# file: file.ext               (required)
+# line: 12                     (optional)
+# rule-id: BD-PB-VOVR          (optional)
+# message: Avoid unused values (optional)
+# reason: Approved             (optional)
+# author: devel                (optional)
+# date: 2020-09-21             (optional)
+# suppression-end
+
+suppression-begin
+file: Core.h
+rule-id: OPT-14
+message: The parameter number '2' of function 'setValue' is passed by value
+reason: Tag Dispatch
+author: jwscoggins
+suppression-end
+
+suppression-begin
+file: Core.h
+rule-id: OPT-14
+message: The parameter number '1' of function 'getValue' is passed by value
+reason: Tag Dispatch
+author: jwscoggins
+suppression-end
+
+suppression-begin
+file: Core.h
+rule-id: OPT-14
+message: The parameter number '5' of function 'cmpxbGeneric' is passed by value
+reason: Tag Dispatch
+author: jwscoggins
+suppression-end
+
+suppression-begin
+file: Core.h
+rule-id: OPT-14
+message: The parameter number '2' of function 'aligned' is passed by value
+reason: Tag Dispatch
+author: jwscoggins
+suppression-end
+
+suppression-begin
+file: Core.h
+rule-id: OPT-14
+message: The parameter number '2' of function 'get' is passed by value
+reason: Tag Dispatch
+author: jwscoggins
+suppression-end
+
+suppression-begin
+file: Core.h
+rule-id: OPT-14
+message: The parameter number '4' of function 'moveGPR' is passed by value
+reason: Tag Dispatch
+author: jwscoggins
+suppression-end
+
+suppression-begin
+file: Core.h
+rule-id: OPT-14
+message: The parameter number '2' of function 'unpackSrc1' is passed by value
+reason: Tag Dispatch
+author: jwscoggins
+suppression-end
+
+suppression-begin
+file: Core.h
+rule-id: OPT-14
+message: The parameter number '2' of function 'getGPRValue' is passed by value
+reason: Tag Dispatch
+author: jwscoggins
+suppression-end
+
+suppression-begin
+file: Core.h
+rule-id: OPT-14
+message: The parameter number '1' of function 'getSrc1Register' is passed by value
+reason: Tag Dispatch
+author: jwscoggins
+suppression-end
+
+suppression-begin
+file: Core.h
+rule-id: OPT-14
+message: The parameter 'transform' of function 'moveGPR' is passed by value
+reason: Tag Dispatch
+author: jwscoggins
+suppression-end
+
+suppression-begin
+file: Core.h
+rule-id: OPT-14
+message: The parameter number '3' of function 'moveGPR' is passed by value
+reason: Tag Dispatch
+author: jwscoggins
+suppression-end
+
+suppression-begin
+file: Core.h
+rule-id: OPT-14
+message: The parameter number '1' of function 'unpackSrc1' is passed by value
+reason: Tag Dispatch
+author: jwscoggins
+suppression-end
+
+suppression-begin
+file: Core.h
+rule-id: OPT-14
+message: The parameter number '1' of function 'getSrc2Register' is passed by value
+reason: Tag Dispatch
+author: jwscoggins
+suppression-end
+
+suppression-begin
+file: Core.h
+rule-id: OPT-14
+message: The parameter number '2' of function 'unpackSrc2' is passed by value
+reason: Tag Dispatch
+author: jwscoggins
+suppression-end
+
+suppression-begin
+file: Core.h
+rule-id: OPT-14
+message: The parameter number '3' of function 'setGPR' is passed by value
+reason: Tag Dispatch
+author: jwscoggins
+suppression-end
+
+suppression-begin
+file: Core.h
+rule-id: OPT-14
+message: The parameter number '3' of function 'unpackSrc1' is passed by value
+reason: Tag Dispatch
+author: jwscoggins
+suppression-end
+
+suppression-begin
+file: Core.h
+rule-id: OPT-14
+message: The parameter number '1' of function 'unpackSrc2' is passed by value
+reason: Tag Dispatch
+author: jwscoggins
+suppression-end
+
+suppression-begin
+file: Core.h
+rule-id: OPT-14
+message: The parameter number '5' of function 'moveGPR' is passed by value
+reason: Tag Dispatch
+author: jwscoggins
+suppression-end
