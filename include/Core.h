@@ -705,11 +705,11 @@ union Register {
     }
     constexpr auto getDisplacement(TreatAsCTRL) const noexcept {
         // clear the lowest two bits since those can be reserved for other things
-        return ctrl.displacement & 0xFFFF'FFFC;
+        return alignTo4ByteBoundaries(ctrl.displacement, TreatAs<Integer>{});
     }
     constexpr auto getDisplacement(TreatAsCOBR) const noexcept {
         // clear the lowest two bits
-        return cobrDisplacement.displacement & 0xFFFF'FFFC;
+        return alignTo4ByteBoundaries(cobrDisplacement.displacement, TreatAs<Integer>{});
     }
 };
 static_assert(sizeof(Register) == sizeof(Ordinal));

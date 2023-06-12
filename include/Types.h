@@ -35,8 +35,7 @@ using LongOrdinal = uint64_t;
 using LongInteger = int64_t;
 using Real = float;
 using LongReal = double;
-using ExtendedReal = long double;
-template<typename T> struct TreatAs { };
+template<typename T> struct TreatAs { using BackingType = T; };
 using TreatAsOrdinal = TreatAs<Ordinal>;
 using TreatAsInteger = TreatAs<Integer>;
 using TreatAsShortOrdinal = TreatAs<ShortOrdinal>;
@@ -47,31 +46,15 @@ using TreatAsLongOrdinal = TreatAs<LongOrdinal>;
 using TreatAsLongInteger = TreatAs<LongInteger>;
 using TreatAsReal = TreatAs<Real>;
 using TreatAsLongReal = TreatAs<LongReal>;
-using TreatAsExtendedReal = TreatAs<ExtendedReal>;
 
 
 constexpr Ordinal computeChecksumOffset(Address segmentTableBase, Address prcbBase, Address startAddress) noexcept {
     return -(segmentTableBase+prcbBase+startAddress);
 }
 static_assert(computeChecksumOffset(0, 0xb0, 0x6ec) == 0xffff'f864, "checksum offset is broken!");
-constexpr Address alignTo16ByteBoundaries(Address value) noexcept {
-    constexpr Address Mask = 0xFFFF'FFF0;
-    return value & Mask;
-}
-constexpr Address alignTo4ByteBoundaries(Address value) noexcept {
+template<typename T>
+constexpr Address alignTo4ByteBoundaries(T value, TreatAs<T>) noexcept {
     constexpr Address Mask = ~(0b11);
-    return value & Mask;
-}
-constexpr Address alignTo8ByteBoundaries(Address value) noexcept {
-    constexpr Address Mask = ~(0b111);
-    return value & Mask;
-}
-constexpr Address alignTo64ByteBoundaries(Address value) noexcept {
-    constexpr Address Mask = ~(0b11'1111);
-    return value & Mask;
-}
-constexpr Address alignTo4096ByteBoundaries(Address value) noexcept {
-    constexpr Address Mask = ~(0xFFF);
     return value & Mask;
 }
 using SegmentSelector = Ordinal;
@@ -138,71 +121,17 @@ struct [[gnu::packed]] FaultTableEntry {
     public:
         explicit constexpr FaultTableEntry(Ordinal addr, SegmentSelector selector) noexcept : handlerFunctionAddress_(addr), selector_(selector) { }
         constexpr FaultTableEntry() noexcept : FaultTableEntry(0, 0) { }
-        constexpr bool isSystemTableEntry() const noexcept { return (handlerFunctionAddress_ & 0b11) == 0b10; }
-        constexpr bool isLocalProcedureEntry() const noexcept { return (handlerFunctionAddress_ & 0b11) == 0; }
-        constexpr auto getSegmentSelector() const noexcept { return selector_; }
-        constexpr auto getFaultHandlerProcedureAddress() const noexcept { return handlerFunctionAddress_; }
-        constexpr auto getFaultHandlerProcedureNumber() const noexcept { return (handlerFunctionAddress_ & (~0b11)); }
+        [[nodiscard]] constexpr bool isSystemTableEntry() const noexcept { return (handlerFunctionAddress_ & 0b11) == 0b10; }
+        [[nodiscard]] constexpr bool isLocalProcedureEntry() const noexcept { return (handlerFunctionAddress_ & 0b11) == 0; }
+        [[nodiscard]] constexpr auto getSegmentSelector() const noexcept { return selector_; }
+        [[nodiscard]] constexpr auto getFaultHandlerProcedureAddress() const noexcept { return handlerFunctionAddress_; }
+        [[nodiscard]] constexpr auto getFaultHandlerProcedureNumber() const noexcept { return (handlerFunctionAddress_ & (~0b11)); }
     private:
         Ordinal handlerFunctionAddress_;
         SegmentSelector selector_;
 };
 
 
-struct [[gnu::packed]] FaultTable {
-    FaultTableEntry entries[32];
-};
-static_assert(sizeof(FaultTable) == 256);
-
-struct [[gnu::packed]] InterruptTable {
-    Ordinal pendingPriorities;
-    Ordinal pendingInterrupts[8];
-    Address interruptProcedureBases[248];
-};
-
-/**
- * @brief A data structure pushed onto the stack when an interrupt is
- * triggered.
- */
-struct InterruptRecord {
-    /**
-     * @brief Contents of process controls register at the time of the
-     * interrupt trigger.
-     */
-    Ordinal pc;
-    /**
-     * @brief Contents of arithmetic controls register at the time of the
-     * interrupt trigger.
-     */
-    Ordinal ac;
-    /**
-     * @brief The vector being triggered
-     */
-    ByteOrdinal vectorNumber;
-};
-
-/**
- * @brief Used by the i960 when invoking the "calls" instruction; Allows
- * for indirect system calls based off of index; 
- */
-struct SystemProcedureTable {
-    Ordinal reserved[3];
-    /**
-     * @brief The address of the supervisorStack
-     */
-    Ordinal supervisorStack; 
-    /**
-     * @brief A set of 8 words that the i960 will preserve; It has no
-     * external purpose; Must be zero
-     */
-    Ordinal preserved[8];
-
-    /**
-     * @brief The base address of the functions to be called indirectly by
-     * the "calls" instruction.
-     */
-    Address entries[260];
-};
 struct [[gnu::packed]] SegmentDescriptor {
     constexpr SegmentDescriptor(Ordinal reserved0, Ordinal reserved1, Ordinal addr, Ordinal config) noexcept 
         : reserved{reserved0, reserved1}, address(addr), cfg{config} {
@@ -220,7 +149,7 @@ struct [[gnu::packed]] SegmentDescriptor {
     Ordinal reserved[2];
     Address address;
     union [[gnu::packed]] Configuration {
-        constexpr Configuration(Ordinal value = 0) : raw(value) { }
+        constexpr explicit Configuration(Ordinal value = 0) : raw(value) { }
         Ordinal raw = 0;
         struct {
             Ordinal valid : 1;
@@ -236,52 +165,6 @@ struct [[gnu::packed]] SegmentDescriptor {
 };
 static_assert(sizeof(SegmentDescriptor) == 16, "Segment descriptors must be 16 bytes in length");
 
-/**
- * @brief Write this value to reservedBootArgs of the PRCB; It will disable cpu
- * prefetching which can reduce performance
- */
-constexpr Ordinal DisablePrefetching_Sx = 0xFFFF'FF10;
-
-/**
- * @brief Used by the processor to describe initial system state
- */
-struct [[gnu::packed]] ProcessorControlBlock {
-    Ordinal reserved0;
-    Ordinal processorControls; // this is a magic number of the Sx series
-    Ordinal reserved1;
-    Ordinal currentProcessSS;
-    Ordinal dispatchPortSS;
-    Ordinal interruptTableBase;
-    Ordinal interruptStackBase;
-    Ordinal reserved2;
-    SegmentSelector region3Selector; 
-    SegmentSelector systemProcedureTableSelector;
-    Address faultTablePhysicalAddress;
-    Ordinal reservedBootArgs; // @44
-    Ordinal multiprocessorPreemption[3];
-    Ordinal reserved3;
-    LongOrdinal idleTime;
-    Ordinal systemErrorFault;
-    Ordinal reserved4;
-    Ordinal resumptionRecord[12];
-    FaultRecord systemErrorFaultRecord;
-    //static_assert(sizeof(resumptionRecord) == 48);
-};
-
-using PRCB = ProcessorControlBlock;
-static_assert(sizeof(ProcessorControlBlock) == 176);
-
-union SplitWord128 {
-    uint64_t longWords[2];
-    uint32_t words[4];
-    uint16_t halfWords[8];
-    uint8_t bytes[16];
-    double longReals[2];
-    float reals[4];
-};
-static_assert(sizeof(double) == 8);
-static_assert(sizeof(float) == 4);
-static_assert(sizeof(SplitWord128) == 16);
 
 constexpr uint8_t computeInterruptPriority(uint8_t vector) noexcept {
     return vector / 8;
