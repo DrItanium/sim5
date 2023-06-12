@@ -90,7 +90,7 @@ suppression-begin
 file: Core.h
 rule-id: OPT-14
 message: The parameter 'transform' of function 'moveGPR' is passed by value
-reason: Tag Dispatch
+reason: std::functions should be passed by value not reference
 author: jwscoggins
 suppression-end
 
