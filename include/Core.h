@@ -1204,7 +1204,7 @@ class Core {
         }
         void branch(Integer displacement) noexcept;
         void branchConditional(bool condition, Integer displacement) noexcept;
-        void scanbyte(Ordinal src2, Ordinal src1) noexcept;
+        void scanbyte(Ordinal src1, Ordinal src2) noexcept;
         void emul(LongRegister& dest, Ordinal src1, Ordinal src2) noexcept;
         void ediv(LongRegister& dest, Ordinal src1, const LongRegister& src2) noexcept;
         void arithmeticWithCarryGeneric(Ordinal result, bool src2MSB, bool src1MSB, bool destMSB) noexcept;

@@ -1112,29 +1112,23 @@ Core::processInstruction(Opcodes opcode, Register& srcDest, Address effectiveAdd
 void 
 Core::processInstruction(Opcodes opcode, Register& regDest, const Register& src1, const Register& src2, TreatAsREG) noexcept {
     switch (opcode) {
-        case Opcodes::nand: // nand
-            nand(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
+        case Opcodes::notbit:
+            notbit(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
             break;
-        case Opcodes::andOperation: // and
+        case Opcodes::andOperation:
             andOperation(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
             break;
-        case Opcodes::clrbit: // clrbit
-            clrbit(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
-            break;
-        case Opcodes::andnot: // andnot
+        case Opcodes::andnot:
             andnot(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
+            break;
+        case Opcodes::setbit:
+            setbit(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
             break;
         case Opcodes::notand: // notand
             notand(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
             break;
-        case Opcodes::notbit: // notbit
-            notbit(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
-            break;
         case Opcodes::xorOperation:
             xorOperation(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
-            break;
-        case Opcodes::setbit:
-            setbit(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
             break;
         case Opcodes::orOperation: // or
             orOperation(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
@@ -1142,14 +1136,20 @@ Core::processInstruction(Opcodes opcode, Register& regDest, const Register& src1
         case Opcodes::nor: // nor
             nor(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
             break;
-        case Opcodes::xnor: 
+        case Opcodes::xnor:
             xnor(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
             break;
-        case Opcodes::notOperation: 
+        case Opcodes::notOperation:
             notOperation(regDest, static_cast<Ordinal>(src1));
             break;
         case Opcodes::ornot: // ornot
             ornot(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
+            break;
+        case Opcodes::nand: // nand
+            nand(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
+            break;
+        case Opcodes::clrbit: // clrbit
+            clrbit(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
             break;
         case Opcodes::notor: // notor
             notor(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));

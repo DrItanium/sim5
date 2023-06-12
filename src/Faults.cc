@@ -21,9 +21,6 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifdef ARDUINO
-#include <Arduino.h>
-#endif
 #include "Types.h"
 #include "Core.h"
 #include "BinaryOperations.h"
@@ -193,6 +190,7 @@ Core::unimplementedFault() {
                        (Ordinal)ip_);
     // saved ip isn't used
     generateFault(record);
+    throw std::logic_error("unimplemented");
 }
 
 void
@@ -203,6 +201,7 @@ Core::invalidOpcodeFault() {
                        (Ordinal)ip_);
     // saved ip isn't used
     generateFault(record);
+    throw std::logic_error("invalid opcode");
 }
 
 void
@@ -213,6 +212,7 @@ Core::invalidOperandFault() {
                        (Ordinal)ip_);
     // saved ip isn't used
     generateFault(record);
+    throw std::logic_error("invalid operand");
 }
 
 void
