@@ -544,19 +544,21 @@ constexpr auto SPIndex = LocalRegisterBase + 1;
 constexpr auto RIPIndex = LocalRegisterBase + 2;
 union RegisterFrame {
 private:
-    constexpr static ByteOrdinal maskIndex(ByteOrdinal input) noexcept {
-        return input & 0b1111;
-    }
+    constexpr static ByteOrdinal maskIndex(ByteOrdinal input) noexcept { return input & 0b1111; }
+    constexpr static ByteOrdinal generateIndex(ByteOrdinal input, TreatAsRegister) noexcept { return maskIndex(input); }
+    constexpr static ByteOrdinal generateIndex(ByteOrdinal input, TreatAsLongRegister) noexcept { return maskIndex(input) >> 1; }
+    constexpr static ByteOrdinal generateIndex(ByteOrdinal input, TreatAsQuadRegister) noexcept { return maskIndex(input) >> 2; }
+    constexpr static ByteOrdinal generateIndex(ByteOrdinal input, TreatAsTripleRegister) noexcept { return maskIndex(input) >> 2; }
     public:
         RegisterFrame() = default;
-        [[nodiscard]] Register& get(ByteOrdinal index, TreatAsRegister) noexcept { return registers[maskIndex(index)]; }
-        [[nodiscard]] const Register& get(ByteOrdinal index, TreatAsRegister) const noexcept { return registers[maskIndex(index)]; }
-        [[nodiscard]] LongRegister& get(ByteOrdinal index, TreatAsLongRegister) noexcept { return longRegisters[maskIndex(index) >> 1]; }
-        [[nodiscard]] const LongRegister& get(ByteOrdinal index, TreatAsLongRegister) const noexcept { return longRegisters[maskIndex(index) >> 1]; }
-        [[nodiscard]] QuadRegister& get(ByteOrdinal index, TreatAsQuadRegister) noexcept { return quadRegisters[maskIndex(index) >> 2]; }
-        [[nodiscard]] const QuadRegister& get(ByteOrdinal index, TreatAsQuadRegister) const noexcept { return quadRegisters[maskIndex(index) >> 2]; }
-        [[nodiscard]] TripleRegister& get(ByteOrdinal index, TreatAsTripleRegister) noexcept { return tripleRegisters[maskIndex(index) >> 2]; }
-        [[nodiscard]] const TripleRegister& get(ByteOrdinal index, TreatAsTripleRegister) const noexcept { return tripleRegisters[maskIndex(index) >> 2]; }
+        [[nodiscard]] Register& get(ByteOrdinal index, TreatAsRegister) noexcept { return registers[generateIndex(index, TreatAsRegister{})]; }
+        [[nodiscard]] const Register& get(ByteOrdinal index, TreatAsRegister) const noexcept { return registers[generateIndex(index, TreatAsRegister{})]; }
+        [[nodiscard]] LongRegister& get(ByteOrdinal index, TreatAsLongRegister) noexcept { return longRegisters[generateIndex(index, TreatAsLongRegister{})]; }
+        [[nodiscard]] const LongRegister& get(ByteOrdinal index, TreatAsLongRegister) const noexcept { return longRegisters[generateIndex(index, TreatAsLongRegister{})]; }
+        [[nodiscard]] TripleRegister& get(ByteOrdinal index, TreatAsTripleRegister) noexcept { return tripleRegisters[generateIndex(index, TreatAsTripleRegister{})]; }
+        [[nodiscard]] const TripleRegister& get(ByteOrdinal index, TreatAsTripleRegister) const noexcept { return tripleRegisters[generateIndex(index, TreatAsTripleRegister{})]; }
+        [[nodiscard]] QuadRegister& get(ByteOrdinal index, TreatAsQuadRegister) noexcept { return quadRegisters[generateIndex(index, TreatAsQuadRegister{})]; }
+        [[nodiscard]] const QuadRegister& get(ByteOrdinal index, TreatAsQuadRegister) const noexcept { return quadRegisters[generateIndex(index, TreatAsQuadRegister{})]; }
         void clear() noexcept {
             for (auto& a : registers) {
                 a.clear();
