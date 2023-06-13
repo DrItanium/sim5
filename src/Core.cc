@@ -1297,6 +1297,12 @@ Core::processInstruction(Opcodes opcode, Register& regDest, const Register& src1
         case Opcodes::cmpstr:
             cmpstr(static_cast<Ordinal>(src1), static_cast<Ordinal>(src2), static_cast<Ordinal>(regDest));
             break;
+        case Opcodes::movqstr:
+            movqstr(static_cast<Ordinal>(src1), static_cast<Ordinal>(src2), static_cast<Ordinal>(regDest));
+            break;
+        case Opcodes::movstr:
+            movstr(static_cast<Ordinal>(src1), static_cast<Ordinal>(src2), static_cast<Ordinal>(regDest));
+            break;
         default:
             unimplementedFault();
             break;

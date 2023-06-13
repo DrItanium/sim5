@@ -45,3 +45,30 @@ Core::cmpstr(Ordinal src1Address, Ordinal src2Address, Ordinal len) noexcept {
         }
     }
 }
+
+void
+Core::movstr(Ordinal destAddress, Ordinal srcAddress, Ordinal len) noexcept {
+    // copy in reverse to make sure that no byte of the source string is overwritten before it is copied into the
+    // destination string. If it is guaranteed that there are no overlaps, the movqstr instruction performs this operation
+    // faster.
+    if (srcAddress <= destAddress) {
+        using K = TreatAsByteOrdinal;
+        // original pseudo code for this path:
+        // for i in 1 .. len loop
+        //  byte(dst + len - i) <- byte(src + len - i)
+        // end loop;
+        for (Ordinal i = 1; i <= len; ++i) {
+            store(destAddress + len - i, load(srcAddress + len - i, K{}), K{});
+        }
+    } else {
+        movqstr(destAddress, srcAddress, len);
+    }
+}
+
+void
+Core::movqstr(Ordinal destAddress, Ordinal srcAddress, Ordinal len) noexcept {
+    using K = TreatAsByteOrdinal;
+    for (Ordinal i = 0; i < len; ++i) {
+        store(destAddress + i, load(srcAddress + i, K{}), K{});
+    }
+}

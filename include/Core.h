@@ -1366,8 +1366,6 @@ class Core {
         void saveprcs() noexcept;
         void resumprcs(const Register& src) noexcept;
         void receive(const Register& src, Register& dest) noexcept;
-        void movstr(Register& dest, const Register& src1, Ordinal len) noexcept;
-        void movqstr(Register& dest, const Register& src1, Ordinal len) noexcept;
         void ldtime(Register& dest) noexcept;
         void ldphy(Register& dest, Ordinal address) noexcept;
         void inspacc(Ordinal src, Register& dest) noexcept;
@@ -1375,6 +1373,8 @@ class Core {
         void condwait(SegmentSelector src) noexcept;
         void condrec(Register& dest, SegmentSelector src) noexcept;
         void cmpstr(Ordinal src1, Ordinal src2, Ordinal len) noexcept;
+        void movstr(Ordinal destAddress, Ordinal srcAddress, Ordinal len) noexcept;
+        void movqstr(Ordinal destAddress, Ordinal srcAddress, Ordinal len) noexcept;
     private: // interrupt related
         Address getInterruptTableBaseAddress() const;
         void postInterrupt(InterruptVector vector);
