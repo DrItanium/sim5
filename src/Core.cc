@@ -1306,6 +1306,15 @@ Core::processInstruction(Opcodes opcode, Register& regDest, const Register& src1
         case Opcodes::fill:
             fill(static_cast<Ordinal>(src1), static_cast<Ordinal>(src2), static_cast<Ordinal>(regDest));
             break;
+        case Opcodes::ldtime:
+            ldtime(regDest);
+            break;
+        case Opcodes::condwait:
+            condwait(static_cast<Ordinal>(src1));
+            break;
+        case Opcodes::inspacc:
+            inspacc(static_cast<Ordinal>(src1), regDest);
+            break;
         default:
             unimplementedFault();
             break;

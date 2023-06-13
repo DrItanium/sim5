@@ -99,3 +99,7 @@ Core::fill(Ordinal dest, Ordinal value, Ordinal len) noexcept {
     }
 
 }
+void
+Core::ldtime(Register &dest) noexcept {
+    dest.setValue(getElapsedExecutionTime() - getResidualTimeSlice());
+}

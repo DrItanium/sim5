@@ -1459,6 +1459,11 @@ class Core {
         void bx(Address effectiveAddress);
         void bal(Integer displacement);
     private:
+        Ordinal getElapsedExecutionTime() const noexcept { return executionTime_.getValue<Ordinal>(); }
+        void setElapsedExecutionTime(Ordinal value) noexcept { executionTime_.setValue<Ordinal>(value); }
+        Ordinal getResidualTimeSlice() const noexcept { return residualTimeSlice_.getValue<Ordinal>(); }
+        void setResidualTimeSlice(Ordinal value) noexcept { residualTimeSlice_.setValue<Ordinal>(value); }
+    private:
         Ordinal systemAddressTableBase_ = 0;
         Ordinal prcbAddress_ = 0;
         RegisterFrame globals_;
@@ -1479,7 +1484,9 @@ class Core {
         bool breakpoint0Active_ = false;
         Address breakpoint1_ = 0;
         bool breakpoint1Active_ = false;
-        /// @todo implement onboard instruction cache
+        // protected architecture extensions
+        Register executionTime_;
+        Register residualTimeSlice_;
 };
 
 static_assert(computeNextFrame<Core::C, Core::NotC>(0xFDED'0000) == 0xFDED'0000);
