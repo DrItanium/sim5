@@ -141,3 +141,8 @@ void
 Core::signal(SegmentSelector sel) noexcept {
     unimplementedFault();
 }
+
+void
+Core::send(SegmentSelector target, Ordinal src1, SegmentSelector src2) {
+    unimplementedFault();
+}

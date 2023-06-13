@@ -1361,7 +1361,7 @@ class Core {
         void signal(SegmentSelector sel) noexcept;
         void wait(const Register& src) noexcept;
         void sendserv(const Register& src) noexcept;
-        void send(Register& src, const Register& src1, const Register& src2);
+        void send(SegmentSelector target, Ordinal src1, SegmentSelector src2);
         void schedprcs(const Register& src) noexcept;
         void saveprcs() noexcept;
         void resumprcs(SegmentSelector ss) noexcept;

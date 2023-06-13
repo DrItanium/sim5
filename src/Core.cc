@@ -1333,6 +1333,9 @@ Core::processInstruction(Opcodes opcode, Register& regDest, const Register& src1
         case Opcodes::signal:
             signal(static_cast<SegmentSelector>(src1));
             break;
+        case Opcodes::send:
+            send(static_cast<SegmentSelector>(src1), static_cast<Ordinal>(src2), static_cast<SegmentSelector>(regDest));
+            break;
 
         default:
             unimplementedFault();
