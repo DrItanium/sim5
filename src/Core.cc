@@ -1330,6 +1330,9 @@ Core::processInstruction(Opcodes opcode, Register& regDest, const Register& src1
         case Opcodes::resumprcs:
             resumprcs(static_cast<SegmentSelector>(src1));
             break;
+        case Opcodes::signal:
+            signal(static_cast<SegmentSelector>(src1));
+            break;
 
         default:
             unimplementedFault();

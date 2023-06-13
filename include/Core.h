@@ -1358,7 +1358,7 @@ class Core {
         inline void tanrl(LongRegister& dest, const LongRegister& src) noexcept { tanrl(dest, src.getValue<LongReal>()); }
         /// @todo add support for the dedicated floating point registers as overloaded forms
     private: // protected extensions instructions
-        void signal(Register& dest) noexcept;
+        void signal(SegmentSelector sel) noexcept;
         void wait(const Register& src) noexcept;
         void sendserv(const Register& src) noexcept;
         void send(Register& src, const Register& src1, const Register& src2);

@@ -137,3 +137,7 @@ void
 Core::resumprcs(SegmentSelector src) noexcept {
     unimplementedFault();
 }
+void
+Core::signal(SegmentSelector sel) noexcept {
+    unimplementedFault();
+}
