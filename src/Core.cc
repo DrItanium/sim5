@@ -1033,7 +1033,7 @@ Core::processInstruction(Opcodes opcode, Register& regDest, const Register& src1
             subi(regDest, static_cast<Integer>(src1), static_cast<Integer>(src2));
             break;
         case Opcodes::shro: // shro
-            regDest.setValue<Ordinal>((static_cast<Ordinal>(src1) < 32) ? static_cast<Ordinal>(src2) >> static_cast<Ordinal>(src1) : 0);
+            shro(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
             break;
         case Opcodes::shrdi: // shrdi
                              // according to the manual, equivalent to divi value, 2 so that is what we're going to do for correctness sake
@@ -1320,6 +1320,9 @@ Core::syncf() noexcept {
 
 
 
-
+void
+Core::shro(Register &dest, Ordinal src1, Ordinal src2) noexcept {
+    dest.setValue<Ordinal>((static_cast<Ordinal>(src1) < 32) ? static_cast<Ordinal>(src2) >> static_cast<Ordinal>(src1) : 0);
+}
 
 

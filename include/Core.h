@@ -1258,6 +1258,7 @@ class Core {
         void shli(Register& srcDest, Integer src1, Integer src2) noexcept;
         void rotate(Register& dest, Ordinal src1, Ordinal src2) noexcept;
         void shri(Register& dest, Integer src1, Integer src2) noexcept;
+        void shro(Register& dest, Ordinal src1, Ordinal src2) noexcept;
         void mulo(Register& dest, Ordinal src1, Ordinal src2) noexcept;
         void muli(Register& dest, Integer src1, Integer src2) noexcept;
         void modify(Register& dest, Ordinal src1, Ordinal src2) noexcept;
