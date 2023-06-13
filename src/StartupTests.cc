@@ -54,8 +54,8 @@ Core::performSelfTest() noexcept {
     // test move operations
     // first mov
     auto testMoveOperations = [this]() {
-        auto& g0 = getGPR(0);
-        auto& g1 = getGPR(1);
+        auto& g0 = getGPR(GlobalRegisterBase + 0);
+        auto& g1 = getGPR(GlobalRegisterBase + 1);
         auto randomSourceValue = static_cast<Ordinal>(random());
         g0.template setValue<Ordinal>(randomSourceValue);
         g1.template setValue<Ordinal>(0xFFFF'FFFF);
@@ -64,8 +64,8 @@ Core::performSelfTest() noexcept {
             return false;
         }
         auto randomSourceValue2 = static_cast<Ordinal>(random());
-        auto& gl0 = getGPR(0, TreatAsLongRegister{});
-        auto& gl1 = getGPR(2, TreatAsLongRegister{});
+        auto& gl0 = getGPR(GlobalRegisterBase + 0, TreatAsLongRegister{});
+        auto& gl1 = getGPR(GlobalRegisterBase + 2, TreatAsLongRegister{});
         gl0[0] = randomSourceValue;
         gl0[1] = randomSourceValue2;
         if (static_cast<Ordinal>(gl0[0]) != randomSourceValue) {

@@ -1437,7 +1437,6 @@ class Core {
     private:
         void bx(Address effectiveAddress);
         void bal(Integer displacement);
-
     private:
         Ordinal systemAddressTableBase_ = 0;
         Ordinal prcbAddress_ = 0;
