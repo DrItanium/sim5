@@ -1324,6 +1324,13 @@ Core::processInstruction(Opcodes opcode, Register& regDest, const Register& src1
         case Opcodes::condrec:
             condrec(static_cast<Address>(src1), regDest );
             break;
+        case Opcodes::saveprcs:
+            saveprcs();
+            break;
+        case Opcodes::resumprcs:
+            resumprcs(static_cast<SegmentSelector>(src1));
+            break;
+
         default:
             unimplementedFault();
             break;

@@ -1364,7 +1364,7 @@ class Core {
         void send(Register& src, const Register& src1, const Register& src2);
         void schedprcs(const Register& src) noexcept;
         void saveprcs() noexcept;
-        void resumprcs(const Register& src) noexcept;
+        void resumprcs(SegmentSelector ss) noexcept;
         void receive(const Register& src, Register& dest) noexcept;
         void ldtime(Register& dest) noexcept;
         void ldphy(Address address, Register& dest) noexcept;

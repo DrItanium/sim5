@@ -28,7 +28,7 @@
 
 void
 Core::saveprcs() noexcept {
-    /// @todo implement
+    unimplementedFault();
 }
 
 void
@@ -131,5 +131,9 @@ Core::translateToPhysicalAddress(Address virtualAddress) const noexcept {
 }
 void
 Core::condrec(SegmentSelector src, Register &dest) noexcept {
+    unimplementedFault();
+}
+void
+Core::resumprcs(SegmentSelector src) noexcept {
     unimplementedFault();
 }

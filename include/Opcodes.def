@@ -225,7 +225,7 @@
     Operation(calld, 0x661)
     Operation(send, 0x662)
     Operation(sendserv, 0x663)
-    Operation(resumeprcs, 0x664)
+    Operation(resumprcs, 0x664)
     Operation(schedprcs, 0x665)
     Operation(saveprcs, 0x666)
     Operation(condwait, 0x668)
