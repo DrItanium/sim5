@@ -187,6 +187,7 @@ Core::computeAddress() noexcept {
         }
         // okay so we need to figure out the minor mode after figuring out if
         // it is a double wide operation or not
+        /// @todo fix the MEMB instructions, it is totally cocked
         if (instruction_.memb.group) {
             DEBUG_LOG_LEVEL(4) {
                 std::cout << "\t\t" << __PRETTY_FUNCTION__ << ": group bit is high" << std::endl;
@@ -196,36 +197,16 @@ Core::computeAddress() noexcept {
             instructionLength_ = 8;
             auto iresult = static_cast<Integer>(load(ip_.a + 4, TreatAsOrdinal{})); // load the optional displacement
             if (instruction_.memb_grp2.useIndex) {
-                auto idx = getGPRValue<Integer>(instruction_.memb_grp2.index);
-                switch (instruction_.memb_grp2.scale & 0b111) {
-                    case 0b000:
-                        break;
-                    case 0b001:
-                        idx *= 2;
-                        break;
-                    case 0b010:
-                        idx *= 4;
-                        break;
-                    case 0b011:
-                        idx *= 8;
-                        break;
-                    case 0b100:
-                        idx *= 16;
-                        break;
-                        // the next entries are reserved encodings but lets provide some implementation specific behavior
-                    case 0b101:
-                        idx *= 32;
-                        break;
-                    case 0b110:
-                        idx *= 64;
-                        break;
-                    case 0b111:
-                        idx *= 128;
-                        break;
+                DEBUG_LOG_LEVEL(1) {
+                    std::cout << "\t\t\t" << __PRETTY_FUNCTION__ << ": use index" << std::endl;
                 }
-                iresult += idx;
+                auto idx = getGPRValue<Integer>(instruction_.memb_grp2.index);
+                iresult += (idx << static_cast<Integer>(instruction_.memb_grp2.scale));
             }
             if (instruction_.memb_grp2.registerIndirect) {
+                DEBUG_LOG_LEVEL(1) {
+                    std::cout << "\t\t\t" << __PRETTY_FUNCTION__ << ": register indirect" << std::endl;
+                }
                 iresult += getGPRValue(instruction_.memb_grp2.abase, TreatAsInteger{});
             }
             result = static_cast<Ordinal>(iresult);
@@ -236,21 +217,21 @@ Core::computeAddress() noexcept {
             // okay so the other group isn't as cleanly designed
             switch (instruction_.memb.modeMinor) {
                 case 0b00: // Register Indirect
-                    DEBUG_LOG_LEVEL(4) {
+                    DEBUG_LOG_LEVEL(1) {
                         std::cout << "\t\t\t" << __PRETTY_FUNCTION__ << ": register indirect" << std::endl;
                         std::cout << "\t\t\t" << __PRETTY_FUNCTION__ << ": abase 0x" << std::hex << instruction_.memb.abase << std::endl;
                     }
                     result = getGPRValue(instruction_.memb.abase, TreatAsOrdinal{});
                     break;
                 case 0b01: // IP With Displacement 
-                    DEBUG_LOG_LEVEL(4){
+                    DEBUG_LOG_LEVEL(1){
                         std::cout << "\t\t\t" << __PRETTY_FUNCTION__ << ": ip with displacement" << std::endl;
                     }
                     instructionLength_ = 8;
                     result = static_cast<Ordinal>(ip_.i + load(ip_.a + 4, TreatAsInteger{}) + 8);
                     break;
                 case 0b11: // Register Indirect With Index
-                    DEBUG_LOG_LEVEL(4) {
+                    DEBUG_LOG_LEVEL(1) {
                         std::cout << "\t\t\t" << __PRETTY_FUNCTION__ << ": register indirect with index" << std::endl;
                     }
                     result = getGPRValue(instruction_.memb.abase, TreatAsOrdinal{}) + (getGPRValue(instruction_.memb.index, TreatAsOrdinal{}) << instruction_.memb.scale);
