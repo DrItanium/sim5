@@ -103,3 +103,29 @@ void
 Core::ldtime(Register &dest) noexcept {
     dest.setValue(getElapsedExecutionTime() - getResidualTimeSlice());
 }
+
+void
+Core::condwait(SegmentSelector src) noexcept {
+    /// @todo implement
+    unimplementedFault();
+}
+
+void
+Core::inspacc(Ordinal src, Register &dest) noexcept {
+   /// @todo implement
+   unimplementedFault();
+}
+void
+Core::ldphy(Address address, Register& dest) noexcept {
+    dest.setValue<Ordinal>(translateToPhysicalAddress(address));
+}
+void
+Core::wait(const Register &src) noexcept {
+    unimplementedFault();
+}
+
+Address
+Core::translateToPhysicalAddress(Address virtualAddress) const noexcept {
+    /// @todo implement properly, right now it is physical to physical
+    return virtualAddress;
+}

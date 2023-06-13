@@ -1367,7 +1367,7 @@ class Core {
         void resumprcs(const Register& src) noexcept;
         void receive(const Register& src, Register& dest) noexcept;
         void ldtime(Register& dest) noexcept;
-        void ldphy(Register& dest, Ordinal address) noexcept;
+        void ldphy(Address address, Register& dest) noexcept;
         void inspacc(Ordinal src, Register& dest) noexcept;
         void condwait(SegmentSelector src) noexcept;
         void condrec(Register& dest, SegmentSelector src) noexcept;
@@ -1463,6 +1463,7 @@ class Core {
         void setElapsedExecutionTime(Ordinal value) noexcept { executionTime_.setValue<Ordinal>(value); }
         Ordinal getResidualTimeSlice() const noexcept { return residualTimeSlice_.getValue<Ordinal>(); }
         void setResidualTimeSlice(Ordinal value) noexcept { residualTimeSlice_.setValue<Ordinal>(value); }
+        Address translateToPhysicalAddress(Address virtualAddress) const noexcept;
     private:
         Ordinal systemAddressTableBase_ = 0;
         Ordinal prcbAddress_ = 0;

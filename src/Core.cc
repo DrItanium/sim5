@@ -1315,6 +1315,12 @@ Core::processInstruction(Opcodes opcode, Register& regDest, const Register& src1
         case Opcodes::inspacc:
             inspacc(static_cast<Ordinal>(src1), regDest);
             break;
+        case Opcodes::wait:
+            wait(src1);
+            break;
+        case Opcodes::ldphy:
+            ldphy(static_cast<Address>(src1), regDest);
+            break;
         default:
             unimplementedFault();
             break;
