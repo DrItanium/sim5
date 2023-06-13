@@ -525,8 +525,11 @@ class TripleRegister {
             }
             return true;
         }
+        [[nodiscard]] constexpr ExtendedReal getValue(TreatAsExtendedReal) const noexcept { return extendedReal_; }
+        void setValue(ExtendedReal value, TreatAsExtendedReal) noexcept { extendedReal_ = value; }
     private:
         QuadRegister backingStore_;
+        ExtendedReal extendedReal_;
 };
 using TreatAsTripleRegister = TreatAs<TripleRegister>;
 // On the i960 this is separated out into two parts, locals and globals
@@ -789,15 +792,7 @@ class Core {
         [[nodiscard]] const Register& getSFR(ByteOrdinal index, ByteOrdinal offset) const noexcept;
         [[nodiscard]] const Register& getSrc1Register(TreatAsREG) const noexcept;
         [[nodiscard]] const Register& getSrc2Register(TreatAsREG) const noexcept;
-        [[nodiscard]] Ordinal unpackSrc1(TreatAsOrdinal, TreatAsREG) noexcept;
         [[nodiscard]] Ordinal unpackSrc1(ByteOrdinal offset, TreatAsOrdinal, TreatAsREG) noexcept;
-        [[nodiscard]] Integer unpackSrc1(TreatAsInteger, TreatAsREG) noexcept;
-        [[nodiscard]] Ordinal unpackSrc2(TreatAsOrdinal, TreatAsREG) noexcept;
-        [[nodiscard]] Integer unpackSrc2(TreatAsInteger, TreatAsREG) noexcept;
-        [[nodiscard]] Ordinal unpackSrc1(TreatAsOrdinal, TreatAsCOBR) noexcept;
-        [[nodiscard]] Integer unpackSrc1(TreatAsInteger, TreatAsCOBR) noexcept;
-        [[nodiscard]] Ordinal unpackSrc2(TreatAsOrdinal, TreatAsCOBR) noexcept;
-        [[nodiscard]] Integer unpackSrc2(TreatAsInteger, TreatAsCOBR) noexcept;
         template<typename Q>
         void moveGPR(ByteOrdinal destIndex, ByteOrdinal srcIndex, std::function<Q(Q)> transform, TreatAs<Q>) noexcept {
             DEBUG_ENTER_FUNCTION;
@@ -1323,8 +1318,6 @@ class Core {
         // fault handling components
         void pushFaultRecord(Address baseStorageAddress, const FaultRecord& record) noexcept;
         FaultTableEntry getFaultEntry(uint8_t index) const noexcept;
-        Address getFaultHandlerBaseAddress(const FaultTableEntry& entry) const noexcept;
-        void populateFaultRecord(FaultRecord& record, uint8_t faultType, uint8_t faultOffset);
         void faultCallGeneric (const FaultRecord& record, Address destination, Address stackPointer) noexcept;
         void localProcedureEntry_FaultCall (const FaultRecord& record, Address destination) noexcept;
         void procedureTableEntry_FaultCall(const FaultRecord& record, const FaultTableEntry& entry) noexcept;
@@ -1351,6 +1344,19 @@ class Core {
         void dmovt(Register& dest, Ordinal src) noexcept;
         void classr(Real src) noexcept;
         void classrl(LongReal src) noexcept;
+        void cosr(Register& dest, Real literal) noexcept;
+        void cosrl(LongRegister& dest, LongReal literal) noexcept;
+        inline void cosr(Register& dest, const Register& src) noexcept { cosr(dest, (Real)src); }
+        inline void cosrl(LongRegister& dest, const LongRegister& src) noexcept { cosrl(dest, src.getValue<LongReal>()); }
+        void sinr(Register& dest, Real literal) noexcept;
+        void sinrl(LongRegister& dest, LongReal literal) noexcept;
+        inline void sinr(Register& dest, const Register& src) noexcept { sinr(dest, (Real)src); }
+        inline void sinrl(LongRegister& dest, const LongRegister& src) noexcept { sinrl(dest, src.getValue<LongReal>()); }
+        void tanr(Register& dest, Real literal) noexcept;
+        void tanrl(LongRegister& dest, LongReal literal) noexcept;
+        inline void tanr(Register& dest, const Register& src) noexcept { tanr(dest, (Real)src); }
+        inline void tanrl(LongRegister& dest, const LongRegister& src) noexcept { tanrl(dest, src.getValue<LongReal>()); }
+        /// @todo add support for the dedicated floating point registers as overloaded forms
     private: // protected extensions instructions
         void signal(Register& dest) noexcept;
         void wait(const Register& src) noexcept;
@@ -1368,7 +1374,7 @@ class Core {
         void fill(Register& dest, Ordinal value, Ordinal len) noexcept;
         void condwait(SegmentSelector src) noexcept;
         void condrec(Register& dest, SegmentSelector src) noexcept;
-        void cmpstr(const Register& src1, const Register& src2, Ordinal len) noexcept;
+        void cmpstr(Ordinal src1, Ordinal src2, Ordinal len) noexcept;
     private: // interrupt related
         Address getInterruptTableBaseAddress() const;
         void postInterrupt(InterruptVector vector);

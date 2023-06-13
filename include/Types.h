@@ -35,6 +35,7 @@ using LongOrdinal = uint64_t;
 using LongInteger = int64_t;
 using Real = float;
 using LongReal = double;
+using ExtendedReal = long double;
 template<typename T> struct TreatAs { using BackingType = T; };
 using TreatAsOrdinal = TreatAs<Ordinal>;
 using TreatAsInteger = TreatAs<Integer>;
@@ -46,6 +47,7 @@ using TreatAsLongOrdinal = TreatAs<LongOrdinal>;
 using TreatAsLongInteger = TreatAs<LongInteger>;
 using TreatAsReal = TreatAs<Real>;
 using TreatAsLongReal = TreatAs<LongReal>;
+using TreatAsExtendedReal = TreatAs<ExtendedReal>;
 
 
 constexpr Ordinal computeChecksumOffset(Address segmentTableBase, Address prcbBase, Address startAddress) noexcept {

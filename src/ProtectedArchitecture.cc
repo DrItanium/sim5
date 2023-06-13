@@ -21,9 +21,6 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifdef ARDUINO
-#include <Arduino.h>
-#endif
 #include "Types.h"
 #include "Core.h"
 #include "BinaryOperations.h"
@@ -31,4 +28,20 @@
 void
 Core::saveprcs() noexcept {
     /// @todo implement
+}
+
+void
+Core::cmpstr(Ordinal src1Address, Ordinal src2Address, Ordinal len) noexcept {
+    ac_.arith.conditionCode = 0b010;
+    for (Ordinal i = 0; i < len; ++i) {
+        auto a = load(src1Address + i, TreatAsByteOrdinal {});
+        auto b = load(src2Address + i, TreatAsByteOrdinal {});
+        if (a > b) {
+            ac_.arith.conditionCode = 0b001;
+            return;
+        } else if (a < b) {
+            ac_.arith.conditionCode = 0b100;
+            return;
+        }
+    }
 }

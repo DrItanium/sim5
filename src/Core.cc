@@ -1294,6 +1294,9 @@ Core::processInstruction(Opcodes opcode, Register& regDest, const Register& src1
         case Opcodes::classr:
             classr(static_cast<Real>(src1));
             break;
+        case Opcodes::cmpstr:
+            cmpstr(static_cast<Ordinal>(src1), static_cast<Ordinal>(src2), static_cast<Ordinal>(regDest));
+            break;
         default:
             unimplementedFault();
             break;
