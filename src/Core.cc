@@ -174,16 +174,29 @@ Core::computeAddress() noexcept {
     DEBUG_ENTER_FUNCTION;
     Ordinal result = 0;
     if (instruction_.isMEMA()) {
-        DEBUG_LOG_LEVEL(4) {
+        DEBUG_LOG_LEVEL(1) {
             std::cout << '\t' << __PRETTY_FUNCTION__ << ": ismema operation" << std::endl;
         }
         result = instruction_.mem.offset;
+        DEBUG_LOG_LEVEL(1) {
+            std::cout << "\t\t\t" << __PRETTY_FUNCTION__ << ": result 0x" << std::hex << result << std::endl;
+        }
         if (instruction_.mema.action) {
-            result += getGPRValue(instruction_.mem.abase, TreatAsOrdinal{});
+            auto abaseValue = getGPRValue<Ordinal>(instruction_.mema.abase);
+            DEBUG_LOG_LEVEL(1) {
+                    std::cout << "\t\t\t" << __PRETTY_FUNCTION__ << ": abase = 0x" << std::hex << abaseValue << std::endl;
+            }
+            result += abaseValue;
+        }
+        DEBUG_LOG_LEVEL(1) {
+            std::cout << "\t\t\t" << __PRETTY_FUNCTION__ << ": result (after) 0x" << std::hex << result << std::endl;
         }
     } else {
-        DEBUG_LOG_LEVEL(4) {
+        DEBUG_LOG_LEVEL(1) {
             std::cout << '\t' << __PRETTY_FUNCTION__ << ": ismemb operation" << std::endl;
+        }
+        DEBUG_LOG_LEVEL(1) {
+            std::cout << "\t\t" << __PRETTY_FUNCTION__ << ": mode: 0x" << std::hex << static_cast<Ordinal>(instruction_.memb_grp3.group) << std::endl;
         }
         // okay so we need to figure out the minor mode after figuring out if
         // it is a double wide operation or not
@@ -196,18 +209,37 @@ Core::computeAddress() noexcept {
             // load 32-bits into the optionalDisplacement field
             instructionLength_ = 8;
             auto iresult = static_cast<Integer>(load(ip_.a + 4, TreatAsOrdinal{})); // load the optional displacement
+            DEBUG_LOG_LEVEL(1) {
+                std::cout << "\t\t\t" << __PRETTY_FUNCTION__ << ": iresult 0x" << std::hex << iresult << std::endl;
+            }
             if (instruction_.memb_grp2.useIndex) {
                 DEBUG_LOG_LEVEL(1) {
                     std::cout << "\t\t\t" << __PRETTY_FUNCTION__ << ": use index" << std::endl;
                 }
                 auto idx = getGPRValue<Integer>(instruction_.memb_grp2.index);
-                iresult += (idx << static_cast<Integer>(instruction_.memb_grp2.scale));
+                DEBUG_LOG_LEVEL(1) {
+                    std::cout << "\t\t\t" << __PRETTY_FUNCTION__ << ": index 0x" << std::hex << idx << std::endl;
+                    std::cout << "\t\t\t" << __PRETTY_FUNCTION__ << ": scale 0x" << std::hex << static_cast<Ordinal>(instruction_.memb_grp2.scale) << std::endl;
+                }
+                auto value = idx << static_cast<Integer>(instruction_.memb_grp2.scale);
+                DEBUG_LOG_LEVEL(1) {
+                    std::cout << "\t\t\t" << __PRETTY_FUNCTION__ << ": value (index << scale) = 0x" << std::hex << value << std::endl;
+                }
+                iresult += value;
+                DEBUG_LOG_LEVEL(1) {
+                    std::cout << "\t\t\t" << __PRETTY_FUNCTION__ << ": iresult (after) 0x" << std::hex << iresult << std::endl;
+                }
             }
             if (instruction_.memb_grp2.registerIndirect) {
+                auto abaseValue = getGPRValue<Integer>(instruction_.memb_grp2.abase);
                 DEBUG_LOG_LEVEL(1) {
                     std::cout << "\t\t\t" << __PRETTY_FUNCTION__ << ": register indirect" << std::endl;
+                    std::cout << "\t\t\t" << __PRETTY_FUNCTION__ << ": abase = 0x" << std::hex << abaseValue << std::endl;
                 }
-                iresult += getGPRValue(instruction_.memb_grp2.abase, TreatAsInteger{});
+                iresult += abaseValue;
+                DEBUG_LOG_LEVEL(1) {
+                    std::cout << "\t\t\t" << __PRETTY_FUNCTION__ << ": iresult (after) 0x" << std::hex << iresult << std::endl;
+                }
             }
             result = static_cast<Ordinal>(iresult);
         } else {

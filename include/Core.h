@@ -198,6 +198,15 @@ union Register {
         BackingUnionType opcode : 8;
     } memb_grp2;
     struct {
+        BackingUnionType index : 5;
+        BackingUnionType unused : 2;
+        BackingUnionType scale : 3;
+        BackingUnionType group: 4;
+        BackingUnionType abase : 5;
+        BackingUnionType srcDest : 5;
+        BackingUnionType opcode : 8;
+    } memb_grp3;
+    struct {
         BackingUnionType conditionCode : 3;
         BackingUnionType arithmeticStatus : 4;
         BackingUnionType unused0 : 1;
