@@ -219,4 +219,20 @@ constexpr Ordinal computeNextFrame(Ordinal base) noexcept {
     return (base + C) & NotC;
 }
 
+template<typename Q>
+static constexpr ByteOrdinal performCompare(Q src1, Q src2) noexcept {
+    if (src1 < src2) {
+        return 0b100;
+    } else if (src1 == src2) {
+        return 0b010;
+    } else {
+        return 0b001;
+    }
+}
+static_assert(performCompare<Ordinal>(0u, 1u) == 0b100);
+static_assert(performCompare<Integer>(-1, 0) == 0b100);
+static_assert(performCompare<Integer>(0, 0) == 0b010);
+static_assert(performCompare<Ordinal>(0, 0) == 0b010);
+static_assert(performCompare<Integer>(0, -1) == 0b001);
+static_assert(performCompare<Ordinal>(20, 10) == 0b001);
 #endif // end SIM5_BINARY_OPERATIONS_H__

@@ -917,19 +917,13 @@ class Core {
         }
         template<typename Q>
         void cmpGeneric(Q src1, Q src2) noexcept {
-            if (src1 < src2) {
-                ac_.arith.conditionCode = 0b100;
-            } else if (src1 == src2) {
-                ac_.arith.conditionCode = 0b010;
-            } else {
-                ac_.arith.conditionCode = 0b001;
-            }
+            ac_.arith.conditionCode = performCompare<Q>(src1, src2);
         }
         template<typename Q>
         void cmpxbGeneric(uint8_t mask, Q src1, Q src2, int16_t displacement, TreatAs<Q>) noexcept {
             DEBUG_LOG_LEVEL(1) {
                 std::cout << "\t\t" << __PRETTY_FUNCTION__
-                << ": mask: 0x" << std::hex << mask
+                << ": mask: 0x" << std::hex << static_cast<int>(mask)
                 << ": src1: 0x" << std::hex << src1
                 << ", src2: 0x" << std::hex << src2
                 << ", displacement: 0x" << std::hex << displacement << std::endl;
