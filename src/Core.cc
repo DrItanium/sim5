@@ -24,6 +24,7 @@
 #include "Types.h"
 #include "Core.h"
 #include "BinaryOperations.h"
+#include "Disassembly.h"
 #include <iostream>
 
 
@@ -412,13 +413,16 @@ Core::cycle() noexcept {
         auto ipValue = ip_.getValue<Ordinal>();
         std::cout << "IP: 0x" << std::hex << ipValue << std::endl;
     }
-    DEBUG_LOG_LEVEL(5) {
+    DEBUG_LOG_LEVEL(4) {
         std::cout << "\tGETTING INSTRUCTION CONTENTS" << std::endl;
     }
     instruction_.setValue(load(ip_.a, TreatAsOrdinal{}), TreatAsOrdinal{});
     instructionLength_ = 4;
     advanceInstruction_ = true;
-    DEBUG_LOG_LEVEL(5) {
+    DEBUG_LOG_LEVEL(1) {
+        std::cout << __PRETTY_FUNCTION__  << ": " << disassembleInstruction(ip_.getValue<Ordinal>(), instruction_) << std::endl;
+    }
+    DEBUG_LOG_LEVEL(4) {
         std::cout << "\tGOT INSTRUCTION CONTENTS" << std::endl;
     }
     if (auto opcode = instruction_.getOpcode(); instruction_.isCTRL()) {

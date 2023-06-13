@@ -24,8 +24,6 @@
 // The main for the arduino version of the simulator's main
 // Created by jwscoggins on 8/21/21.
 //
-#include "Types.h"
-#include "BinaryOperations.h"
 #include "Core.h"
 #include <iostream>
 #include <boost/program_options.hpp>

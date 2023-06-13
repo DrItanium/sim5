@@ -40,9 +40,9 @@ namespace {
     }
 }
 std::string
-disassembleInstruction(const Register& reg) {
+disassembleInstruction(Address addr, const Register& reg) {
     std::stringstream ss;
-    ss << getOpcodeMnemonic(reg);
+    ss << "@ 0x" << std::hex << addr << ": " << getOpcodeMnemonic(reg);
     auto str = ss.str();
     return str;
 }
