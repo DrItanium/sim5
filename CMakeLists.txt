@@ -8,6 +8,8 @@ find_package(Boost
 	COMPONENTS program_options)
 
 add_library(core960
+		include/Entry255.def
+		include/Opcodes.def
 		include/BinaryOperations.h
 		include/Core.h
 		include/IAC.h
