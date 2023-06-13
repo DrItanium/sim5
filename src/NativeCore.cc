@@ -123,7 +123,7 @@ getCell(Address address) noexcept {
     template<typename T>
     void ioStore(Address offset, T value, TreatAs<T>) {
         DEBUG_LOG_LEVEL(1) {
-            std::cout << __PRETTY_FUNCTION__ << "(0x" << std::hex << offset << ", 0x" << std::hex << value << ")" << std::endl;
+            std::cout << __PRETTY_FUNCTION__ << "(0x" << std::hex << offset << ", 0x" << std::hex << static_cast<Ordinal>(value) << ")" << std::endl;
         }
         switch (offset & 0xFF'FFFF) {
             case 0x00'0008:
@@ -222,7 +222,7 @@ void
 store32(Address address, Ordinal value, TreatAsOrdinal) noexcept {
     DEBUG_ENTER_FUNCTION;
     DEBUG_LOG_LEVEL(1) {
-        std::cout << "\t\t" << __PRETTY_FUNCTION__ << "(0x" << std::hex << address << ", 0x" << std::hex << value << ");" << std::endl;
+        std::cout << "\t\t" << __PRETTY_FUNCTION__ << "(0x" << std::hex << address << ", 0x" << std::hex << static_cast<Ordinal>(value) << ");" << std::endl;
     }
     if ((address & 0b11) != 0) {
         store16(address, value, TreatAsShortOrdinal{});
@@ -245,7 +245,7 @@ void
 store32(Address address, Integer value, TreatAsInteger) noexcept {
     DEBUG_ENTER_FUNCTION;
     DEBUG_LOG_LEVEL(1) {
-        std::cout << "\t\t" << __PRETTY_FUNCTION__ << "(0x" << std::hex << address << ", 0x" << std::hex << value << ");" << std::endl;
+        std::cout << "\t\t" << __PRETTY_FUNCTION__ << "(0x" << std::hex << address << ", 0x" << std::hex << static_cast<Ordinal>(value) << ");" << std::endl;
     }
     if ((address & 0b11) != 0) {
         store16(address, static_cast<ShortInteger>(value), TreatAsShortInteger{});
