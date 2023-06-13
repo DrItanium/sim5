@@ -28,7 +28,6 @@
 #include "BinaryOperations.h"
 #include "Core.h"
 #include <iostream>
-#include <elfio/elfio.hpp>
 #include <boost/program_options.hpp>
 #include <filesystem>
 #include <fstream>
