@@ -129,3 +129,7 @@ Core::translateToPhysicalAddress(Address virtualAddress) const noexcept {
     /// @todo implement properly, right now it is physical to physical
     return virtualAddress;
 }
+void
+Core::condrec(SegmentSelector src, Register &dest) noexcept {
+    unimplementedFault();
+}

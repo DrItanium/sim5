@@ -1321,6 +1321,9 @@ Core::processInstruction(Opcodes opcode, Register& regDest, const Register& src1
         case Opcodes::ldphy:
             ldphy(static_cast<Address>(src1), regDest);
             break;
+        case Opcodes::condrec:
+            condrec(static_cast<Address>(src1), regDest );
+            break;
         default:
             unimplementedFault();
             break;

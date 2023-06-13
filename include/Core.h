@@ -1370,7 +1370,7 @@ class Core {
         void ldphy(Address address, Register& dest) noexcept;
         void inspacc(Ordinal src, Register& dest) noexcept;
         void condwait(SegmentSelector src) noexcept;
-        void condrec(Register& dest, SegmentSelector src) noexcept;
+        void condrec(SegmentSelector src, Register& dest) noexcept;
         void cmpstr(Ordinal src1, Ordinal src2, Ordinal len) noexcept;
         void movstr(Ordinal destAddress, Ordinal srcAddress, Ordinal len) noexcept;
         void movqstr(Ordinal destAddress, Ordinal srcAddress, Ordinal len) noexcept;
@@ -1378,7 +1378,6 @@ class Core {
     private: // interrupt related
         Address getInterruptTableBaseAddress() const;
         void postInterrupt(InterruptVector vector);
-        Address getInterruptProcedureEntry(uint8_t index) const;
         Ordinal getInterruptPendingPriorities() const { return load(getInterruptTablePointer(), TreatAsOrdinal{}); }
         void setInterruptPendingPriorities(Ordinal value) { store(getInterruptTablePointer(), value, TreatAsOrdinal{}); }
         Ordinal getPendingInterruptWord(uint8_t index) const {
