@@ -996,15 +996,15 @@ class Core {
     private:
         template<bool invert = false>
         inline void orOperation(Register& destination, Ordinal src1, Ordinal src2) noexcept {
-            destination.setValue(::orOperation<Ordinal, invert>(src2, src1), TreatAsOrdinal{});
+            destination.setValue(::orOperation<Ordinal, invert>(src1, src2), TreatAsOrdinal{});
         }
         template<bool invert = false>
         inline void andOperation(Register& destination, Ordinal src1, Ordinal src2) noexcept {
-            destination.setValue(::andOperation<Ordinal, invert>(src2, src1), TreatAsOrdinal{});
+            destination.setValue(::andOperation<Ordinal, invert>(src1, src2), TreatAsOrdinal{});
         }
         template<bool invert = false>
         inline void xorOperation(Register& destination, Ordinal src1, Ordinal src2) noexcept {
-            destination.setValue(::xorOperation<Ordinal, invert>(src2, src1), TreatAsOrdinal{});
+            destination.setValue(::xorOperation<Ordinal, invert>(src1, src2), TreatAsOrdinal{});
         }
         template<typename Q>
         void add(Register& destination, Q src1, Q src2, TreatAs<Q>) noexcept {
