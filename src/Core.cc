@@ -564,12 +564,23 @@ void
 Core::synmov(const Register& dest, Ordinal src) noexcept {
     DEBUG_ENTER_FUNCTION;
     ac_.arith.conditionCode = 0b000;
+    auto value = load(src, TreatAsOrdinal{});
+    DEBUG_LOG_LEVEL(1) {
+        std::cout << "\t\t" << __PRETTY_FUNCTION__ << ": loaded value @ 0x" << std::hex << src
+                  << " = 0x" << std::hex << value
+                  << std::endl;
+    }
     if (auto tempa = maskValue<Ordinal, 0xFFFF'FFFC>(dest.getValue(TreatAsOrdinal{})); tempa == 0xFF00'0004) {
-        ictl_ = load(src, TreatAsOrdinal{});
+        DEBUG_LOG_LEVEL(1) {
+            std::cout << "\t\t" << __PRETTY_FUNCTION__ << ": ictl before 0x" << std::hex << ictl_.getValue<Ordinal>() << std::endl;
+        }
+        ictl_.setValue<Ordinal>(load(src, TreatAsOrdinal{}));
         ac_.arith.conditionCode = 0b010;
+        DEBUG_LOG_LEVEL(1) {
+            std::cout << "\t\t" << __PRETTY_FUNCTION__ << ": ictl after 0x" << std::hex << ictl_.getValue<Ordinal>() << std::endl;
+        }
     } else {
-        auto temp = load(src, TreatAsOrdinal{});
-        store(tempa, temp, TreatAsOrdinal{});
+        store(tempa, value, TreatAsOrdinal{});
         // wait for completion
         ac_.arith.conditionCode = 0b010;
     }
