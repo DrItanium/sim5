@@ -294,7 +294,7 @@ load32(Address address, TreatAsOrdinal) noexcept {
         }
     }
     DEBUG_LOG_LEVEL(1) {
-        std::cout << "\t\t" << __PRETTY_FUNCTION__ << "(0x" << std::hex << address << ") = 0x"<< std::hex << result << ";" << std::endl;
+        std::cout << "\t\t" << __PRETTY_FUNCTION__ << "(0x" << std::hex << address << ") = 0x"<< std::hex << static_cast<Ordinal>(result) << ";" << std::endl;
     }
     DEBUG_LEAVE_FUNCTION;
     return result;
@@ -329,7 +329,7 @@ load32(Address address, TreatAsOrdinal) noexcept {
             }
         }
         DEBUG_LOG_LEVEL(1) {
-            std::cout << "\t\t" << __PRETTY_FUNCTION__ << "(0x" << std::hex << address << ") = 0x"<< std::hex << result << ";" << std::endl;
+            std::cout << "\t\t" << __PRETTY_FUNCTION__ << "(0x" << std::hex << address << ") = 0x"<< std::hex << static_cast<Ordinal>(result) << ";" << std::endl;
         }
         DEBUG_LEAVE_FUNCTION;
         return result;
