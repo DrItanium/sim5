@@ -169,9 +169,6 @@ Core::fmark() noexcept {
     }
 }
 
-
-
-
 Ordinal
 Core::computeAddress() noexcept {
     DEBUG_ENTER_FUNCTION;
@@ -199,7 +196,34 @@ Core::computeAddress() noexcept {
             instructionLength_ = 8;
             auto iresult = static_cast<Integer>(load(ip_.a + 4, TreatAsOrdinal{})); // load the optional displacement
             if (instruction_.memb_grp2.useIndex) {
-                iresult += (getGPRValue(instruction_.memb_grp2.index, TreatAsInteger{}) << static_cast<Integer>(instruction_.memb_grp2.scale));
+                auto idx = getGPRValue<Integer>(instruction_.memb_grp2.index);
+                switch (instruction_.memb_grp2.scale & 0b111) {
+                    case 0b000:
+                        break;
+                    case 0b001:
+                        idx *= 2;
+                        break;
+                    case 0b010:
+                        idx *= 4;
+                        break;
+                    case 0b011:
+                        idx *= 8;
+                        break;
+                    case 0b100:
+                        idx *= 16;
+                        break;
+                        // the next entries are reserved encodings but lets provide some implementation specific behavior
+                    case 0b101:
+                        idx *= 32;
+                        break;
+                    case 0b110:
+                        idx *= 64;
+                        break;
+                    case 0b111:
+                        idx *= 128;
+                        break;
+                }
+                iresult += idx;
             }
             if (instruction_.memb_grp2.registerIndirect) {
                 iresult += getGPRValue(instruction_.memb_grp2.abase, TreatAsInteger{});
