@@ -453,6 +453,11 @@ Core::cycle() noexcept {
         nextInstruction();
     }
     DEBUG_LOG_LEVEL(1) {
+        if (alignTo4ByteBoundaries<Ordinal>(ip_.o, TreatAsOrdinal{}) != ip_.o) {
+            std::cout << __PRETTY_FUNCTION__ << ": alignment fault: 0x" << ip_.o << std::endl;
+        }
+    }
+    DEBUG_LOG_LEVEL(1) {
         std::cout << "}" << std::endl;
     }
     DEBUG_LEAVE_FUNCTION;
