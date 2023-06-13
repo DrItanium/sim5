@@ -24,11 +24,25 @@
 // Created by jwscoggins on 6/12/23.
 //
 
-#ifndef SIM960_DISASSEMBLY_H
-#define SIM960_DISASSEMBLY_H
-#include "Core.h"
+#include "Disassembly.h"
+#include <sstream>
 #include <string>
 
-std::string disassembleInstruction(Address addr, const Register& reg);
-
-#endif //SIM960_DISASSEMBLY_H
+namespace {
+    std::string getOpcodeMnemonic(const Register& reg) {
+        switch (reg.getOpcode()) {
+#define X(name, code, str) case Opcodes:: name : return str ;
+#include "Opcodes.def"
+#undef X
+            default:
+                return "unknown/unimplemented";
+        }
+    }
+}
+std::string
+disassembleInstruction(const Register& reg) {
+    std::stringstream ss;
+    ss << getOpcodeMnemonic(reg);
+    auto str = ss.str();
+    return str;
+}
