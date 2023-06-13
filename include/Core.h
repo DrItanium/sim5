@@ -86,7 +86,7 @@ constexpr Ordinal EventNoticeFault = 0x000e'0001;
 constexpr Ordinal OverrideFault = 0x0010'0000;
 
 enum class Opcodes : uint16_t {
-#define X(name, opcode) name = opcode ,
+#define X(name, opcode, str) name = opcode ,
 #include "Opcodes.def"
 #undef X
 };
