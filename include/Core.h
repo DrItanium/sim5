@@ -33,7 +33,7 @@
 #include <istream>
 #include <iostream>
 constexpr uint8_t getDebugLoggingLevel() noexcept {
-    return 1;
+    return 0;
 }
 #define DEBUG_LOG_LEVEL(lvl) if constexpr (getDebugLoggingLevel() >= lvl)
 #define DEBUG_ENTER_FUNCTION DEBUG_LOG_LEVEL(6) std::cout << "Entering Function: " << __PRETTY_FUNCTION__ << std::endl
