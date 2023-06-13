@@ -1360,7 +1360,7 @@ class Core {
     private: // protected extensions instructions
         void signal(SegmentSelector sel) noexcept;
         void wait(const Register& src) noexcept;
-        void sendserv(const Register& src) noexcept;
+        void sendserv(SegmentSelector src) noexcept;
         void send(SegmentSelector target, Ordinal src1, SegmentSelector src2);
         void schedprcs(const Register& src) noexcept;
         void saveprcs() noexcept;

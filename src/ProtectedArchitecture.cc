@@ -146,3 +146,7 @@ void
 Core::send(SegmentSelector target, Ordinal src1, SegmentSelector src2) {
     unimplementedFault();
 }
+void
+Core::sendserv(SegmentSelector src) noexcept {
+    unimplementedFault();
+}
