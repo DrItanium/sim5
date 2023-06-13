@@ -359,8 +359,16 @@ Core::branch(Integer displacement) noexcept {
 
 void
 Core::branchConditional(bool condition, Integer displacement) noexcept {
+
     if (condition) {
+        DEBUG_LOG_LEVEL(1) {
+            std::cout << "\t\t" << __PRETTY_FUNCTION__ << ": branch taken" << std::endl;
+        }
         branch(displacement);
+    } else {
+        DEBUG_LOG_LEVEL(1) {
+            std::cout << "\t\t" << __PRETTY_FUNCTION__ << ": branch not taken" << std::endl;
+        }
     }
 }
 
@@ -372,12 +380,26 @@ Core::branchConditional(bool condition, Integer displacement) noexcept {
 
 bool
 Core::getMaskedConditionCode(uint8_t mask) const noexcept {
+    DEBUG_LOG_LEVEL(1) {
+        std::cout << "\t\t" << __PRETTY_FUNCTION__
+                  << ": mask = 0x" << std::hex << static_cast<int>(mask)
+                  << ", ac = 0x" << std::hex << static_cast<int>(ac_.getConditionCode())
+                  << ", result = 0x" << std::hex << static_cast<int>(ac_.getConditionCode() & mask)
+                  << std::endl;
+    }
     return (ac_.getConditionCode() & mask) != 0;
 }
 
 
 bool
 Core::conditionCodeEqualsMask(uint8_t mask) const noexcept {
+    DEBUG_LOG_LEVEL(1) {
+        std::cout << "\t\t" << __PRETTY_FUNCTION__
+                << ": mask = 0x" << std::hex << static_cast<int>(mask)
+                << ", ac = 0x" << std::hex << static_cast<int>(ac_.getConditionCode())
+                << ", result = " << std::boolalpha << (ac_.getConditionCode() == mask)
+                << std::endl;
+    }
     return ac_.getConditionCode() == mask;
 }
 
@@ -388,6 +410,9 @@ Core::fullConditionCodeCheck() noexcept {
 
 bool
 Core::fullConditionCodeCheck(uint8_t mask) noexcept {
+    DEBUG_LOG_LEVEL(1) {
+        std::cout << "\t\t" << __PRETTY_FUNCTION__ << ": mask = 0x" << std::hex << static_cast<int>(mask) << std::endl;
+    }
     // the second condition handles the case where we are looking at unordered
     // output where it is only true if it is equal to zero. So if it turns out
     // that the condition code is zero and the mask is the unordered kind then
