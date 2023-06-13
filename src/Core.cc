@@ -410,20 +410,12 @@ Core::cycle() noexcept {
     DEBUG_ENTER_FUNCTION;
     DEBUG_LOG_LEVEL(1) {
         std::cout << "{" << std::endl;
-        auto ipValue = ip_.getValue<Ordinal>();
-        std::cout << "IP: 0x" << std::hex << ipValue << std::endl;
-    }
-    DEBUG_LOG_LEVEL(4) {
-        std::cout << "\tGETTING INSTRUCTION CONTENTS" << std::endl;
     }
     instruction_.setValue(load(ip_.a, TreatAsOrdinal{}), TreatAsOrdinal{});
     instructionLength_ = 4;
     advanceInstruction_ = true;
     DEBUG_LOG_LEVEL(1) {
-        std::cout << __PRETTY_FUNCTION__  << ": " << disassembleInstruction(ip_.getValue<Ordinal>(), instruction_) << std::endl;
-    }
-    DEBUG_LOG_LEVEL(4) {
-        std::cout << "\tGOT INSTRUCTION CONTENTS" << std::endl;
+        std::cout << "\t\t" << __PRETTY_FUNCTION__  << ": " << disassembleInstruction(ip_.getValue<Ordinal>(), instruction_) << std::endl;
     }
     if (auto opcode = instruction_.getOpcode(); instruction_.isCTRL()) {
         processInstruction(opcode, static_cast<Integer>(instruction_.getDisplacement(TreatAsCTRL{})), TreatAsCTRL{});
@@ -1005,7 +997,7 @@ Core::processInstruction(Opcodes opcode, Register& regDest, const Register& src1
             subi(regDest, static_cast<Integer>(src1), static_cast<Integer>(src2));
             break;
         case Opcodes::shro: // shro
-            regDest.setValue<Ordinal>(static_cast<Ordinal>(src1) < 32 ? static_cast<Ordinal>(src2) >> static_cast<Ordinal>(src1) : 0);
+            regDest.setValue<Ordinal>((static_cast<Ordinal>(src1) < 32) ? static_cast<Ordinal>(src2) >> static_cast<Ordinal>(src1) : 0);
             break;
         case Opcodes::shrdi: // shrdi
                              // according to the manual, equivalent to divi value, 2 so that is what we're going to do for correctness sake

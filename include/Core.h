@@ -928,17 +928,26 @@ class Core {
         template<typename Q>
         void cmpxbGeneric(uint8_t mask, Q src1, Q src2, int16_t displacement, TreatAs<Q>) noexcept {
             DEBUG_LOG_LEVEL(1) {
-                std::cout << __PRETTY_FUNCTION__ << ": src1: 0x" << std::hex << src1
+                std::cout << "\t\t" << __PRETTY_FUNCTION__
+                << ": mask: 0x" << std::hex << mask
+                << ": src1: 0x" << std::hex << src1
                 << ", src2: 0x" << std::hex << src2
                 << ", displacement: 0x" << std::hex << displacement << std::endl;
             }
             cmpGeneric<Q>(src1, src2);
             DEBUG_LOG_LEVEL(1) {
-                std::cout << __PRETTY_FUNCTION__ << ": ac result: 0x" << std::hex << ac_.getConditionCode() << std::endl;
+                std::cout << "\t\t" << __PRETTY_FUNCTION__ << ": ac result: 0x" << std::hex << ac_.getConditionCode() << std::endl;
             }
             if ((mask & ac_.getConditionCode()) != 0) {
+                DEBUG_LOG_LEVEL(1) {
+                    std::cout << "\t\t" << __PRETTY_FUNCTION__ << ": branch taken" << std::endl;
+                }
                 advanceCOBRDisplacement(displacement);
-            } 
+            } else {
+                DEBUG_LOG_LEVEL(1) {
+                    std::cout << "\t\t" << __PRETTY_FUNCTION__ << ": branch not taken" << std::endl;
+                }
+            }
         }
         inline void cmpobGeneric(uint8_t mask, Ordinal src1, Ordinal src2, int16_t displacement) noexcept {
             cmpxbGeneric(mask, src1, src2, displacement, TreatAsOrdinal{}); 
