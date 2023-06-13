@@ -283,7 +283,7 @@ Core::performSelfTest() noexcept {
                         (makeOrdinalOperation([](Ordinal bitpos, Ordinal src, Ordinal) { return (src & (~(computeBitPosition(bitpos)))); },
                                               [this](auto& dest, auto src1, auto src2) { clrbit(dest, src1, src2); },
                                               "clrbit")),
-                                (makeOrdinalOperation([](Ordinal bitpos, Ordinal src, Ordinal) { return (src & (~(computeBitPosition(bitpos)))); },
+                                (makeOrdinalOperation([](Ordinal bitpos, Ordinal src, Ordinal) { return (src | ((computeBitPosition(bitpos)))); },
                                                       [this](auto& dest, auto src1, auto src2) { setbit(dest, src1, src2); },
                                                       "setbit"))
     ) && runNonPortableSelfTests();
