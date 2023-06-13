@@ -1359,7 +1359,7 @@ class Core {
         /// @todo add support for the dedicated floating point registers as overloaded forms
     private: // protected extensions instructions
         void signal(SegmentSelector sel) noexcept;
-        void wait(const Register& src) noexcept;
+        void wait(SegmentSelector src) noexcept;
         void sendserv(SegmentSelector src) noexcept;
         void send(SegmentSelector target, Ordinal src1, SegmentSelector src2);
         void schedprcs(const Register& src) noexcept;

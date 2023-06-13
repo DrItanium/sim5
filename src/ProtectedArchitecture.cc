@@ -120,7 +120,7 @@ Core::ldphy(Address address, Register& dest) noexcept {
     dest.setValue<Ordinal>(translateToPhysicalAddress(address));
 }
 void
-Core::wait(const Register &src) noexcept {
+Core::wait(SegmentSelector src) noexcept {
     unimplementedFault();
 }
 

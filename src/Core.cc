@@ -1316,7 +1316,7 @@ Core::processInstruction(Opcodes opcode, Register& regDest, const Register& src1
             inspacc(static_cast<Ordinal>(src1), regDest);
             break;
         case Opcodes::wait:
-            wait(src1);
+            wait(static_cast<SegmentSelector>(src1));
             break;
         case Opcodes::ldphy:
             ldphy(static_cast<Address>(src1), regDest);
