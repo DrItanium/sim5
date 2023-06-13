@@ -858,9 +858,15 @@ Core::processInstruction(Opcodes opcode, uint8_t mask, Register& src1, const Reg
         case Opcodes::testl:
         case Opcodes::testne:
         case Opcodes::testle:
-        case Opcodes::testo:
+        case Opcodes::testo: {
+            DEBUG_LOG_LEVEL(1) {
+                std::cout << "\t\t" << "testGeneric: "
+                << "mask: 0x" << std::hex << static_cast<int>(mask)
+                << std::endl;
+            }
             src1.setValue<Ordinal>(fullConditionCodeCheck(mask) ? 1 : 0);
             break;
+        }
         case Opcodes::cmpobg:
         case Opcodes::cmpobe:
         case Opcodes::cmpobge:
