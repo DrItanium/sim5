@@ -929,10 +929,10 @@ Core::processInstruction(Opcodes opcode, Register& srcDest, Address effectiveAdd
             srcDest.setValue<Ordinal>(load(effectiveAddress, TreatAsOrdinal{}));
             break;
         case Opcodes::ldob:
-            srcDest.setValue(load(effectiveAddress, TreatAs<ByteOrdinal>{}), TreatAsOrdinal{});
+            srcDest.setValue<Ordinal>(load(effectiveAddress, TreatAs<ByteOrdinal>{}));
             break;
         case Opcodes::ldos:
-            srcDest.setValue(load(effectiveAddress, TreatAs<ShortOrdinal>{}), TreatAsOrdinal{});
+            srcDest.setValue<Ordinal>(load(effectiveAddress, TreatAs<ShortOrdinal>{}));
             break;
         case Opcodes::ldib:
             srcDest.setValue<Integer>(load(effectiveAddress, TreatAs<ByteInteger>{}));
