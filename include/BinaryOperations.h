@@ -235,4 +235,49 @@ static_assert(performCompare<Integer>(0, 0) == 0b010);
 static_assert(performCompare<Ordinal>(0, 0) == 0b010);
 static_assert(performCompare<Integer>(0, -1) == 0b001);
 static_assert(performCompare<Ordinal>(20, 10) == 0b001);
+
+template<typename Q>
+static constexpr bool isLessThan(Q src1, Q src2) noexcept {
+    return performCompare<Q>(src1, src2) == 0b100;
+}
+static_assert(isLessThan<Ordinal>(0u, 1u));
+static_assert(isLessThan<Integer>(-1, 0));
+template<typename Q>
+static constexpr bool isEqual(Q src1, Q src2) noexcept {
+    return performCompare<Q>(src1, src2) == 0b010;
+}
+static_assert(isEqual<Ordinal>(0, 0));
+static_assert(isEqual<Integer>(0, 0));
+static_assert(isEqual<Integer>(-1, -1));
+
+template<typename Q>
+static constexpr bool isGreaterThan(Q src1, Q src2) noexcept {
+    return performCompare<Q>(src1, src2) == 0b001;
+}
+
+static_assert(isGreaterThan<Ordinal>(20, 10));
+static_assert(isGreaterThan<Integer>(0, -1));
+
+template<typename Q>
+static constexpr bool isGreaterThanOrEqualTo(Q src1, Q src2) noexcept {
+    auto value = performCompare<Q>(src1, src2);
+    return (value & 0b011) != 0;
+}
+
+static_assert(isGreaterThanOrEqualTo<Ordinal>(20, 10));
+static_assert(isGreaterThanOrEqualTo<Integer>(0, -1));
+static_assert(isGreaterThanOrEqualTo<Ordinal>(0, 0));
+static_assert(isGreaterThanOrEqualTo<Integer>(0, 0));
+static_assert(isGreaterThanOrEqualTo<Integer>(-1, -1));
+
+template<typename Q>
+static constexpr bool isLessThanOrEqualTo(Q src1, Q src2) noexcept {
+    auto value = performCompare<Q>(src1, src2);
+    return (value & 0b110) != 0;
+}
+static_assert(isLessThanOrEqualTo<Ordinal>(0u, 1u));
+static_assert(isLessThanOrEqualTo<Integer>(-1, 0));
+static_assert(isLessThanOrEqualTo<Ordinal>(0, 0));
+static_assert(isLessThanOrEqualTo<Integer>(0, 0));
+static_assert(isLessThanOrEqualTo<Integer>(-1, -1));
 #endif // end SIM5_BINARY_OPERATIONS_H__
