@@ -24,6 +24,7 @@
 #include "Types.h"
 #include "Core.h"
 #include "BinaryOperations.h"
+#include <cstring>
 
 void
 Core::saveprcs() noexcept {
@@ -33,6 +34,7 @@ Core::saveprcs() noexcept {
 void
 Core::cmpstr(Ordinal src1Address, Ordinal src2Address, Ordinal len) noexcept {
     ac_.arith.conditionCode = 0b010;
+    /// @todo figure out how to accelerate this to use strncmp instead of doing this manually
     for (Ordinal i = 0; i < len; ++i) {
         auto a = load(src1Address + i, TreatAsByteOrdinal {});
         auto b = load(src2Address + i, TreatAsByteOrdinal {});
@@ -51,6 +53,7 @@ Core::movstr(Ordinal destAddress, Ordinal srcAddress, Ordinal len) noexcept {
     // copy in reverse to make sure that no byte of the source string is overwritten before it is copied into the
     // destination string. If it is guaranteed that there are no overlaps, the movqstr instruction performs this operation
     // faster.
+    /// @todo figure out how to accelerate this to use strncpy instead of doing this manually
     if (srcAddress <= destAddress) {
         using K = TreatAsByteOrdinal;
         // original pseudo code for this path:
@@ -67,8 +70,32 @@ Core::movstr(Ordinal destAddress, Ordinal srcAddress, Ordinal len) noexcept {
 
 void
 Core::movqstr(Ordinal destAddress, Ordinal srcAddress, Ordinal len) noexcept {
+    /// @todo figure out how to accelerate this to use strncpy instead of doing this manually
     using K = TreatAsByteOrdinal;
     for (Ordinal i = 0; i < len; ++i) {
         store(destAddress + i, load(srcAddress + i, K{}), K{});
     }
+}
+
+void
+Core::fill(Ordinal dest, Ordinal value, Ordinal len) noexcept {
+    Ordinal numWords = len / 4;
+    for (Ordinal i = 0; i < numWords; ++i)  {
+        store(dest + (i * 4), value, TreatAsOrdinal{});
+    }
+    switch (len % 4) {
+        case 0:
+            break;
+        case 1:
+            store(dest + len - 1, value, TreatAsByteOrdinal{});
+            break;
+        case 2:
+            store(dest + len - 2, value, TreatAsShortOrdinal{});
+            break;
+        case 3:
+            store(dest + len - 3, value, TreatAsShortOrdinal{});
+            store(dest + len - 1, static_cast<ByteOrdinal>(value >> 16), TreatAsByteOrdinal{});
+            break;
+    }
+
 }

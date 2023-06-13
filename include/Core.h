@@ -1369,12 +1369,12 @@ class Core {
         void ldtime(Register& dest) noexcept;
         void ldphy(Register& dest, Ordinal address) noexcept;
         void inspacc(Ordinal src, Register& dest) noexcept;
-        void fill(Register& dest, Ordinal value, Ordinal len) noexcept;
         void condwait(SegmentSelector src) noexcept;
         void condrec(Register& dest, SegmentSelector src) noexcept;
         void cmpstr(Ordinal src1, Ordinal src2, Ordinal len) noexcept;
         void movstr(Ordinal destAddress, Ordinal srcAddress, Ordinal len) noexcept;
         void movqstr(Ordinal destAddress, Ordinal srcAddress, Ordinal len) noexcept;
+        void fill(Ordinal dest, Ordinal value, Ordinal len) noexcept;
     private: // interrupt related
         Address getInterruptTableBaseAddress() const;
         void postInterrupt(InterruptVector vector);
