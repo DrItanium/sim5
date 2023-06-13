@@ -23,3 +23,47 @@
 #include "Types.h"
 #include "Core.h"
 #include "BinaryOperations.h"
+
+const Register&
+Core::getSrc1Register(TreatAsREG) const noexcept {
+    if (instruction_.reg.m1) {
+        /// @todo what to do if s1 is also set?
+        return constants_.get(instruction_.reg.src1);
+    } else if (instruction_.reg.s1) {
+        return getSFR(instruction_.reg.src1);
+    } else {
+        return getGPR(instruction_.reg.src1);
+    }
+}
+
+const Register&
+Core::getSrc2Register(TreatAsREG) const noexcept {
+    if (instruction_.reg.m2) {
+        /// @todo what to do if s1 is also set?
+        return constants_.get(instruction_.reg.src2);
+    } else if (instruction_.reg.s2) {
+        return getSFR(instruction_.reg.src2);
+    } else {
+        return getGPR(instruction_.reg.src2);
+    }
+}
+
+
+Ordinal
+Core::unpackSrc1(ByteOrdinal offset, TreatAsOrdinal, TreatAsREG) noexcept {
+    if (instruction_.reg.m1) {
+        // literals should always return zero if offset is greater than zero
+        return offset == 0 ? constants_.getValue<Ordinal>(instruction_.reg.src1) : 0;
+    } else if (instruction_.reg.s1) {
+        return getSFR(instruction_.reg.src1, offset).o;
+    } else {
+        return getGPRValue(instruction_.reg.src1, offset, TreatAsOrdinal{});
+    }
+}
+
+Ordinal
+Register::modify(Ordinal mask, Ordinal src) noexcept {
+    auto tmp = o;
+    o = ::modify(mask, src, o);
+    return tmp;
+}

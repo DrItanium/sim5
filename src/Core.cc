@@ -25,12 +25,6 @@
 #include "Core.h"
 #include "BinaryOperations.h"
 #include <iostream>
-Ordinal 
-Register::modify(Ordinal mask, Ordinal src) noexcept {
-    auto tmp = o;
-    o = ::modify(mask, src, o);
-    return tmp;
-}
 
 
 void 
@@ -56,42 +50,6 @@ Core::extract(Register& regDest, Ordinal bitpos, Ordinal len) noexcept {
     regDest.setValue<Ordinal>((static_cast<Ordinal>(regDest) >> actualBitpos) & ~(0xFFFF'FFFF << len));
 }
 
-const Register& 
-Core::getSrc1Register(TreatAsREG) const noexcept {
-    if (instruction_.reg.m1) {
-        /// @todo what to do if s1 is also set?
-        return constants_.get(instruction_.reg.src1);
-    } else if (instruction_.reg.s1) {
-        return getSFR(instruction_.reg.src1);
-    } else {
-        return getGPR(instruction_.reg.src1);
-    }
-}
-
-const Register& 
-Core::getSrc2Register(TreatAsREG) const noexcept {
-    if (instruction_.reg.m2) {
-        /// @todo what to do if s1 is also set?
-        return constants_.get(instruction_.reg.src2);
-    } else if (instruction_.reg.s2) {
-        return getSFR(instruction_.reg.src2);
-    } else {
-        return getGPR(instruction_.reg.src2);
-    }
-}
-
-
-Ordinal 
-Core::unpackSrc1(ByteOrdinal offset, TreatAsOrdinal, TreatAsREG) noexcept {
-    if (instruction_.reg.m1) {
-        // literals should always return zero if offset is greater than zero
-        return offset == 0 ? constants_.getValue<Ordinal>(instruction_.reg.src1) : 0;
-    } else if (instruction_.reg.s1) {
-        return getSFR(instruction_.reg.src1, offset).o;
-    } else {
-        return getGPRValue(instruction_.reg.src1, offset, TreatAsOrdinal{});
-    }
-}
 
 void
 Core::scanbyte(Ordinal src1, Ordinal src2) noexcept {
@@ -375,27 +333,6 @@ Core::stq(Address effectiveAddress, const QuadRegister& source) noexcept {
     // the instruction is invalid so we should complete after we are done
 }
 
-void
-Core::saveReturnAddress(Register& linkRegister) noexcept {
-    linkRegister.setValue<Ordinal>(ip_.getValue(TreatAsOrdinal{}) + instructionLength_);
-}
-
-void
-Core::saveReturnAddress(ByteOrdinal linkRegister) noexcept {
-    setGPR(linkRegister, ip_.getValue(TreatAsOrdinal{}) + instructionLength_, TreatAsOrdinal{});
-}
-
-void 
-Core::balx(ByteOrdinal linkRegister, Ordinal branchTo) noexcept {
-    saveReturnAddress(linkRegister);
-    setIP(branchTo, TreatAsOrdinal{});
-}
-
-void 
-Core::balx(Register& linkRegister, Ordinal branchTo) noexcept {
-    saveReturnAddress(linkRegister);
-    setIP(branchTo, TreatAsOrdinal{});
-}
 
 
 
@@ -767,8 +704,7 @@ void
 Core::setStackPointer(Ordinal value, TreatAsOrdinal) noexcept {
     setGPR(SPIndex, value, TreatAsOrdinal{});
 }
-namespace {
-} // end namespace
+
 Ordinal
 Core::getNextFrameBase() const noexcept {
     return computeNextFrame<C, NotC>(getStackPointer());
@@ -803,16 +739,6 @@ Core::subo(Register& dest, Ordinal src1, Ordinal src2) noexcept {
     sub<Ordinal>(dest, src1, src2, TreatAsOrdinal{});
 }
 void
-Core::bal(Integer displacement) {
-    DEBUG_ENTER_FUNCTION;
-    saveReturnAddress(LRIndex);
-    DEBUG_LOG_LEVEL(3) {
-        std::cout << "\t" << __PRETTY_FUNCTION__ << ", lr: 0x" << getGPRValue(LRIndex, TreatAsOrdinal{}) << std::endl;
-    }
-    branch(displacement);
-    DEBUG_LEAVE_FUNCTION;
-}
-void 
 Core::processInstruction(Opcodes opcode, Integer displacement, TreatAsCTRL) noexcept {
     switch (opcode) {
         case Opcodes::bal: // bal
@@ -933,12 +859,6 @@ Core::processInstruction(Opcodes opcode, uint8_t mask, Register& src1, const Reg
     }
 }
 void
-Core::bx(Address effectiveAddress) {
-    DEBUG_ENTER_FUNCTION;
-    setIP(effectiveAddress, TreatAsOrdinal{});
-    DEBUG_LEAVE_FUNCTION;
-}
-void 
 Core::processInstruction(Opcodes opcode, Register& srcDest, Address effectiveAddress, TreatAsMEM) noexcept {
     switch (opcode) {
         case Opcodes::balx:
@@ -1357,35 +1277,6 @@ Core::shri(Register& dest, Integer src1, Integer src2) noexcept {
 
 
 
-void 
-Core::sendIAC(const iac::Message& msg) noexcept {
-    DEBUG_ENTER_FUNCTION;
-    /// @todo implement
-    switch (msg.messageType) {
-        /// @todo implement different message types
-        case 0x40: // dispatch interrupt
-            dispatchInterrupt(msg.field1);
-            break;
-        case 0x89: // purge instruction cache
-            purgeInstructionCache();
-            break;
-        case 0x93: // reinitialize processor
-            reinitializeProcessor(msg.field3, msg.field4, msg.field5);
-            break;
-        case 0x8f: // set breakpoint register
-            setBreakpointRegister(msg.field3, msg.field4);
-            break;
-        case 0x80: // store system base
-            storeSystemBase(msg.field3);
-            break;
-        case 0x41: // test for pending interrupts
-            testPendingInterrupts();
-            break;
-        default:
-            break;
-    }
-    DEBUG_LEAVE_FUNCTION;
-}
 
 void 
 Core::syncf() noexcept {
@@ -1399,26 +1290,4 @@ Core::syncf() noexcept {
 
 
 
-
-void 
-Core::reinitializeProcessor(Ordinal satBase, Ordinal prcbBase, Ordinal startIP) noexcept {
-    DEBUG_ENTER_FUNCTION;
-    boot0(satBase, prcbBase, startIP);
-    DEBUG_LEAVE_FUNCTION;
-}
-
-void 
-Core::setBreakpointRegister(Ordinal breakpointIp0, Ordinal breakpointIp1) noexcept {
-    /// @todo do something with the breakpoint data
-    breakpoint0_ = breakpointIp0 & 0xFFFFFFFC;
-    breakpoint0Active_ = (breakpointIp0 & 0b10) != 0;
-    breakpoint1_ = breakpointIp1 & 0xFFFFFFFC;
-    breakpoint1Active_ = (breakpointIp1 & 0b10) != 0;
-}
-
-void 
-Core::storeSystemBase(Ordinal destinationAddress) noexcept {
-    store(destinationAddress, systemAddressTableBase_, TreatAsOrdinal{});
-    store(destinationAddress+4, prcbAddress_, TreatAsOrdinal{});
-}
 

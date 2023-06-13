@@ -25,128 +25,55 @@
 #include "IAC.h"
 #include "Core.h"
 
-#if 0
-void 
-Core::sendIAC(const iac::Message& message) noexcept {
-    noInterrupts();
+void
+Core::sendIAC(const iac::Message& msg) noexcept {
+    DEBUG_ENTER_FUNCTION;
     /// @todo implement
-    switch (message.messageType) {
-        case 0x40: dispatchInterrupt(message.field1); break;
-        case 0x41: testPendingInterrupts(); break;
-        case 0x80: storeSystemBase(message.field3); break;
-        case 0x81: restartProcessor(message.field3, message.field4); break;
-        case 0x83: stopProcessor(); break;
-        case 0x84: flushLocalRegisters(message.field3); break;
-        case 0x85: preemptProcess(); break;
-        case 0x86: storeProcessor(); break;
-        case 0x87: flushProcess(); break;
-        case 0x88: flushTLBPhysicalPage(message.field3); break;
-        case 0x89: purgeInstructionCache(); break;
-        case 0x8A: flushTLB(); break;
-        case 0x8B: flushTLBSegmentEntry(message.field3); break;
-        case 0x8C: flushTLBPageTableEntry(message.field3, message.field4); break;
-        case 0x8D: modifyProcessControls(message.field3, message.field4); break;
-        case 0x8E: warmstartProcessor(message.field3, message.field4); break;
-        case 0x8F: setBreakpointRegister(message.field3, message.field4); break;
-        case 0x90: checkProcessNotice(message.field3); break;
-        case 0x91: freeze(); break;
-        case 0x92: continueInitialization(); break;
-        case 0x93: reinitializeProcessor(message.field3, message.field4, message.field5); break;
-        default: /* do nothing */ break;
+    switch (msg.messageType) {
+        /// @todo implement different message types
+        case 0x40: // dispatch interrupt
+            dispatchInterrupt(msg.field1);
+            break;
+        case 0x89: // purge instruction cache
+            purgeInstructionCache();
+            break;
+        case 0x93: // reinitialize processor
+            reinitializeProcessor(msg.field3, msg.field4, msg.field5);
+            break;
+        case 0x8f: // set breakpoint register
+            setBreakpointRegister(msg.field3, msg.field4);
+            break;
+        case 0x80: // store system base
+            storeSystemBase(msg.field3);
+            break;
+        case 0x41: // test for pending interrupts
+            testPendingInterrupts();
+            break;
+        default:
+            break;
     }
-    interrupts();
-}
-void 
-Core::dispatchInterrupt(uint8_t vector) noexcept {
-    /// @todo implement
-}
-
-void 
-Core::purgeInstructionCache() noexcept {
-    // do nothing right now
-}
-void 
-Core::reinitializeProcessor(Ordinal satBase, Ordinal prcbBase, Ordinal startIP) noexcept {
-    /// @todo implement
-}
-void 
-Core::setBreakpointRegister(Ordinal breakpointIp0, Ordinal breakpointIp1) noexcept {
-    /// @todo implement
-}
-void 
-Core::storeSystemBase(Ordinal destinationAddress) noexcept {
-    /// @todo implement
-}
-void 
-Core::testPendingInterrupts() noexcept {
-    /// @todo implement
-    // perhaps call checkForPendingInterrupts?
-}
-void 
-Core::checkProcessNotice(Ordinal processSegmentSelectorBase) noexcept {
-
-    /// @todo implement
-}
-void 
-Core::flushLocalRegisters(Ordinal physicalStackPageAddress) noexcept { 
-    /// @todo implement
-}
-void 
-Core::flushProcess() noexcept { 
-    /// @todo implement
-}
-void 
-Core::flushTLB() noexcept { 
-    /// @todo implement
-}
-void 
-Core::flushTLBPageTableEntry(Ordinal offsetFromSegmentBase, Ordinal ssofSegmentThatContainsPage) noexcept { 
-    /// @todo implement
-}
-void 
-Core::flushTLBPhysicalPage(Ordinal basePhysicalAddressOfPage) noexcept { 
-    /// @todo implement
-}
-void 
-Core::flushTLBSegmentEntry(Ordinal ssForSegment) noexcept { 
-    /// @todo implement
-}
-void 
-Core::modifyProcessControls(Ordinal newProcessorControlWords, Ordinal mask) noexcept { 
-    /// @todo implement
-}
-
-void 
-Core::freeze() noexcept {
-    /// @todo implement
-}
-void 
-Core::continueInitialization() noexcept {
-    /// @todo implement
+    DEBUG_LEAVE_FUNCTION;
 }
 
 void
-Core::preemptProcess() noexcept {
-    /// @todo implement
+Core::reinitializeProcessor(Ordinal satBase, Ordinal prcbBase, Ordinal startIP) noexcept {
+    DEBUG_ENTER_FUNCTION;
+    boot0(satBase, prcbBase, startIP);
+    DEBUG_LEAVE_FUNCTION;
 }
 
-void 
-Core::restartProcessor(Ordinal segmentTableBase, Ordinal prcbBase) noexcept {
-    /// @todo implement
+void
+Core::setBreakpointRegister(Ordinal breakpointIp0, Ordinal breakpointIp1) noexcept {
+    /// @todo do something with the breakpoint data
+    breakpoint0_ = breakpointIp0 & 0xFFFFFFFC;
+    breakpoint0Active_ = (breakpointIp0 & 0b10) != 0;
+    breakpoint1_ = breakpointIp1 & 0xFFFFFFFC;
+    breakpoint1Active_ = (breakpointIp1 & 0b10) != 0;
 }
 
-void 
-Core::stopProcessor() noexcept {
-    // do nothing
+void
+Core::storeSystemBase(Ordinal destinationAddress) noexcept {
+    store(destinationAddress, systemAddressTableBase_, TreatAsOrdinal{});
+    store(destinationAddress+4, prcbAddress_, TreatAsOrdinal{});
+}
 
-}
-void 
-Core::storeProcessor() noexcept {
-    // do nothing
-
-}
-void 
-Core::warmstartProcessor(Ordinal segmentTableBase, Ordinal prcbBase) noexcept {
-    // do nothing
-}
-#endif

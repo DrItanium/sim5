@@ -357,3 +357,43 @@ Core::restoreRegisterFrame(RegisterFrame& theFrame, Address baseAddress) {
         theFrame.get(i, TreatAsRegister{}).setValue(load(baseAddress, TreatAsOrdinal{}), TreatAsOrdinal {});
     }
 }
+
+void
+Core::saveReturnAddress(Register& linkRegister) noexcept {
+    linkRegister.setValue<Ordinal>(ip_.getValue(TreatAsOrdinal{}) + instructionLength_);
+}
+
+void
+Core::saveReturnAddress(ByteOrdinal linkRegister) noexcept {
+    setGPR(linkRegister, ip_.getValue(TreatAsOrdinal{}) + instructionLength_, TreatAsOrdinal{});
+}
+
+void
+Core::balx(ByteOrdinal linkRegister, Ordinal branchTo) noexcept {
+    saveReturnAddress(linkRegister);
+    setIP(branchTo, TreatAsOrdinal{});
+}
+
+void
+Core::balx(Register& linkRegister, Ordinal branchTo) noexcept {
+    saveReturnAddress(linkRegister);
+    setIP(branchTo, TreatAsOrdinal{});
+}
+
+void
+Core::bal(Integer displacement) {
+    DEBUG_ENTER_FUNCTION;
+    saveReturnAddress(LRIndex);
+    DEBUG_LOG_LEVEL(3) {
+        std::cout << "\t" << __PRETTY_FUNCTION__ << ", lr: 0x" << getGPRValue(LRIndex, TreatAsOrdinal{}) << std::endl;
+    }
+    branch(displacement);
+    DEBUG_LEAVE_FUNCTION;
+}
+
+void
+Core::bx(Address effectiveAddress) {
+    DEBUG_ENTER_FUNCTION;
+    setIP(effectiveAddress, TreatAsOrdinal{});
+    DEBUG_LEAVE_FUNCTION;
+}

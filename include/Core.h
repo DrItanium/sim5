@@ -1,5 +1,5 @@
 // sim5
-// Copyright (c) 2022, Joshua Scoggins
+// Copyright (c) 2022-2023, Joshua Scoggins
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
