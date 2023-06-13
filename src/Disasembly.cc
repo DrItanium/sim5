@@ -38,6 +38,47 @@ namespace {
                 return "unknown/unimplemented";
         }
     }
+    const std::string RegisterDecodeTable[32] {
+        "pfp",
+        "sp",
+        "rip",
+#define X(index) "r" #index
+X(3),
+X(4),
+        X(5),
+        X(6),
+        X(7),
+        X(8),
+        X(9),
+        X(10),
+        X(11),
+        X(12),
+        X(13),
+        X(14),
+        X(15),
+#undef X
+#define X(index) "g" #index
+        X(0),
+        X(1),
+        X(2),
+        X(3),
+        X(4),
+        X(5),
+        X(6),
+        X(7),
+        X(8),
+        X(9),
+        X(10),
+        X(11),
+        X(12),
+        X(13),
+        X(14),
+        X(15),
+#undef X
+    };
+    std::string translateRegisterIndex(uint8_t index) {
+        return RegisterDecodeTable[index & 0b11111];
+    }
 }
 std::string
 disassembleInstruction(Address addr, const Register& reg) {
