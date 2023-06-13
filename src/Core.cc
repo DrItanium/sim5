@@ -54,7 +54,13 @@ Core::extract(Register& regDest, Ordinal bitpos, Ordinal len) noexcept {
 
 void
 Core::scanbyte(Ordinal src1, Ordinal src2) noexcept {
-    if (Register s2(src2), s1(src1); 
+    DEBUG_LOG_LEVEL(1) {
+        std::cout << "\t\t" << __PRETTY_FUNCTION__ << ": "
+        << "src1 0x" << std::hex << src1
+        << ", src2 0x" << std::hex << src2
+        << std::endl;
+    }
+    if (Register s2(src2), s1(src1);
             s1.bytes[0] == s2.bytes[0] ||
             s1.bytes[1] == s2.bytes[1] ||
             s1.bytes[2] == s2.bytes[2] ||
