@@ -279,6 +279,9 @@ Core::performSelfTest() noexcept {
                                               ("mulo"))),
                         (makeOrdinalOperation([](Ordinal src1, Ordinal src2, Ordinal dest) { return ::modify(src1, src2, dest); },
                                               [this](auto& dest, auto src1, auto src2) { return modify(dest, src1, src2); },
-                                              ("modify")))
+                                              ("modify"))),
+                        (makeOrdinalOperation([](Ordinal bitpos, Ordinal src, Ordinal) { return (src & (~(computeBitPosition(bitpos)))); },
+                                              [this](auto& dest, auto src1, auto src2) { return clrbit(dest, src1, src2); },
+                                              "clrbit"))
     ) && runNonPortableSelfTests();
 }
