@@ -86,10 +86,15 @@ constexpr Ordinal EventNoticeFault = 0x000e'0001;
 constexpr Ordinal OverrideFault = 0x0010'0000;
 
 enum class Opcodes : uint16_t {
-#define X(name, opcode, str) name = opcode ,
+#define X(name, opcode, str, privileged) name = opcode ,
 #include "Opcodes.def"
 #undef X
 };
+template<Opcodes code>
+constexpr bool IsPrivileged = false;
+#define X(name, opcode, str, privileged) template<> constexpr bool IsPrivileged< Opcodes :: name > = privileged;
+#include "Opcodes.def"
+#undef X
 enum class BootResult : uint8_t {
     Success,
     SelfTestFailure,

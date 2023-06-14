@@ -31,7 +31,7 @@
 namespace {
     std::string getOpcodeMnemonic(const Register& reg) {
         switch (reg.getOpcode()) {
-#define X(name, code, str) case Opcodes:: name : return str ;
+#define X(name, code, str, privileged) case Opcodes:: name : return str ;
 #include "Opcodes.def"
 #undef X
             default:

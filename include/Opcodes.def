@@ -1,5 +1,8 @@
-    #define GeneralOperation(name, code, str) X(name, code, str)
-    #define Operation(name, code) GeneralOperation(name, code, #name)
+    #define Privileged true
+    #define Unprivileged false
+    #define GeneralOperation(name, code, str, privileged) X(name, code, str, privileged)
+    #define Operation(name, code) GeneralOperation(name, code, #name, Unprivileged)
+    #define PrivilegedOperation(name, code) GeneralOperation(name, code, #name, Privileged)
     Operation(b, 0x08)
     Operation(call, 0x09)
     Operation(ret, 0x0a)
@@ -114,15 +117,15 @@
     // They have an extra 4 bits of opcode used to expand the instruction space
     // to kinda 12-bit, the range in the major opcode is 0x58->0x7F
     Operation(notbit, 0x580)
-    GeneralOperation(andOperation, 0x581, "and")
+    GeneralOperation(andOperation, 0x581, "and", Unprivileged)
     Operation(andnot, 0x582)
     Operation(setbit, 0x583)
     Operation(notand, 0x584)
-    GeneralOperation(xorOperation, 0x586, "xor")
-    GeneralOperation(orOperation, 0x587, "or")
+    GeneralOperation(xorOperation, 0x586, "xor", Unprivileged)
+    GeneralOperation(orOperation, 0x587, "or", Unprivileged)
     Operation(nor, 0x588)
     Operation(xnor, 0x589)
-    GeneralOperation(notOperation, 0x58a, "not")
+    GeneralOperation(notOperation, 0x58a, "not", Unprivileged)
     Operation(ornot, 0x58b)
     Operation(clrbit, 0x58c)
     Operation(notor, 0x58d)
@@ -197,18 +200,18 @@
     Operation(dsubc, 0x643)
     Operation(dmovt, 0x644)
     Operation(modac, 0x645)
-    Operation(condrec, 0x646)
+    PrivilegedOperation(condrec, 0x646)
     Operation(cread, 0x648)
     Operation(ldtypedef, 0x649)
     Operation(ldglobals, 0x64a)
 
     Operation(modify, 0x650)
     Operation(extract, 0x651)
-    GeneralOperation(restrictOperation, 0x652, "restrict")
-    Operation(amplify, 0x653)
+    GeneralOperation(restrictOperation, 0x652, "restrict", Unprivileged) // unsure if this is privileged or not, part of extended architecture
+    Operation(amplify, 0x653) // part of extended architecture
     Operation(modtc, 0x654)
     Operation(modpc, 0x655)
-    Operation(receive, 0x656)
+    PrivilegedOperation(receive, 0x656)
     Operation(ldcsp, 0x657)
     Operation(intctl, 0x658)
     Operation(sysctl, 0x659) // Jx instruction that I am going to support the same way
@@ -222,15 +225,15 @@
                   // oops
 
     Operation(calls, 0x660)
-    Operation(calld, 0x661)
-    Operation(send, 0x662)
-    Operation(sendserv, 0x663)
-    Operation(resumprcs, 0x664)
-    Operation(schedprcs, 0x665)
-    Operation(saveprcs, 0x666)
-    Operation(condwait, 0x668)
-    Operation(wait, 0x669)
-    Operation(signal, 0x66a)
+    PrivilegedOperation(calld, 0x661)
+    PrivilegedOperation(send, 0x662)
+    PrivilegedOperation(sendserv, 0x663)
+    PrivilegedOperation(resumprcs, 0x664)
+    PrivilegedOperation(schedprcs, 0x665)
+    PrivilegedOperation(saveprcs, 0x666)
+    PrivilegedOperation(condwait, 0x668)
+    PrivilegedOperation(wait, 0x669)
+    PrivilegedOperation(signal, 0x66a)
     Operation(mark, 0x66b)
     Operation(fmark, 0x66c)
     Operation(flushreg, 0x66d)
@@ -350,3 +353,6 @@
     Operation(selo, 0x7f4)
     #undef Operation
     #undef GeneralOperation
+    #undef Privileged
+    #undef PrivilegedOperation
+    #undef Unprivilged
