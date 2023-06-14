@@ -96,11 +96,18 @@ constexpr bool IsPrivileged = false;
 #include "Opcodes.def"
 #undef X
 
-template<Opcodes code>
-constexpr auto ArchitectureLevel_v = ArchitectureLevel::Unknown;
-#define X(name, opcode, str, level, privileged) template<> constexpr auto ArchitectureLevel_v< Opcodes :: name > = ArchitectureLevel:: level ;
+constexpr ArchitectureLevel getArchitectureLevel(Opcodes code) noexcept {
+    switch (code) {
+#define X(name, opcode, str, level, privileged) case Opcodes :: name : return ArchitectureLevel :: level ;
 #include "Opcodes.def"
 #undef X
+        default:
+            return ArchitectureLevel::Unknown;
+    }
+}
+template<Opcodes code>
+constexpr auto ArchitectureLevel_v = getArchitectureLevel(code);
+static_assert(ArchitectureLevel_v<Opcodes::b> == ArchitectureLevel::Core);
 
 enum class BootResult : uint8_t {
     Success,
