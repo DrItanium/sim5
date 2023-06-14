@@ -221,7 +221,14 @@ constexpr bool canDispatchVector(InterruptVector vector, uint8_t systemPriority)
         return actualPriority > systemPriority;
     }
 }
-
+enum class ArchitectureLevel : uint8_t {
+    Core,
+    NewCore,
+    Numerics,
+    Protected,
+    Extended,
+    Unknown,
+};
 
 
 #endif // end SIM5_TYPES_H__
