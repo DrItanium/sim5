@@ -1342,6 +1342,9 @@ Core::processInstruction(Opcodes opcode, Register& regDest, const Register& src1
         case Opcodes::schedprcs:
             schedprcs(static_cast<SegmentSelector>(src1));
             break;
+        case Opcodes::receive:
+            receive(static_cast<SegmentSelector>(src1), regDest);
+            break;
         default:
             unimplementedFault();
             break;

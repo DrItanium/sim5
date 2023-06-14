@@ -154,3 +154,8 @@ void
 Core::schedprcs(SegmentSelector src) noexcept {
    unimplementedFault();
 }
+
+void
+Core::receive(SegmentSelector src, Register &dest) noexcept {
+    unimplementedFault();
+}
