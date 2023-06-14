@@ -1339,7 +1339,9 @@ Core::processInstruction(Opcodes opcode, Register& regDest, const Register& src1
         case Opcodes::sendserv:
             sendserv(static_cast<SegmentSelector>(src1));
             break;
-
+        case Opcodes::schedprcs:
+            schedprcs(static_cast<SegmentSelector>(src1));
+            break;
         default:
             unimplementedFault();
             break;

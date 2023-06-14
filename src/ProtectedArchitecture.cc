@@ -150,3 +150,7 @@ void
 Core::sendserv(SegmentSelector src) noexcept {
     unimplementedFault();
 }
+void
+Core::schedprcs(SegmentSelector src) noexcept {
+   unimplementedFault();
+}
