@@ -316,9 +316,18 @@ struct SegmentDescriptor {
                                                                                 static_cast<Ordinal>(value >> 96)) { }
     constexpr SegmentDescriptor() noexcept : SegmentDescriptor(0, 0, 0, 0) { }
     [[nodiscard]] constexpr bool valid() const noexcept { return cfg.bits.valid; }
-    [[nodiscard]] constexpr ByteOrdinal getPagingMethod() const noexcept { return cfg.bits.pagingMethod; }
-    [[nodiscard]] constexpr ByteOrdinal getAccessStatus() const noexcept { return cfg.bits.accessStatus; }
-    [[nodiscard]] constexpr ByteOrdinal getSize() const noexcept { return cfg.bits.size; }
+    enum class PagingMethod : uint8_t {
+        Error,
+        Unpaged,
+        Paged,
+        Bipaged,
+    };
+    [[nodiscard]] constexpr auto getPagingMethod() const noexcept { return static_cast<PagingMethod>(cfg.bits.pagingMethod);  }
+    [[nodiscard]] constexpr auto refersToBipagedRegion() const noexcept { return getPagingMethod() == PagingMethod::Bipaged; }
+    [[nodiscard]] constexpr auto refersToPagedRegion() const noexcept { return getPagingMethod() == PagingMethod::Paged; }
+    [[nodiscard]] constexpr auto refersToSimpleRegion() const noexcept { return getPagingMethod() == PagingMethod::Unpaged; }
+    [[nodiscard]] constexpr ByteOrdinal getRawSize() const noexcept { return cfg.bits.size; }
+    [[nodiscard]] constexpr auto computeSegmentSize() const noexcept { return 64 * (getRawSize() + 1); }
     [[nodiscard]] constexpr ByteOrdinal getSegmentType() const noexcept { return cfg.bits.segmentType; }
     [[nodiscard]] constexpr bool entryIsInvalid() const noexcept { return (cfg.raw & 0b111) == 0; }
     [[nodiscard]] constexpr bool isSemaphore() const noexcept { return cfg.raw == 0x4000'0001; }
@@ -326,15 +335,24 @@ struct SegmentDescriptor {
     [[nodiscard]] constexpr Ordinal getBaseAddress() const noexcept { return address & ~(0xFFF); }
     [[nodiscard]] constexpr Ordinal getTableAddress() const noexcept { return address & ~(0b111'111); }
     [[nodiscard]] constexpr Address computePhysicalAddress(Address virtualAddress) const noexcept { return getBaseAddress() | (virtualAddress & 0xFFF); }
+    [[nodiscard]] constexpr bool hasBeenAccessed() const noexcept { return cfg.bits.accessed; }
+    [[nodiscard]] constexpr bool hasBeenAltered() const noexcept { return cfg.bits.altered; }
+    void markAccessed() noexcept { cfg.bits.accessed = 1; }
+    void markAltered() noexcept { cfg.bits.altered = 1; }
+    [[nodiscard]] constexpr bool isCacheable() const noexcept { return cfg.bits.cacheable; }
     Ordinal reserved[2];
     Address address;
     union Configuration {
         constexpr explicit Configuration(Ordinal value = 0) : raw(value) { }
         Ordinal raw = 0;
         struct {
-            Ordinal valid : 1;
+            Ordinal valid : 1; // b0
             Ordinal pagingMethod : 2;
-            Ordinal accessStatus : 5;
+            Ordinal accessed : 1; // b3
+            Ordinal altered : 1; // b4
+            Ordinal b5 : 1;
+            Ordinal cacheable : 1;
+            Ordinal b7 : 1;
             Ordinal reserved0 : 10;
             Ordinal size : 6;
             Ordinal reserved1 : 4;
