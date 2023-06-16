@@ -409,4 +409,26 @@ enum class ArchitectureLevel : uint8_t {
 };
 template<typename T>
 concept MustBeOrdinalOrInteger = std::same_as<T, Integer> || std::same_as<T, Ordinal>;
+
+/**
+ * @brief A data structure used in Protected Mode to describe an execution queue
+ */
+struct FIFOPort {
+    explicit constexpr FIFOPort(Ordinal flags, SegmentSelector head, SegmentSelector tail) : flags(flags), queueHeadSS(head), queueTailSS(tail) { }
+    union InternalFlags{
+       constexpr InternalFlags(Ordinal value) : raw(value) {}
+       Ordinal raw = 0;
+       struct {
+           uint8_t lock;
+           uint8_t preserved;
+           Ordinal forcedZero : 1;
+           Ordinal q : 1;
+           Ordinal reserved : 14;
+       };
+    } flags;
+    SegmentSelector queueHeadSS;
+    SegmentSelector queueTailSS;
+};
+static_assert(sizeof(FIFOPort) == 12);
+
 #endif // end SIM5_TYPES_H__
