@@ -243,7 +243,7 @@ static_assert(generateSegmentDescriptor(7) == 0x1ff);
  * @brief the data structure the processor creates upon a fault being
  * triggered.
  */
-struct [[gnu::packed]] FaultRecord {
+struct FaultRecord {
     Ordinal unused;
     Ordinal overrideFaultData[3];
     Ordinal faultData[3];
@@ -321,7 +321,7 @@ struct SegmentDescriptor {
     [[nodiscard]] constexpr Address getAddress() const noexcept { return address; }
     Ordinal reserved[2];
     Address address;
-    union [[gnu::packed]] Configuration {
+    union Configuration {
         constexpr explicit Configuration(Ordinal value = 0) : raw(value) { }
         Ordinal raw = 0;
         struct {
