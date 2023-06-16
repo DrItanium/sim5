@@ -262,14 +262,17 @@ union Register {
     struct {
         BackingUnionType traceEnable : 1;
         BackingUnionType executionMode : 1;
-        BackingUnionType unused : 7;
+        BackingUnionType unused : 4;
+        BackingUnionType timeSliceReschedule :1;
+        BackingUnionType timeSlice : 1;
+        BackingUnionType timing : 1;
         BackingUnionType resume : 1;
         BackingUnionType traceFaultPending : 1;
-        BackingUnionType unused1 : 2;
-        BackingUnionType state : 1;
-        BackingUnionType unused2 : 2;
+        BackingUnionType preempt : 1;
+        BackingUnionType refault : 1;
+        BackingUnionType state : 2;
         BackingUnionType priority : 5;
-        Ordinal internalState : 11;
+        BackingUnionType internalState : 11;
     } processControls;
     struct {
         BackingUnionType unused0 : 1; // 0
@@ -290,7 +293,35 @@ union Register {
         BackingUnionType breakpointTraceEvent : 1; // 23
         BackingUnionType unused2 : 8;
     } trace;
-    uint8_t interruptControl[4];
+    struct {
+        BackingUnionType b0 : 1;
+        BackingUnionType multiprocessorPreempt : 1;
+        BackingUnionType state : 2;
+        BackingUnionType b3 : 1;
+        BackingUnionType nonpreemptLimit : 5;
+        BackingUnionType addressingMode : 1;
+        BackingUnionType checkDispatchPort : 1;
+        BackingUnionType b7 : 4;
+        BackingUnionType interimPriority : 5;
+        BackingUnionType rest : 11;
+    } processorControls;
+    struct {
+        BackingUnionType v : 1;
+        BackingUnionType pageRights : 2;
+        BackingUnionType unused : 9;
+        BackingUnionType baseAddress : 20;
+    } pageTableDirectoryEntry;
+    struct {
+        BackingUnionType v : 1;
+        BackingUnionType pageRights : 2;
+        BackingUnionType accessed : 1;
+        BackingUnionType altered : 1;
+        BackingUnionType unused0 : 1;
+        BackingUnionType c : 1;
+        BackingUnionType unused1 : 1;
+        BackingUnionType unused2 : 4;
+        BackingUnionType baseAddress : 20;
+    } pageTableEntry;
     [[nodiscard]] constexpr auto getConditionCode() const noexcept { return arith.conditionCode; }
     void setPriority(Ordinal value) noexcept { processControls.priority = value; }
     [[nodiscard]] constexpr ByteOrdinal getPriority() const noexcept { return processControls.priority; }

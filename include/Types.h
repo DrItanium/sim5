@@ -323,6 +323,9 @@ struct SegmentDescriptor {
     [[nodiscard]] constexpr bool entryIsInvalid() const noexcept { return (cfg.raw & 0b111) == 0; }
     [[nodiscard]] constexpr bool isSemaphore() const noexcept { return cfg.raw == 0x4000'0001; }
     [[nodiscard]] constexpr Address getAddress() const noexcept { return address; }
+    [[nodiscard]] constexpr Ordinal getBaseAddress() const noexcept { return address & ~(0xFFF); }
+    [[nodiscard]] constexpr Ordinal getTableAddress() const noexcept { return address & ~(0b111'111); }
+    [[nodiscard]] constexpr Address computePhysicalAddress(Address virtualAddress) const noexcept { return getBaseAddress() | (virtualAddress & 0xFFF); }
     Ordinal reserved[2];
     Address address;
     union Configuration {
@@ -406,5 +409,4 @@ enum class ArchitectureLevel : uint8_t {
 };
 template<typename T>
 concept MustBeOrdinalOrInteger = std::same_as<T, Integer> || std::same_as<T, Ordinal>;
-
 #endif // end SIM5_TYPES_H__
