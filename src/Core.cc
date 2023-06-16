@@ -161,7 +161,6 @@ Core::mark() noexcept {
     nextInstruction();
     if (pc_.processControls.traceEnable && tc_.trace.breakpointTraceMode) {
         markTraceFault();
-        //generateFault(MarkTraceFault);
     }
 }
 
@@ -1459,4 +1458,22 @@ Core::ldib(Address address, Register &dest) {
 void
 Core::ldis(Address address, Register &dest) {
     dest.setValue<Integer>(load(address, TreatAsShortInteger{}));
+}
+
+void
+Core::modi(Register& dest, Integer src1, Integer src2) {
+    if (auto denominator = src1; denominator == 0) {
+        // dest becomes an undefined value
+        dest.setValue<Ordinal>(0);
+        zeroDivideFault();
+    } else {
+        auto numerator = src2;
+        auto result = numerator - ((numerator / denominator) * denominator);
+        if (((numerator * denominator) < 0) && (result != 0)) {
+            result += denominator;
+        }
+        dest.setValue<Integer>(result);
+        nextInstruction();
+        /// @todo implement fault checks
+    }
 }

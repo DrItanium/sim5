@@ -1102,20 +1102,7 @@ class Core {
             // so lets use andnot
             andnot(dest, computeBitPosition(src1), src2);
         }
-        inline void modi(Register& dest, Integer src1, Integer src2) noexcept {
-            if (auto denominator = src1; denominator == 0) {
-                zeroDivideFault();
-            } else {
-                auto numerator = src2;
-                auto result = numerator - ((numerator / denominator) * denominator);
-                if (((numerator * denominator) < 0) && (result != 0)) {
-                    result += denominator;
-                }
-                dest.setValue<Integer>(result);
-                nextInstruction();
-                /// @todo implement fault checks
-            }
-        }
+        void modi(Register& dest, Integer src1, Integer src2);
         inline void alterbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
             if (auto s1 = computeBitPosition(src1); ac_.getConditionCode() & 0b010) {
                 orOperation(dest, s1, src2);
