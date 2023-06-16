@@ -28,23 +28,23 @@
 #include <iostream>
 
 
-void 
+void
 Core::mulo(Register& regDest, Ordinal src1o, Ordinal src2o) noexcept {
     mult<Ordinal>(regDest, src1o, src2o, TreatAsOrdinal{});
 }
 
 
-void 
+void
 Core::muli(Register& regDest, Integer src1o, Integer src2o) noexcept {
     mult<Integer>(regDest, src1o, src2o, TreatAsInteger{});
 }
 
-void 
+void
 Core::modify(Register& regDest, Ordinal src1o, Ordinal src2o) noexcept {
     regDest.setValue<Ordinal>(::modify(src1o, src2o, regDest.getValue<Ordinal>()));
 }
 
-void 
+void
 Core::extract(Register& regDest, Ordinal bitpos, Ordinal len) noexcept {
     // taken from the Hx manual as it isn't insane
     auto actualBitpos = bitpos > 32 ? 32 : bitpos;
@@ -56,9 +56,9 @@ void
 Core::scanbyte(Ordinal src1, Ordinal src2) noexcept {
     DEBUG_LOG_LEVEL(1) {
         std::cout << "\t\t" << __PRETTY_FUNCTION__ << ": "
-        << "src1 0x" << std::hex << src1
-        << ", src2 0x" << std::hex << src2
-        << std::endl;
+                  << "src1 0x" << std::hex << src1
+                  << ", src2 0x" << std::hex << src2
+                  << std::endl;
     }
     if (Register s2(src2), s1(src1);
             s1.bytes[0] == s2.bytes[0] ||
@@ -141,17 +141,17 @@ Core::getSupervisorStackPointer() const noexcept {
     return load((getSystemProcedureTableBase() + 12), TreatAsOrdinal{});
 }
 
-Register& 
+Register&
 Core::getSFR(ByteOrdinal index) noexcept {
     return sfrs_.get(index);
 }
 
-Register& 
+Register&
 Core::getSFR(ByteOrdinal index, ByteOrdinal offset) noexcept {
     return getSFR((index + offset) & 0b11111);
 }
 
-const Register& 
+const Register&
 Core::getSFR(ByteOrdinal index) const noexcept {
     return sfrs_.get(index);
 }
@@ -189,7 +189,7 @@ Core::computeAddress() noexcept {
         if (instruction_.mema.action) {
             auto abaseValue = getGPRValue<Ordinal>(instruction_.mema.abase);
             DEBUG_LOG_LEVEL(1) {
-                    std::cout << "\t\t\t" << __PRETTY_FUNCTION__ << ": abase = 0x" << std::hex << abaseValue << std::endl;
+                std::cout << "\t\t\t" << __PRETTY_FUNCTION__ << ": abase = 0x" << std::hex << abaseValue << std::endl;
             }
             result += abaseValue;
         }
@@ -428,10 +428,10 @@ bool
 Core::conditionCodeEqualsMask(uint8_t mask) const noexcept {
     DEBUG_LOG_LEVEL(1) {
         std::cout << "\t\t" << __PRETTY_FUNCTION__
-                << ": mask = 0x" << std::hex << static_cast<int>(mask)
-                << ", ac = 0x" << std::hex << static_cast<int>(ac_.getConditionCode())
-                << ", result = " << std::boolalpha << (ac_.getConditionCode() == mask)
-                << std::endl;
+                  << ": mask = 0x" << std::hex << static_cast<int>(mask)
+                  << ", ac = 0x" << std::hex << static_cast<int>(ac_.getConditionCode())
+                  << ", result = " << std::boolalpha << (ac_.getConditionCode() == mask)
+                  << std::endl;
     }
     return ac_.getConditionCode() == mask;
 }
@@ -482,18 +482,18 @@ Core::cycle() noexcept {
         if (instruction_.cobr.m1) {
             auto src1Value = static_cast<uint8_t>(instruction_.cobr.src1);
             processInstruction(opcode,
-                    instruction_.getInstructionMask(),
-                    src1Value, 
-                    src2,
-                    static_cast<ShortInteger>(instruction_.getDisplacement(TreatAsCOBR{})),
-                    TreatAsCOBR{});
+                               instruction_.getInstructionMask(),
+                               src1Value,
+                               src2,
+                               static_cast<ShortInteger>(instruction_.getDisplacement(TreatAsCOBR{})),
+                               TreatAsCOBR{});
         } else {
             processInstruction(opcode,
-                    instruction_.getInstructionMask(),
-                    getGPR(instruction_.cobr.src1),
-                    src2,
-                    static_cast<ShortInteger>(instruction_.getDisplacement(TreatAsCOBR{})),
-                    TreatAsCOBR{});
+                               instruction_.getInstructionMask(),
+                               getGPR(instruction_.cobr.src1),
+                               src2,
+                               static_cast<ShortInteger>(instruction_.getDisplacement(TreatAsCOBR{})),
+                               TreatAsCOBR{});
         }
     } else if (instruction_.isMEMFormat()) {
         auto effectiveAddress = computeAddress();
@@ -539,7 +539,7 @@ Core::begin() noexcept {
 }
 
 
-void 
+void
 Core::synld(Register& dest, Ordinal src) noexcept {
     DEBUG_ENTER_FUNCTION;
     ac_.arith.conditionCode = 0b000;
@@ -556,7 +556,7 @@ Core::synld(Register& dest, Ordinal src) noexcept {
     DEBUG_LEAVE_FUNCTION;
 }
 
-void 
+void
 Core::synmov(const Register& dest, Ordinal src) noexcept {
     DEBUG_ENTER_FUNCTION;
     ac_.arith.conditionCode = 0b000;
@@ -583,7 +583,7 @@ Core::synmov(const Register& dest, Ordinal src) noexcept {
     DEBUG_LEAVE_FUNCTION;
 }
 
-void 
+void
 Core::synmovl(const Register& dest, Ordinal src) noexcept {
     ac_.arith.conditionCode = 0b000;
     auto tempa = maskValue<Ordinal, 0xFFFF'FFF8>(dest.getValue(TreatAsOrdinal{}));
@@ -595,7 +595,7 @@ Core::synmovl(const Register& dest, Ordinal src) noexcept {
     ac_.arith.conditionCode = 0b010;
 }
 
-void 
+void
 Core::synmovq(const Register& dest, Ordinal src) noexcept {
     DEBUG_ENTER_FUNCTION;
     ac_.arith.conditionCode = 0b000;
@@ -612,7 +612,7 @@ Core::synmovq(const Register& dest, Ordinal src) noexcept {
 }
 
 
-void 
+void
 Core::performSelect(Register& dest, Ordinal src1, Ordinal src2) noexcept {
     dest.setValue(fullConditionCodeCheck() ? src2 : src1, TreatAsOrdinal{});
 }
@@ -693,7 +693,7 @@ Core::start() noexcept {
             x[i] = load(j, TreatAsOrdinal{});
             DEBUG_LOG_LEVEL(4) std::cout << "x[" << i << "]: 0x" << std::hex << x[i] << std::endl;
         }
-        
+
 
         ac_.arith.conditionCode = 0b000; // clear condition code
         Register temp_{0};
@@ -836,7 +836,7 @@ Core::processInstruction(Opcodes opcode, Integer displacement, TreatAsCTRL) noex
         case Opcodes::faultle:
         case Opcodes::faultg:
         case Opcodes::faultge:
-        case Opcodes::faulto: 
+        case Opcodes::faulto:
             faultGeneric();
             break;
         default:
@@ -880,7 +880,7 @@ Core::processInstruction(Opcodes opcode, uint8_t mask, uint8_t src1, const Regis
     }
 }
 
-void 
+void
 Core::processInstruction(Opcodes opcode, uint8_t mask, Register& src1, const Register& src2, int16_t displacement, TreatAsCOBR) noexcept {
     switch(opcode) {
         case Opcodes::bbc:
@@ -899,8 +899,8 @@ Core::processInstruction(Opcodes opcode, uint8_t mask, Register& src1, const Reg
         case Opcodes::testo: {
             DEBUG_LOG_LEVEL(1) {
                 std::cout << "\t\t" << "testGeneric: "
-                << "mask: 0x" << std::hex << static_cast<int>(mask)
-                << std::endl;
+                          << "mask: 0x" << std::hex << static_cast<int>(mask)
+                          << std::endl;
             }
             src1.setValue<Ordinal>(fullConditionCodeCheck(mask) ? 1 : 0);
             break;
@@ -940,7 +940,7 @@ Core::processInstruction(Opcodes opcode, Register& srcDest, Address effectiveAdd
         case Opcodes::callx:
             callx(effectiveAddress);
             break;
-        case Opcodes::st: 
+        case Opcodes::st:
             store(effectiveAddress, srcDest.getValue<Ordinal>(), TreatAs<Ordinal>{});
             break;
         case Opcodes::stob:
@@ -997,7 +997,7 @@ Core::processInstruction(Opcodes opcode, Register& srcDest, Address effectiveAdd
     }
 }
 
-void 
+void
 Core::processInstruction(Opcodes opcode, Register& regDest, const Register& src1, const Register& src2, TreatAsREG) noexcept {
     switch (opcode) {
         case Opcodes::notbit:
@@ -1054,9 +1054,9 @@ Core::processInstruction(Opcodes opcode, Register& regDest, const Register& src1
             addi(regDest, static_cast<Integer>(src1), static_cast<Integer>(src2));
             break;
         case Opcodes::subo: // subo
-                            // I remember this trick from college, subtraction is just addition
-                            // with a negative second argument :). I never gave it much thought
-                            // until now but it seems to be an effective trick to save space.
+            // I remember this trick from college, subtraction is just addition
+            // with a negative second argument :). I never gave it much thought
+            // until now but it seems to be an effective trick to save space.
             subo(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
             break;
         case Opcodes::subi: // subi
@@ -1066,19 +1066,19 @@ Core::processInstruction(Opcodes opcode, Register& regDest, const Register& src1
             shro(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
             break;
         case Opcodes::shrdi: // shrdi
-                             // according to the manual, equivalent to divi value, 2 so that is what we're going to do for correctness sake
+            // according to the manual, equivalent to divi value, 2 so that is what we're going to do for correctness sake
             regDest.setValue<Integer>( static_cast<Integer>(src1) < 32 && static_cast<Integer>(src1) >= 0 ? static_cast<Integer>(src2) / static_cast<Integer>(computeBitPosition(static_cast<Integer>(src1))) : 0);
             break;
-        case Opcodes::shri: 
+        case Opcodes::shri:
             shri(regDest, static_cast<Integer>(src1), static_cast<Integer>(src2));
             break;
-        case Opcodes::shlo: 
+        case Opcodes::shlo:
             shlo(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
             break;
-        case Opcodes::rotate: 
+        case Opcodes::rotate:
             rotate(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
             break;
-        case Opcodes::shli: 
+        case Opcodes::shli:
             shli(regDest, static_cast<Integer>(src1), static_cast<Integer>(src2));
             break;
         case Opcodes::cmpo: // cmpo
@@ -1111,7 +1111,7 @@ Core::processInstruction(Opcodes opcode, Register& regDest, const Register& src1
         case Opcodes::chkbit: // chkbit
             ac_.arith.conditionCode = ((static_cast<Ordinal>(src2) & computeBitPosition(static_cast<Ordinal>(src1))) == 0 ? 0b000 : 0b010);
             break;
-        case Opcodes::addc: 
+        case Opcodes::addc:
             addc(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
             break;
         case Opcodes::subc:
@@ -1159,7 +1159,7 @@ Core::processInstruction(Opcodes opcode, Register& regDest, const Register& src1
         case Opcodes::remi:
             remi(regDest, static_cast<Integer>(src1), static_cast<Integer>(src2));
             break;
-        case Opcodes::modi: 
+        case Opcodes::modi:
             modi(regDest, static_cast<Integer>(src1), static_cast<Integer>(src2));
             break;
         case Opcodes::modify:
@@ -1168,10 +1168,10 @@ Core::processInstruction(Opcodes opcode, Register& regDest, const Register& src1
         case Opcodes::extract:
             extract(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
             break;
-        case Opcodes::modac: 
+        case Opcodes::modac:
             modxc(ac_, regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
             break;
-        case Opcodes::modtc: 
+        case Opcodes::modtc:
             modxc(tc_, regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
             break;
         case Opcodes::modpc:
@@ -1345,27 +1345,27 @@ Core::modpc(Register& regDest, Ordinal src1o, Ordinal src2o) noexcept {
     }
 }
 
-void 
+void
 Core::modxc(Register& control, Register& dest, Ordinal src1, Ordinal src2) noexcept {
     dest.setValue<Ordinal>(control.modify(src1, src2));
 }
 
-void 
+void
 Core::shlo(Register& srcDest, Ordinal src1, Ordinal src2) noexcept {
     srcDest.setValue<Ordinal>(src1 < 32 ? src2 << src1 : 0);
 }
 
-void 
+void
 Core::shli(Register& srcDest, Integer src1, Integer src2) noexcept {
     srcDest.setValue<Integer>(src2 << src1);
 }
 
-void 
+void
 Core::rotate(Register& dest, Ordinal src1, Ordinal src2) noexcept {
     dest.setValue<Ordinal>(rotateOperation(src2, src1));
 }
 
-void 
+void
 Core::shri(Register& dest, Integer src1, Integer src2) noexcept {
     /*
      * if (src >= 0) {
@@ -1391,7 +1391,7 @@ Core::shri(Register& dest, Integer src1, Integer src2) noexcept {
 
 
 
-void 
+void
 Core::syncf() noexcept {
     // Wait for all faults to be generated that are associated with any prior
     // uncompleted instructions

@@ -253,7 +253,7 @@ union Register {
         BackingUnionType rt : 3;
         BackingUnionType p : 1;
         BackingUnionType unused : 2; // according to the Sx manual these bits go unused
-                            // but in the Hx manual they are used :/
+        // but in the Hx manual they are used :/
         Ordinal a : 26;
     } pfp;
     struct {
@@ -304,8 +304,8 @@ union Register {
     constexpr bool isDoubleWide() const noexcept {
         return isMEMB() && (memb.group || (memb.modeMinor == 0b01));
     }
-    void clear() noexcept { 
-        o = 0; 
+    void clear() noexcept {
+        o = 0;
     }
     constexpr Ordinal getPFPAddress() noexcept {
         Register copy(o);
@@ -325,7 +325,7 @@ union Register {
     [[nodiscard]] constexpr auto isREGFormat() const noexcept {
         return bytes[3] >= 0x58 && bytes[3] < 0x80;
     }
-    [[nodiscard]] constexpr auto getOpcode() const noexcept { 
+    [[nodiscard]] constexpr auto getOpcode() const noexcept {
         if (isREGFormat()) {
             uint16_t baseValue = static_cast<uint16_t>(getMajorOpcode()) << 4;
             return static_cast<Opcodes>(baseValue | static_cast<uint16_t>(reg.opcodeExt));
@@ -411,54 +411,54 @@ union Register {
 };
 static_assert(sizeof(Register) == sizeof(Ordinal));
 union LongRegister {
-    public:
-        LongRegister() = default;
-        [[nodiscard]] constexpr LongOrdinal getValue(TreatAsLongOrdinal) const noexcept { return lo; }
-        [[nodiscard]] constexpr LongInteger getValue(TreatAsLongInteger) const noexcept { return li; }
-        [[nodiscard]] constexpr LongReal getValue(TreatAsLongReal) const noexcept { return lr; }
-        void setValue(LongOrdinal value, TreatAsLongOrdinal) noexcept { lo = value; }
-        void setValue(LongInteger value, TreatAsLongInteger) noexcept { li = value; }
-        void setValue(LongReal value, TreatAsLongReal) noexcept { lr = value; }
-        Register& get(ByteOrdinal index) noexcept { return pair_[index & 0b1]; }
-        const Register& get(ByteOrdinal index) const noexcept { return pair_[index & 0b1]; }
+public:
+    LongRegister() = default;
+    [[nodiscard]] constexpr LongOrdinal getValue(TreatAsLongOrdinal) const noexcept { return lo; }
+    [[nodiscard]] constexpr LongInteger getValue(TreatAsLongInteger) const noexcept { return li; }
+    [[nodiscard]] constexpr LongReal getValue(TreatAsLongReal) const noexcept { return lr; }
+    void setValue(LongOrdinal value, TreatAsLongOrdinal) noexcept { lo = value; }
+    void setValue(LongInteger value, TreatAsLongInteger) noexcept { li = value; }
+    void setValue(LongReal value, TreatAsLongReal) noexcept { lr = value; }
+    Register& get(ByteOrdinal index) noexcept { return pair_[index & 0b1]; }
+    const Register& get(ByteOrdinal index) const noexcept { return pair_[index & 0b1]; }
 
-        template<typename T>
-        void setValue(ByteOrdinal index, T value) noexcept {
-            get(index).setValue<T>(value);
-        }
-        template<typename T>
-        constexpr T getValue(ByteOrdinal index) const noexcept {
-            return get(index).getValue<T>();
-        }
-        template<typename T>
-        constexpr T getValue() const noexcept {
-            return getValue(TreatAs<T>{});
-        }
-        template<typename T>
-        void setValue(T value) noexcept {
-            setValue(value, TreatAs<T>{});
-        }
-        Register& operator[](ByteOrdinal index) noexcept {
-            return get(index);
-        }
-        const Register& operator[](ByteOrdinal index) const noexcept {
-            return get(index);
-        }
-        template<typename T>
-        explicit constexpr operator T() const noexcept {
-            return getValue(TreatAs<T>{});
-        }
-        constexpr bool operator==(const LongRegister& other) const noexcept {
-            return lo == other.lo;
-        }
-        constexpr bool operator!=(const LongRegister& other) const noexcept {
-            return lo != other.lo;
-        }
-    private:
-        Register pair_[2];
-        LongOrdinal lo;
-        LongInteger li;
-        LongReal lr;
+    template<typename T>
+    void setValue(ByteOrdinal index, T value) noexcept {
+        get(index).setValue<T>(value);
+    }
+    template<typename T>
+    constexpr T getValue(ByteOrdinal index) const noexcept {
+        return get(index).getValue<T>();
+    }
+    template<typename T>
+    constexpr T getValue() const noexcept {
+        return getValue(TreatAs<T>{});
+    }
+    template<typename T>
+    void setValue(T value) noexcept {
+        setValue(value, TreatAs<T>{});
+    }
+    Register& operator[](ByteOrdinal index) noexcept {
+        return get(index);
+    }
+    const Register& operator[](ByteOrdinal index) const noexcept {
+        return get(index);
+    }
+    template<typename T>
+    explicit constexpr operator T() const noexcept {
+        return getValue(TreatAs<T>{});
+    }
+    constexpr bool operator==(const LongRegister& other) const noexcept {
+        return lo == other.lo;
+    }
+    constexpr bool operator!=(const LongRegister& other) const noexcept {
+        return lo != other.lo;
+    }
+private:
+    Register pair_[2];
+    LongOrdinal lo;
+    LongInteger li;
+    LongReal lr;
 };
 static_assert(sizeof(LongRegister) == sizeof(LongOrdinal));
 
@@ -466,83 +466,83 @@ using TreatAsLongRegister = TreatAs<LongRegister>;
 using TreatAsRegister = TreatAs<Register>;
 
 union QuadRegister {
-    public:
-        QuadRegister() = default;
-        template<typename T>
-        void setValue(ByteOrdinal index, T value) noexcept {
-            get(index). setValue<T>(value);
-        }
-        template<typename T>
-        constexpr T getValue(ByteOrdinal index) const noexcept {
-            return get(index).getValue<T>();
-        }
-        [[nodiscard]] constexpr QuadOrdinal getValue(TreatAsQuadOrdinal) const noexcept { return ord_; }
-        void setValue(QuadOrdinal value, TreatAsQuadOrdinal) noexcept { ord_ = value; }
-        Register& get(ByteOrdinal index) noexcept { return quads_[index & 0b11]; }
-        const Register& get(ByteOrdinal index) const noexcept { return quads_[index & 0b11]; }
-        Register& operator[](ByteOrdinal index) noexcept { return get(index); }
-        const Register& operator[](ByteOrdinal index) const noexcept { return get(index); }
-        bool operator==(const QuadRegister& other) const noexcept {
-            return ord_ == other.ord_;
-        }
-        bool operator!=(const QuadRegister& other) const noexcept {
-            return other.ord_ != ord_;
-        }
-        explicit constexpr operator QuadOrdinal() const noexcept { return ord_; }
-    private:
-        Register quads_[4];
-        QuadOrdinal ord_;
+public:
+    QuadRegister() = default;
+    template<typename T>
+    void setValue(ByteOrdinal index, T value) noexcept {
+        get(index). setValue<T>(value);
+    }
+    template<typename T>
+    constexpr T getValue(ByteOrdinal index) const noexcept {
+        return get(index).getValue<T>();
+    }
+    [[nodiscard]] constexpr QuadOrdinal getValue(TreatAsQuadOrdinal) const noexcept { return ord_; }
+    void setValue(QuadOrdinal value, TreatAsQuadOrdinal) noexcept { ord_ = value; }
+    Register& get(ByteOrdinal index) noexcept { return quads_[index & 0b11]; }
+    const Register& get(ByteOrdinal index) const noexcept { return quads_[index & 0b11]; }
+    Register& operator[](ByteOrdinal index) noexcept { return get(index); }
+    const Register& operator[](ByteOrdinal index) const noexcept { return get(index); }
+    bool operator==(const QuadRegister& other) const noexcept {
+        return ord_ == other.ord_;
+    }
+    bool operator!=(const QuadRegister& other) const noexcept {
+        return other.ord_ != ord_;
+    }
+    explicit constexpr operator QuadOrdinal() const noexcept { return ord_; }
+private:
+    Register quads_[4];
+    QuadOrdinal ord_;
 };
 static_assert(sizeof(QuadRegister) == (2*sizeof(LongOrdinal)));
 using TreatAsQuadRegister = TreatAs<QuadRegister>;
 class TripleRegister {
-    public:
-        TripleRegister() = default;
-        TripleRegister& operator=(const TripleRegister& other) noexcept {
-            setValue<Ordinal>(0, other.getValue<Ordinal>(0));
-            setValue<Ordinal>(1, other.getValue<Ordinal>(1));
-            setValue<Ordinal>(2, other.getValue<Ordinal>(2));
-            return *this;
-        }
-        TripleRegister& operator=(TripleRegister&& other) noexcept {
-            setValue<Ordinal>(0, other.getValue<Ordinal>(0));
-            setValue<Ordinal>(1, other.getValue<Ordinal>(1));
-            setValue<Ordinal>(2, other.getValue<Ordinal>(2));
-            return *this;
-        }
-        template<typename T>
-        void setValue(ByteOrdinal index, T value) noexcept {
-            get(index). setValue<T>(value);
-        }
-        template<typename T>
-        constexpr T getValue(ByteOrdinal index) const noexcept {
-            return get(index).getValue<T>();
-        }
-        Register& get(ByteOrdinal index) noexcept { return backingStore_.get(index % 3); }
-        const Register& get(ByteOrdinal index) const noexcept { return backingStore_.get(index % 3); }
-        Register& operator[](ByteOrdinal index) noexcept { return get(index); }
-        const Register& operator[](ByteOrdinal index) const noexcept { return get(index); }
-        bool operator==(const TripleRegister& other) const noexcept {
-            for (int i = 0; i < 3; ++i) {
-                if (backingStore_[i] != other.backingStore_[i]) {
-                    return false;
-                }
+public:
+    TripleRegister() = default;
+    TripleRegister& operator=(const TripleRegister& other) noexcept {
+        setValue<Ordinal>(0, other.getValue<Ordinal>(0));
+        setValue<Ordinal>(1, other.getValue<Ordinal>(1));
+        setValue<Ordinal>(2, other.getValue<Ordinal>(2));
+        return *this;
+    }
+    TripleRegister& operator=(TripleRegister&& other) noexcept {
+        setValue<Ordinal>(0, other.getValue<Ordinal>(0));
+        setValue<Ordinal>(1, other.getValue<Ordinal>(1));
+        setValue<Ordinal>(2, other.getValue<Ordinal>(2));
+        return *this;
+    }
+    template<typename T>
+    void setValue(ByteOrdinal index, T value) noexcept {
+        get(index). setValue<T>(value);
+    }
+    template<typename T>
+    constexpr T getValue(ByteOrdinal index) const noexcept {
+        return get(index).getValue<T>();
+    }
+    Register& get(ByteOrdinal index) noexcept { return backingStore_.get(index % 3); }
+    const Register& get(ByteOrdinal index) const noexcept { return backingStore_.get(index % 3); }
+    Register& operator[](ByteOrdinal index) noexcept { return get(index); }
+    const Register& operator[](ByteOrdinal index) const noexcept { return get(index); }
+    bool operator==(const TripleRegister& other) const noexcept {
+        for (int i = 0; i < 3; ++i) {
+            if (backingStore_[i] != other.backingStore_[i]) {
+                return false;
             }
-            return true;
         }
-        bool operator!=(const TripleRegister& other) const noexcept {
-            for (int i = 0; i < 3; ++i) {
-                if (backingStore_[i] == other.backingStore_[i]) {
-                    return false;
-                }
+        return true;
+    }
+    bool operator!=(const TripleRegister& other) const noexcept {
+        for (int i = 0; i < 3; ++i) {
+            if (backingStore_[i] == other.backingStore_[i]) {
+                return false;
             }
-            return true;
         }
-        [[nodiscard]] constexpr ExtendedReal getValue(TreatAsExtendedReal) const noexcept { return extendedReal_; }
-        void setValue(ExtendedReal value, TreatAsExtendedReal) noexcept { extendedReal_ = value; }
-    private:
-        QuadRegister backingStore_;
-        ExtendedReal extendedReal_;
+        return true;
+    }
+    [[nodiscard]] constexpr ExtendedReal getValue(TreatAsExtendedReal) const noexcept { return extendedReal_; }
+    void setValue(ExtendedReal value, TreatAsExtendedReal) noexcept { extendedReal_ = value; }
+private:
+    QuadRegister backingStore_;
+    ExtendedReal extendedReal_;
 };
 using TreatAsTripleRegister = TreatAs<TripleRegister>;
 // On the i960 this is separated out into two parts, locals and globals
@@ -565,26 +565,26 @@ private:
     constexpr static ByteOrdinal generateIndex(ByteOrdinal input, TreatAsLongRegister) noexcept { return maskIndex(input) >> 1; }
     constexpr static ByteOrdinal generateIndex(ByteOrdinal input, TreatAsQuadRegister) noexcept { return maskIndex(input) >> 2; }
     constexpr static ByteOrdinal generateIndex(ByteOrdinal input, TreatAsTripleRegister) noexcept { return maskIndex(input) >> 2; }
-    public:
-        RegisterFrame() = default;
-        [[nodiscard]] Register& get(ByteOrdinal index, TreatAsRegister) noexcept { return registers[generateIndex(index, TreatAsRegister{})]; }
-        [[nodiscard]] const Register& get(ByteOrdinal index, TreatAsRegister) const noexcept { return registers[generateIndex(index, TreatAsRegister{})]; }
-        [[nodiscard]] LongRegister& get(ByteOrdinal index, TreatAsLongRegister) noexcept { return longRegisters[generateIndex(index, TreatAsLongRegister{})]; }
-        [[nodiscard]] const LongRegister& get(ByteOrdinal index, TreatAsLongRegister) const noexcept { return longRegisters[generateIndex(index, TreatAsLongRegister{})]; }
-        [[nodiscard]] TripleRegister& get(ByteOrdinal index, TreatAsTripleRegister) noexcept { return tripleRegisters[generateIndex(index, TreatAsTripleRegister{})]; }
-        [[nodiscard]] const TripleRegister& get(ByteOrdinal index, TreatAsTripleRegister) const noexcept { return tripleRegisters[generateIndex(index, TreatAsTripleRegister{})]; }
-        [[nodiscard]] QuadRegister& get(ByteOrdinal index, TreatAsQuadRegister) noexcept { return quadRegisters[generateIndex(index, TreatAsQuadRegister{})]; }
-        [[nodiscard]] const QuadRegister& get(ByteOrdinal index, TreatAsQuadRegister) const noexcept { return quadRegisters[generateIndex(index, TreatAsQuadRegister{})]; }
-        void clear() noexcept {
-            for (auto& a : registers) {
-                a.clear();
-            }
+public:
+    RegisterFrame() = default;
+    [[nodiscard]] Register& get(ByteOrdinal index, TreatAsRegister) noexcept { return registers[generateIndex(index, TreatAsRegister{})]; }
+    [[nodiscard]] const Register& get(ByteOrdinal index, TreatAsRegister) const noexcept { return registers[generateIndex(index, TreatAsRegister{})]; }
+    [[nodiscard]] LongRegister& get(ByteOrdinal index, TreatAsLongRegister) noexcept { return longRegisters[generateIndex(index, TreatAsLongRegister{})]; }
+    [[nodiscard]] const LongRegister& get(ByteOrdinal index, TreatAsLongRegister) const noexcept { return longRegisters[generateIndex(index, TreatAsLongRegister{})]; }
+    [[nodiscard]] TripleRegister& get(ByteOrdinal index, TreatAsTripleRegister) noexcept { return tripleRegisters[generateIndex(index, TreatAsTripleRegister{})]; }
+    [[nodiscard]] const TripleRegister& get(ByteOrdinal index, TreatAsTripleRegister) const noexcept { return tripleRegisters[generateIndex(index, TreatAsTripleRegister{})]; }
+    [[nodiscard]] QuadRegister& get(ByteOrdinal index, TreatAsQuadRegister) noexcept { return quadRegisters[generateIndex(index, TreatAsQuadRegister{})]; }
+    [[nodiscard]] const QuadRegister& get(ByteOrdinal index, TreatAsQuadRegister) const noexcept { return quadRegisters[generateIndex(index, TreatAsQuadRegister{})]; }
+    void clear() noexcept {
+        for (auto& a : registers) {
+            a.clear();
         }
-    private:
-        Register registers[16];
-        LongRegister longRegisters[8];
-        TripleRegister tripleRegisters[4];
-        QuadRegister quadRegisters[4];
+    }
+private:
+    Register registers[16];
+    LongRegister longRegisters[8];
+    TripleRegister tripleRegisters[4];
+    QuadRegister quadRegisters[4];
 };
 /**
  * @brief is the given byte index aligned to long register boundaries?
@@ -600,20 +600,20 @@ constexpr bool aligned(ByteOrdinal index, TreatAsQuadRegister) noexcept { return
 constexpr bool aligned(ByteOrdinal index, TreatAsTripleRegister) noexcept { return aligned(index, TreatAsQuadRegister{}); }
 
 class RegisterBlock32 {
-    public:
-        RegisterBlock32() = default;
-        Register& get(ByteOrdinal index) noexcept { return registers_[index & 0b11111]; }
-        const Register& get(ByteOrdinal index) const noexcept { return registers_[index & 0b11111]; }
-        template<typename T>
-        void setValue(ByteOrdinal index, T value) noexcept {
-            get(index).setValue(value, TreatAs<T>{});
-        }
-        template<typename T>
-        T getValue(ByteOrdinal index) const noexcept {
-            return get(index).getValue(TreatAs<T>{});
-        }
-    private:
-        Register registers_[32];
+public:
+    RegisterBlock32() = default;
+    Register& get(ByteOrdinal index) noexcept { return registers_[index & 0b11111]; }
+    const Register& get(ByteOrdinal index) const noexcept { return registers_[index & 0b11111]; }
+    template<typename T>
+    void setValue(ByteOrdinal index, T value) noexcept {
+        get(index).setValue(value, TreatAs<T>{});
+    }
+    template<typename T>
+    T getValue(ByteOrdinal index) const noexcept {
+        return get(index).getValue(TreatAs<T>{});
+    }
+private:
+    Register registers_[32];
 };
 constexpr Ordinal getSALIGNParameter() noexcept {
 #ifdef SALIGN960
@@ -625,18 +625,18 @@ constexpr Ordinal getSALIGNParameter() noexcept {
 
 
 class Core {
-    public:
-        static constexpr Ordinal SALIGN = getSALIGNParameter();
-        static constexpr Ordinal C = (SALIGN * 16) - 1;
-        static constexpr Ordinal NotC = ~C;
-        static constexpr uint8_t NumberOfLocalRegisterFrames = 4;
+public:
+    static constexpr Ordinal SALIGN = getSALIGNParameter();
+    static constexpr Ordinal C = (SALIGN * 16) - 1;
+    static constexpr Ordinal NotC = ~C;
+    static constexpr uint8_t NumberOfLocalRegisterFrames = 4;
 
     struct LocalRegisterSet {
     public:
-        constexpr bool valid() const noexcept { return _valid; }
-        constexpr auto getAddress() const noexcept { return _targetFramePointer; }
-        RegisterFrame& getUnderlyingFrame() noexcept { return _theFrame; }
-        const RegisterFrame& getUnderlyingFrame() const noexcept { return _theFrame; }
+        [[nodiscard]] constexpr bool valid() const noexcept { return _valid; }
+        [[nodiscard]] constexpr auto getAddress() const noexcept { return _targetFramePointer; }
+        [[nodiscard]] RegisterFrame& getUnderlyingFrame() noexcept { return _theFrame; }
+        [[nodiscard]] const RegisterFrame& getUnderlyingFrame() const noexcept { return _theFrame; }
         void relinquishOwnership() noexcept {
             DEBUG_LOG_LEVEL(2) {
                 std::cout << __PRETTY_FUNCTION__ << ": {" << std::endl;
@@ -737,109 +737,109 @@ class Core {
 /**
  * @brief Holds onto two separate register frames
  */
-    public:
-        void begin() noexcept;
-        BootResult start() noexcept;
-        void cycle() noexcept;
-    private:
-        void lockBus() noexcept;
-        void unlockBus() noexcept;
-        /// @todo insert iac dispatch here
-        /// @todo insert routines for getting registers and such
-        auto& currentLocalRegisterSet() noexcept { return frames_[localRegisterFrameIndex_]; }
-        const auto& currentLocalRegisterSet() const noexcept { return frames_[localRegisterFrameIndex_]; }
-        auto& getLocals() noexcept { return currentLocalRegisterSet().getUnderlyingFrame(); }
-        const auto& getLocals() const noexcept { return currentLocalRegisterSet().getUnderlyingFrame(); }
-        template<typename T>
-        [[nodiscard]] T& getGPR(ByteOrdinal index, TreatAs<T>) {
-            DEBUG_ENTER_FUNCTION;
-            DEBUG_LOG_LEVEL(3) {
-                std::cout << __PRETTY_FUNCTION__ << ": index is 0x" << std::hex << static_cast<int>(index) << std::endl;
-            }
-            if (index >= 16) {
-                DEBUG_LEAVE_FUNCTION;
-                return globals_.get(index, TreatAs<T>{});
-            } else {
-                DEBUG_LEAVE_FUNCTION;
-                return getLocals().get(index, TreatAs<T>{});
-            }
+public:
+    void begin() noexcept;
+    BootResult start() noexcept;
+    void cycle() noexcept;
+private:
+    void lockBus() noexcept;
+    void unlockBus() noexcept;
+    /// @todo insert iac dispatch here
+    /// @todo insert routines for getting registers and such
+    auto& currentLocalRegisterSet() noexcept { return frames_[localRegisterFrameIndex_]; }
+    const auto& currentLocalRegisterSet() const noexcept { return frames_[localRegisterFrameIndex_]; }
+    auto& getLocals() noexcept { return currentLocalRegisterSet().getUnderlyingFrame(); }
+    const auto& getLocals() const noexcept { return currentLocalRegisterSet().getUnderlyingFrame(); }
+    template<typename T>
+    [[nodiscard]] T& getGPR(ByteOrdinal index, TreatAs<T>) {
+        DEBUG_ENTER_FUNCTION;
+        DEBUG_LOG_LEVEL(3) {
+            std::cout << __PRETTY_FUNCTION__ << ": index is 0x" << std::hex << static_cast<int>(index) << std::endl;
         }
-        template<typename T>
-        [[nodiscard]] const T& getGPR(ByteOrdinal index, TreatAs<T>) const {
-            DEBUG_ENTER_FUNCTION;
-            DEBUG_LOG_LEVEL(3) {
-                std::cout << __PRETTY_FUNCTION__ << ": index is 0x" << std::hex << static_cast<int>(index) << std::endl;
-            }
-            if (index >= 16) {
-                DEBUG_LEAVE_FUNCTION;
-                return globals_.get(index, TreatAs<T>{});
-            } else {
-                DEBUG_LEAVE_FUNCTION;
-                return getLocals().get(index, TreatAs<T>{});
-            }
-        }
-        [[nodiscard]] Register& getGPR(ByteOrdinal index) noexcept {
-            return getGPR(index, TreatAsRegister{});
-        }
-        [[nodiscard]] const Register& getGPR(ByteOrdinal index) const noexcept {
-            return getGPR(index, TreatAsRegister{});
-        }
-        [[nodiscard]] Register& getGPR(ByteOrdinal index, ByteOrdinal offset) noexcept { return getGPR((index + offset) & 0b11111); }
-        [[nodiscard]] const Register& getGPR(ByteOrdinal index, ByteOrdinal offset) const noexcept { return getGPR((index + offset) & 0b11111); }
-        [[nodiscard]] inline Ordinal getGPRValue(ByteOrdinal index, TreatAsOrdinal) const noexcept { return getGPR(index).getValue(TreatAsOrdinal{}); }
-        [[nodiscard]] inline Ordinal getGPRValue(ByteOrdinal index, ByteOrdinal offset, TreatAsOrdinal) const noexcept { return getGPR(index, offset).getValue(TreatAsOrdinal{}); }
-        [[nodiscard]] inline Integer getGPRValue(ByteOrdinal index, TreatAsInteger) const noexcept { return getGPR(index).getValue(TreatAsInteger{}); }
-        template<typename T>
-        [[nodiscard]] T getGPRValue(ByteOrdinal index) const noexcept {
-            return getGPRValue(index, TreatAs<T>{});
-        }
-        [[nodiscard]] constexpr Ordinal getSystemAddressTableBase() const noexcept { return systemAddressTableBase_; }
-        [[nodiscard]] Ordinal getSystemProcedureTableBase() const noexcept;
-        [[nodiscard]] Ordinal getSupervisorStackPointer() const noexcept;
-        inline void setGPR(ByteOrdinal index, Ordinal value, TreatAsOrdinal) noexcept { getGPR(index).setValue(value, TreatAsOrdinal{}); }
-        inline void setGPR(ByteOrdinal index, ByteOrdinal offset, Ordinal value, TreatAsOrdinal) noexcept { getGPR(index, offset).setValue(value, TreatAsOrdinal{}); }
-        inline void setGPR(ByteOrdinal index, Integer value, TreatAsInteger) noexcept { getGPR(index).setValue(value, TreatAsInteger{}); }
-        [[nodiscard]] Register& getSFR(ByteOrdinal index) noexcept;
-        [[nodiscard]] Register& getSFR(ByteOrdinal index, ByteOrdinal offset) noexcept;
-        [[nodiscard]] const Register& getSFR(ByteOrdinal index) const noexcept;
-        [[nodiscard]] const Register& getSFR(ByteOrdinal index, ByteOrdinal offset) const noexcept;
-        [[nodiscard]] const Register& getSrc1Register(TreatAsREG) const noexcept;
-        [[nodiscard]] const Register& getSrc2Register(TreatAsREG) const noexcept;
-        [[nodiscard]] Ordinal unpackSrc1(ByteOrdinal offset, TreatAsOrdinal, TreatAsREG) noexcept;
-        template<typename Q>
-        void moveGPR(ByteOrdinal destIndex, ByteOrdinal srcIndex, std::function<Q(Q)> transform, TreatAs<Q>) noexcept {
-            DEBUG_ENTER_FUNCTION;
-            auto result = transform(getGPRValue(srcIndex, TreatAs<Q>{}));
-            DEBUG_LOG_LEVEL(4) {
-                std::cout << __PRETTY_FUNCTION__ << ": transformation result 0x" << std::hex << result << std::endl;
-            }
-            setGPR(destIndex, result, TreatAs<Q>{});
+        if (index >= 16) {
             DEBUG_LEAVE_FUNCTION;
+            return globals_.get(index, TreatAs<T>{});
+        } else {
+            DEBUG_LEAVE_FUNCTION;
+            return getLocals().get(index, TreatAs<T>{});
         }
-        template<typename Q>
-        void moveGPR(ByteOrdinal destIndex, ByteOrdinal srcIndex, TreatAs<Q>) noexcept {
-            setGPR(destIndex, getGPRValue(srcIndex, TreatAs<Q>{}), TreatAs<Q>{});
+    }
+    template<typename T>
+    [[nodiscard]] const T& getGPR(ByteOrdinal index, TreatAs<T>) const {
+        DEBUG_ENTER_FUNCTION;
+        DEBUG_LOG_LEVEL(3) {
+            std::cout << __PRETTY_FUNCTION__ << ": index is 0x" << std::hex << static_cast<int>(index) << std::endl;
         }
-        template<typename Q>
-        void moveGPR(ByteOrdinal destIndex, ByteOrdinal destOffset, ByteOrdinal srcIndex, ByteOrdinal srcOffset, TreatAs<Q>) noexcept {
-            setGPR(destIndex, destOffset, getGPRValue(srcIndex, srcOffset, TreatAs<Q>{}), TreatAs<Q>{});
+        if (index >= 16) {
+            DEBUG_LEAVE_FUNCTION;
+            return globals_.get(index, TreatAs<T>{});
+        } else {
+            DEBUG_LEAVE_FUNCTION;
+            return getLocals().get(index, TreatAs<T>{});
         }
-        [[nodiscard]] bool getMaskedConditionCode(uint8_t mask) const noexcept;
-        [[nodiscard]] bool conditionCodeEqualsMask(uint8_t mask) const noexcept;
-        bool fullConditionCodeCheck() noexcept;
-        bool fullConditionCodeCheck(uint8_t mask) noexcept;
-        Ordinal computeAddress() noexcept;
-        void performRegisterTransfer(ByteOrdinal mask, ByteOrdinal count) noexcept;
-    private:
-        void sendIAC(const iac::Message& msg) noexcept;
-        void dispatchInterrupt(uint8_t vector) noexcept;
-        void purgeInstructionCache() noexcept;
-        void reinitializeProcessor(Ordinal satBase, Ordinal prcbBase, Ordinal startIP) noexcept;
-        void setBreakpointRegister(Ordinal breakpointIp0, Ordinal breakpointIp1) noexcept;
-        void storeSystemBase(Ordinal destinationAddress) noexcept;
-        void testPendingInterrupts();
+    }
+    [[nodiscard]] Register& getGPR(ByteOrdinal index) noexcept {
+        return getGPR(index, TreatAsRegister{});
+    }
+    [[nodiscard]] const Register& getGPR(ByteOrdinal index) const noexcept {
+        return getGPR(index, TreatAsRegister{});
+    }
+    [[nodiscard]] Register& getGPR(ByteOrdinal index, ByteOrdinal offset) noexcept { return getGPR((index + offset) & 0b11111); }
+    [[nodiscard]] const Register& getGPR(ByteOrdinal index, ByteOrdinal offset) const noexcept { return getGPR((index + offset) & 0b11111); }
+    [[nodiscard]] inline Ordinal getGPRValue(ByteOrdinal index, TreatAsOrdinal) const noexcept { return getGPR(index).getValue(TreatAsOrdinal{}); }
+    [[nodiscard]] inline Ordinal getGPRValue(ByteOrdinal index, ByteOrdinal offset, TreatAsOrdinal) const noexcept { return getGPR(index, offset).getValue(TreatAsOrdinal{}); }
+    [[nodiscard]] inline Integer getGPRValue(ByteOrdinal index, TreatAsInteger) const noexcept { return getGPR(index).getValue(TreatAsInteger{}); }
+    template<typename T>
+    [[nodiscard]] T getGPRValue(ByteOrdinal index) const noexcept {
+        return getGPRValue(index, TreatAs<T>{});
+    }
+    [[nodiscard]] constexpr Ordinal getSystemAddressTableBase() const noexcept { return systemAddressTableBase_; }
+    [[nodiscard]] Ordinal getSystemProcedureTableBase() const noexcept;
+    [[nodiscard]] Ordinal getSupervisorStackPointer() const noexcept;
+    inline void setGPR(ByteOrdinal index, Ordinal value, TreatAsOrdinal) noexcept { getGPR(index).setValue(value, TreatAsOrdinal{}); }
+    inline void setGPR(ByteOrdinal index, ByteOrdinal offset, Ordinal value, TreatAsOrdinal) noexcept { getGPR(index, offset).setValue(value, TreatAsOrdinal{}); }
+    inline void setGPR(ByteOrdinal index, Integer value, TreatAsInteger) noexcept { getGPR(index).setValue(value, TreatAsInteger{}); }
+    [[nodiscard]] Register& getSFR(ByteOrdinal index) noexcept;
+    [[nodiscard]] Register& getSFR(ByteOrdinal index, ByteOrdinal offset) noexcept;
+    [[nodiscard]] const Register& getSFR(ByteOrdinal index) const noexcept;
+    [[nodiscard]] const Register& getSFR(ByteOrdinal index, ByteOrdinal offset) const noexcept;
+    [[nodiscard]] const Register& getSrc1Register(TreatAsREG) const noexcept;
+    [[nodiscard]] const Register& getSrc2Register(TreatAsREG) const noexcept;
+    [[nodiscard]] Ordinal unpackSrc1(ByteOrdinal offset, TreatAsOrdinal, TreatAsREG) noexcept;
+    template<typename Q>
+    void moveGPR(ByteOrdinal destIndex, ByteOrdinal srcIndex, std::function<Q(Q)> transform, TreatAs<Q>) noexcept {
+        DEBUG_ENTER_FUNCTION;
+        auto result = transform(getGPRValue(srcIndex, TreatAs<Q>{}));
+        DEBUG_LOG_LEVEL(4) {
+            std::cout << __PRETTY_FUNCTION__ << ": transformation result 0x" << std::hex << result << std::endl;
+        }
+        setGPR(destIndex, result, TreatAs<Q>{});
+        DEBUG_LEAVE_FUNCTION;
+    }
+    template<typename Q>
+    void moveGPR(ByteOrdinal destIndex, ByteOrdinal srcIndex, TreatAs<Q>) noexcept {
+        setGPR(destIndex, getGPRValue(srcIndex, TreatAs<Q>{}), TreatAs<Q>{});
+    }
+    template<typename Q>
+    void moveGPR(ByteOrdinal destIndex, ByteOrdinal destOffset, ByteOrdinal srcIndex, ByteOrdinal srcOffset, TreatAs<Q>) noexcept {
+        setGPR(destIndex, destOffset, getGPRValue(srcIndex, srcOffset, TreatAs<Q>{}), TreatAs<Q>{});
+    }
+    [[nodiscard]] bool getMaskedConditionCode(uint8_t mask) const noexcept;
+    [[nodiscard]] bool conditionCodeEqualsMask(uint8_t mask) const noexcept;
+    bool fullConditionCodeCheck() noexcept;
+    bool fullConditionCodeCheck(uint8_t mask) noexcept;
+    Ordinal computeAddress() noexcept;
+    void performRegisterTransfer(ByteOrdinal mask, ByteOrdinal count) noexcept;
+private:
+    void sendIAC(const iac::Message& msg) noexcept;
+    void dispatchInterrupt(uint8_t vector) noexcept;
+    void purgeInstructionCache() noexcept;
+    void reinitializeProcessor(Ordinal satBase, Ordinal prcbBase, Ordinal startIP) noexcept;
+    void setBreakpointRegister(Ordinal breakpointIp0, Ordinal breakpointIp1) noexcept;
+    void storeSystemBase(Ordinal destinationAddress) noexcept;
+    void testPendingInterrupts();
 #if 0
-        // Kx related IACs
+    // Kx related IACs
         void freeze() noexcept;
         void continueInitialization() noexcept;
 
@@ -858,642 +858,642 @@ class Core {
         void storeProcessor() noexcept;
         void warmstartProcessor(Ordinal segmentTableBase, Ordinal prcbBase) noexcept;
 #endif
-    private:
-        // instructions
-        void syncf() noexcept;
-        void mark() noexcept;
-        void fmark() noexcept;
-        void synld(Register& dest, Ordinal src) noexcept;
-        void synmov(const Register& dest, Ordinal src) noexcept;
-        void synmovl(const Register& dest, Ordinal src) noexcept;
-        void synmovq(const Register& dest, Ordinal src) noexcept;
-        template<bool doScan>
-        inline void
-        xbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
-            for (Ordinal index = 0; index < 32; ++index) {
-                if ((src1 & computeBitPosition(31 - index)) != 0) {
-                    if constexpr (doScan) {
-                        dest.o = (31 - index);
-                        ac_.arith.conditionCode = 0b010;
-                        return;
-                    }
-                } else {
-                    if constexpr (!doScan) {
-                        dest.o = (31 - index);
-                        ac_.arith.conditionCode = 0b010;
-                        return;
-                    }
+private:
+    // instructions
+    void syncf() noexcept;
+    void mark() noexcept;
+    void fmark() noexcept;
+    void synld(Register& dest, Ordinal src) noexcept;
+    void synmov(const Register& dest, Ordinal src) noexcept;
+    void synmovl(const Register& dest, Ordinal src) noexcept;
+    void synmovq(const Register& dest, Ordinal src) noexcept;
+    template<bool doScan>
+    inline void
+    xbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+        for (Ordinal index = 0; index < 32; ++index) {
+            if ((src1 & computeBitPosition(31 - index)) != 0) {
+                if constexpr (doScan) {
+                    dest.o = (31 - index);
+                    ac_.arith.conditionCode = 0b010;
+                    return;
                 }
-            }
-            dest.o = 0xFFFF'FFFF;
-            ac_.arith.conditionCode = 0;
-        }
-        void scanbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
-            xbit<true>(dest, src1, src2);
-        }
-        void spanbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
-            xbit<false>(dest, src1, src2);
-        }
-        void branch(Integer displacement) noexcept;
-        void branchConditional(bool condition, Integer displacement) noexcept;
-        void scanbyte(Ordinal src1, Ordinal src2) noexcept;
-        void emul(LongRegister& dest, Ordinal src1, Ordinal src2) noexcept;
-        void ediv(LongRegister& dest, Ordinal src1, const LongRegister& src2) noexcept;
-        void arithmeticWithCarryGeneric(Ordinal result, bool src2MSB, bool src1MSB, bool destMSB) noexcept;
-        inline void advanceCOBRDisplacement(Integer displacement) noexcept {
-            ip_.i += displacement;
-            advanceInstruction_ = false;
-        }
-        template<bool checkClear>
-        void 
-        branchIfBitGeneric(Ordinal bitpos, const Register& src2 , int16_t displacement) {
-            Ordinal against = src2.getValue<Ordinal>();
-            DEBUG_LOG_LEVEL(1) {
-                std::cout << __PRETTY_FUNCTION__ << ": bitpos: 0x" << std::hex << bitpos
-                << ", src2: 0x" << std::hex << against << std::endl;
-            }
-            bool condition = false;
-            // Branch if bit set
-            if constexpr (checkClear) {
-                condition = (bitpos & against) == 0;
             } else {
-                condition = (bitpos & against) != 0;
-            }
-            if (condition) {
-                ac_.arith.conditionCode = checkClear ? 0b000 : 0b010;
-                advanceCOBRDisplacement(displacement);
-            } else {
-                ac_.arith.conditionCode = checkClear ? 0b010 : 0b000;
-            }
-        }
-        inline void bbc(uint8_t bitpos, const Register& against, int16_t displacement) {
-            return branchIfBitGeneric<true>(computeBitPosition(bitpos), against, displacement);
-        }
-        inline void bbc(const Register& bitpos, const Register& against, int16_t displacement) {
-            return branchIfBitGeneric<true>(computeBitPosition(bitpos.bytes[0]), against, displacement);
-        }
-        inline void bbs(uint8_t bitpos, const Register& against, int16_t displacement) {
-            return branchIfBitGeneric<false>(computeBitPosition(bitpos), against, displacement);
-        }
-        inline void bbs(const Register& bitpos, const Register& against, int16_t displacement) {
-            return branchIfBitGeneric<false>(computeBitPosition(bitpos.bytes[0]), against, displacement);
-        }
-        template<typename Q>
-        void cmpGeneric(Q src1, Q src2) noexcept {
-            DEBUG_LOG_LEVEL(1) {
-                std::cout << "\t\t" << __PRETTY_FUNCTION__ << ": before: "
-                          << "src1: 0x" << std::hex << src1
-                          << ", src2: 0x" << std::hex << src2
-                          << std::endl;
-            }
-            ac_.arith.conditionCode = performCompare<Q>(src1, src2);
-            DEBUG_LOG_LEVEL(1) {
-                std::cout << "\t\t" << __PRETTY_FUNCTION__ << ": after: "
-                          << "ac.cc = 0x" << std::hex << static_cast<int>(ac_.getConditionCode())
-                          << std::endl;
-            }
-        }
-        template<typename Q>
-        void cmpxbGeneric(uint8_t mask, Q src1, Q src2, int16_t displacement, TreatAs<Q>) noexcept {
-            DEBUG_LOG_LEVEL(1) {
-                std::cout << "\t\t" << __PRETTY_FUNCTION__
-                << ": mask: 0x" << std::hex << static_cast<int>(mask)
-                << ", src1: 0x" << std::hex << src1
-                << ", src2: 0x" << std::hex << src2
-                << ", displacement: 0x" << std::hex << displacement << std::endl;
-            }
-            cmpGeneric<Q>(src1, src2);
-            DEBUG_LOG_LEVEL(1) {
-                std::cout << "\t\t" << __PRETTY_FUNCTION__ << ": ac result: 0x" << std::hex << ac_.getConditionCode() << std::endl;
-            }
-            if ((mask & ac_.getConditionCode()) != 0) {
-                DEBUG_LOG_LEVEL(1) {
-                    std::cout << "\t\t" << __PRETTY_FUNCTION__ << ": branch taken" << std::endl;
-                }
-                advanceCOBRDisplacement(displacement);
-            } else {
-                DEBUG_LOG_LEVEL(1) {
-                    std::cout << "\t\t" << __PRETTY_FUNCTION__ << ": branch not taken" << std::endl;
+                if constexpr (!doScan) {
+                    dest.o = (31 - index);
+                    ac_.arith.conditionCode = 0b010;
+                    return;
                 }
             }
         }
-        inline void cmpobGeneric(uint8_t mask, Ordinal src1, Ordinal src2, int16_t displacement) noexcept {
-            cmpxbGeneric(mask, src1, src2, displacement, TreatAsOrdinal{}); 
+        dest.o = 0xFFFF'FFFF;
+        ac_.arith.conditionCode = 0;
+    }
+    void scanbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+        xbit<true>(dest, src1, src2);
+    }
+    void spanbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+        xbit<false>(dest, src1, src2);
+    }
+    void branch(Integer displacement) noexcept;
+    void branchConditional(bool condition, Integer displacement) noexcept;
+    void scanbyte(Ordinal src1, Ordinal src2) noexcept;
+    void emul(LongRegister& dest, Ordinal src1, Ordinal src2) noexcept;
+    void ediv(LongRegister& dest, Ordinal src1, const LongRegister& src2) noexcept;
+    void arithmeticWithCarryGeneric(Ordinal result, bool src2MSB, bool src1MSB, bool destMSB) noexcept;
+    inline void advanceCOBRDisplacement(Integer displacement) noexcept {
+        ip_.i += displacement;
+        advanceInstruction_ = false;
+    }
+    template<bool checkClear>
+    void
+    branchIfBitGeneric(Ordinal bitpos, const Register& src2 , int16_t displacement) {
+        Ordinal against = src2.getValue<Ordinal>();
+        DEBUG_LOG_LEVEL(1) {
+            std::cout << __PRETTY_FUNCTION__ << ": bitpos: 0x" << std::hex << bitpos
+                      << ", src2: 0x" << std::hex << against << std::endl;
         }
-        inline void cmpibGeneric(uint8_t mask, Integer src1, Integer src2, int16_t displacement) noexcept { 
-            cmpxbGeneric(mask, src1, src2, displacement, TreatAsInteger{});
+        bool condition = false;
+        // Branch if bit set
+        if constexpr (checkClear) {
+            condition = (bitpos & against) == 0;
+        } else {
+            condition = (bitpos & against) != 0;
         }
-        void flushreg() noexcept;
-        void balx(ByteOrdinal linkRegister, Ordinal branchTo) noexcept;
-        void calls(Ordinal value) noexcept;
-        void ldl(Address address, LongRegister& destination) noexcept;
-        void ldq(Address address, QuadRegister& destination) noexcept;
-        void ldt(Address address, TripleRegister& destination) noexcept;
-        void stq(Address address, const QuadRegister& src) noexcept;
-        void stt(Address address, const TripleRegister& src) noexcept;
-        void stl(Address address, const LongRegister& src) noexcept;
-        void ret() noexcept;
-        void call(Integer displacement) noexcept;
-        void callx(Address effectiveAddress) noexcept;
-    private:
-        void enterCall(Ordinal fp);
-        void leaveCall();
-        void restoreStandardFrame() noexcept;
-    private:
-        void performConditionalSubtract(Register& dest, Integer src1, Integer src2, TreatAsInteger) noexcept;
-        void performConditionalSubtract(Register& dest, Ordinal src1, Ordinal src2, TreatAsOrdinal) noexcept;
-        void performConditionalAdd(Register& dest, Integer src1, Integer src2, TreatAsInteger) noexcept;
-        void performConditionalAdd(Register& dest, Ordinal src1, Ordinal src2, TreatAsOrdinal) noexcept;
-        void performSelect(Register& dest, Ordinal src1, Ordinal src2) noexcept;
-    protected:
+        if (condition) {
+            ac_.arith.conditionCode = checkClear ? 0b000 : 0b010;
+            advanceCOBRDisplacement(displacement);
+        } else {
+            ac_.arith.conditionCode = checkClear ? 0b010 : 0b000;
+        }
+    }
+    inline void bbc(uint8_t bitpos, const Register& against, int16_t displacement) {
+        return branchIfBitGeneric<true>(computeBitPosition(bitpos), against, displacement);
+    }
+    inline void bbc(const Register& bitpos, const Register& against, int16_t displacement) {
+        return branchIfBitGeneric<true>(computeBitPosition(bitpos.bytes[0]), against, displacement);
+    }
+    inline void bbs(uint8_t bitpos, const Register& against, int16_t displacement) {
+        return branchIfBitGeneric<false>(computeBitPosition(bitpos), against, displacement);
+    }
+    inline void bbs(const Register& bitpos, const Register& against, int16_t displacement) {
+        return branchIfBitGeneric<false>(computeBitPosition(bitpos.bytes[0]), against, displacement);
+    }
+    template<typename Q>
+    void cmpGeneric(Q src1, Q src2) noexcept {
+        DEBUG_LOG_LEVEL(1) {
+            std::cout << "\t\t" << __PRETTY_FUNCTION__ << ": before: "
+                      << "src1: 0x" << std::hex << src1
+                      << ", src2: 0x" << std::hex << src2
+                      << std::endl;
+        }
+        ac_.arith.conditionCode = performCompare<Q>(src1, src2);
+        DEBUG_LOG_LEVEL(1) {
+            std::cout << "\t\t" << __PRETTY_FUNCTION__ << ": after: "
+                      << "ac.cc = 0x" << std::hex << static_cast<int>(ac_.getConditionCode())
+                      << std::endl;
+        }
+    }
+    template<typename Q>
+    void cmpxbGeneric(uint8_t mask, Q src1, Q src2, int16_t displacement, TreatAs<Q>) noexcept {
+        DEBUG_LOG_LEVEL(1) {
+            std::cout << "\t\t" << __PRETTY_FUNCTION__
+                      << ": mask: 0x" << std::hex << static_cast<int>(mask)
+                      << ", src1: 0x" << std::hex << src1
+                      << ", src2: 0x" << std::hex << src2
+                      << ", displacement: 0x" << std::hex << displacement << std::endl;
+        }
+        cmpGeneric<Q>(src1, src2);
+        DEBUG_LOG_LEVEL(1) {
+            std::cout << "\t\t" << __PRETTY_FUNCTION__ << ": ac result: 0x" << std::hex << ac_.getConditionCode() << std::endl;
+        }
+        if ((mask & ac_.getConditionCode()) != 0) {
+            DEBUG_LOG_LEVEL(1) {
+                std::cout << "\t\t" << __PRETTY_FUNCTION__ << ": branch taken" << std::endl;
+            }
+            advanceCOBRDisplacement(displacement);
+        } else {
+            DEBUG_LOG_LEVEL(1) {
+                std::cout << "\t\t" << __PRETTY_FUNCTION__ << ": branch not taken" << std::endl;
+            }
+        }
+    }
+    inline void cmpobGeneric(uint8_t mask, Ordinal src1, Ordinal src2, int16_t displacement) noexcept {
+        cmpxbGeneric(mask, src1, src2, displacement, TreatAsOrdinal{});
+    }
+    inline void cmpibGeneric(uint8_t mask, Integer src1, Integer src2, int16_t displacement) noexcept {
+        cmpxbGeneric(mask, src1, src2, displacement, TreatAsInteger{});
+    }
+    void flushreg() noexcept;
+    void balx(ByteOrdinal linkRegister, Ordinal branchTo) noexcept;
+    void calls(Ordinal value) noexcept;
+    void ldl(Address address, LongRegister& destination) noexcept;
+    void ldq(Address address, QuadRegister& destination) noexcept;
+    void ldt(Address address, TripleRegister& destination) noexcept;
+    void stq(Address address, const QuadRegister& src) noexcept;
+    void stt(Address address, const TripleRegister& src) noexcept;
+    void stl(Address address, const LongRegister& src) noexcept;
+    void ret() noexcept;
+    void call(Integer displacement) noexcept;
+    void callx(Address effectiveAddress) noexcept;
+private:
+    void enterCall(Ordinal fp);
+    void leaveCall();
+    void restoreStandardFrame() noexcept;
+private:
+    void performConditionalSubtract(Register& dest, Integer src1, Integer src2, TreatAsInteger) noexcept;
+    void performConditionalSubtract(Register& dest, Ordinal src1, Ordinal src2, TreatAsOrdinal) noexcept;
+    void performConditionalAdd(Register& dest, Integer src1, Integer src2, TreatAsInteger) noexcept;
+    void performConditionalAdd(Register& dest, Ordinal src1, Ordinal src2, TreatAsOrdinal) noexcept;
+    void performSelect(Register& dest, Ordinal src1, Ordinal src2) noexcept;
+protected:
 #define X(type) \
         type load(Address addr, TreatAs< type > ) const noexcept; \
         void store(Address addr, type value, TreatAs< type > ) noexcept
-        X(Integer);
-        X(Ordinal);
-        X(ByteInteger);
-        X(ByteOrdinal);
-        X(ShortInteger);
-        X(ShortOrdinal);
-        X(LongOrdinal);
-        X(QuadOrdinal);
+    X(Integer);
+    X(Ordinal);
+    X(ByteInteger);
+    X(ByteOrdinal);
+    X(ShortInteger);
+    X(ShortOrdinal);
+    X(LongOrdinal);
+    X(QuadOrdinal);
 #undef X
-    private:
-        template<bool invert = false>
-        inline void orOperation(Register& destination, Ordinal src1, Ordinal src2) noexcept {
-            destination.setValue(::orOperation<Ordinal, invert>(src1, src2), TreatAsOrdinal{});
+private:
+    template<bool invert = false>
+    inline void orOperation(Register& destination, Ordinal src1, Ordinal src2) noexcept {
+        destination.setValue(::orOperation<Ordinal, invert>(src1, src2), TreatAsOrdinal{});
+    }
+    template<bool invert = false>
+    inline void andOperation(Register& destination, Ordinal src1, Ordinal src2) noexcept {
+        destination.setValue(::andOperation<Ordinal, invert>(src1, src2), TreatAsOrdinal{});
+    }
+    template<bool invert = false>
+    inline void xorOperation(Register& destination, Ordinal src1, Ordinal src2) noexcept {
+        destination.setValue(::xorOperation<Ordinal, invert>(src1, src2), TreatAsOrdinal{});
+    }
+    template<typename Q>
+    void add(Register& destination, Q src1, Q src2, TreatAs<Q>) noexcept {
+        auto result = ::addOperation<Q>(src2, src1);
+        DEBUG_LOG_LEVEL(1) {
+            std::cout << __PRETTY_FUNCTION__ << ": (+ 0x"
+                      << std::hex << src2
+                      << " 0x" << std::hex << src1
+                      << ") -> 0x" << std::hex << result
+                      << std::endl;
         }
-        template<bool invert = false>
-        inline void andOperation(Register& destination, Ordinal src1, Ordinal src2) noexcept {
-            destination.setValue(::andOperation<Ordinal, invert>(src1, src2), TreatAsOrdinal{});
+        destination.setValue(result, TreatAs<Q>{});
+    }
+    template<typename Q>
+    void sub(Register& destination, Q src1, Q src2, TreatAs<Q>) noexcept {
+        auto result = ::subOperation<Q>(src2, src1);
+        DEBUG_LOG_LEVEL(1) {
+            std::cout << __PRETTY_FUNCTION__ << ": (- 0x"
+                      << std::hex << src2
+                      << " 0x" << std::hex << src1
+                      << ") -> 0x" << std::hex << result
+                      << std::endl;
         }
-        template<bool invert = false>
-        inline void xorOperation(Register& destination, Ordinal src1, Ordinal src2) noexcept {
-            destination.setValue(::xorOperation<Ordinal, invert>(src1, src2), TreatAsOrdinal{});
-        }
-        template<typename Q>
-        void add(Register& destination, Q src1, Q src2, TreatAs<Q>) noexcept {
-            auto result = ::addOperation<Q>(src2, src1);
-            DEBUG_LOG_LEVEL(1) {
-                std::cout << __PRETTY_FUNCTION__ << ": (+ 0x"
-                          << std::hex << src2
-                          << " 0x" << std::hex << src1
-                          << ") -> 0x" << std::hex << result
-                          << std::endl;
-            }
-            destination.setValue(result, TreatAs<Q>{});
-        }
-        template<typename Q>
-        void sub(Register& destination, Q src1, Q src2, TreatAs<Q>) noexcept {
-            auto result = ::subOperation<Q>(src2, src1);
-            DEBUG_LOG_LEVEL(1) {
-                std::cout << __PRETTY_FUNCTION__ << ": (- 0x"
-                          << std::hex << src2
-                          << " 0x" << std::hex << src1
-                          << ") -> 0x" << std::hex << result
-                          << std::endl;
-            }
-            destination.setValue(result, TreatAs<Q>{});
-        }
-        template<typename Q>
-        void mult(Register& destination, Q src1, Q src2, TreatAs<Q>) noexcept {
-            destination.setValue(::multiplyOperation<Q>(src2, src1), TreatAs<Q>{});
-        }
-        void setbit(Register& destination, Ordinal src1, Ordinal src2) noexcept {
-            // setbit is src2 | computeBitPosition(src1o)
-            orOperation(destination, computeBitPosition(src1), src2);
-        }
+        destination.setValue(result, TreatAs<Q>{});
+    }
+    template<typename Q>
+    void mult(Register& destination, Q src1, Q src2, TreatAs<Q>) noexcept {
+        destination.setValue(::multiplyOperation<Q>(src2, src1), TreatAs<Q>{});
+    }
+    void setbit(Register& destination, Ordinal src1, Ordinal src2) noexcept {
+        // setbit is src2 | computeBitPosition(src1o)
+        orOperation(destination, computeBitPosition(src1), src2);
+    }
 
-        void nor(Register& destination, Ordinal src1, Ordinal src2) noexcept {
-            orOperation<true>(destination, src1, src2);
-        }
-        void nand(Register& destination, Ordinal src1, Ordinal src2) noexcept {
-            andOperation<true>(destination, src1, src2);
-        }
-        inline void xnor(Register& destination, Ordinal src1, Ordinal src2) noexcept {
-            xorOperation<true>(destination, src1, src2);
-        }
-        inline void notbit(Register& destination, Ordinal src1, Ordinal src2) noexcept {
-            // notbit is src2 ^ computeBitPosition(src1)
-            xorOperation(destination, computeBitPosition(src1), src2);
-        }
-        inline void ornot(Register& dest, Ordinal src1, Ordinal src2) noexcept {
-            orOperation(dest, ~src1, src2);
-        }
-        inline void notor(Register& dest, Ordinal src1, Ordinal src2) noexcept {
-            orOperation(dest, src1, ~src2);
-        }
-        inline void notOperation(Register& destination, Ordinal src) noexcept {
-            destination.setValue(~src, TreatAsOrdinal{});
-        }
+    void nor(Register& destination, Ordinal src1, Ordinal src2) noexcept {
+        orOperation<true>(destination, src1, src2);
+    }
+    void nand(Register& destination, Ordinal src1, Ordinal src2) noexcept {
+        andOperation<true>(destination, src1, src2);
+    }
+    inline void xnor(Register& destination, Ordinal src1, Ordinal src2) noexcept {
+        xorOperation<true>(destination, src1, src2);
+    }
+    inline void notbit(Register& destination, Ordinal src1, Ordinal src2) noexcept {
+        // notbit is src2 ^ computeBitPosition(src1)
+        xorOperation(destination, computeBitPosition(src1), src2);
+    }
+    inline void ornot(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+        orOperation(dest, ~src1, src2);
+    }
+    inline void notor(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+        orOperation(dest, src1, ~src2);
+    }
+    inline void notOperation(Register& destination, Ordinal src) noexcept {
+        destination.setValue(~src, TreatAsOrdinal{});
+    }
 
-        inline void andnot(Register& dest, Ordinal src1, Ordinal src2) noexcept {
-            andOperation(dest, ~src1, src2);
+    inline void andnot(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+        andOperation(dest, ~src1, src2);
+    }
+    inline void notand(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+        andOperation(dest, src1, ~src2);
+    }
+    inline void clrbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+        // clrbit is src2 & ~computeBitPosition(src1)
+        // so lets use andnot
+        andnot(dest, computeBitPosition(src1), src2);
+    }
+    void modi(Register& dest, Integer src1, Integer src2);
+    inline void alterbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+        if (auto s1 = computeBitPosition(src1); ac_.getConditionCode() & 0b010) {
+            orOperation(dest, s1, src2);
+        } else {
+            andnot(dest, s1, src2);
         }
-        inline void notand(Register& dest, Ordinal src1, Ordinal src2) noexcept {
-            andOperation(dest, src1, ~src2);
+    }
+    inline void addc(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+        LongOrdinal result = static_cast<LongOrdinal>(src2) + static_cast<LongOrdinal>(src1);
+        result += (ac_.getCarryBit() ? 1 : 0);
+        dest.setValue(result, TreatAsOrdinal{});
+        DEBUG_LOG_LEVEL(4) {
+            std::cout << "addc result: 0x" << std::hex << result << std::endl;
         }
-        inline void clrbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
-            // clrbit is src2 & ~computeBitPosition(src1)
-            // so lets use andnot
-            andnot(dest, computeBitPosition(src1), src2);
-        }
-        void modi(Register& dest, Integer src1, Integer src2);
-        inline void alterbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
-            if (auto s1 = computeBitPosition(src1); ac_.getConditionCode() & 0b010) {
-                orOperation(dest, s1, src2);
-            } else {
-                andnot(dest, s1, src2);
-            }
-        }
-        inline void addc(Register& dest, Ordinal src1, Ordinal src2) noexcept {
-            LongOrdinal result = static_cast<LongOrdinal>(src2) + static_cast<LongOrdinal>(src1);
-            result += (ac_.getCarryBit() ? 1 : 0);
-            dest.setValue(result, TreatAsOrdinal{});
-            DEBUG_LOG_LEVEL(4) {
-                std::cout << "addc result: 0x" << std::hex << result << std::endl;
-            }
-            arithmeticWithCarryGeneric(static_cast<Ordinal>(result >> 32),
-                    mostSignificantBit(src2),
-                    mostSignificantBit(src1),
-                    mostSignificantBit(dest.getValue<Ordinal>()));
-        }
-        inline void subc(Register& dest, Ordinal src1, Ordinal src2) noexcept {
-            LongOrdinal result = static_cast<LongOrdinal>(src2) - static_cast<LongOrdinal>(src1) - 1;
-            result += (ac_.getCarryBit() ? 1 : 0);
-            dest.setValue(result, TreatAsOrdinal{});
-            arithmeticWithCarryGeneric(static_cast<Ordinal>(result >> 32), 
-                    mostSignificantBit(src2),
-                    mostSignificantBit(src1),
-                    mostSignificantBit(dest.getValue<Ordinal>()));
-        }
-        template<typename Q>
-        void remainderOperation(Register& dest, Q src1, Q src2) noexcept {
-            if (src1 == 0) {
-                zeroDivideFault();
-            } else {
-                // taken from the i960Sx manual
-                //dest.setValue(src2 - ((src2 / src1) * src1), TreatAs<Q>{});
-                dest.setValue(src2 % src1, TreatAs<Q>{});
-                nextInstruction();
-            }
-        }
-        void remi(Register& dest, Integer src1, Integer src2) noexcept {
-            remainderOperation<Integer>(dest, src1, src2);
+        arithmeticWithCarryGeneric(static_cast<Ordinal>(result >> 32),
+                                   mostSignificantBit(src2),
+                                   mostSignificantBit(src1),
+                                   mostSignificantBit(dest.getValue<Ordinal>()));
+    }
+    inline void subc(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+        LongOrdinal result = static_cast<LongOrdinal>(src2) - static_cast<LongOrdinal>(src1) - 1;
+        result += (ac_.getCarryBit() ? 1 : 0);
+        dest.setValue(result, TreatAsOrdinal{});
+        arithmeticWithCarryGeneric(static_cast<Ordinal>(result >> 32),
+                                   mostSignificantBit(src2),
+                                   mostSignificantBit(src1),
+                                   mostSignificantBit(dest.getValue<Ordinal>()));
+    }
+    template<typename Q>
+    void remainderOperation(Register& dest, Q src1, Q src2) noexcept {
+        if (src1 == 0) {
+            zeroDivideFault();
+        } else {
+            // taken from the i960Sx manual
+            //dest.setValue(src2 - ((src2 / src1) * src1), TreatAs<Q>{});
+            dest.setValue(src2 % src1, TreatAs<Q>{});
             nextInstruction();
-            faultOnOverflow(dest);
         }
-        void remo(Register& dest, Ordinal src1, Ordinal src2) noexcept {
-            remainderOperation<Ordinal>(dest, src1, src2);
+    }
+    void remi(Register& dest, Integer src1, Integer src2) noexcept {
+        remainderOperation<Integer>(dest, src1, src2);
+        nextInstruction();
+        faultOnOverflow(dest);
+    }
+    void remo(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+        remainderOperation<Ordinal>(dest, src1, src2);
+    }
+    template<typename Q>
+    void divideOperation(Register& dest, Q src1, Q src2) noexcept {
+        if (src1 == 0) {
+            /// @todo fix this
+            zeroDivideFault();
+        } else {
+            dest.setValue(src2 / src1, TreatAs<Q>{});
+            nextInstruction();
         }
-        template<typename Q>
-        void divideOperation(Register& dest, Q src1, Q src2) noexcept {
-            if (src1 == 0) {
-                /// @todo fix this
-                zeroDivideFault();
-            } else {
-                dest.setValue(src2 / src1, TreatAs<Q>{});
-                nextInstruction();
+    }
+    void divi(Register& dest, Integer src1, Integer src2) noexcept {
+        divideOperation<Integer>(dest, src1, src2);
+        faultOnOverflow(dest);
+    }
+    void divo(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+        divideOperation<Ordinal>(dest, src1, src2);
+    }
+    void atadd(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+        syncf();
+        lockBus();
+        auto addr = maskValue<decltype(src1), 0xFFFF'FFFC>(src1) ;
+        auto temp = load(addr, TreatAsOrdinal{});
+        // adds the src (src2 internally) value to the value in memory location specified with the addr (src1 in this case) operand.
+        // The initial value from memory is stored in dst (internally src/dst).
+        Ordinal result = temp + src2;
+        store(addr, result, TreatAsOrdinal{});
+        dest.setValue(temp, TreatAsOrdinal{});
+        unlockBus();
+    }
+    void atmod(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+        syncf();
+        lockBus();
+        auto addr = maskValue<decltype(src1), 0xFFFF'FFFC>(src1) ;
+        auto temp = load(addr, TreatAsOrdinal{});
+        // copies the src/dest value (logical version) into the memory location specifeid by src1.
+        // The bits set in the mask (src2) operand select the bits to be modified in memory. The initial
+        // value from memory is stored in src/dest
+        Ordinal result = ::modify(src2, dest.getValue<Ordinal>(), temp);
+        store(addr, result, TreatAsOrdinal{});
+        dest.setValue(temp, TreatAsOrdinal{});
+        unlockBus();
+    }
+    void cmpo(Ordinal src1, Ordinal src2) noexcept {
+        cmpGeneric(src1, src2);
+    }
+    void cmpinco(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+        cmpGeneric(src1, src2);
+        dest.setValue(src2 + 1, TreatAsOrdinal{});
+    }
+    void cmpdeco(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+        cmpGeneric(src1, src2);
+        dest.setValue(src2 - 1, TreatAsOrdinal{});
+    }
+    void cmpi(Integer src1, Integer src2) noexcept {
+        cmpGeneric(src1, src2);
+    }
+    void cmpinci(Register& dest, Integer src1, Integer src2) noexcept {
+        cmpGeneric(src1, src2);
+        dest.setValue(src2 + 1, TreatAsInteger{});
+    }
+    void cmpdeci(Register& dest, Integer src1, Integer src2) noexcept {
+        cmpGeneric(src1, src2);
+        dest.setValue(src2 - 1, TreatAsInteger{});
+    }
+    template<typename Q>
+    void concmpGeneric(Q src1, Q src2) noexcept {
+        if ((ac_.getConditionCode() & 0b100) == 0) {
+            ac_.arith.conditionCode = src1 <= src2 ? 0b010 : 0b001;
+        }
+    }
+    void concmpo(Ordinal src1, Ordinal src2) noexcept {
+        concmpGeneric<Ordinal>(src1, src2);
+    }
+    void concmpi(Integer src1, Integer src2) noexcept {
+        concmpGeneric<Integer>(src1, src2);
+    }
+private:
+    bool performSelfTest() noexcept;
+    void assertFailureState() noexcept;
+    void deassertFailureState() noexcept;
+    void zeroDivideFault() ;
+    void integerOverflowFault() ;
+    void constraintRangeFault() ;
+    void invalidSSFault() ;
+    void unimplementedFault();
+    void typeMismatchFault();
+    void typeContentsFault();
+    void markTraceFault();
+    void invalidOpcodeFault();
+    void protectionLengthFault();
+    void invalidOperandFault();
+    void invalidDescriptorFault(SegmentSelector selector);
+    void eventNoticeFault();
+    void generateFault(const FaultRecord& record);
+    void addi(Register& dest, Integer src1, Integer src2) noexcept;
+    void addo(Register& dest, Ordinal src1, Ordinal src2) noexcept;
+    void saveReturnAddress(ByteOrdinal registerIndex) noexcept;
+    void saveReturnAddress(Register& linkRegister) noexcept;
+    void setupNewFrameInternals(Ordinal fp, Ordinal temp) noexcept;
+    Ordinal getStackPointer() const noexcept;
+    Ordinal getNextFrameBase() const noexcept;
+    void setStackPointer(Ordinal value, TreatAsOrdinal) noexcept;
+    /**
+     * @brief Advance ip by instruction length and then prevent further
+     * advancement until the next cycle!
+     */
+    void nextInstruction() noexcept;
+    void setIP(Ordinal value, TreatAsOrdinal) noexcept;
+    void subo(Register& dest, Ordinal src1, Ordinal src2) noexcept;
+    void subi(Register& dest, Integer src1, Integer src2) noexcept;
+    void faultGeneric() noexcept;
+    void balx(Register& linkRegister, Address ordinal) noexcept;
+    void processInstruction(Opcodes opcode, Integer displacement, TreatAsCTRL) noexcept;
+    void processInstruction(Opcodes opcode, uint8_t mask, uint8_t src1, const Register& src2, int16_t displacement, TreatAsCOBR) noexcept;
+    void processInstruction(Opcodes opcode, uint8_t mask, Register& src1, const Register& src2, int16_t displacement, TreatAsCOBR) noexcept;
+    void processInstruction(Opcodes opcode, Register& srcDest, Address effectiveAddress, TreatAsMEM) noexcept;
+    void processInstruction(Opcodes opcode, Register& srcDest, const Register& src1, const Register& src2, TreatAsREG) noexcept;
+private:
+    void modpc(Register& dest, Ordinal src1o, Ordinal src2o) noexcept;
+    void modxc(Register& control, Register& dest, Ordinal src1, Ordinal src2) noexcept;
+    void shlo(Register& srcDest, Ordinal src1, Ordinal src2) noexcept;
+    void shli(Register& srcDest, Integer src1, Integer src2) noexcept;
+    void rotate(Register& dest, Ordinal src1, Ordinal src2) noexcept;
+    void shri(Register& dest, Integer src1, Integer src2) noexcept;
+    void shro(Register& dest, Ordinal src1, Ordinal src2) noexcept;
+    void mulo(Register& dest, Ordinal src1, Ordinal src2) noexcept;
+    void muli(Register& dest, Integer src1, Integer src2) noexcept;
+    void modify(Register& dest, Ordinal src1, Ordinal src2) noexcept;
+    void extract(Register& dest, Ordinal src1, Ordinal src2) noexcept;
+protected:
+    static decltype(auto) doRandom() {
+        return rand();
+    }
+    static decltype(auto) doRandomDisallow0() {
+        while (true) {
+            auto r = rand();
+            if (r != 0) {
+                return r;
             }
         }
-        void divi(Register& dest, Integer src1, Integer src2) noexcept {
-            divideOperation<Integer>(dest, src1, src2);
-            faultOnOverflow(dest);
-        }
-        void divo(Register& dest, Ordinal src1, Ordinal src2) noexcept {
-            divideOperation<Ordinal>(dest, src1, src2);
-        }
-        void atadd(Register& dest, Ordinal src1, Ordinal src2) noexcept {
-            syncf();
-            lockBus();
-            auto addr = maskValue<decltype(src1), 0xFFFF'FFFC>(src1) ;
-            auto temp = load(addr, TreatAsOrdinal{});
-            // adds the src (src2 internally) value to the value in memory location specified with the addr (src1 in this case) operand.
-            // The initial value from memory is stored in dst (internally src/dst).
-            Ordinal result = temp + src2;
-            store(addr, result, TreatAsOrdinal{});
-            dest.setValue(temp, TreatAsOrdinal{});
-            unlockBus();
-        }
-        void atmod(Register& dest, Ordinal src1, Ordinal src2) noexcept {
-            syncf();
-            lockBus();
-            auto addr = maskValue<decltype(src1), 0xFFFF'FFFC>(src1) ;
-            auto temp = load(addr, TreatAsOrdinal{});
-            // copies the src/dest value (logical version) into the memory location specifeid by src1.
-            // The bits set in the mask (src2) operand select the bits to be modified in memory. The initial
-            // value from memory is stored in src/dest
-            Ordinal result = ::modify(src2, dest.getValue<Ordinal>(), temp);
-            store(addr, result, TreatAsOrdinal{});
-            dest.setValue(temp, TreatAsOrdinal{});
-            unlockBus();
-        }
-        void cmpo(Ordinal src1, Ordinal src2) noexcept {
-            cmpGeneric(src1, src2);
-        }
-        void cmpinco(Register& dest, Ordinal src1, Ordinal src2) noexcept {
-            cmpGeneric(src1, src2);
-            dest.setValue(src2 + 1, TreatAsOrdinal{});
-        }
-        void cmpdeco(Register& dest, Ordinal src1, Ordinal src2) noexcept {
-            cmpGeneric(src1, src2);
-            dest.setValue(src2 - 1, TreatAsOrdinal{});
-        }
-        void cmpi(Integer src1, Integer src2) noexcept {
-            cmpGeneric(src1, src2);
-        }
-        void cmpinci(Register& dest, Integer src1, Integer src2) noexcept {
-            cmpGeneric(src1, src2);
-            dest.setValue(src2 + 1, TreatAsInteger{});
-        }
-        void cmpdeci(Register& dest, Integer src1, Integer src2) noexcept {
-            cmpGeneric(src1, src2);
-            dest.setValue(src2 - 1, TreatAsInteger{});
-        }
-        template<typename Q>
-        void concmpGeneric(Q src1, Q src2) noexcept {
-            if ((ac_.getConditionCode() & 0b100) == 0) {
-                ac_.arith.conditionCode = src1 <= src2 ? 0b010 : 0b001;
-            }
-        }
-        void concmpo(Ordinal src1, Ordinal src2) noexcept {
-            concmpGeneric<Ordinal>(src1, src2);
-        }
-        void concmpi(Integer src1, Integer src2) noexcept {
-            concmpGeneric<Integer>(src1, src2);
-        }
-    private:
-        bool performSelfTest() noexcept;
-        void assertFailureState() noexcept;
-        void deassertFailureState() noexcept;
-        void zeroDivideFault() ;
-        void integerOverflowFault() ;
-        void constraintRangeFault() ;
-        void invalidSSFault() ;
-        void unimplementedFault();
-        void typeMismatchFault();
-        void typeContentsFault();
-        void markTraceFault();
-        void invalidOpcodeFault();
-        void protectionLengthFault();
-        void invalidOperandFault();
-        void invalidDescriptorFault(SegmentSelector selector);
-        void eventNoticeFault();
-        void generateFault(const FaultRecord& record);
-        void addi(Register& dest, Integer src1, Integer src2) noexcept;
-        void addo(Register& dest, Ordinal src1, Ordinal src2) noexcept;
-        void saveReturnAddress(ByteOrdinal registerIndex) noexcept;
-        void saveReturnAddress(Register& linkRegister) noexcept;
-        void setupNewFrameInternals(Ordinal fp, Ordinal temp) noexcept;
-        Ordinal getStackPointer() const noexcept;
-        Ordinal getNextFrameBase() const noexcept;
-        void setStackPointer(Ordinal value, TreatAsOrdinal) noexcept;
-        /**
-         * @brief Advance ip by instruction length and then prevent further
-         * advancement until the next cycle!
-         */
-        void nextInstruction() noexcept;
-        void setIP(Ordinal value, TreatAsOrdinal) noexcept;
-        void subo(Register& dest, Ordinal src1, Ordinal src2) noexcept;
-        void subi(Register& dest, Integer src1, Integer src2) noexcept;
-        void faultGeneric() noexcept;
-        void balx(Register& linkRegister, Address ordinal) noexcept;
-        void processInstruction(Opcodes opcode, Integer displacement, TreatAsCTRL) noexcept;
-        void processInstruction(Opcodes opcode, uint8_t mask, uint8_t src1, const Register& src2, int16_t displacement, TreatAsCOBR) noexcept;
-        void processInstruction(Opcodes opcode, uint8_t mask, Register& src1, const Register& src2, int16_t displacement, TreatAsCOBR) noexcept;
-        void processInstruction(Opcodes opcode, Register& srcDest, Address effectiveAddress, TreatAsMEM) noexcept;
-        void processInstruction(Opcodes opcode, Register& srcDest, const Register& src1, const Register& src2, TreatAsREG) noexcept;
-    private:
-        void modpc(Register& dest, Ordinal src1o, Ordinal src2o) noexcept;
-        void modxc(Register& control, Register& dest, Ordinal src1, Ordinal src2) noexcept;
-        void shlo(Register& srcDest, Ordinal src1, Ordinal src2) noexcept;
-        void shli(Register& srcDest, Integer src1, Integer src2) noexcept;
-        void rotate(Register& dest, Ordinal src1, Ordinal src2) noexcept;
-        void shri(Register& dest, Integer src1, Integer src2) noexcept;
-        void shro(Register& dest, Ordinal src1, Ordinal src2) noexcept;
-        void mulo(Register& dest, Ordinal src1, Ordinal src2) noexcept;
-        void muli(Register& dest, Integer src1, Integer src2) noexcept;
-        void modify(Register& dest, Ordinal src1, Ordinal src2) noexcept;
-        void extract(Register& dest, Ordinal src1, Ordinal src2) noexcept;
-    protected:
-        static decltype(auto) doRandom() {
-            return rand();
-        }
-        static decltype(auto) doRandomDisallow0() {
-            while (true) {
-                auto r = rand();
-                if (r != 0) {
-                    return r;
-                }
-            }
-        }
-        template<typename W, typename ... Args>
-        static
-        bool runTestCases(W wrapper, Args ... args) noexcept {
-                return ( ... && wrapper(args)());
-        }
+    }
+    template<typename W, typename ... Args>
+    static
+    bool runTestCases(W wrapper, Args ... args) noexcept {
+        return ( ... && wrapper(args)());
+    }
 
-        static decltype(auto) makeTestRunner(auto body, auto setup, auto tearDown) noexcept {
-            return [setup, body, tearDown]() noexcept -> bool {
-                setup();
-                auto result = body();
-                tearDown();
-                return result;
-            };
-        }
+    static decltype(auto) makeTestRunner(auto body, auto setup, auto tearDown) noexcept {
+        return [setup, body, tearDown]() noexcept -> bool {
+            setup();
+            auto result = body();
+            tearDown();
+            return result;
+        };
+    }
 
-        static decltype(auto) compose(auto f, auto g) noexcept {
-            return [f, g](auto... args) {
-                return f(g(args...));
-            };
-        }
-        static decltype(auto) compose(auto f, auto g, auto h) noexcept {
-            return compose(f, compose(g, h));
-        }
-        static decltype(auto) compose(auto f, auto g, auto h, auto i) noexcept {
-            return compose(f, g, compose(h, i));
-        }
-    private:
-        bool runNonPortableSelfTests() noexcept;
-        void nonPortableBegin() noexcept;
-    private:
-        // fault handling components
-        void pushFaultRecord(Address baseStorageAddress, const FaultRecord& record) noexcept;
-        FaultTableEntry getFaultEntry(uint8_t index) const noexcept;
-        void faultCallGeneric (const FaultRecord& record, Address destination, Address stackPointer) noexcept;
-        void localProcedureEntry_FaultCall (const FaultRecord& record, Address destination) noexcept;
-        void procedureTableEntry_FaultCall(const FaultRecord& record, const FaultTableEntry& entry) noexcept;
-        void supervisorProcedureTableEntry_FaultCall(const FaultRecord& record, Address procedureAddress, Address tableBaseAddress) noexcept;
-    private:
-        template<uint8_t offset>
-        Ordinal getFromPRCB() const noexcept { return load(prcbAddress_ + offset, TreatAsOrdinal{}); }
-        Ordinal getProcessorControls() const noexcept { return getFromPRCB<4>(); }
-        Ordinal getCurrentProcessSegmentSelector() const noexcept { return getFromPRCB<12>(); }
-        Ordinal getDispatchPortSegmentSelector() const noexcept { return getFromPRCB<16>(); }
-        Address getInterruptTablePointer() const noexcept { return getFromPRCB<20>(); }
-        Address getInterruptStackAddress() const noexcept { return getFromPRCB<24>(); }
-        Address getRegion3SegmentSelector() const noexcept { return getFromPRCB<32>(); }
-        Address getSystemProcedureTableSegmentSelector() const noexcept { return getFromPRCB<36>(); }
-        Address getFaultTableBaseAddress() const noexcept { return getFromPRCB<40>(); }
-    private: // system address table / system procedure table
-        SegmentDescriptor loadSegmentDescriptor(SegmentSelector offset) const noexcept;
-    public:
-        void checksumFail();
-        void selfTestFailure();
-    private:
-        void badFault(const FaultRecord& record);
-    private: // numerics extensions
-        void dmovt(Register& dest, Ordinal src) noexcept;
-        void classr(Real src) noexcept;
-        void classrl(LongReal src) noexcept;
-        void cosr(Register& dest, Real literal) noexcept;
-        void cosrl(LongRegister& dest, LongReal literal) noexcept;
-        inline void cosr(Register& dest, const Register& src) noexcept { cosr(dest, (Real)src); }
-        inline void cosrl(LongRegister& dest, const LongRegister& src) noexcept { cosrl(dest, src.getValue<LongReal>()); }
-        void sinr(Register& dest, Real literal) noexcept;
-        void sinrl(LongRegister& dest, LongReal literal) noexcept;
-        inline void sinr(Register& dest, const Register& src) noexcept { sinr(dest, (Real)src); }
-        inline void sinrl(LongRegister& dest, const LongRegister& src) noexcept { sinrl(dest, src.getValue<LongReal>()); }
-        void tanr(Register& dest, Real literal) noexcept;
-        void tanrl(LongRegister& dest, LongReal literal) noexcept;
-        inline void tanr(Register& dest, const Register& src) noexcept { tanr(dest, (Real)src); }
-        inline void tanrl(LongRegister& dest, const LongRegister& src) noexcept { tanrl(dest, src.getValue<LongReal>()); }
-        /// @todo add support for the dedicated floating point registers as overloaded forms
-    private: // protected extensions instructions
-        void signal(SegmentSelector sel) noexcept;
-        void wait(SegmentSelector src) noexcept;
-        void sendserv(SegmentSelector src) noexcept;
-        void send(SegmentSelector target, Ordinal src1, SegmentSelector src2);
-        void schedprcs(SegmentSelector src) noexcept;
-        void saveprcs() noexcept;
-        void resumprcs(SegmentSelector ss) noexcept;
-        void receive(SegmentSelector src, Register& dest) noexcept;
-        void ldtime(Register& dest) noexcept;
-        void ldphy(Address address, Register& dest) noexcept;
-        void inspacc(Ordinal src, Register& dest) noexcept;
-        void condwait(SegmentSelector src) noexcept;
-        void condrec(SegmentSelector src, Register& dest) noexcept;
-        void cmpstr(Ordinal src1, Ordinal src2, Ordinal len) noexcept;
-        void movstr(Ordinal destAddress, Ordinal srcAddress, Ordinal len) noexcept;
-        void movqstr(Ordinal destAddress, Ordinal srcAddress, Ordinal len) noexcept;
-        void fill(Ordinal dest, Ordinal value, Ordinal len) noexcept;
-    private: // interrupt related
-        Address getInterruptTableBaseAddress() const;
-        void postInterrupt(InterruptVector vector);
-        Ordinal getInterruptPendingPriorities() const { return load(getInterruptTablePointer(), TreatAsOrdinal{}); }
-        void setInterruptPendingPriorities(Ordinal value) { store(getInterruptTablePointer(), value, TreatAsOrdinal{}); }
-        Ordinal getPendingInterruptWord(uint8_t index) const {
-            return load(getInterruptTableBaseAddress() + 4 + (sizeof(Ordinal) * (index & 0b111)), TreatAsOrdinal{});
-        }
-        Ordinal getPendingInterruptWord(InterruptVector vector) const {
-            return getPendingInterruptWord(computeInterruptWordIndex(vector));
-        }
-        void setPendingInterruptWord(uint8_t index, Ordinal value) {
-            store(getInterruptTableBaseAddress() + 4 + (sizeof(Ordinal) * (index & 0b111)), value, TreatAsOrdinal{});
-        }
-        void setPendingInterruptWord(InterruptVector vector, Ordinal value) {
-            setPendingInterruptWord(computeInterruptWordIndex(vector), value);
-        }
+    static decltype(auto) compose(auto f, auto g) noexcept {
+        return [f, g](auto... args) {
+            return f(g(args...));
+        };
+    }
+    static decltype(auto) compose(auto f, auto g, auto h) noexcept {
+        return compose(f, compose(g, h));
+    }
+    static decltype(auto) compose(auto f, auto g, auto h, auto i) noexcept {
+        return compose(f, g, compose(h, i));
+    }
+private:
+    bool runNonPortableSelfTests() noexcept;
+    void nonPortableBegin() noexcept;
+private:
+    // fault handling components
+    void pushFaultRecord(Address baseStorageAddress, const FaultRecord& record) noexcept;
+    FaultTableEntry getFaultEntry(uint8_t index) const noexcept;
+    void faultCallGeneric (const FaultRecord& record, Address destination, Address stackPointer) noexcept;
+    void localProcedureEntry_FaultCall (const FaultRecord& record, Address destination) noexcept;
+    void procedureTableEntry_FaultCall(const FaultRecord& record, const FaultTableEntry& entry) noexcept;
+    void supervisorProcedureTableEntry_FaultCall(const FaultRecord& record, Address procedureAddress, Address tableBaseAddress) noexcept;
+private:
+    template<uint8_t offset>
+    Ordinal getFromPRCB() const noexcept { return load(prcbAddress_ + offset, TreatAsOrdinal{}); }
+    Ordinal getProcessorControls() const noexcept { return getFromPRCB<4>(); }
+    Ordinal getCurrentProcessSegmentSelector() const noexcept { return getFromPRCB<12>(); }
+    Ordinal getDispatchPortSegmentSelector() const noexcept { return getFromPRCB<16>(); }
+    Address getInterruptTablePointer() const noexcept { return getFromPRCB<20>(); }
+    Address getInterruptStackAddress() const noexcept { return getFromPRCB<24>(); }
+    Address getRegion3SegmentSelector() const noexcept { return getFromPRCB<32>(); }
+    Address getSystemProcedureTableSegmentSelector() const noexcept { return getFromPRCB<36>(); }
+    Address getFaultTableBaseAddress() const noexcept { return getFromPRCB<40>(); }
+private: // system address table / system procedure table
+    SegmentDescriptor loadSegmentDescriptor(SegmentSelector offset) const noexcept;
+public:
+    void checksumFail();
+    void selfTestFailure();
+private:
+    void badFault(const FaultRecord& record);
+private: // numerics extensions
+    void dmovt(Register& dest, Ordinal src) noexcept;
+    void classr(Real src) noexcept;
+    void classrl(LongReal src) noexcept;
+    void cosr(Register& dest, Real literal) noexcept;
+    void cosrl(LongRegister& dest, LongReal literal) noexcept;
+    inline void cosr(Register& dest, const Register& src) noexcept { cosr(dest, (Real)src); }
+    inline void cosrl(LongRegister& dest, const LongRegister& src) noexcept { cosrl(dest, src.getValue<LongReal>()); }
+    void sinr(Register& dest, Real literal) noexcept;
+    void sinrl(LongRegister& dest, LongReal literal) noexcept;
+    inline void sinr(Register& dest, const Register& src) noexcept { sinr(dest, (Real)src); }
+    inline void sinrl(LongRegister& dest, const LongRegister& src) noexcept { sinrl(dest, src.getValue<LongReal>()); }
+    void tanr(Register& dest, Real literal) noexcept;
+    void tanrl(LongRegister& dest, LongReal literal) noexcept;
+    inline void tanr(Register& dest, const Register& src) noexcept { tanr(dest, (Real)src); }
+    inline void tanrl(LongRegister& dest, const LongRegister& src) noexcept { tanrl(dest, src.getValue<LongReal>()); }
+    /// @todo add support for the dedicated floating point registers as overloaded forms
+private: // protected extensions instructions
+    void signal(SegmentSelector sel) noexcept;
+    void wait(SegmentSelector src) noexcept;
+    void sendserv(SegmentSelector src) noexcept;
+    void send(SegmentSelector target, Ordinal src1, SegmentSelector src2);
+    void schedprcs(SegmentSelector src) noexcept;
+    void saveprcs() noexcept;
+    void resumprcs(SegmentSelector ss) noexcept;
+    void receive(SegmentSelector src, Register& dest) noexcept;
+    void ldtime(Register& dest) noexcept;
+    void ldphy(Address address, Register& dest) noexcept;
+    void inspacc(Ordinal src, Register& dest) noexcept;
+    void condwait(SegmentSelector src) noexcept;
+    void condrec(SegmentSelector src, Register& dest) noexcept;
+    void cmpstr(Ordinal src1, Ordinal src2, Ordinal len) noexcept;
+    void movstr(Ordinal destAddress, Ordinal srcAddress, Ordinal len) noexcept;
+    void movqstr(Ordinal destAddress, Ordinal srcAddress, Ordinal len) noexcept;
+    void fill(Ordinal dest, Ordinal value, Ordinal len) noexcept;
+private: // interrupt related
+    Address getInterruptTableBaseAddress() const;
+    void postInterrupt(InterruptVector vector);
+    Ordinal getInterruptPendingPriorities() const { return load(getInterruptTablePointer(), TreatAsOrdinal{}); }
+    void setInterruptPendingPriorities(Ordinal value) { store(getInterruptTablePointer(), value, TreatAsOrdinal{}); }
+    Ordinal getPendingInterruptWord(uint8_t index) const {
+        return load(getInterruptTableBaseAddress() + 4 + (sizeof(Ordinal) * (index & 0b111)), TreatAsOrdinal{});
+    }
+    Ordinal getPendingInterruptWord(InterruptVector vector) const {
+        return getPendingInterruptWord(computeInterruptWordIndex(vector));
+    }
+    void setPendingInterruptWord(uint8_t index, Ordinal value) {
+        store(getInterruptTableBaseAddress() + 4 + (sizeof(Ordinal) * (index & 0b111)), value, TreatAsOrdinal{});
+    }
+    void setPendingInterruptWord(InterruptVector vector, Ordinal value) {
+        setPendingInterruptWord(computeInterruptWordIndex(vector), value);
+    }
 
-        Address getInterruptVectorAddress(uint8_t vector) const;
-        Address getInterruptVectorAddress(InterruptVector vector) const { return getInterruptVectorAddress(static_cast<uint8_t>(vector)); }
-        void receiveInterrupt(InterruptVector vector);
-        void setPendingPriorityBit(uint8_t priority);
-        void setPendingPriorityBit(InterruptVector vector) { setPendingPriorityBit(computeInterruptPriority(vector)); }
-        void clearPendingPriorityBit(uint8_t priority);
-        void clearPendingPriorityBit(InterruptVector vector) { clearPendingPriorityBit(computeInterruptPriority(vector)); }
-        bool getPendingPriorityBit(uint8_t priority) const;
-        bool getPendingPriorityBit(InterruptVector vector) const { return getPendingPriorityBit(computeInterruptPriority(vector)); }
-        bool getPendingInterruptBit(InterruptVector vector) const;
-        void setPendingInterruptBit(InterruptVector vector);
-        void clearPendingInterruptBit(InterruptVector vector);
-        void obtainedPendingVector(InterruptVector vector);
-        bool pendingInterruptPriorityClear(InterruptVector vector) const;
-        ByteOrdinal getPendingInterruptBitsForPriority(uint8_t priority) const;
-        ByteOrdinal getHighestPostedInterruptVectorForPriority(uint8_t priority) const;
-        InterruptVector highestPostedInterruptVector() const;
-        InterruptVector serviceNextInterrupt();
-        void serviceInterrupt(InterruptVector vector);
-        void checkForPendingInterrupts();
-    private:
-        void localReturn();
-        void faultReturn();
-        void interruptReturn();
-        void supervisorReturn(bool traceModeSetting);
-    private:
-        void faultOnOverflow(Register& dest);
-        [[nodiscard]] Ordinal getFramePointerAddress() const { return getGPRValue(FPIndex, TreatAsOrdinal{}); }
-        void restoreRIPToIP();
-        [[nodiscard]] Ordinal getRIPContents() const { return getGPRValue(RIPIndex, TreatAsOrdinal{}); }
-    private:
-        Ordinal restorePCFromStack(Ordinal fp);
-        Ordinal restoreACFromStack(Ordinal fp);
-    private:
-        void saveRegisterFrame(const RegisterFrame& theFrame, Address baseAddress);
-        void restoreRegisterFrame(RegisterFrame& theFrame, Address baseAddress);
-        LocalRegisterSet& getNextPack() noexcept {
-            if constexpr (NumberOfLocalRegisterFrames > 1) {
-                // do these as separate operations, otherwise gcc generates garbage
-                uint8_t result = (localRegisterFrameIndex_ + 1);
-                result %= NumberOfLocalRegisterFrames;
-                return frames_[result];
-            } else {
-                return frames_[0];
-            }
+    Address getInterruptVectorAddress(uint8_t vector) const;
+    Address getInterruptVectorAddress(InterruptVector vector) const { return getInterruptVectorAddress(static_cast<uint8_t>(vector)); }
+    void receiveInterrupt(InterruptVector vector);
+    void setPendingPriorityBit(uint8_t priority);
+    void setPendingPriorityBit(InterruptVector vector) { setPendingPriorityBit(computeInterruptPriority(vector)); }
+    void clearPendingPriorityBit(uint8_t priority);
+    void clearPendingPriorityBit(InterruptVector vector) { clearPendingPriorityBit(computeInterruptPriority(vector)); }
+    bool getPendingPriorityBit(uint8_t priority) const;
+    bool getPendingPriorityBit(InterruptVector vector) const { return getPendingPriorityBit(computeInterruptPriority(vector)); }
+    bool getPendingInterruptBit(InterruptVector vector) const;
+    void setPendingInterruptBit(InterruptVector vector);
+    void clearPendingInterruptBit(InterruptVector vector);
+    void obtainedPendingVector(InterruptVector vector);
+    bool pendingInterruptPriorityClear(InterruptVector vector) const;
+    ByteOrdinal getPendingInterruptBitsForPriority(uint8_t priority) const;
+    ByteOrdinal getHighestPostedInterruptVectorForPriority(uint8_t priority) const;
+    InterruptVector highestPostedInterruptVector() const;
+    InterruptVector serviceNextInterrupt();
+    void serviceInterrupt(InterruptVector vector);
+    void checkForPendingInterrupts();
+private:
+    void localReturn();
+    void faultReturn();
+    void interruptReturn();
+    void supervisorReturn(bool traceModeSetting);
+private:
+    void faultOnOverflow(Register& dest);
+    [[nodiscard]] Ordinal getFramePointerAddress() const { return getGPRValue(FPIndex, TreatAsOrdinal{}); }
+    void restoreRIPToIP();
+    [[nodiscard]] Ordinal getRIPContents() const { return getGPRValue(RIPIndex, TreatAsOrdinal{}); }
+private:
+    Ordinal restorePCFromStack(Ordinal fp);
+    Ordinal restoreACFromStack(Ordinal fp);
+private:
+    void saveRegisterFrame(const RegisterFrame& theFrame, Address baseAddress);
+    void restoreRegisterFrame(RegisterFrame& theFrame, Address baseAddress);
+    LocalRegisterSet& getNextPack() noexcept {
+        if constexpr (NumberOfLocalRegisterFrames > 1) {
+            // do these as separate operations, otherwise gcc generates garbage
+            uint8_t result = (localRegisterFrameIndex_ + 1);
+            result %= NumberOfLocalRegisterFrames;
+            return frames_[result];
+        } else {
+            return frames_[0];
         }
-        LocalRegisterSet& getPreviousPack() noexcept {
-            if constexpr (NumberOfLocalRegisterFrames > 1) {
-                // do these as separate operations, otherwise gcc generates garbage
-                uint8_t result = (localRegisterFrameIndex_ - 1);
-                result %= NumberOfLocalRegisterFrames;
-                DEBUG_LOG_LEVEL(2) {
-                    std::cout << __PRETTY_FUNCTION__ << ": 0x" << std::hex << static_cast<int>(result) << std::endl;
-                }
-                return frames_[result];
-            } else {
-                return frames_[0];
+    }
+    LocalRegisterSet& getPreviousPack() noexcept {
+        if constexpr (NumberOfLocalRegisterFrames > 1) {
+            // do these as separate operations, otherwise gcc generates garbage
+            uint8_t result = (localRegisterFrameIndex_ - 1);
+            result %= NumberOfLocalRegisterFrames;
+            DEBUG_LOG_LEVEL(2) {
+                std::cout << __PRETTY_FUNCTION__ << ": 0x" << std::hex << static_cast<int>(result) << std::endl;
             }
+            return frames_[result];
+        } else {
+            return frames_[0];
         }
-        [[nodiscard]] LocalRegisterSet& getCurrentPack() noexcept { return frames_[localRegisterFrameIndex_]; }
-        void boot0(Address sat, Address pcb, Address startIP) noexcept;
-    private:
-        void bx(Address effectiveAddress);
-        void bal(Integer displacement);
-    private:
-        Ordinal getElapsedExecutionTime() const noexcept { return executionTime_.getValue<Ordinal>(); }
-        void setElapsedExecutionTime(Ordinal value) noexcept { executionTime_.setValue<Ordinal>(value); }
-        Ordinal getResidualTimeSlice() const noexcept { return residualTimeSlice_.getValue<Ordinal>(); }
-        void setResidualTimeSlice(Ordinal value) noexcept { residualTimeSlice_.setValue<Ordinal>(value); }
-        Address translateToPhysicalAddress(Address virtualAddress) const noexcept;
-    private:
-        void stib(Integer value, Address address);
-        void stis(Integer value, Address address);
-        void ldib(Address address, Register& dest);
-        void ldis(Address address, Register& dest);
-    private:
-        Ordinal systemAddressTableBase_ = 0;
-        Ordinal prcbAddress_ = 0;
-        RegisterFrame globals_;
-        std::array<LocalRegisterSet, NumberOfLocalRegisterFrames> frames_;
-        uint8_t localRegisterFrameIndex_ = 0;
-        RegisterBlock32 sfrs_;
-        RegisterBlock32 constants_;
-        Register ip_;
-        Register ac_; 
-        Register pc_;
-        Register tc_; 
-        Register instruction_;
-        Register ictl_;
-        ByteOrdinal advanceBy_;
-        ByteOrdinal instructionLength_ = 0;
-        bool advanceInstruction_ = false;
-        Address breakpoint0_ = 0;
-        bool breakpoint0Active_ = false;
-        Address breakpoint1_ = 0;
-        bool breakpoint1Active_ = false;
-        // protected architecture extensions
-        Register executionTime_;
-        Register residualTimeSlice_;
+    }
+    [[nodiscard]] LocalRegisterSet& getCurrentPack() noexcept { return frames_[localRegisterFrameIndex_]; }
+    void boot0(Address sat, Address pcb, Address startIP) noexcept;
+private:
+    void bx(Address effectiveAddress);
+    void bal(Integer displacement);
+private:
+    Ordinal getElapsedExecutionTime() const noexcept { return executionTime_.getValue<Ordinal>(); }
+    void setElapsedExecutionTime(Ordinal value) noexcept { executionTime_.setValue<Ordinal>(value); }
+    Ordinal getResidualTimeSlice() const noexcept { return residualTimeSlice_.getValue<Ordinal>(); }
+    void setResidualTimeSlice(Ordinal value) noexcept { residualTimeSlice_.setValue<Ordinal>(value); }
+    Address translateToPhysicalAddress(Address virtualAddress) const noexcept;
+private:
+    void stib(Integer value, Address address);
+    void stis(Integer value, Address address);
+    void ldib(Address address, Register& dest);
+    void ldis(Address address, Register& dest);
+private:
+    Ordinal systemAddressTableBase_ = 0;
+    Ordinal prcbAddress_ = 0;
+    RegisterFrame globals_;
+    std::array<LocalRegisterSet, NumberOfLocalRegisterFrames> frames_;
+    uint8_t localRegisterFrameIndex_ = 0;
+    RegisterBlock32 sfrs_;
+    RegisterBlock32 constants_;
+    Register ip_;
+    Register ac_;
+    Register pc_;
+    Register tc_;
+    Register instruction_;
+    Register ictl_;
+    ByteOrdinal advanceBy_;
+    ByteOrdinal instructionLength_ = 0;
+    bool advanceInstruction_ = false;
+    Address breakpoint0_ = 0;
+    bool breakpoint0Active_ = false;
+    Address breakpoint1_ = 0;
+    bool breakpoint1Active_ = false;
+    // protected architecture extensions
+    Register executionTime_;
+    Register residualTimeSlice_;
 };
 
 static_assert(computeNextFrame<Core::C, Core::NotC>(0xFDED'0000) == 0xFDED'0000);

@@ -286,26 +286,26 @@ struct [[gnu::packed]] FaultRecord {
 };
 
 struct FaultTableEntry {
-    public:
-        explicit constexpr FaultTableEntry(Ordinal addr, SegmentSelector selector) noexcept : handlerFunctionAddress_(addr), selector_(selector) { }
-        explicit constexpr FaultTableEntry(LongOrdinal value) noexcept : FaultTableEntry(static_cast<Ordinal>(value), static_cast<Ordinal>(value >> 32)) { }
-        constexpr FaultTableEntry() noexcept : FaultTableEntry(0, 0) { }
-        [[nodiscard]] constexpr bool isSystemTableEntry() const noexcept { return (handlerFunctionAddress_ & 0b11) == 0b10; }
-        [[nodiscard]] constexpr bool isLocalProcedureEntry() const noexcept { return (handlerFunctionAddress_ & 0b11) == 0; }
-        [[nodiscard]] constexpr auto getSegmentSelector() const noexcept { return selector_; }
-        [[nodiscard]] constexpr auto getFaultHandlerProcedureAddress() const noexcept { return handlerFunctionAddress_; }
-        [[nodiscard]] constexpr auto getFaultHandlerProcedureNumber() const noexcept { return (handlerFunctionAddress_ & (~0b11)); }
-    private:
-        Ordinal handlerFunctionAddress_;
-        SegmentSelector selector_;
+public:
+    explicit constexpr FaultTableEntry(Ordinal addr, SegmentSelector selector) noexcept : handlerFunctionAddress_(addr), selector_(selector) { }
+    explicit constexpr FaultTableEntry(LongOrdinal value) noexcept : FaultTableEntry(static_cast<Ordinal>(value), static_cast<Ordinal>(value >> 32)) { }
+    constexpr FaultTableEntry() noexcept : FaultTableEntry(0, 0) { }
+    [[nodiscard]] constexpr bool isSystemTableEntry() const noexcept { return (handlerFunctionAddress_ & 0b11) == 0b10; }
+    [[nodiscard]] constexpr bool isLocalProcedureEntry() const noexcept { return (handlerFunctionAddress_ & 0b11) == 0; }
+    [[nodiscard]] constexpr auto getSegmentSelector() const noexcept { return selector_; }
+    [[nodiscard]] constexpr auto getFaultHandlerProcedureAddress() const noexcept { return handlerFunctionAddress_; }
+    [[nodiscard]] constexpr auto getFaultHandlerProcedureNumber() const noexcept { return (handlerFunctionAddress_ & (~0b11)); }
+private:
+    Ordinal handlerFunctionAddress_;
+    SegmentSelector selector_;
 };
 static_assert(sizeof(FaultTableEntry) == 8);
 
 struct SegmentDescriptor {
-    constexpr SegmentDescriptor(Ordinal reserved0, Ordinal reserved1, Ordinal addr, Ordinal config) noexcept 
-        : reserved{reserved0, reserved1}, address(addr), cfg{config} {
+    constexpr SegmentDescriptor(Ordinal reserved0, Ordinal reserved1, Ordinal addr, Ordinal config) noexcept
+            : reserved{reserved0, reserved1}, address(addr), cfg{config} {
 
-        }
+    }
     constexpr explicit SegmentDescriptor(QuadOrdinal value) : SegmentDescriptor(static_cast<Ordinal>(value),
                                                                                 static_cast<Ordinal>(value >> 32),
                                                                                 static_cast<Ordinal>(value >> 64),
