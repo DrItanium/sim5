@@ -263,9 +263,13 @@ using int96_t = LargeIntPackage<96>;
 using uint96_t = LargeUIntPackage<96>;
 using TripleOrdinal = uint96_t;
 using TripleInteger = int96_t;
-using QuadOrdinal = uint128_t;
-using QuadInteger = int128_t;
 static_assert(TripleOrdinal{0} != TripleOrdinal{1});
 static_assert(TripleInteger{0} != TripleInteger{1});
+static_assert(TripleInteger{0} > TripleInteger{-1});
+using QuadOrdinal = uint128_t;
+using QuadInteger = int128_t;
+static_assert(QuadOrdinal{0} != QuadOrdinal{1});
+static_assert(QuadInteger{0} != QuadInteger{1});
+static_assert(QuadInteger{0} > QuadInteger{-1});
 
 #endif // end SIM5_TYPES_H__
