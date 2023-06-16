@@ -25,6 +25,7 @@
 #define SIM5_TYPES_H__
 #include <cstdint>
 #include <compare>
+#include <type_traits>
 using Address = uint32_t;
 using ByteOrdinal = uint8_t;
 using ByteInteger = int8_t;
@@ -239,8 +240,8 @@ struct LargeNumberPackage {
     static_assert(B <= 128, "Cannot accept bit count greater than 128");
     static_assert(B > 0, "Bitwidth of zero is not allowed!");
     constexpr LargeNumberPackage(BackingStore backing) : value_(backing) { }
-    constexpr LargeNumberPackage(const Self& other) : value_(other.value_) { }
-    constexpr LargeNumberPackage(Self&& other) : value_(other.value_) { }
+    constexpr LargeNumberPackage(const Self& other) = default;
+    constexpr LargeNumberPackage(Self&& other) = default;
     auto operator<=>(const Self& other) const noexcept = default;
     Self& operator+=(const Self& other) {
         value_ += other.value_;
@@ -298,6 +299,42 @@ struct LargeNumberPackage {
         lhs &= rhs;
         return lhs;
     }
+    Self& operator^=(const Self& other) {
+        value_ ^= other.value_;
+        return *this;
+    }
+    friend Self operator^(Self lhs, const Self& rhs) {
+        lhs ^= rhs;
+        return lhs;
+    }
+    Self& operator>>=(const Self& other) {
+        value_ >>= other.value_;
+        return *this;
+    }
+    friend Self operator>>(Self lhs, const Self& rhs) {
+        lhs >>= rhs;
+        return lhs;
+    }
+    Self& operator<<=(const Self& other) {
+        value_ <<= other.value_;
+        return *this;
+    }
+    friend Self operator<<(Self lhs, const Self& rhs) {
+        lhs <<= rhs;
+        return lhs;
+    }
+    Self& operator~() noexcept {
+        value_ = ~value_;
+        return *this;
+    }
+    Self& operator+() noexcept {
+        value_ = +value_;
+        return *this;
+    }
+    Self& operator-() noexcept {
+        value_ = -value_;
+        return *this;
+    }
     Self& operator++() {
         // prefix
         ++value_;
@@ -320,20 +357,23 @@ struct LargeNumberPackage {
         operator--();
         return old;
     }
-    explicit operator T() const noexcept {
+    constexpr explicit operator T() const noexcept {
         return value_;
     }
     template<typename Q>
-    explicit operator Q() const noexcept {
+    constexpr explicit operator Q() const noexcept {
         return static_cast<Q>(value_);
+    }
+    constexpr explicit operator bool() const noexcept {
+        return value_ != 0;
     }
 private:
     BackingStore value_ : B;
 };
 template<uint8_t B>
-using LargeIntPackage = LargeNumberPackage<int128_t, B>;
+using LargeIntPackage = std::conditional_t<(B == 128), int128_t, LargeNumberPackage<int128_t, B>>;
 template<uint8_t B>
-using LargeUIntPackage = LargeNumberPackage<uint128_t, B>;
+using LargeUIntPackage = std::conditional_t<(B == 128), uint128_t, LargeNumberPackage<uint128_t, B>>;
 using int96_t = LargeIntPackage<96>;
 using uint96_t = LargeUIntPackage<96>;
 using TripleOrdinal = uint96_t;
@@ -341,8 +381,9 @@ using TripleInteger = int96_t;
 static_assert(TripleOrdinal{0} != TripleOrdinal{1});
 static_assert(TripleInteger{0} != TripleInteger{1});
 static_assert(TripleInteger{0} > TripleInteger{-1});
-using QuadOrdinal = uint128_t;
-using QuadInteger = int128_t;
+static_assert(static_cast<Integer>(TripleInteger{0xFDED}) == Integer{0xFDED});
+using QuadOrdinal = LargeUIntPackage<128>;
+using QuadInteger = LargeIntPackage<128>;
 static_assert(QuadOrdinal{0} != QuadOrdinal{1});
 static_assert(QuadInteger{0} != QuadInteger{1});
 static_assert(QuadInteger{0} > QuadInteger{-1});
