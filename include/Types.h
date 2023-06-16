@@ -243,115 +243,115 @@ struct LargeNumberPackage {
     constexpr LargeNumberPackage(const Self& other) = default;
     constexpr LargeNumberPackage(Self&& other) = default;
     auto operator<=>(const Self& other) const noexcept = default;
-    Self& operator+=(const Self& other) {
+    constexpr Self& operator+=(const Self& other) {
         value_ += other.value_;
         return *this;
     }
-    friend Self operator+(Self lhs, const Self& rhs) {
+    constexpr friend Self operator+(Self lhs, const Self& rhs) {
         lhs += rhs;
         return lhs;
     }
-    Self& operator-=(const Self& other) {
+    constexpr Self& operator-=(const Self& other) {
         value_ -= other.value_;
         return *this;
     }
-    friend Self operator-(Self lhs, const Self& rhs) {
+    constexpr friend Self operator-(Self lhs, const Self& rhs) {
         lhs -= rhs;
         return lhs;
     }
-    Self& operator*=(const Self& other) {
+    constexpr Self& operator*=(const Self& other) {
         value_ *= other.value_;
         return *this;
     }
-    friend Self operator*(Self lhs, const Self& rhs) {
+    constexpr friend Self operator*(Self lhs, const Self& rhs) {
         lhs *= rhs;
         return lhs;
     }
-    Self& operator%=(const Self& other) {
+    constexpr Self& operator%=(const Self& other) {
         value_ %= other.value_;
         return *this;
     }
-    friend Self operator%(Self lhs, const Self& rhs) {
+    constexpr friend Self operator%(Self lhs, const Self& rhs) {
         lhs %= rhs;
         return lhs;
     }
-    Self& operator/=(const Self& other) {
+    constexpr Self& operator/=(const Self& other) {
         value_ /= other.value_;
         return *this;
     }
-    friend Self operator/(Self lhs, const Self& rhs) {
+    constexpr friend Self operator/(Self lhs, const Self& rhs) {
         lhs /= rhs;
         return lhs;
     }
-    Self& operator&=(const Self& other) {
+    constexpr Self& operator&=(const Self& other) {
         value_ &= other.value_;
         return *this;
     }
-    friend Self operator&(Self lhs, const Self& rhs) {
+    constexpr friend Self operator&(Self lhs, const Self& rhs) {
         lhs &= rhs;
         return lhs;
     }
-    Self& operator|=(const Self& other) {
+    constexpr Self& operator|=(const Self& other) {
         value_ &= other.value_;
         return *this;
     }
-    friend Self operator|(Self lhs, const Self& rhs) {
+    constexpr friend Self operator|(Self lhs, const Self& rhs) {
         lhs &= rhs;
         return lhs;
     }
-    Self& operator^=(const Self& other) {
+    constexpr Self& operator^=(const Self& other) {
         value_ ^= other.value_;
         return *this;
     }
-    friend Self operator^(Self lhs, const Self& rhs) {
+    constexpr friend Self operator^(Self lhs, const Self& rhs) {
         lhs ^= rhs;
         return lhs;
     }
-    Self& operator>>=(const Self& other) {
+    constexpr Self& operator>>=(const Self& other) {
         value_ >>= other.value_;
         return *this;
     }
-    friend Self operator>>(Self lhs, const Self& rhs) {
+    constexpr friend Self operator>>(Self lhs, const Self& rhs) {
         lhs >>= rhs;
         return lhs;
     }
-    Self& operator<<=(const Self& other) {
+    constexpr Self& operator<<=(const Self& other) {
         value_ <<= other.value_;
         return *this;
     }
-    friend Self operator<<(Self lhs, const Self& rhs) {
+    constexpr friend Self operator<<(Self lhs, const Self& rhs) {
         lhs <<= rhs;
         return lhs;
     }
-    Self& operator~() noexcept {
+    constexpr Self& operator~() noexcept {
         value_ = ~value_;
         return *this;
     }
-    Self& operator+() noexcept {
+    constexpr Self& operator+() noexcept {
         value_ = +value_;
         return *this;
     }
-    Self& operator-() noexcept {
+    constexpr Self& operator-() noexcept {
         value_ = -value_;
         return *this;
     }
-    Self& operator++() {
+    constexpr Self& operator++() {
         // prefix
         ++value_;
         return *this;
     }
-    Self operator++(int) {
+    constexpr Self operator++(int) {
         // postfix
         Self old = *this;
         operator++();
         return old;
     }
-    Self& operator--() {
+    constexpr Self& operator--() {
         // prefix
         --value_;
         return *this;
     }
-    Self operator--(int) {
+    constexpr Self operator--(int) {
         // postfix
         Self old = *this;
         operator--();
@@ -382,6 +382,8 @@ static_assert(TripleOrdinal{0} != TripleOrdinal{1});
 static_assert(TripleInteger{0} != TripleInteger{1});
 static_assert(TripleInteger{0} > TripleInteger{-1});
 static_assert(static_cast<Integer>(TripleInteger{0xFDED}) == Integer{0xFDED});
+static_assert(~TripleInteger{0} == TripleInteger{-1});
+static_assert((TripleInteger{0} + TripleInteger{1}) == TripleInteger{1});
 using QuadOrdinal = LargeUIntPackage<128>;
 using QuadInteger = LargeIntPackage<128>;
 static_assert(QuadOrdinal{0} != QuadOrdinal{1});
