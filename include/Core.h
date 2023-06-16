@@ -481,23 +481,16 @@ union QuadRegister {
         Register& operator[](ByteOrdinal index) noexcept { return get(index); }
         const Register& operator[](ByteOrdinal index) const noexcept { return get(index); }
         bool operator==(const QuadRegister& other) const noexcept {
-            for (int i = 0; i < 4; ++i) {
-                if (quads_[i] != other.quads_[i]) {
-                    return false;
-                }
-            }
-            return true;
+            return ord_ == other.ord_;
         }
         bool operator!=(const QuadRegister& other) const noexcept {
-            for (int i = 0; i < 4; ++i) {
-                if (quads_[i] == other.quads_[i]) {
-                    return false;
-                }
-            }
-            return true;
+            return other.ord_ != ord_;
         }
+        explicit constexpr operator QuadOrdinal() const noexcept { return ord_; }
+
     private:
         Register quads_[4];
+        QuadOrdinal ord_;
 };
 static_assert(sizeof(QuadRegister) == (2*sizeof(LongOrdinal)));
 using TreatAsQuadRegister = TreatAs<QuadRegister>;
@@ -1021,6 +1014,7 @@ class Core {
         X(ByteOrdinal);
         X(ShortInteger);
         X(ShortOrdinal);
+        X(QuadOrdinal);
 #undef X
     private:
         template<bool invert = false>

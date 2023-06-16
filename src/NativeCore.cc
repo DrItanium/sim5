@@ -436,3 +436,23 @@ installToMainMemory(std::istream& stream, Address baseAddress) {
         ++baseAddress;
     }
 }
+void
+Core::store(Address address, QuadOrdinal value, TreatAsQuadOrdinal) noexcept {
+    auto lowest = static_cast<Ordinal>(value);
+    auto lower = static_cast<Ordinal>(value >> 32);
+    auto higher = static_cast<Ordinal>(value >> 64);
+    auto highest = static_cast<Ordinal>(value >> 96);
+    store(address, lowest, TreatAsOrdinal{});
+    store(address, lower, TreatAsOrdinal{});
+    store(address, higher, TreatAsOrdinal{});
+    store(address, highest, TreatAsOrdinal{});
+}
+
+QuadOrdinal
+Core::load(Address address, TreatAsQuadOrdinal) const noexcept {
+    auto lowest = static_cast<QuadOrdinal>(load(address, TreatAsOrdinal{}));
+    auto lower = static_cast<QuadOrdinal>(load(address+4, TreatAsOrdinal{})) << 32;
+    auto higher = static_cast<QuadOrdinal>(load(address+8, TreatAsOrdinal{})) << 64;
+    auto highest = static_cast<QuadOrdinal>(load(address+12, TreatAsOrdinal{})) << 96;
+    return lowest | lower | higher | highest;
+}
