@@ -24,6 +24,7 @@
 #ifndef SIM5_TYPES_H__
 #define SIM5_TYPES_H__
 #include <cstdint>
+#include <compare>
 using Address = uint32_t;
 using ByteOrdinal = uint8_t;
 using ByteInteger = int8_t;
@@ -229,6 +230,48 @@ enum class ArchitectureLevel : uint8_t {
     Extended,
     Unknown,
 };
+using int128_t = signed __int128;
+using uint128_t = unsigned __int128;
+template<uint8_t B>
+struct LargeIntPackage {
+    using BackingStore = int128_t;
+    using Self = LargeIntPackage<B>;
+    static_assert(B <= 128, "Cannot accept bit count greater than 128");
+    static_assert(B > 0, "Bitwidth of zero is not allowed!");
+    constexpr LargeIntPackage(BackingStore backing) : value_(backing) { }
+    constexpr LargeIntPackage(int64_t backing) : value_(backing) { }
+    constexpr LargeIntPackage(int32_t backing) : value_(backing) { }
+    constexpr LargeIntPackage(int16_t backing) : value_(backing) { }
+    constexpr LargeIntPackage(int8_t backing) : value_(backing) { }
+    constexpr LargeIntPackage(const Self& other) : value_(other.value_) { }
+    constexpr LargeIntPackage(Self&& other) : value_(other.value_) { }
+    auto operator<=>(const LargeIntPackage<B>& other) const noexcept = default;
+private:
+    BackingStore value_ : B;
+};
+template<uint8_t B>
+struct LargeUIntPackage {
+    using BackingStore = uint128_t;
+    using Self = LargeUIntPackage<B>;
+    static_assert(B <= 128, "Cannot accept bit count greater than 128");
+    static_assert(B > 0, "Bitwidth of zero is not allowed!");
+    constexpr LargeUIntPackage(BackingStore backing) : value_(backing) { }
+    constexpr LargeUIntPackage(uint64_t backing) : value_(backing) { }
+    constexpr LargeUIntPackage(uint32_t backing) : value_(backing) { }
+    constexpr LargeUIntPackage(uint16_t backing) : value_(backing) { }
+    constexpr LargeUIntPackage(uint8_t backing) : value_(backing) { }
+    constexpr LargeUIntPackage(const Self& other) : value_(other.value_) { }
+    constexpr LargeUIntPackage(Self&& other) : value_(other.value_) { }
+    auto operator<=>(const LargeUIntPackage<B>& other) const noexcept = default;
+private:
+    BackingStore value_ : B;
+};
 
+using int96_t = LargeIntPackage<96>;
+using uint96_t = LargeUIntPackage<96>;
+using TripleOrdinal = uint96_t;
+using TripleInteger = int96_t;
+using QuadOrdinal = uint128_t;
+using QuadInteger = int128_t;
 
 #endif // end SIM5_TYPES_H__
