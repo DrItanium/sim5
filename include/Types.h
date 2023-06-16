@@ -411,7 +411,6 @@ template<typename T>
 concept MustBeOrdinalOrInteger = std::same_as<T, Integer> || std::same_as<T, Ordinal>;
 
 union PortFlags {
-    explicit constexpr PortFlags(Ordinal value) : raw(value) {}
     [[nodiscard]] constexpr bool isFifoPort() const noexcept { return kind == 0; }
     [[nodiscard]] constexpr bool isPriorityPort() const noexcept { return kind == 1; }
     Ordinal raw = 0;
