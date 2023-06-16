@@ -348,10 +348,7 @@ Core::ldq(Address effectiveAddress, QuadRegister& destination) noexcept {
         invalidOperandFault();
         /// @todo perform an unaligned load into registers
     } else {
-        destination[0] = load(effectiveAddress + 0, TreatAsOrdinal{});
-        destination[1] = load(effectiveAddress + 4, TreatAsOrdinal{});
-        destination[2] = load(effectiveAddress + 8, TreatAsOrdinal{});
-        destination[3] = load(effectiveAddress + 12, TreatAsOrdinal{});
+        destination.setValue(load(effectiveAddress, TreatAsQuadOrdinal{}), TreatAsQuadOrdinal{});
         // support unaligned accesses
     }
     DEBUG_LEAVE_FUNCTION;
@@ -365,10 +362,7 @@ Core::stq(Address effectiveAddress, const QuadRegister& source) noexcept {
     if (!aligned(instruction_.mem.srcDest, TreatAsQuadRegister{})) {
         invalidOperandFault();
     } else {
-        store(effectiveAddress + 0,  static_cast<Ordinal>(source[0]), TreatAsOrdinal{});
-        store(effectiveAddress + 4,  static_cast<Ordinal>(source[1]), TreatAsOrdinal{});
-        store(effectiveAddress + 8,  static_cast<Ordinal>(source[2]), TreatAsOrdinal{});
-        store(effectiveAddress + 12, static_cast<Ordinal>(source[3]), TreatAsOrdinal{});
+        store(effectiveAddress, source.getValue(TreatAsQuadOrdinal{}), TreatAsQuadOrdinal{});
         // support unaligned accesses
     }
     DEBUG_LEAVE_FUNCTION;
@@ -607,18 +601,12 @@ void
 Core::synmovq(const Register& dest, Ordinal src) noexcept {
     DEBUG_ENTER_FUNCTION;
     ac_.arith.conditionCode = 0b000;
-    auto temp0 = load(src, TreatAsOrdinal{});
-    auto temp1 = load(src+4, TreatAsOrdinal{});
-    auto temp2 = load(src+8, TreatAsOrdinal{});
-    auto temp3 = load(src+12, TreatAsOrdinal{});
+    auto temp = load(src, TreatAsQuadOrdinal{});
     if (auto tempa = maskValue<Ordinal, 0xFFFF'FFF0>(dest.getValue(TreatAsOrdinal{})); tempa == 0xFF00'0010) {
-        sendIAC(iac::Message{temp0, temp1, temp2, temp3});
+        sendIAC(iac::Message{temp});
         ac_.arith.conditionCode = 0b010;
     } else {
-        store(tempa, temp0, TreatAsOrdinal{});
-        store(tempa+4, temp1, TreatAsOrdinal{});
-        store(tempa+8, temp2, TreatAsOrdinal{});
-        store(tempa+12, temp3, TreatAsOrdinal{});
+        store(tempa, temp, TreatAsQuadOrdinal{});
         // wait for completion
         ac_.arith.conditionCode = 0b010;
     }

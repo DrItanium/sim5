@@ -476,6 +476,8 @@ union QuadRegister {
         constexpr T getValue(ByteOrdinal index) const noexcept {
             return get(index).getValue<T>();
         }
+        [[nodiscard]] constexpr QuadOrdinal getValue(TreatAsQuadOrdinal) const noexcept { return ord_; }
+        void setValue(QuadOrdinal value, TreatAsQuadOrdinal) noexcept { ord_ = value; }
         Register& get(ByteOrdinal index) noexcept { return quads_[index & 0b11]; }
         const Register& get(ByteOrdinal index) const noexcept { return quads_[index & 0b11]; }
         Register& operator[](ByteOrdinal index) noexcept { return get(index); }
@@ -487,7 +489,6 @@ union QuadRegister {
             return other.ord_ != ord_;
         }
         explicit constexpr operator QuadOrdinal() const noexcept { return ord_; }
-
     private:
         Register quads_[4];
         QuadOrdinal ord_;
