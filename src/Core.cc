@@ -206,7 +206,6 @@ Core::computeAddress() noexcept {
         }
         // okay so we need to figure out the minor mode after figuring out if
         // it is a double wide operation or not
-        /// @todo fix the MEMB instructions, it is totally cocked
         if (instruction_.memb.group) {
             DEBUG_LOG_LEVEL(4) {
                 std::cout << "\t\t" << __PRETTY_FUNCTION__ << ": group bit is high" << std::endl;
@@ -966,18 +965,10 @@ Core::processInstruction(Opcodes opcode, Register& srcDest, Address effectiveAdd
             store(effectiveAddress, srcDest.getValue<Ordinal>(), TreatAs<ShortOrdinal>{});
             break;
         case Opcodes::stib:
-            // If the register data is too large to be stored as a byte or
-            // short word, the value is truncated and the integer overflow
-            // condition is signalled.
-            /// @todo fully implement fault detection
-            store(effectiveAddress, static_cast<ByteInteger>(srcDest.getValue<Integer>()), TreatAs<ByteInteger>());
+            stib(static_cast<Integer>(srcDest), effectiveAddress);
             break;
         case Opcodes::stis:
-            // If the register data is too large to be stored as a byte or
-            // short word, the value is truncated and the integer overflow
-            // condition is signalled.
-            store(effectiveAddress, static_cast<ShortInteger>(srcDest.getValue<Integer>()), TreatAs<ShortInteger>{});
-            /// @todo fully implement fault detection
+            stis(static_cast<Integer>(srcDest), effectiveAddress);
             break;
         case Opcodes::ld:
             srcDest.setValue<Ordinal>(load(effectiveAddress, TreatAsOrdinal{}));
@@ -1430,4 +1421,33 @@ Core::shro(Register &dest, Ordinal src1, Ordinal src2) noexcept {
     dest.setValue<Ordinal>((static_cast<Ordinal>(src1) < 32) ? static_cast<Ordinal>(src2) >> static_cast<Ordinal>(src1) : 0);
 }
 
+void
+Core::stib(Integer value, Address address) {
+    if (auto maskedValue = address & 0xFFFF'FF00; maskedValue != 0 && maskedValue != 0xFFFF'FF00) {
+        store(address, static_cast<ByteInteger>(value), TreatAsByteInteger{});
+        if (ac_.arith.integerOverflowMask == 1) {
+            ac_.arith.integerOverflowFlag = 1;
+        } else {
+            integerOverflowFault();
+        }
+    } else {
+        store(address, static_cast<ByteInteger>(value), TreatAsByteInteger{});
+    }
+}
 
+void
+Core::stis(Integer value, Address address) {
+    // If the register data is too large to be stored as a byte or
+    // short word, the value is truncated and the integer overflow
+    // condition is signalled.
+    if (auto maskedValue = address & 0xFFFF'0000; maskedValue != 0 && maskedValue != 0xFFFF'0000) {
+        store(address, static_cast<ShortInteger>(value), TreatAsShortInteger{});
+        if (ac_.arith.integerOverflowMask == 1) {
+            ac_.arith.integerOverflowFlag = 1;
+        } else {
+            integerOverflowFault();
+        }
+    } else {
+        store(address, static_cast<ShortInteger>(value), TreatAsShortInteger{});
+    }
+}

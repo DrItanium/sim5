@@ -1483,6 +1483,9 @@ class Core {
         void setResidualTimeSlice(Ordinal value) noexcept { residualTimeSlice_.setValue<Ordinal>(value); }
         Address translateToPhysicalAddress(Address virtualAddress) const noexcept;
     private:
+        void stib(Integer value, Address address);
+        void stis(Integer value, Address address);
+    private:
         Ordinal systemAddressTableBase_ = 0;
         Ordinal prcbAddress_ = 0;
         RegisterFrame globals_;
