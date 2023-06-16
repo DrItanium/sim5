@@ -320,6 +320,13 @@ struct LargeNumberPackage {
         operator--();
         return old;
     }
+    explicit operator T() const noexcept {
+        return value_;
+    }
+    template<typename Q>
+    explicit operator Q() const noexcept {
+        return static_cast<Q>(value_);
+    }
 private:
     BackingStore value_ : B;
 };
@@ -339,6 +346,7 @@ using QuadInteger = int128_t;
 static_assert(QuadOrdinal{0} != QuadOrdinal{1});
 static_assert(QuadInteger{0} != QuadInteger{1});
 static_assert(QuadInteger{0} > QuadInteger{-1});
+static_assert(static_cast<Integer>(QuadInteger{0xFDED}) == Integer{0xFDED});
 
 using TreatAsTripleInteger = TreatAs<TripleInteger>;
 using TreatAsTripleOrdinal = TreatAs<TripleOrdinal>;
