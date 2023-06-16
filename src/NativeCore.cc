@@ -37,6 +37,7 @@ namespace {
         float reals[4];
         double realLongs[2];
         long double extendedReal;
+        QuadOrdinal quadOrdinal;
 #define X(type) \
         void setValue(Address address, type value , TreatAs < type > ) noexcept; \
         type getValue(Address address, TreatAs < type > ) const noexcept
@@ -51,6 +52,7 @@ namespace {
         X(float);
         X(double);
         X(long double);
+        X(QuadOrdinal);
 #undef X
     };
     Cell* physicalMemory = nullptr;
@@ -436,23 +438,42 @@ installToMainMemory(std::istream& stream, Address baseAddress) {
         ++baseAddress;
     }
 }
+namespace {
+    constexpr bool isAlignedToQuadBoundaries(Address address) noexcept {
+        return (address & 0b1111) == 0;
+    }
+    void
+    Cell::setValue(Address, QuadOrdinal value, TreatAs<QuadOrdinal>) noexcept {
+        // only works on aligned values so don't check address
+        quadOrdinal = value;
+    }
+    QuadOrdinal Cell::getValue(Address, TreatAs<QuadOrdinal>) const noexcept { return quadOrdinal; }
+}
 void
 Core::store(Address address, QuadOrdinal value, TreatAsQuadOrdinal) noexcept {
-    auto lowest = static_cast<Ordinal>(value);
-    auto lower = static_cast<Ordinal>(value >> 32);
-    auto higher = static_cast<Ordinal>(value >> 64);
-    auto highest = static_cast<Ordinal>(value >> 96);
-    store(address, lowest, TreatAsOrdinal{});
-    store(address, lower, TreatAsOrdinal{});
-    store(address, higher, TreatAsOrdinal{});
-    store(address, highest, TreatAsOrdinal{});
+    if (isAlignedToQuadBoundaries(address)) {
+        getCell(address).setValue(address, value, TreatAsQuadOrdinal {});
+    } else {
+        auto lowest = static_cast<Ordinal>(value);
+        auto lower = static_cast<Ordinal>(value >> 32);
+        auto higher = static_cast<Ordinal>(value >> 64);
+        auto highest = static_cast<Ordinal>(value >> 96);
+        store(address, lowest, TreatAsOrdinal{});
+        store(address, lower, TreatAsOrdinal{});
+        store(address, higher, TreatAsOrdinal{});
+        store(address, highest, TreatAsOrdinal{});
+    }
 }
 
 QuadOrdinal
 Core::load(Address address, TreatAsQuadOrdinal) const noexcept {
-    auto lowest = static_cast<QuadOrdinal>(load(address, TreatAsOrdinal{}));
-    auto lower = static_cast<QuadOrdinal>(load(address+4, TreatAsOrdinal{})) << 32;
-    auto higher = static_cast<QuadOrdinal>(load(address+8, TreatAsOrdinal{})) << 64;
-    auto highest = static_cast<QuadOrdinal>(load(address+12, TreatAsOrdinal{})) << 96;
-    return lowest | lower | higher | highest;
+    if (isAlignedToQuadBoundaries(address)) {
+        return getCell(address).getValue(address, TreatAsQuadOrdinal{});
+    } else {
+        auto lowest = static_cast<QuadOrdinal>(load(address, TreatAsOrdinal{}));
+        auto lower = static_cast<QuadOrdinal>(load(address + 4, TreatAsOrdinal{})) << 32;
+        auto higher = static_cast<QuadOrdinal>(load(address + 8, TreatAsOrdinal{})) << 64;
+        auto highest = static_cast<QuadOrdinal>(load(address + 12, TreatAsOrdinal{})) << 96;
+        return lowest | lower | higher | highest;
+    }
 }
