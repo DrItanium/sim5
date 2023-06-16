@@ -22,7 +22,6 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "Types.h"
 #include "Core.h"
-#include "BinaryOperations.h"
 
 void
 Core::enterCall(Ordinal fp) {
@@ -181,7 +180,7 @@ Core::calls(Ordinal src1) noexcept {
         //generateFault(ProtectionLengthFault);
     } else {
         syncf();
-        auto tempPE = load(getSystemProcedureTableBase() + 48 + (4 * targ), TreatAsOrdinal{});
+        auto tempPE = load<Ordinal>(getSystemProcedureTableBase() + 48 + (4 * targ));
         auto type = static_cast<uint8_t>(tempPE & 0b11);
         auto procedureAddress = tempPE & ~0b11;
         // read entry from system-procedure table, where spbase is address of
@@ -241,11 +240,11 @@ Core::localReturn() {
 }
 Ordinal
 Core::restoreACFromStack(Ordinal fp) {
-    return load(fp - 12, TreatAsOrdinal{});
+    return load<Ordinal>(fp - 12);
 }
 Ordinal
 Core::restorePCFromStack(Ordinal fp) {
-    return load(fp - 16, TreatAsOrdinal{});
+    return load<Ordinal>(fp - 16);
 }
 void
 Core::faultReturn() {
@@ -348,13 +347,13 @@ Core::flushreg() noexcept {
 void
 Core::saveRegisterFrame(const RegisterFrame& theFrame, Address baseAddress) {
     for (auto i = 0; i < 16; ++i, baseAddress += 4) {
-        store(baseAddress, theFrame.get(i, TreatAsRegister{}).getValue(TreatAsOrdinal{}), TreatAsOrdinal{});
+        store<Ordinal>(baseAddress, theFrame.get(i, TreatAsRegister{}).getValue(TreatAsOrdinal{}));
     }
 }
 void
 Core::restoreRegisterFrame(RegisterFrame& theFrame, Address baseAddress) {
     for (auto i = 0; i < 16; ++i, baseAddress += 4) {
-        theFrame.get(i, TreatAsRegister{}).setValue(load(baseAddress, TreatAsOrdinal{}), TreatAsOrdinal {});
+        theFrame.get(i, TreatAsRegister{}).setValue(load<Ordinal>(baseAddress), TreatAsOrdinal {});
     }
 }
 

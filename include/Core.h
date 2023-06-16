@@ -944,7 +944,7 @@ private:
         return branchIfBitGeneric<false>(computeBitPosition(bitpos.bytes[0]), against, displacement);
     }
     template<typename Q>
-    requires MustBeOrdinalOrInteger<Q>
+    requires Is960Comparable<Q>
     void cmpGeneric(Q src1, Q src2) noexcept {
         DEBUG_LOG_LEVEL(1) {
             std::cout << "\t\t" << __PRETTY_FUNCTION__ << ": before: "
@@ -960,7 +960,7 @@ private:
         }
     }
     template<typename Q>
-    requires MustBeOrdinalOrInteger<Q>
+    requires Is960Comparable<Q>
     void cmpxbGeneric(uint8_t mask, Q src1, Q src2, int16_t displacement, TreatAs<Q>) noexcept {
         DEBUG_LOG_LEVEL(1) {
             std::cout << "\t\t" << __PRETTY_FUNCTION__
@@ -1025,6 +1025,14 @@ protected:
     X(LongOrdinal);
     X(QuadOrdinal);
 #undef X
+    template<typename T>
+    T load(Address address) const noexcept {
+        return load(address, TreatAs<T>{});
+    }
+    template<typename T>
+    void store(Address address, T value) noexcept {
+        store(address, value, TreatAs<T>{});
+    }
 private:
     template<bool invert = false>
     inline void orOperation(Register& destination, Ordinal src1, Ordinal src2) noexcept {
@@ -1179,11 +1187,11 @@ private:
         syncf();
         lockBus();
         auto addr = maskValue<decltype(src1), 0xFFFF'FFFC>(src1) ;
-        auto temp = load(addr, TreatAsOrdinal{});
+        auto temp = load<Ordinal>(addr);
         // adds the src (src2 internally) value to the value in memory location specified with the addr (src1 in this case) operand.
         // The initial value from memory is stored in dst (internally src/dst).
         Ordinal result = temp + src2;
-        store(addr, result, TreatAsOrdinal{});
+        store<Ordinal>(addr, result);
         dest.setValue(temp, TreatAsOrdinal{});
         unlockBus();
     }
@@ -1191,12 +1199,12 @@ private:
         syncf();
         lockBus();
         auto addr = maskValue<decltype(src1), 0xFFFF'FFFC>(src1) ;
-        auto temp = load(addr, TreatAsOrdinal{});
+        auto temp = load<Ordinal>(addr);
         // copies the src/dest value (logical version) into the memory location specifeid by src1.
         // The bits set in the mask (src2) operand select the bits to be modified in memory. The initial
         // value from memory is stored in src/dest
         Ordinal result = ::modify(src2, dest.getValue<Ordinal>(), temp);
-        store(addr, result, TreatAsOrdinal{});
+        store<Ordinal>(addr, result);
         dest.setValue(temp, TreatAsOrdinal{});
         unlockBus();
     }
@@ -1305,7 +1313,6 @@ protected:
     bool runTestCases(W wrapper, Args ... args) noexcept {
         return ( ... && wrapper(args)());
     }
-
     static decltype(auto) makeTestRunner(auto body, auto setup, auto tearDown) noexcept {
         return [setup, body, tearDown]() noexcept -> bool {
             setup();
@@ -1332,22 +1339,23 @@ private:
 private:
     // fault handling components
     void pushFaultRecord(Address baseStorageAddress, const FaultRecord& record) noexcept;
-    FaultTableEntry getFaultEntry(uint8_t index) const noexcept;
+    [[nodiscard]] FaultTableEntry getFaultEntry(uint8_t index) const noexcept;
     void faultCallGeneric (const FaultRecord& record, Address destination, Address stackPointer) noexcept;
     void localProcedureEntry_FaultCall (const FaultRecord& record, Address destination) noexcept;
     void procedureTableEntry_FaultCall(const FaultRecord& record, const FaultTableEntry& entry) noexcept;
     void supervisorProcedureTableEntry_FaultCall(const FaultRecord& record, Address procedureAddress, Address tableBaseAddress) noexcept;
 private:
     template<uint8_t offset>
-    Ordinal getFromPRCB() const noexcept { return load(prcbAddress_ + offset, TreatAsOrdinal{}); }
-    Ordinal getProcessorControls() const noexcept { return getFromPRCB<4>(); }
-    Ordinal getCurrentProcessSegmentSelector() const noexcept { return getFromPRCB<12>(); }
-    Ordinal getDispatchPortSegmentSelector() const noexcept { return getFromPRCB<16>(); }
-    Address getInterruptTablePointer() const noexcept { return getFromPRCB<20>(); }
-    Address getInterruptStackAddress() const noexcept { return getFromPRCB<24>(); }
-    Address getRegion3SegmentSelector() const noexcept { return getFromPRCB<32>(); }
-    Address getSystemProcedureTableSegmentSelector() const noexcept { return getFromPRCB<36>(); }
-    Address getFaultTableBaseAddress() const noexcept { return getFromPRCB<40>(); }
+    requires (offset <= 172) && ((offset & 0b11) == 0) // the PRCB is 176 bytes in size and is aligned to four byte boundaries
+    [[nodiscard]] Ordinal getFromPRCB() const noexcept { return load<Ordinal>(prcbAddress_ + offset); }
+    [[nodiscard]] Ordinal getProcessorControls() const noexcept { return getFromPRCB<4>(); }
+    [[nodiscard]] Ordinal getCurrentProcessSegmentSelector() const noexcept { return getFromPRCB<12>(); }
+    [[nodiscard]] Ordinal getDispatchPortSegmentSelector() const noexcept { return getFromPRCB<16>(); }
+    [[nodiscard]] Address getInterruptTablePointer() const noexcept { return getFromPRCB<20>(); }
+    [[nodiscard]] Address getInterruptStackAddress() const noexcept { return getFromPRCB<24>(); }
+    [[nodiscard]] Address getRegion3SegmentSelector() const noexcept { return getFromPRCB<32>(); }
+    [[nodiscard]] Address getSystemProcedureTableSegmentSelector() const noexcept { return getFromPRCB<36>(); }
+    [[nodiscard]] Address getFaultTableBaseAddress() const noexcept { return getFromPRCB<40>(); }
 private: // system address table / system procedure table
     SegmentDescriptor loadSegmentDescriptor(SegmentSelector offset) const noexcept;
 public:
@@ -1393,16 +1401,16 @@ private: // protected extensions instructions
 private: // interrupt related
     Address getInterruptTableBaseAddress() const;
     void postInterrupt(InterruptVector vector);
-    Ordinal getInterruptPendingPriorities() const { return load(getInterruptTablePointer(), TreatAsOrdinal{}); }
-    void setInterruptPendingPriorities(Ordinal value) { store(getInterruptTablePointer(), value, TreatAsOrdinal{}); }
+    Ordinal getInterruptPendingPriorities() const { return load<Ordinal>(getInterruptTablePointer()); }
+    void setInterruptPendingPriorities(Ordinal value) { store<Ordinal>(getInterruptTablePointer(), value); }
     Ordinal getPendingInterruptWord(uint8_t index) const {
-        return load(getInterruptTableBaseAddress() + 4 + (sizeof(Ordinal) * (index & 0b111)), TreatAsOrdinal{});
+        return load<Ordinal>(getInterruptTableBaseAddress() + 4 + (sizeof(Ordinal) * (index & 0b111)));
     }
     Ordinal getPendingInterruptWord(InterruptVector vector) const {
         return getPendingInterruptWord(computeInterruptWordIndex(vector));
     }
     void setPendingInterruptWord(uint8_t index, Ordinal value) {
-        store(getInterruptTableBaseAddress() + 4 + (sizeof(Ordinal) * (index & 0b111)), value, TreatAsOrdinal{});
+        store<Ordinal>(getInterruptTableBaseAddress() + 4 + (sizeof(Ordinal) * (index & 0b111)), value);
     }
     void setPendingInterruptWord(InterruptVector vector, Ordinal value) {
         setPendingInterruptWord(computeInterruptWordIndex(vector), value);

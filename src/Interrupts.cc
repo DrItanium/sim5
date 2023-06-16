@@ -39,7 +39,7 @@ Core::getInterruptVectorAddress(uint8_t vector) const {
         auto realizedOffset = vector - 8; // make this a clean offset by
         // subtracting 8
         Address byteOffset = sizeof(Address) * realizedOffset;
-        return load(getInterruptTableBaseAddress() + 36 + byteOffset, TreatAsOrdinal{});
+        return load<Ordinal>(getInterruptTableBaseAddress() + 36 + byteOffset);
     }
 }
 

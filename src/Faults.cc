@@ -88,13 +88,13 @@ Core::faultCallGeneric(const FaultRecord& record, Address address, Address stack
     // side! Three frames worth are necessary to make sure we have enough
     // padding.
     auto nextFrame = computeNextFrame<C*3, NotC>(stackPointer);
-    auto fp = getGPRValue(FPIndex, TreatAsOrdinal{});
+    auto fp = getGPRValue<Ordinal>(FPIndex);
     // save the current registers to the stack
     enterCall(fp);
     // manually setup the stack frame as needed
     auto& pfp = getGPR(PFPIndex);
     // clear the p bit as well to make sure
-    pfp.setValue(getGPRValue(FPIndex, TreatAsOrdinal{}) & ~0b1'111, TreatAsOrdinal{});
+    pfp.setValue<Ordinal>(getGPRValue<Ordinal>(FPIndex) & ~0b1'111);
     pfp.pfp.rt = 0b001;
     setGPR(FPIndex, nextFrame, TreatAsOrdinal{});
     setStackPointer(nextFrame + 64, TreatAsOrdinal{});
