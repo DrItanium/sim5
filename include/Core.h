@@ -1379,6 +1379,9 @@ private: // numerics extensions
     void tanrl(LongRegister& dest, LongReal literal) noexcept;
     inline void tanr(Register& dest, const Register& src) noexcept { tanr(dest, (Real)src); }
     inline void tanrl(LongRegister& dest, const LongRegister& src) noexcept { tanrl(dest, src.getValue<LongReal>()); }
+    void cmpr(Real src1, Real src2) noexcept;
+    void cmprl(LongReal src1, LongReal src2) noexcept;
+    void cmpre(ExtendedReal src1, ExtendedReal src2) noexcept;
     /// @todo add support for the dedicated floating point registers as overloaded forms
 private: // protected extensions instructions
     void signal(SegmentSelector sel) noexcept;

@@ -82,3 +82,8 @@ Core::classrl(LongReal src) noexcept {
             break;
     }
 }
+
+void
+Core::cmpr(Real src1, Real src2) noexcept {
+    cmpGeneric<Real>(src1, src2);
+}
