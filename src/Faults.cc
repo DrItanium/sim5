@@ -57,10 +57,7 @@ Core::getFaultEntry(uint8_t index) const noexcept {
     auto realOffset = maskedIndex * (sizeof(FaultTableEntry));
     auto realAddress = faultTableBaseAddress + realOffset;
 
-    return FaultTableEntry {
-            load(realAddress, TreatAsOrdinal{}),
-            load(realAddress + 4, TreatAsOrdinal{})
-    };
+    return FaultTableEntry { load(realAddress, TreatAsLongOrdinal{}) };
 }
 
 SegmentDescriptor
@@ -71,12 +68,7 @@ Core::loadSegmentDescriptor(SegmentSelector selector) const noexcept {
     auto baseIndex = systemAddressTableBase_;
     baseIndex += (index * sizeof(SegmentDescriptor));
     // so now we have the base address of the segment descriptor we want
-    return SegmentDescriptor {
-            load(baseIndex, TreatAsOrdinal{}),
-            load(baseIndex+4, TreatAsOrdinal{}),
-            load(baseIndex+8, TreatAsOrdinal{}),
-            load(baseIndex+12, TreatAsOrdinal{}),
-    };
+    return SegmentDescriptor { load(baseIndex, TreatAsQuadOrdinal{}) };
 }
 
 

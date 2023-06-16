@@ -291,8 +291,7 @@ Core::ldl(Address effectiveAddress, LongRegister& destination) noexcept {
         invalidOperandFault();
         /// @todo perform an unaligned load into registers
     } else {
-        destination[0] = load(effectiveAddress + 0, TreatAsOrdinal{});
-        destination[1] = load(effectiveAddress + 4, TreatAsOrdinal{});
+        destination.setValue<LongOrdinal>(load(effectiveAddress, TreatAsLongOrdinal{}));
         // support unaligned accesses
     }
     // the instruction is invalid so we should complete after we are done
@@ -306,8 +305,7 @@ Core::stl(Address effectiveAddress, const LongRegister& source) noexcept {
         /// @todo perform an unaligned load into registers
     } else {
         // support unaligned accesses
-        store(effectiveAddress + 0,  static_cast<Ordinal>(source[0]), TreatAsOrdinal{});
-        store(effectiveAddress + 4,  static_cast<Ordinal>(source[1]), TreatAsOrdinal{});
+        store(effectiveAddress, source.getValue<LongOrdinal>(), TreatAsLongOrdinal{});
     }
     // the instruction is invalid so we should complete after we are done
 }
@@ -589,10 +587,10 @@ void
 Core::synmovl(const Register& dest, Ordinal src) noexcept {
     ac_.arith.conditionCode = 0b000;
     auto tempa = maskValue<Ordinal, 0xFFFF'FFF8>(dest.getValue(TreatAsOrdinal{}));
-    auto tempLower = load(src, TreatAsOrdinal{});
-    auto tempUpper = load(src + 4, TreatAsOrdinal{});
-    store(tempa, tempLower, TreatAsOrdinal{});
-    store(tempa + 4, tempUpper, TreatAsOrdinal{});
+    auto temp = load(src, TreatAsLongOrdinal{});
+    // observing execution shows that there is a delay here on the Sx processor
+    // not sure what it is doing
+    store(tempa, temp, TreatAsLongOrdinal{});
     // wait for completion
     ac_.arith.conditionCode = 0b010;
 }
