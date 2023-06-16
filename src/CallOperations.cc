@@ -103,14 +103,14 @@ Core::callx(Address effectiveAddress) noexcept {
         auto g6 = getGPRValue<Ordinal>(GlobalRegisterBase + 6);
         auto g7 = getGPRValue<Ordinal>(GlobalRegisterBase + 7);
         std::cout << __PRETTY_FUNCTION__ << ": (0x" << g0 <<
-        ", 0x" << g1 <<
-        ", 0x" << g2 <<
-        ", 0x" << g3 <<
-        ", 0x" << g4 <<
-        ", 0x" << g5 <<
-        ", 0x" << g6 <<
-        ", 0x" << g7 <<
-        ")" << std::endl;
+                  ", 0x" << g1 <<
+                  ", 0x" << g2 <<
+                  ", 0x" << g3 <<
+                  ", 0x" << g4 <<
+                  ", 0x" << g5 <<
+                  ", 0x" << g6 <<
+                  ", 0x" << g7 <<
+                  ")" << std::endl;
 
         std::cout << __PRETTY_FUNCTION__ << ": (ea): 0x" << std::hex << effectiveAddress << std::endl;
     }
@@ -233,7 +233,7 @@ Core::localReturn() {
         auto value = getGPRValue<Ordinal>(RIPIndex);
         std::cout << __PRETTY_FUNCTION__ << ": (rip before): 0x" << std::hex << value << std::endl;
     }
-   restoreStandardFrame();
+    restoreStandardFrame();
     DEBUG_LOG_LEVEL(2) {
         auto value = getGPRValue<Ordinal>(RIPIndex);
         std::cout << __PRETTY_FUNCTION__ << ": (rip after): 0x" << std::hex << value <<  std::endl;

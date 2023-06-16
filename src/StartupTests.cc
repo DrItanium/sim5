@@ -144,14 +144,14 @@ Core::performSelfTest() noexcept {
                execInteger(static_cast<Integer>(random()), static_cast<Integer>(random())) &&
                execOrdinal(testEqualityOrd, testEqualityOrd) &&
                execInteger(testEqualityInt, testEqualityInt) &&
-                execOrdinal(0, 0) &&
-                execInteger(0, 0);
+               execOrdinal(0, 0) &&
+               execInteger(0, 0);
 
     };
     auto makeGenericOperation = [this](auto maker, auto doIt, auto converter, auto name, auto genSrc1, auto genSrc2) {
         return [this, maker, doIt, converter, genSrc1, genSrc2](ByteOrdinal gpr0 = random() & 0b11111,
-                                                                      ByteOrdinal gpr1 = random() & 0b11111,
-                                                                      ByteOrdinal gpr2 = random() & 0b11111) -> bool {
+                                                                ByteOrdinal gpr1 = random() & 0b11111,
+                                                                ByteOrdinal gpr2 = random() & 0b11111) -> bool {
             auto rs0 = converter(genSrc1());
             auto rs1 = converter(genSrc2());
             auto& src1 = getGPR(gpr0);
@@ -188,7 +188,7 @@ Core::performSelfTest() noexcept {
                         testScanbyteOperation,
                         testCompares,
                         (makeOrdinalOperation([this](Ordinal bitpos, Ordinal src, Ordinal) {
-                            // implement it separately for comparison purposes
+                                                  // implement it separately for comparison purposes
                                                   ac_.arith.conditionCode = random() & 0b111;
                                                   if ((ac_.getConditionCode() & 0b010) == 0) {
                                                       return src & (~computeBitPosition(bitpos & 0b11111));
@@ -283,8 +283,8 @@ Core::performSelfTest() noexcept {
                         (makeOrdinalOperation([](Ordinal bitpos, Ordinal src, Ordinal) { return (src & (~(computeBitPosition(bitpos)))); },
                                               [this](auto& dest, auto src1, auto src2) { clrbit(dest, src1, src2); },
                                               "clrbit")),
-                                (makeOrdinalOperation([](Ordinal bitpos, Ordinal src, Ordinal) { return (src | ((computeBitPosition(bitpos)))); },
-                                                      [this](auto& dest, auto src1, auto src2) { setbit(dest, src1, src2); },
-                                                      "setbit"))
+                        (makeOrdinalOperation([](Ordinal bitpos, Ordinal src, Ordinal) { return (src | ((computeBitPosition(bitpos)))); },
+                                              [this](auto& dest, auto src1, auto src2) { setbit(dest, src1, src2); },
+                                              "setbit"))
     ) && runNonPortableSelfTests();
 }
