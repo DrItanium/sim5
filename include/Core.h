@@ -1015,6 +1015,7 @@ class Core {
         X(ByteOrdinal);
         X(ShortInteger);
         X(ShortOrdinal);
+        X(LongOrdinal);
         X(QuadOrdinal);
 #undef X
     private:
