@@ -331,7 +331,7 @@ Core::restoreStandardFrame() noexcept {
 
 void
 Core::restoreRIPToIP() {
-    setIP(getRIPContents(), TreatAsOrdinal{});
+    setIP(getRIPContents());
 }
 
 void
@@ -359,24 +359,24 @@ Core::restoreRegisterFrame(RegisterFrame& theFrame, Address baseAddress) {
 
 void
 Core::saveReturnAddress(Register& linkRegister) noexcept {
-    linkRegister.setValue<Ordinal>(ip_.getValue(TreatAsOrdinal{}) + instructionLength_);
+    linkRegister.setValue<Ordinal>(ip_.getValue<Ordinal>() + instructionLength_);
 }
 
 void
 Core::saveReturnAddress(ByteOrdinal linkRegister) noexcept {
-    setGPR(linkRegister, ip_.getValue(TreatAsOrdinal{}) + instructionLength_, TreatAsOrdinal{});
+    setGPR(linkRegister, ip_.getValue<Ordinal>() + instructionLength_, TreatAsOrdinal{});
 }
 
 void
 Core::balx(ByteOrdinal linkRegister, Ordinal branchTo) noexcept {
     saveReturnAddress(linkRegister);
-    setIP(branchTo, TreatAsOrdinal{});
+    setIP(branchTo);
 }
 
 void
 Core::balx(Register& linkRegister, Ordinal branchTo) noexcept {
     saveReturnAddress(linkRegister);
-    setIP(branchTo, TreatAsOrdinal{});
+    setIP(branchTo);
 }
 
 void
@@ -393,6 +393,6 @@ Core::bal(Integer displacement) {
 void
 Core::bx(Address effectiveAddress) {
     DEBUG_ENTER_FUNCTION;
-    setIP(effectiveAddress, TreatAsOrdinal{});
+    setIP(effectiveAddress);
     DEBUG_LEAVE_FUNCTION;
 }

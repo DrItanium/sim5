@@ -1026,7 +1026,7 @@ protected:
     X(QuadOrdinal);
 #undef X
     template<typename T>
-    T load(Address address) const noexcept {
+    [[nodiscard]] T load(Address address) const noexcept {
         return load(address, TreatAs<T>{});
     }
     template<typename T>
@@ -1036,15 +1036,15 @@ protected:
 private:
     template<bool invert = false>
     inline void orOperation(Register& destination, Ordinal src1, Ordinal src2) noexcept {
-        destination.setValue(::orOperation<Ordinal, invert>(src1, src2), TreatAsOrdinal{});
+        destination.setValue<Ordinal>(::orOperation<Ordinal, invert>(src1, src2));
     }
     template<bool invert = false>
     inline void andOperation(Register& destination, Ordinal src1, Ordinal src2) noexcept {
-        destination.setValue(::andOperation<Ordinal, invert>(src1, src2), TreatAsOrdinal{});
+        destination.setValue<Ordinal>(::andOperation<Ordinal, invert>(src1, src2));
     }
     template<bool invert = false>
     inline void xorOperation(Register& destination, Ordinal src1, Ordinal src2) noexcept {
-        destination.setValue(::xorOperation<Ordinal, invert>(src1, src2), TreatAsOrdinal{});
+        destination.setValue<Ordinal>(::xorOperation<Ordinal, invert>(src1, src2));
     }
     template<typename Q>
     requires MustBeOrdinalOrInteger<Q>
@@ -1057,7 +1057,7 @@ private:
                       << ") -> 0x" << std::hex << result
                       << std::endl;
         }
-        destination.setValue(result, TreatAs<Q>{});
+        destination.setValue<Q>(result);
     }
     template<typename Q>
     requires MustBeOrdinalOrInteger<Q>
@@ -1070,12 +1070,12 @@ private:
                       << ") -> 0x" << std::hex << result
                       << std::endl;
         }
-        destination.setValue(result, TreatAs<Q>{});
+        destination.setValue<Q>(result);
     }
     template<typename Q>
     requires MustBeOrdinalOrInteger<Q>
     void mult(Register& destination, Q src1, Q src2, TreatAs<Q>) noexcept {
-        destination.setValue(::multiplyOperation<Q>(src2, src1), TreatAs<Q>{});
+        destination.setValue<Q>(::multiplyOperation<Q>(src2, src1));
     }
     void setbit(Register& destination, Ordinal src1, Ordinal src2) noexcept {
         // setbit is src2 | computeBitPosition(src1o)
@@ -1102,7 +1102,7 @@ private:
         orOperation(dest, src1, ~src2);
     }
     inline void notOperation(Register& destination, Ordinal src) noexcept {
-        destination.setValue(~src, TreatAsOrdinal{});
+        destination.setValue<Ordinal>(~src);
     }
 
     inline void andnot(Register& dest, Ordinal src1, Ordinal src2) noexcept {
@@ -1127,7 +1127,7 @@ private:
     inline void addc(Register& dest, Ordinal src1, Ordinal src2) noexcept {
         LongOrdinal result = static_cast<LongOrdinal>(src2) + static_cast<LongOrdinal>(src1);
         result += (ac_.getCarryBit() ? 1 : 0);
-        dest.setValue(result, TreatAsOrdinal{});
+        dest.setValue<Ordinal>(result);
         DEBUG_LOG_LEVEL(4) {
             std::cout << "addc result: 0x" << std::hex << result << std::endl;
         }
@@ -1139,7 +1139,7 @@ private:
     inline void subc(Register& dest, Ordinal src1, Ordinal src2) noexcept {
         LongOrdinal result = static_cast<LongOrdinal>(src2) - static_cast<LongOrdinal>(src1) - 1;
         result += (ac_.getCarryBit() ? 1 : 0);
-        dest.setValue(result, TreatAsOrdinal{});
+        dest.setValue<Ordinal>(result);
         arithmeticWithCarryGeneric(static_cast<Ordinal>(result >> 32),
                                    mostSignificantBit(src2),
                                    mostSignificantBit(src1),
@@ -1152,8 +1152,8 @@ private:
             zeroDivideFault();
         } else {
             // taken from the i960Sx manual
-            //dest.setValue(src2 - ((src2 / src1) * src1), TreatAs<Q>{});
-            dest.setValue(src2 % src1, TreatAs<Q>{});
+            //dest.setValue<Q>(src2 - ((src2 / src1) * src1));
+            dest.setValue<Q>(src2 % src1);
             nextInstruction();
         }
     }
@@ -1172,7 +1172,7 @@ private:
             /// @todo fix this
             zeroDivideFault();
         } else {
-            dest.setValue(src2 / src1, TreatAs<Q>{});
+            dest.setValue<Q>(src2 / src1);
             nextInstruction();
         }
     }
@@ -1192,7 +1192,7 @@ private:
         // The initial value from memory is stored in dst (internally src/dst).
         Ordinal result = temp + src2;
         store<Ordinal>(addr, result);
-        dest.setValue(temp, TreatAsOrdinal{});
+        dest.setValue<Ordinal>(temp);
         unlockBus();
     }
     void atmod(Register& dest, Ordinal src1, Ordinal src2) noexcept {
@@ -1205,7 +1205,7 @@ private:
         // value from memory is stored in src/dest
         Ordinal result = ::modify(src2, dest.getValue<Ordinal>(), temp);
         store<Ordinal>(addr, result);
-        dest.setValue(temp, TreatAsOrdinal{});
+        dest.setValue<Ordinal>(temp);
         unlockBus();
     }
     void cmpo(Ordinal src1, Ordinal src2) noexcept {
@@ -1213,22 +1213,22 @@ private:
     }
     void cmpinco(Register& dest, Ordinal src1, Ordinal src2) noexcept {
         cmpGeneric(src1, src2);
-        dest.setValue(src2 + 1, TreatAsOrdinal{});
+        dest.setValue<Ordinal>(src2 + 1);
     }
     void cmpdeco(Register& dest, Ordinal src1, Ordinal src2) noexcept {
         cmpGeneric(src1, src2);
-        dest.setValue(src2 - 1, TreatAsOrdinal{});
+        dest.setValue<Ordinal>(src2 - 1);
     }
     void cmpi(Integer src1, Integer src2) noexcept {
         cmpGeneric(src1, src2);
     }
     void cmpinci(Register& dest, Integer src1, Integer src2) noexcept {
         cmpGeneric(src1, src2);
-        dest.setValue(src2 + 1, TreatAsInteger{});
+        dest.setValue<Integer>(src2 + 1);
     }
     void cmpdeci(Register& dest, Integer src1, Integer src2) noexcept {
         cmpGeneric(src1, src2);
-        dest.setValue(src2 - 1, TreatAsInteger{});
+        dest.setValue<Integer>(src2 - 1);
     }
     template<typename Q>
     requires MustBeOrdinalOrInteger<Q>
@@ -1274,7 +1274,7 @@ private:
      * advancement until the next cycle!
      */
     void nextInstruction() noexcept;
-    void setIP(Ordinal value, TreatAsOrdinal) noexcept;
+    void setIP(Ordinal value) noexcept;
     void subo(Register& dest, Ordinal src1, Ordinal src2) noexcept;
     void subi(Register& dest, Integer src1, Integer src2) noexcept;
     void faultGeneric() noexcept;
@@ -1443,9 +1443,9 @@ private:
     void supervisorReturn(bool traceModeSetting);
 private:
     void faultOnOverflow(Register& dest);
-    [[nodiscard]] Ordinal getFramePointerAddress() const { return getGPRValue(FPIndex, TreatAsOrdinal{}); }
+    [[nodiscard]] Ordinal getFramePointerAddress() const { return getGPRValue<Ordinal>(FPIndex); }
+    [[nodiscard]] Ordinal getRIPContents() const { return getGPRValue<Ordinal>(RIPIndex); }
     void restoreRIPToIP();
-    [[nodiscard]] Ordinal getRIPContents() const { return getGPRValue(RIPIndex, TreatAsOrdinal{}); }
 private:
     Ordinal restorePCFromStack(Ordinal fp);
     Ordinal restoreACFromStack(Ordinal fp);

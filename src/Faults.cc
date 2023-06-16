@@ -101,7 +101,7 @@ Core::faultCallGeneric(const FaultRecord& record, Address address, Address stack
     pushFaultRecord(nextFrame - 48, record);
     // no need to push a resumption record right now and set the resume flag in
     // the saved process controls
-    setIP(address, TreatAsOrdinal{});
+    setIP(address);
 }
 
 

@@ -652,7 +652,7 @@ Core::boot0(Address sat, Address pcb, Address startIP) noexcept {
     DEBUG_ENTER_FUNCTION;
     systemAddressTableBase_ = sat;
     prcbAddress_ = pcb;
-    setIP(startIP, TreatAsOrdinal{});
+    setIP(startIP);
     // fetch IMI
     auto theStackPointer = getInterruptStackAddress();
     // get the interrupt stack pointer base since we are starting in an interrupted context
@@ -783,7 +783,7 @@ Core::nextInstruction() noexcept {
 
 
 void
-Core::setIP(Ordinal value, TreatAsOrdinal) noexcept {
+Core::setIP(Ordinal value) noexcept {
     // when we set the ip during this instruction, we need to turn off the
     // automatic advancement!
     ip_.setValue<Ordinal>(value);
