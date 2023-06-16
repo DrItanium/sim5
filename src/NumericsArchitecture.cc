@@ -87,3 +87,8 @@ void
 Core::cmpr(Real src1, Real src2) noexcept {
     cmpGeneric<Real>(src1, src2);
 }
+
+void
+Core::cmprl(LongReal src1, LongReal src2) noexcept {
+    cmpGeneric<LongReal>(src1, src2);
+}
