@@ -26,6 +26,7 @@
 #include <cstdint>
 #include <compare>
 #include <type_traits>
+#include <concepts>
 using Address = uint32_t;
 using ByteOrdinal = uint8_t;
 using ByteInteger = int8_t;
@@ -53,12 +54,13 @@ using TreatAsExtendedReal = TreatAs<ExtendedReal>;
 
 using int128_t = signed __int128;
 using uint128_t = unsigned __int128;
+template<typename T>
+concept NonFloatingPointNumber = std::integral<T>;
 template<typename T, uint8_t B>
+requires NonFloatingPointNumber<T> && (B <= 128) && (B > 0)
 struct LargeNumberPackage {
     using BackingStore = T;
     using Self = LargeNumberPackage<BackingStore, B>;
-    static_assert(B <= 128, "Cannot accept bit count greater than 128");
-    static_assert(B > 0, "Bitwidth of zero is not allowed!");
     constexpr LargeNumberPackage(BackingStore backing) : value_(backing) { }
     constexpr LargeNumberPackage(const Self& other) = default;
     constexpr LargeNumberPackage(Self&& other) = default;
@@ -191,8 +193,10 @@ private:
     BackingStore value_ : B;
 };
 template<uint8_t B>
+requires (B <= 128) && (B > 0)
 using LargeIntPackage = std::conditional_t<(B == 128), int128_t, LargeNumberPackage<int128_t, B>>;
 template<uint8_t B>
+requires (B <= 128) && (B > 0)
 using LargeUIntPackage = std::conditional_t<(B == 128), uint128_t, LargeNumberPackage<uint128_t, B>>;
 using int96_t = LargeIntPackage<96>;
 using uint96_t = LargeUIntPackage<96>;
@@ -400,5 +404,7 @@ enum class ArchitectureLevel : uint8_t {
     Extended,
     Unknown,
 };
+template<typename T>
+concept MustBeOrdinalOrInteger = std::same_as<T, Integer> || std::same_as<T, Ordinal>;
 
 #endif // end SIM5_TYPES_H__

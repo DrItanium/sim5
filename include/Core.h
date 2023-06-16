@@ -108,7 +108,6 @@ constexpr ArchitectureLevel getArchitectureLevel(Opcodes code) noexcept {
 template<Opcodes code>
 constexpr auto ArchitectureLevel_v = getArchitectureLevel(code);
 static_assert(ArchitectureLevel_v<Opcodes::b> == ArchitectureLevel::Core);
-
 enum class BootResult : uint8_t {
     Success,
     SelfTestFailure,
@@ -545,6 +544,11 @@ private:
     ExtendedReal extendedReal_;
 };
 using TreatAsTripleRegister = TreatAs<TripleRegister>;
+template<typename T>
+concept MustBeRegisterType = std::same_as<T, Register> ||
+                             std::same_as<T, LongRegister> ||
+                             std::same_as<T, TripleRegister> ||
+                             std::same_as<T, QuadRegister>;
 // On the i960 this is separated out into two parts, locals and globals
 // The idea is that globals are always available and locals are per function.
 // You are supposed to have multiple local frames on chip to accelerate
@@ -751,6 +755,7 @@ private:
     auto& getLocals() noexcept { return currentLocalRegisterSet().getUnderlyingFrame(); }
     const auto& getLocals() const noexcept { return currentLocalRegisterSet().getUnderlyingFrame(); }
     template<typename T>
+    requires MustBeRegisterType<T>
     [[nodiscard]] T& getGPR(ByteOrdinal index, TreatAs<T>) {
         DEBUG_ENTER_FUNCTION;
         DEBUG_LOG_LEVEL(3) {
@@ -765,6 +770,7 @@ private:
         }
     }
     template<typename T>
+    requires MustBeRegisterType<T>
     [[nodiscard]] const T& getGPR(ByteOrdinal index, TreatAs<T>) const {
         DEBUG_ENTER_FUNCTION;
         DEBUG_LOG_LEVEL(3) {
@@ -802,7 +808,6 @@ private:
     [[nodiscard]] Register& getSFR(ByteOrdinal index) noexcept;
     [[nodiscard]] Register& getSFR(ByteOrdinal index, ByteOrdinal offset) noexcept;
     [[nodiscard]] const Register& getSFR(ByteOrdinal index) const noexcept;
-    [[nodiscard]] const Register& getSFR(ByteOrdinal index, ByteOrdinal offset) const noexcept;
     [[nodiscard]] const Register& getSrc1Register(TreatAsREG) const noexcept;
     [[nodiscard]] const Register& getSrc2Register(TreatAsREG) const noexcept;
     [[nodiscard]] Ordinal unpackSrc1(ByteOrdinal offset, TreatAsOrdinal, TreatAsREG) noexcept;
@@ -939,6 +944,7 @@ private:
         return branchIfBitGeneric<false>(computeBitPosition(bitpos.bytes[0]), against, displacement);
     }
     template<typename Q>
+    requires MustBeOrdinalOrInteger<Q>
     void cmpGeneric(Q src1, Q src2) noexcept {
         DEBUG_LOG_LEVEL(1) {
             std::cout << "\t\t" << __PRETTY_FUNCTION__ << ": before: "
@@ -954,6 +960,7 @@ private:
         }
     }
     template<typename Q>
+    requires MustBeOrdinalOrInteger<Q>
     void cmpxbGeneric(uint8_t mask, Q src1, Q src2, int16_t displacement, TreatAs<Q>) noexcept {
         DEBUG_LOG_LEVEL(1) {
             std::cout << "\t\t" << __PRETTY_FUNCTION__
@@ -1032,6 +1039,7 @@ private:
         destination.setValue(::xorOperation<Ordinal, invert>(src1, src2), TreatAsOrdinal{});
     }
     template<typename Q>
+    requires MustBeOrdinalOrInteger<Q>
     void add(Register& destination, Q src1, Q src2, TreatAs<Q>) noexcept {
         auto result = ::addOperation<Q>(src2, src1);
         DEBUG_LOG_LEVEL(1) {
@@ -1044,6 +1052,7 @@ private:
         destination.setValue(result, TreatAs<Q>{});
     }
     template<typename Q>
+    requires MustBeOrdinalOrInteger<Q>
     void sub(Register& destination, Q src1, Q src2, TreatAs<Q>) noexcept {
         auto result = ::subOperation<Q>(src2, src1);
         DEBUG_LOG_LEVEL(1) {
@@ -1056,6 +1065,7 @@ private:
         destination.setValue(result, TreatAs<Q>{});
     }
     template<typename Q>
+    requires MustBeOrdinalOrInteger<Q>
     void mult(Register& destination, Q src1, Q src2, TreatAs<Q>) noexcept {
         destination.setValue(::multiplyOperation<Q>(src2, src1), TreatAs<Q>{});
     }
@@ -1128,6 +1138,7 @@ private:
                                    mostSignificantBit(dest.getValue<Ordinal>()));
     }
     template<typename Q>
+    requires MustBeOrdinalOrInteger<Q>
     void remainderOperation(Register& dest, Q src1, Q src2) noexcept {
         if (src1 == 0) {
             zeroDivideFault();
@@ -1147,6 +1158,7 @@ private:
         remainderOperation<Ordinal>(dest, src1, src2);
     }
     template<typename Q>
+    requires MustBeOrdinalOrInteger<Q>
     void divideOperation(Register& dest, Q src1, Q src2) noexcept {
         if (src1 == 0) {
             /// @todo fix this
@@ -1211,6 +1223,7 @@ private:
         dest.setValue(src2 - 1, TreatAsInteger{});
     }
     template<typename Q>
+    requires MustBeOrdinalOrInteger<Q>
     void concmpGeneric(Q src1, Q src2) noexcept {
         if ((ac_.getConditionCode() & 0b100) == 0) {
             ac_.arith.conditionCode = src1 <= src2 ? 0b010 : 0b001;

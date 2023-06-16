@@ -26,6 +26,32 @@
 
 #include <bit>
 #include "Types.h"
+template<typename T>
+concept CanPerformAdd = requires (T a, T b) {
+    a + b; // can add two things together
+};
+template<typename T>
+concept CanPerformSubtract = requires (T a, T b) {
+    a - b;
+};
+template<typename T>
+concept CanPerformMultiply = requires (T a, T b) { a * b; };
+
+template<typename T>
+concept CanPerformAnd = requires (T a, T b) { a & b; };
+template<typename T>
+concept CanPerformOr = requires (T a, T b) { a | b; };
+template<typename T>
+concept CanPerformXor = requires (T a, T b) { a ^ b; };
+
+template<typename T>
+concept CanPerformNot = requires (T a) { ~a; };
+
+template<typename T>
+concept Is960Comparable = std::three_way_comparable<T> || requires (T a, T b) {
+    { a < b };
+    { a == b };
+};
 [[nodiscard]] constexpr Ordinal rotateOperation(Ordinal src, Ordinal length) noexcept {
     return (src << length)  | (src >> ((-length) & 31u));
 }
@@ -69,11 +95,7 @@
 }
 
 [[nodiscard]] constexpr int countLeadingZeros(Ordinal value) noexcept {
-#ifdef __AVR__
-    return __builtin_clz(value);
-#else
     return std::countl_zero(value);
-#endif
 }
 
 [[nodiscard]] constexpr int highestOne(Ordinal value) noexcept {
@@ -119,6 +141,7 @@ X(0);
 }
 
 template<typename T, bool invertResult = false>
+requires CanPerformOr<T> && CanPerformNot<T>
 [[nodiscard]] constexpr T orOperation(T a, T b) noexcept {
     if constexpr (invertResult) {
         return ~(a | b);
@@ -127,6 +150,7 @@ template<typename T, bool invertResult = false>
     }
 }
 template<typename T, bool invertResult = false>
+requires CanPerformAnd<T> && CanPerformNot<T>
 [[nodiscard]] constexpr T andOperation(T a, T b) noexcept {
     if constexpr (invertResult) {
         return ~(a & b);
@@ -135,6 +159,7 @@ template<typename T, bool invertResult = false>
     }
 }
 template<typename T, bool invertResult = false>
+requires CanPerformXor<T> && CanPerformNot<T>
 [[nodiscard]] constexpr T xorOperation(T a, T b) noexcept {
     if constexpr (invertResult) {
         return ~(a ^ b);
@@ -144,16 +169,19 @@ template<typename T, bool invertResult = false>
 }
 
 template<typename T>
+requires CanPerformAdd<T>
 [[nodiscard]] constexpr T addOperation(T a, T b) noexcept {
     return a + b;
 }
 
 template<typename T>
+requires CanPerformSubtract<T>
 [[nodiscard]] constexpr T subOperation(T a, T b) noexcept {
     return a - b;
 }
 
 template<typename T>
+requires CanPerformMultiply<T>
 [[nodiscard]] constexpr T multiplyOperation(T a, T b) noexcept {
     return a * b;
 }
@@ -218,8 +246,8 @@ template<Ordinal C, Ordinal NotC>
 constexpr Ordinal computeNextFrame(Ordinal base) noexcept {
     return (base + C) & NotC;
 }
-
 template<typename Q>
+requires Is960Comparable<Q>
 static constexpr ByteOrdinal performCompare(Q src1, Q src2) noexcept {
     if (src1 < src2) {
         return 0b100;
@@ -249,6 +277,13 @@ static constexpr bool isEqual(Q src1, Q src2) noexcept {
 static_assert(isEqual<Ordinal>(0, 0));
 static_assert(isEqual<Integer>(0, 0));
 static_assert(isEqual<Integer>(-1, -1));
+template<typename Q>
+static constexpr bool isNotEqual(Q src1, Q src2) noexcept {
+    return (performCompare<Q>(src1, src2) & 0b010) == 0;
+}
+static_assert(isNotEqual<Ordinal>(0, 1));
+static_assert(isNotEqual<Integer>(0, 2));
+static_assert(!isNotEqual<Integer>(-1, -1));
 
 template<typename Q>
 static constexpr bool isGreaterThan(Q src1, Q src2) noexcept {
