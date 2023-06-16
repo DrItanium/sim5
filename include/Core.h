@@ -322,6 +322,8 @@ union Register {
         BackingUnionType unused2 : 4;
         BackingUnionType baseAddress : 20;
     } pageTableEntry;
+    PortFlags portFlags;
+    /// @todo add support for external IAC processing
     [[nodiscard]] constexpr auto getConditionCode() const noexcept { return arith.conditionCode; }
     void setPriority(Ordinal value) noexcept { processControls.priority = value; }
     [[nodiscard]] constexpr ByteOrdinal getPriority() const noexcept { return processControls.priority; }
