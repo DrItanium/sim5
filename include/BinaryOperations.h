@@ -24,9 +24,10 @@
 #ifndef SIM5_BINARY_OPERATIONS_H__
 #define SIM5_BINARY_OPERATIONS_H__
 
-#include <bit>
 #include "Types.h"
+#include <bit>
 #include <cmath>
+#include <concepts>
 template<typename T>
 concept CanPerformAdd = requires (T a, T b) {
     a + b; // can add two things together
@@ -249,7 +250,7 @@ constexpr Ordinal computeNextFrame(Ordinal base) noexcept {
 }
 template<typename Q>
 requires Is960Comparable<Q>
-static constexpr ByteOrdinal performCompare(Q src1, Q src2) noexcept {
+constexpr ByteOrdinal performCompare(Q src1, Q src2) noexcept {
     if constexpr (std::is_floating_point_v<Q>) {
         // unordered checks, one or both are NaN
         if (std::isnan(src1) || std::isnan(src2)) {
@@ -272,20 +273,20 @@ static_assert(performCompare<Integer>(0, -1) == 0b001);
 static_assert(performCompare<Ordinal>(20, 10) == 0b001);
 
 template<typename Q>
-static constexpr bool isLessThan(Q src1, Q src2) noexcept {
+constexpr bool isLessThan(Q src1, Q src2) noexcept {
     return performCompare<Q>(src1, src2) == 0b100;
 }
 static_assert(isLessThan<Ordinal>(0u, 1u));
 static_assert(isLessThan<Integer>(-1, 0));
 template<typename Q>
-static constexpr bool isEqual(Q src1, Q src2) noexcept {
+constexpr bool isEqual(Q src1, Q src2) noexcept {
     return performCompare<Q>(src1, src2) == 0b010;
 }
 static_assert(isEqual<Ordinal>(0, 0));
 static_assert(isEqual<Integer>(0, 0));
 static_assert(isEqual<Integer>(-1, -1));
 template<typename Q>
-static constexpr bool isNotEqual(Q src1, Q src2) noexcept {
+constexpr bool isNotEqual(Q src1, Q src2) noexcept {
     return (performCompare<Q>(src1, src2) & 0b010) == 0;
 }
 static_assert(isNotEqual<Ordinal>(0, 1));
@@ -293,7 +294,7 @@ static_assert(isNotEqual<Integer>(0, 2));
 static_assert(!isNotEqual<Integer>(-1, -1));
 
 template<typename Q>
-static constexpr bool isGreaterThan(Q src1, Q src2) noexcept {
+constexpr bool isGreaterThan(Q src1, Q src2) noexcept {
     return performCompare<Q>(src1, src2) == 0b001;
 }
 
@@ -301,7 +302,7 @@ static_assert(isGreaterThan<Ordinal>(20, 10));
 static_assert(isGreaterThan<Integer>(0, -1));
 
 template<typename Q>
-static constexpr bool isGreaterThanOrEqualTo(Q src1, Q src2) noexcept {
+constexpr bool isGreaterThanOrEqualTo(Q src1, Q src2) noexcept {
     auto value = performCompare<Q>(src1, src2);
     return (value & 0b011) != 0;
 }
@@ -313,7 +314,7 @@ static_assert(isGreaterThanOrEqualTo<Integer>(0, 0));
 static_assert(isGreaterThanOrEqualTo<Integer>(-1, -1));
 
 template<typename Q>
-static constexpr bool isLessThanOrEqualTo(Q src1, Q src2) noexcept {
+constexpr bool isLessThanOrEqualTo(Q src1, Q src2) noexcept {
     auto value = performCompare<Q>(src1, src2);
     return (value & 0b110) != 0;
 }
@@ -325,10 +326,11 @@ static_assert(isLessThanOrEqualTo<Integer>(-1, -1));
 static_assert(isLessThanOrEqualTo<Real>(1.0, 2.0));
 
 template<typename Q>
-static constexpr bool isUnordered(Q src1, Q src2) noexcept {
+constexpr bool isUnordered(Q src1, Q src2) noexcept {
     return performCompare<Q>(src1, src2) == 0b000;
 }
 static_assert(!isUnordered<Ordinal>(0, 0));
 static_assert(!isUnordered<Real>(0, 0));
 static_assert(isUnordered<Real>(NAN, 0));
+
 #endif // end SIM5_BINARY_OPERATIONS_H__
