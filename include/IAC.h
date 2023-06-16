@@ -28,6 +28,7 @@
 namespace iac {
 struct Message {
     explicit Message(uint32_t w0, uint32_t w1, uint32_t w2, uint32_t w3) noexcept : messageType(w0 >> 24), field1(w0 >> 16), field2(w0), field3(w1), field4(w2), field5(w3) { }
+    explicit Message(QuadOrdinal value) noexcept : Message(static_cast<uint32_t>(value), static_cast<uint32_t>(value >> 32), static_cast<uint32_t>(value >> 64), static_cast<uint32_t>(value >> 96)) {}
     uint8_t messageType;
     uint8_t field1;
     uint16_t field2;
