@@ -112,8 +112,8 @@ Core::condwait(SegmentSelector src) noexcept {
 
 void
 Core::inspacc(Ordinal src, Register &dest) noexcept {
-   /// @todo implement
-   unimplementedFault();
+    /// @todo implement
+    unimplementedFault();
 }
 void
 Core::ldphy(Address address, Register& dest) noexcept {
@@ -152,7 +152,7 @@ Core::sendserv(SegmentSelector src) noexcept {
 }
 void
 Core::schedprcs(SegmentSelector src) noexcept {
-   unimplementedFault();
+    unimplementedFault();
 }
 
 void
