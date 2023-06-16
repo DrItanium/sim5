@@ -87,10 +87,6 @@ void
 Core::deassertFailureState() noexcept {
 }
 
-void
-Core::purgeInstructionCache() noexcept {
-    ///@todo implement when we have an instruction cache!
-}
 
 namespace {
 constexpr uint8_t getOffset32(Address input) noexcept { return (input >> 2) & 0b11; }

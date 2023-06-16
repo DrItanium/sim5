@@ -1485,6 +1485,8 @@ class Core {
     private:
         void stib(Integer value, Address address);
         void stis(Integer value, Address address);
+        void ldib(Address address, Register& dest);
+        void ldis(Address address, Register& dest);
     private:
         Ordinal systemAddressTableBase_ = 0;
         Ordinal prcbAddress_ = 0;

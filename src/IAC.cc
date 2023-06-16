@@ -77,3 +77,7 @@ Core::storeSystemBase(Ordinal destinationAddress) noexcept {
     store(destinationAddress+4, prcbAddress_, TreatAsOrdinal{});
 }
 
+void
+Core::purgeInstructionCache() noexcept {
+
+}

@@ -980,10 +980,10 @@ Core::processInstruction(Opcodes opcode, Register& srcDest, Address effectiveAdd
             srcDest.setValue<Ordinal>(load(effectiveAddress, TreatAs<ShortOrdinal>{}));
             break;
         case Opcodes::ldib:
-            srcDest.setValue<Integer>(load(effectiveAddress, TreatAs<ByteInteger>{}));
+            ldib(effectiveAddress, srcDest);
             break;
         case Opcodes::ldis:
-            srcDest.setValue<Integer>(load(effectiveAddress, TreatAs<ShortInteger>{}));
+            ldis(effectiveAddress, srcDest);
             break;
         case Opcodes::ldl:
             ldl(effectiveAddress, getGPR(instruction_.mem.srcDest, TreatAsLongRegister{}));
@@ -1410,7 +1410,6 @@ void
 Core::syncf() noexcept {
     // Wait for all faults to be generated that are associated with any prior
     // uncompleted instructions
-    /// @todo implement if it makes sense since we don't have a pipeline
 }
 
 
@@ -1450,4 +1449,14 @@ Core::stis(Integer value, Address address) {
     } else {
         store(address, static_cast<ShortInteger>(value), TreatAsShortInteger{});
     }
+}
+
+void
+Core::ldib(Address address, Register &dest) {
+    dest.setValue<Integer>(load(address, TreatAsByteInteger{}));
+}
+
+void
+Core::ldis(Address address, Register &dest) {
+    dest.setValue<Integer>(load(address, TreatAsShortInteger{}));
 }
