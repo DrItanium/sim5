@@ -239,10 +239,6 @@ struct LargeIntPackage {
     static_assert(B <= 128, "Cannot accept bit count greater than 128");
     static_assert(B > 0, "Bitwidth of zero is not allowed!");
     constexpr LargeIntPackage(BackingStore backing) : value_(backing) { }
-    constexpr LargeIntPackage(int64_t backing) : value_(backing) { }
-    constexpr LargeIntPackage(int32_t backing) : value_(backing) { }
-    constexpr LargeIntPackage(int16_t backing) : value_(backing) { }
-    constexpr LargeIntPackage(int8_t backing) : value_(backing) { }
     constexpr LargeIntPackage(const Self& other) : value_(other.value_) { }
     constexpr LargeIntPackage(Self&& other) : value_(other.value_) { }
     auto operator<=>(const LargeIntPackage<B>& other) const noexcept = default;
@@ -256,10 +252,6 @@ struct LargeUIntPackage {
     static_assert(B <= 128, "Cannot accept bit count greater than 128");
     static_assert(B > 0, "Bitwidth of zero is not allowed!");
     constexpr LargeUIntPackage(BackingStore backing) : value_(backing) { }
-    constexpr LargeUIntPackage(uint64_t backing) : value_(backing) { }
-    constexpr LargeUIntPackage(uint32_t backing) : value_(backing) { }
-    constexpr LargeUIntPackage(uint16_t backing) : value_(backing) { }
-    constexpr LargeUIntPackage(uint8_t backing) : value_(backing) { }
     constexpr LargeUIntPackage(const Self& other) : value_(other.value_) { }
     constexpr LargeUIntPackage(Self&& other) : value_(other.value_) { }
     auto operator<=>(const LargeUIntPackage<B>& other) const noexcept = default;
@@ -273,5 +265,7 @@ using TripleOrdinal = uint96_t;
 using TripleInteger = int96_t;
 using QuadOrdinal = uint128_t;
 using QuadInteger = int128_t;
+static_assert(TripleOrdinal{0} != TripleOrdinal{1});
+static_assert(TripleInteger{0} != TripleInteger{1});
 
 #endif // end SIM5_TYPES_H__
