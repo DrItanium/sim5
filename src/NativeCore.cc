@@ -470,6 +470,8 @@ Core::load(Address address, TreatAsQuadOrdinal) const noexcept {
     if (isAlignedToQuadBoundaries(address)) {
         return getCell(address).getValue(address, TreatAsQuadOrdinal{});
     } else {
+        // unaligned accesses need to be handled differently to make sure that we do a _wraparound_ instead
+        // of reading into unowned memory.
         auto lowest = static_cast<QuadOrdinal>(load(address, TreatAsOrdinal{}));
         auto lower = static_cast<QuadOrdinal>(load(address + 4, TreatAsOrdinal{})) << 32;
         auto higher = static_cast<QuadOrdinal>(load(address + 8, TreatAsOrdinal{})) << 64;
