@@ -232,33 +232,101 @@ enum class ArchitectureLevel : uint8_t {
 };
 using int128_t = signed __int128;
 using uint128_t = unsigned __int128;
-template<uint8_t B>
-struct LargeIntPackage {
-    using BackingStore = int128_t;
-    using Self = LargeIntPackage<B>;
+template<typename T, uint8_t B>
+struct LargeNumberPackage {
+    using BackingStore = T;
+    using Self = LargeNumberPackage<BackingStore, B>;
     static_assert(B <= 128, "Cannot accept bit count greater than 128");
     static_assert(B > 0, "Bitwidth of zero is not allowed!");
-    constexpr LargeIntPackage(BackingStore backing) : value_(backing) { }
-    constexpr LargeIntPackage(const Self& other) : value_(other.value_) { }
-    constexpr LargeIntPackage(Self&& other) : value_(other.value_) { }
-    auto operator<=>(const LargeIntPackage<B>& other) const noexcept = default;
+    constexpr LargeNumberPackage(BackingStore backing) : value_(backing) { }
+    constexpr LargeNumberPackage(const Self& other) : value_(other.value_) { }
+    constexpr LargeNumberPackage(Self&& other) : value_(other.value_) { }
+    auto operator<=>(const Self& other) const noexcept = default;
+    Self& operator+=(const Self& other) {
+        value_ += other.value_;
+        return *this;
+    }
+    friend Self operator+(Self lhs, const Self& rhs) {
+        lhs += rhs;
+        return lhs;
+    }
+    Self& operator-=(const Self& other) {
+        value_ -= other.value_;
+        return *this;
+    }
+    friend Self operator-(Self lhs, const Self& rhs) {
+        lhs -= rhs;
+        return lhs;
+    }
+    Self& operator*=(const Self& other) {
+        value_ *= other.value_;
+        return *this;
+    }
+    friend Self operator*(Self lhs, const Self& rhs) {
+        lhs *= rhs;
+        return lhs;
+    }
+    Self& operator%=(const Self& other) {
+        value_ %= other.value_;
+        return *this;
+    }
+    friend Self operator%(Self lhs, const Self& rhs) {
+        lhs %= rhs;
+        return lhs;
+    }
+    Self& operator/=(const Self& other) {
+        value_ /= other.value_;
+        return *this;
+    }
+    friend Self operator/(Self lhs, const Self& rhs) {
+        lhs /= rhs;
+        return lhs;
+    }
+    Self& operator&=(const Self& other) {
+        value_ &= other.value_;
+        return *this;
+    }
+    friend Self operator&(Self lhs, const Self& rhs) {
+        lhs &= rhs;
+        return lhs;
+    }
+    Self& operator|=(const Self& other) {
+        value_ &= other.value_;
+        return *this;
+    }
+    friend Self operator|(Self lhs, const Self& rhs) {
+        lhs &= rhs;
+        return lhs;
+    }
+    Self& operator++() {
+        // prefix
+        ++value_;
+        return *this;
+    }
+    Self operator++(int) {
+        // postfix
+        Self old = *this;
+        operator++();
+        return old;
+    }
+    Self& operator--() {
+        // prefix
+        --value_;
+        return *this;
+    }
+    Self operator--(int) {
+        // postfix
+        Self old = *this;
+        operator--();
+        return old;
+    }
 private:
     BackingStore value_ : B;
 };
 template<uint8_t B>
-struct LargeUIntPackage {
-    using BackingStore = uint128_t;
-    using Self = LargeUIntPackage<B>;
-    static_assert(B <= 128, "Cannot accept bit count greater than 128");
-    static_assert(B > 0, "Bitwidth of zero is not allowed!");
-    constexpr LargeUIntPackage(BackingStore backing) : value_(backing) { }
-    constexpr LargeUIntPackage(const Self& other) : value_(other.value_) { }
-    constexpr LargeUIntPackage(Self&& other) : value_(other.value_) { }
-    auto operator<=>(const LargeUIntPackage<B>& other) const noexcept = default;
-private:
-    BackingStore value_ : B;
-};
-
+using LargeIntPackage = LargeNumberPackage<int128_t, B>;
+template<uint8_t B>
+using LargeUIntPackage = LargeNumberPackage<uint128_t, B>;
 using int96_t = LargeIntPackage<96>;
 using uint96_t = LargeUIntPackage<96>;
 using TripleOrdinal = uint96_t;
@@ -271,5 +339,10 @@ using QuadInteger = int128_t;
 static_assert(QuadOrdinal{0} != QuadOrdinal{1});
 static_assert(QuadInteger{0} != QuadInteger{1});
 static_assert(QuadInteger{0} > QuadInteger{-1});
+
+using TreatAsTripleInteger = TreatAs<TripleInteger>;
+using TreatAsTripleOrdinal = TreatAs<TripleOrdinal>;
+using TreatAsQuadInteger = TreatAs<QuadInteger>;
+using TreatAsQuadOrdinal = TreatAs<QuadOrdinal>;
 
 #endif // end SIM5_TYPES_H__
