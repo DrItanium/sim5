@@ -1433,7 +1433,6 @@ private: // protected extensions instructions
     void movstr(Ordinal destAddress, Ordinal srcAddress, Ordinal len) noexcept;
     void movqstr(Ordinal destAddress, Ordinal srcAddress, Ordinal len) noexcept;
     void fill(Ordinal dest, Ordinal value, Ordinal len) noexcept;
-private: // virtual memory routines
 private: // interrupt related
     Address getInterruptTableBaseAddress() const;
     void postInterrupt(InterruptVector vector);
