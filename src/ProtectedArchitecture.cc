@@ -174,7 +174,9 @@ Core::translateToPhysicalAddress(Address virtualAddress) noexcept {
                 currentSelector = getRegion3SegmentSelector();
                 break;
         }
-        return getSegmentBaseAddress(getDescriptor(currentSelector));
+        /// @todo eventually improve this!
+
+        return loadSegmentDescriptor(currentSelector).computePhysicalAddress(virtualAddress);
     } else {
         // physical address mode
         return virtualAddress;

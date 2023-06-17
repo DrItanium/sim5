@@ -1524,8 +1524,6 @@ private: // mmu
         return load<Ordinal>(processControlBlockBaseAddress_.getValue<Ordinal>() + offset);
     }
     Address translateToPhysicalAddress(Address virtualAddress) noexcept;
-    SegmentDescriptor getDescriptor(SegmentSelector ss) noexcept;
-    Address getSegmentBaseAddress(const SegmentDescriptor& descriptor) const noexcept;
     Register getProcessControls() const noexcept { return Register(loadFromProcessControlBlock<20>()); }
     bool inVirtualMemoryMode() const noexcept { return getProcessControls().inVirtualAddressingMode(); }
     SegmentSelector getRegion0SegmentSelector() const noexcept { return loadFromProcessControlBlock<48>(); }
