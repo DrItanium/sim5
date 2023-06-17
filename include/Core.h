@@ -1524,7 +1524,6 @@ private: // mmu
     }
     Address translateToPhysicalAddress(Address virtualAddress) noexcept;
     Register getProcessControls() const noexcept { return Register(loadFromProcessControlBlock<20>()); }
-    bool inVirtualMemoryMode() const noexcept { return getProcessControls().inVirtualAddressingMode(); }
     SegmentSelector getRegion0SegmentSelector() const noexcept { return loadFromProcessControlBlock<48>(); }
     SegmentSelector getRegion1SegmentSelector() const noexcept { return loadFromProcessControlBlock<52>(); }
     SegmentSelector getRegion2SegmentSelector() const noexcept { return loadFromProcessControlBlock<56>(); }
@@ -1540,7 +1539,15 @@ private: // mmu
     Ordinal getProcessReceiveMessage() const noexcept { return loadFromProcessControlBlock<8>(); }
     SegmentSelector getDispatchPortSS() const noexcept { return loadFromProcessControlBlock<12>(); }
     Ordinal getResidualTimeSlice() const noexcept { return residualTimeSlice_.getValue<Ordinal>(); }
-
+    bool inVirtualMemoryMode() const noexcept { return getProcessControls().inVirtualAddressingMode(); }
+    ByteOrdinal getProcessPriority() const noexcept { return getProcessControls().processControls.priority; }
+    bool processIsBlocked() const noexcept { return getProcessControls().processControls.state == 0; }
+    bool processIsExecuting() const noexcept { return getProcessControls().processControls.state == 0; }
+    bool processIsReady() const noexcept { return getProcessControls().processControls.state == 0; }
+    bool processIsInterrupted() const noexcept { return getProcessControls().processControls.state == 0b01; }
+    bool processIsInUserMode() const noexcept { return getProcessControls().processControls.executionMode == 0; }
+    bool processIsInSupervisorMode() const noexcept { return getProcessControls().processControls.executionMode != 0; }
+    void saveGlobalsAndFloatingPointRegsToPCB();
 private:
     void stib(Integer value, Address address);
     void stis(Integer value, Address address);
