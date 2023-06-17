@@ -134,13 +134,17 @@ Core::zeroDivideFault() {
 
 void
 Core::integerOverflowFault() {
-    FaultRecord record((Ordinal)pc_,
-                       (Ordinal)ac_,
-                       IntegerOverflowFault,
-                       (Ordinal)ip_);
-    saveReturnAddress(RIPIndex);
-    // saved ip will be the next instruction
-    generateFault(record);
+    if (ac_.arith.integerOverflowMask == 0) {
+        FaultRecord record((Ordinal) pc_,
+                           (Ordinal) ac_,
+                           IntegerOverflowFault,
+                           (Ordinal) ip_);
+        saveReturnAddress(RIPIndex);
+        // saved ip will be the next instruction
+        generateFault(record);
+    } else {
+        ac_.arith.integerOverflowFlag = 1;
+    }
 }
 
 void
