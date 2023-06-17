@@ -305,6 +305,8 @@ union Register {
         BackingUnionType interimPriority : 5;
         BackingUnionType rest : 11;
     } processorControls;
+    [[nodiscard]] constexpr bool inPhysicalAddressingMode() const noexcept { return !processorControls.addressingMode; }
+    [[nodiscard]] constexpr bool inVirtualAddressingMode() const noexcept { return processorControls.addressingMode; }
     struct {
         BackingUnionType v : 1;
         BackingUnionType pageRights : 2;
@@ -1385,7 +1387,6 @@ private:
     [[nodiscard]] Ordinal getDispatchPortSegmentSelector() const noexcept { return getFromPRCB<16>(); }
     [[nodiscard]] Address getInterruptTablePointer() const noexcept { return getFromPRCB<20>(); }
     [[nodiscard]] Address getInterruptStackAddress() const noexcept { return getFromPRCB<24>(); }
-    [[nodiscard]] Address getRegion3SegmentSelector() const noexcept { return getFromPRCB<32>(); }
     [[nodiscard]] Address getSystemProcedureTableSegmentSelector() const noexcept { return getFromPRCB<36>(); }
     [[nodiscard]] Address getFaultTableBaseAddress() const noexcept { return getFromPRCB<40>(); }
 private: // system address table / system procedure table
@@ -1423,7 +1424,7 @@ private: // protected extensions instructions
     void saveprcs() noexcept;
     void resumprcs(SegmentSelector ss) noexcept;
     void receive(SegmentSelector src, Register& dest) noexcept;
-    void ldtime(Register& dest) noexcept;
+    void ldtime(LongRegister& dest) noexcept;
     void ldphy(Address address, Register& dest) noexcept;
     void inspacc(Ordinal src, Register& dest) noexcept;
     void condwait(SegmentSelector src) noexcept;
@@ -1432,6 +1433,7 @@ private: // protected extensions instructions
     void movstr(Ordinal destAddress, Ordinal srcAddress, Ordinal len) noexcept;
     void movqstr(Ordinal destAddress, Ordinal srcAddress, Ordinal len) noexcept;
     void fill(Ordinal dest, Ordinal value, Ordinal len) noexcept;
+private: // virtual memory routines
 private: // interrupt related
     Address getInterruptTableBaseAddress() const;
     void postInterrupt(InterruptVector vector);
@@ -1515,11 +1517,33 @@ private:
     void bx(Address effectiveAddress);
     void bal(Integer displacement);
 private:
-    Ordinal getElapsedExecutionTime() const noexcept { return executionTime_.getValue<Ordinal>(); }
-    void setElapsedExecutionTime(Ordinal value) noexcept { executionTime_.setValue<Ordinal>(value); }
+private: // mmu
+    template<uint8_t offset>
+    requires (offset <= 232)
+    Ordinal loadFromProcessControlBlock() const noexcept {
+        return load<Ordinal>(processControlBlockBaseAddress_.getValue<Ordinal>() + offset);
+    }
+    Address translateToPhysicalAddress(Address virtualAddress) noexcept;
+    SegmentDescriptor getDescriptor(SegmentSelector ss) noexcept;
+    Address getSegmentBaseAddress(const SegmentDescriptor& descriptor) const noexcept;
+    Register getProcessControls() const noexcept { return Register(loadFromProcessControlBlock<20>()); }
+    bool inVirtualMemoryMode() const noexcept { return getProcessControls().inVirtualAddressingMode(); }
+    SegmentSelector getRegion0SegmentSelector() const noexcept { return loadFromProcessControlBlock<48>(); }
+    SegmentSelector getRegion1SegmentSelector() const noexcept { return loadFromProcessControlBlock<52>(); }
+    SegmentSelector getRegion2SegmentSelector() const noexcept { return loadFromProcessControlBlock<56>(); }
+    SegmentSelector getRegion3SegmentSelector() const noexcept { return getFromPRCB<32>(); }
+    Ordinal getProcessArithmeticControls() const noexcept { return getFromPRCB<60>();}
+    Ordinal getProcessTraceControls() const noexcept { return getFromPRCB<28>();}
+    Ordinal getProcessNextTimeSlice() const noexcept { return getFromPRCB<68>(); }
+    ByteOrdinal getProcessLock() const noexcept { return static_cast<ByteOrdinal>(loadFromProcessControlBlock<24>()); }
+    Ordinal getProcessNotice() const noexcept { return (loadFromProcessControlBlock<24>() >> 8); }
+    Ordinal getProcessResidualTimeSlice() const noexcept { return loadFromProcessControlBlock<16>(); }
+    LongOrdinal getProcessExecutionTime()  const noexcept { return load<LongOrdinal>(processControlBlockBaseAddress_.getValue<Address>() + 72); }
+    LongOrdinal getProcessQueueRecord()  const noexcept { return load<LongOrdinal>(processControlBlockBaseAddress_.getValue<Address>()); }
+    Ordinal getProcessReceiveMessage() const noexcept { return loadFromProcessControlBlock<8>(); }
+    SegmentSelector getDispatchPortSS() const noexcept { return loadFromProcessControlBlock<12>(); }
     Ordinal getResidualTimeSlice() const noexcept { return residualTimeSlice_.getValue<Ordinal>(); }
-    void setResidualTimeSlice(Ordinal value) noexcept { residualTimeSlice_.setValue<Ordinal>(value); }
-    Address translateToPhysicalAddress(Address virtualAddress) const noexcept;
+
 private:
     void stib(Integer value, Address address);
     void stis(Integer value, Address address);
@@ -1547,7 +1571,7 @@ private:
     Address breakpoint1_ = 0;
     bool breakpoint1Active_ = false;
     // protected architecture extensions
-    Register executionTime_;
+    Register processControlBlockBaseAddress_;
     Register residualTimeSlice_;
 };
 

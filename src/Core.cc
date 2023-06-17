@@ -1283,7 +1283,7 @@ Core::processInstruction(Opcodes opcode, Register& regDest, const Register& src1
             fill(static_cast<Ordinal>(src1), static_cast<Ordinal>(src2), static_cast<Ordinal>(regDest));
             break;
         case Opcodes::ldtime:
-            ldtime(regDest);
+            ldtime(getGPR(instruction_.reg.srcDest, TreatAsLongRegister{}));
             break;
         case Opcodes::condwait:
             condwait(static_cast<Ordinal>(src1));

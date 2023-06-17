@@ -100,8 +100,8 @@ Core::fill(Ordinal dest, Ordinal value, Ordinal len) noexcept {
 
 }
 void
-Core::ldtime(Register &dest) noexcept {
-    dest.setValue(getElapsedExecutionTime() - getResidualTimeSlice());
+Core::ldtime(LongRegister &dest) noexcept {
+    dest.setValue(getProcessExecutionTime() - getResidualTimeSlice());
 }
 
 void
@@ -124,11 +124,6 @@ Core::wait(SegmentSelector src) noexcept {
     unimplementedFault();
 }
 
-Address
-Core::translateToPhysicalAddress(Address virtualAddress) const noexcept {
-    /// @todo implement properly, right now it is physical to physical
-    return virtualAddress;
-}
 void
 Core::condrec(SegmentSelector src, Register &dest) noexcept {
     unimplementedFault();
@@ -159,3 +154,30 @@ void
 Core::receive(SegmentSelector src, Register &dest) noexcept {
     unimplementedFault();
 }
+
+/// MMU related stuff
+Address
+Core::translateToPhysicalAddress(Address virtualAddress) noexcept {
+    if (inVirtualMemoryMode()) {
+        SegmentSelector currentSelector = 0;
+        switch ((virtualAddress >> 30 ) & 0b11) {
+            case 0b00:
+                currentSelector = getRegion0SegmentSelector();
+                break;
+            case 0b01:
+                currentSelector = getRegion1SegmentSelector();
+                break;
+            case 0b10:
+                currentSelector = getRegion2SegmentSelector();
+                break;
+            case 0b11:
+                currentSelector = getRegion3SegmentSelector();
+                break;
+        }
+        return getSegmentBaseAddress(getDescriptor(currentSelector));
+    } else {
+        // physical address mode
+        return virtualAddress;
+    }
+}
+
