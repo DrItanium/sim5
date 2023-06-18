@@ -390,8 +390,7 @@ Core::faultGeneric() noexcept {
 }
 void
 Core::processInstruction(const COBRInstruction& cobr) {
-    Register& src2 = cobr.getS2() ? getSFR(cobr.getSrc2()) : getGPR(cobr.getSrc2());
-    if (cobr.getM1()) {
+    if (auto& src2 = getSrc2Register(cobr); cobr.getM1()) {
         auto src1Value = static_cast<uint8_t>(cobr.getSrc1());
         processInstruction(cobr.getOpcode(),
                            cobr.getMask(),
@@ -402,10 +401,22 @@ Core::processInstruction(const COBRInstruction& cobr) {
     } else {
         processInstruction(cobr.getOpcode(),
                            cobr.getMask(),
-                           getGPR(cobr.getSrc1()),
+                           getSrc1Register(cobr),
                            src2,
                            static_cast<ShortInteger>(cobr.getDisplacement()),
                            TreatAsCOBR{});
+    }
+}
+Register&
+Core::getSrc1Register(const COBRInstruction& inst) noexcept {
+    return getGPR(inst.getSrc1());
+}
+const Register&
+Core::getSrc2Register(const COBRInstruction& inst) const noexcept {
+    if (inst.getS2()) {
+        return getSFR(inst.getSrc2());
+    } else {
+        return getGPR(inst.getSrc2());
     }
 }
 void

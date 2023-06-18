@@ -873,6 +873,8 @@ private:
     [[nodiscard]] const Register& getSFR(ByteOrdinal index) const noexcept;
     [[nodiscard]] const Register& getSrc1Register(const REGInstruction&) const noexcept;
     [[nodiscard]] const Register& getSrc2Register(const REGInstruction&) const noexcept;
+    [[nodiscard]] Register& getSrc1Register(const COBRInstruction&) noexcept;
+    [[nodiscard]] const Register& getSrc2Register(const COBRInstruction&) const noexcept;
     [[nodiscard]] Ordinal unpackSrc1(const REGInstruction&, ByteOrdinal offset, TreatAsOrdinal) noexcept;
     template<typename Q>
     void moveGPR(ByteOrdinal destIndex, ByteOrdinal srcIndex, std::function<Q(Q)> transform, TreatAs<Q>) noexcept {
