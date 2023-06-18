@@ -212,8 +212,8 @@ Core::computeAddress(const MEMInstruction& inst) noexcept {
 }
 
 void
-Core::ldl(Address effectiveAddress, LongRegister& destination) noexcept {
-    if (!aligned(instruction_.mem.srcDest, TreatAsLongRegister{})) {
+Core::ldl(const MEMInstruction& inst, Address effectiveAddress, LongRegister& destination) noexcept {
+    if (!aligned(inst.getSrcDest(), TreatAsLongRegister{})) {
         invalidOperandFault();
         /// @todo perform an unaligned load into registers
     } else {
@@ -225,8 +225,8 @@ Core::ldl(Address effectiveAddress, LongRegister& destination) noexcept {
 
 
 void
-Core::stl(Address effectiveAddress, const LongRegister& source) noexcept {
-    if (!aligned(instruction_.mem.srcDest, TreatAsLongRegister{})) {
+Core::stl(const MEMInstruction& inst, Address effectiveAddress, const LongRegister& source) noexcept {
+    if (!aligned(inst.getSrcDest(), TreatAsLongRegister{})) {
         invalidOperandFault();
         /// @todo perform an unaligned load into registers
     } else {
@@ -237,8 +237,8 @@ Core::stl(Address effectiveAddress, const LongRegister& source) noexcept {
 }
 
 void
-Core::ldt(Address effectiveAddress, TripleRegister& destination) noexcept {
-    if (!aligned(instruction_.mem.srcDest, TreatAsTripleRegister{})) {
+Core::ldt(const MEMInstruction& inst, Address effectiveAddress, TripleRegister& destination) noexcept {
+    if (!aligned(inst.getSrcDest(), TreatAsTripleRegister{})) {
         invalidOperandFault();
         /// @todo perform an unaligned load into registers
     } else {
@@ -252,8 +252,8 @@ Core::ldt(Address effectiveAddress, TripleRegister& destination) noexcept {
 
 
 void
-Core::stt(Address effectiveAddress, const TripleRegister& source) noexcept {
-    if (!aligned(instruction_.mem.srcDest, TreatAsTripleRegister{})) {
+Core::stt(const MEMInstruction& inst, Address effectiveAddress, const TripleRegister& source) noexcept {
+    if (!aligned(inst.getSrcDest(), TreatAsTripleRegister{})) {
         invalidOperandFault();
     } else {
         // support unaligned accesses
@@ -266,9 +266,9 @@ Core::stt(Address effectiveAddress, const TripleRegister& source) noexcept {
 
 
 void
-Core::ldq(Address effectiveAddress, QuadRegister& destination) noexcept {
+Core::ldq(const MEMInstruction& inst, Address effectiveAddress, QuadRegister& destination) noexcept {
     DEBUG_ENTER_FUNCTION;
-    if (!aligned(instruction_.mem.srcDest, TreatAsQuadRegister{})) {
+    if (!aligned(inst.getSrcDest(), TreatAsQuadRegister{})) {
         invalidOperandFault();
         /// @todo perform an unaligned load into registers
     } else {
@@ -281,9 +281,9 @@ Core::ldq(Address effectiveAddress, QuadRegister& destination) noexcept {
 
 
 void
-Core::stq(Address effectiveAddress, const QuadRegister& source) noexcept {
+Core::stq(const MEMInstruction& inst, Address effectiveAddress, const QuadRegister& source) noexcept {
     DEBUG_ENTER_FUNCTION;
-    if (!aligned(instruction_.mem.srcDest, TreatAsQuadRegister{})) {
+    if (!aligned(inst.getSrcDest(), TreatAsQuadRegister{})) {
         invalidOperandFault();
     } else {
         store(effectiveAddress, source.getValue(TreatAsQuadOrdinal{}), TreatAsQuadOrdinal{});
@@ -419,7 +419,7 @@ void
 Core::processInstruction(const MEMInstruction & inst) {
     if (auto effectiveAddress = computeAddress(inst); effectiveAddress) {
         Register &destination = getGPR(inst.getSrcDest());
-        processInstruction(inst.getOpcode(), destination, *effectiveAddress, TreatAsMEM{});
+        processInstruction(inst, destination, *effectiveAddress, TreatAsMEM{});
     } else {
         invalidOpcodeFault();
     }
@@ -870,8 +870,8 @@ Core::processInstruction(Opcodes opcode, uint8_t mask, Register& src1, const Reg
     }
 }
 void
-Core::processInstruction(Opcodes opcode, Register& srcDest, Address effectiveAddress, TreatAsMEM) noexcept {
-    switch (opcode) {
+Core::processInstruction(const MEMInstruction& inst, Register& srcDest, Address effectiveAddress, TreatAsMEM) noexcept {
+    switch (inst.getOpcode()) {
         case Opcodes::balx:
             balx(srcDest, effectiveAddress);
             break;
@@ -912,22 +912,22 @@ Core::processInstruction(Opcodes opcode, Register& srcDest, Address effectiveAdd
             ldis(effectiveAddress, srcDest);
             break;
         case Opcodes::ldl:
-            ldl(effectiveAddress, getGPR(instruction_.mem.srcDest, TreatAsLongRegister{}));
+            ldl(inst, effectiveAddress, getGPR(inst.getSrcDest(), TreatAsLongRegister{}));
             break;
         case Opcodes::stl:
-            stl(effectiveAddress, getGPR(instruction_.mem.srcDest, TreatAsLongRegister{}));
+            stl(inst, effectiveAddress, getGPR(inst.getSrcDest(), TreatAsLongRegister{}));
             break;
         case Opcodes::ldt:
-            ldt(effectiveAddress, getGPR(instruction_.mem.srcDest, TreatAsTripleRegister{}));
+            ldt(inst, effectiveAddress, getGPR(inst.getSrcDest(), TreatAsTripleRegister{}));
             break;
         case Opcodes::stt:
-            stt(effectiveAddress, getGPR(instruction_.mem.srcDest, TreatAsTripleRegister{}));
+            stt(inst, effectiveAddress, getGPR(inst.getSrcDest(), TreatAsTripleRegister{}));
             break;
         case Opcodes::ldq:
-            ldq(effectiveAddress, getGPR(instruction_.mem.srcDest, TreatAsQuadRegister{}));
+            ldq(inst, effectiveAddress, getGPR(inst.getSrcDest(), TreatAsQuadRegister{}));
             break;
         case Opcodes::stq:
-            stq(effectiveAddress, getGPR(instruction_.mem.srcDest, TreatAsQuadRegister{}));
+            stq(inst, effectiveAddress, getGPR(inst.getSrcDest(), TreatAsQuadRegister{}));
             break;
         case Opcodes::lda:
             srcDest.setValue<Ordinal>(effectiveAddress);

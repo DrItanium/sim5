@@ -135,54 +135,6 @@ union Register {
         return bytes[3];
     }
     struct {
-        Ordinal offset: 12;
-        BackingUnionType selector : 1;
-        BackingUnionType selector2 : 1;
-        BackingUnionType abase : 5;
-        BackingUnionType srcDest : 5;
-        BackingUnionType opcode : 8;
-    } mem;
-    struct {
-        Ordinal offset : 12;
-        BackingUnionType fixed : 1;
-        BackingUnionType action : 1;
-        BackingUnionType abase : 5;
-        BackingUnionType srcDest : 5;
-        BackingUnionType opcode : 8;
-    } mema;
-    struct {
-        BackingUnionType index : 5;
-        BackingUnionType unused : 2;
-        BackingUnionType scale : 3;
-        BackingUnionType modeMinor : 2;
-        BackingUnionType fixed : 1;
-        BackingUnionType group: 1;
-        BackingUnionType abase : 5;
-        BackingUnionType srcDest : 5;
-        BackingUnionType opcode : 8;
-    } memb;
-    struct {
-        BackingUnionType index : 5;
-        BackingUnionType unused : 2;
-        BackingUnionType scale : 3;
-        BackingUnionType registerIndirect : 1;
-        BackingUnionType useIndex : 1;
-        BackingUnionType fixed : 1;
-        BackingUnionType group: 1;
-        BackingUnionType abase : 5;
-        BackingUnionType srcDest : 5;
-        BackingUnionType opcode : 8;
-    } memb_grp2;
-    struct {
-        BackingUnionType index : 5;
-        BackingUnionType unused : 2;
-        BackingUnionType scale : 3;
-        BackingUnionType group: 4;
-        BackingUnionType abase : 5;
-        BackingUnionType srcDest : 5;
-        BackingUnionType opcode : 8;
-    } memb_grp3;
-    struct {
         BackingUnionType conditionCode : 3;
         BackingUnionType arithmeticStatus : 4;
         BackingUnionType unused0 : 1;
@@ -286,7 +238,6 @@ union Register {
     void setPriority(Ordinal value) noexcept { processControls.priority = value; }
     [[nodiscard]] constexpr ByteOrdinal getPriority() const noexcept { return processControls.priority; }
     [[nodiscard]] constexpr bool inSupervisorMode() const noexcept { return processControls.executionMode; }
-    [[nodiscard]] constexpr bool isMEMA() const noexcept { return !mem.selector; }
     void clear() noexcept {
         o = 0;
     }
@@ -1105,12 +1056,12 @@ private:
     void flushreg() noexcept;
     void balx(ByteOrdinal linkRegister, Ordinal branchTo) noexcept;
     void calls(Ordinal value) noexcept;
-    void ldl(Address address, LongRegister& destination) noexcept;
-    void ldq(Address address, QuadRegister& destination) noexcept;
-    void ldt(Address address, TripleRegister& destination) noexcept;
-    void stq(Address address, const QuadRegister& src) noexcept;
-    void stt(Address address, const TripleRegister& src) noexcept;
-    void stl(Address address, const LongRegister& src) noexcept;
+    void ldl(const MEMInstruction&, Address address, LongRegister& destination) noexcept;
+    void ldq(const MEMInstruction&, Address address, QuadRegister& destination) noexcept;
+    void ldt(const MEMInstruction&, Address address, TripleRegister& destination) noexcept;
+    void stq(const MEMInstruction&, Address address, const QuadRegister& src) noexcept;
+    void stt(const MEMInstruction&, Address address, const TripleRegister& src) noexcept;
+    void stl(const MEMInstruction&, Address address, const LongRegister& src) noexcept;
     void ret() noexcept;
     void call(Integer displacement) noexcept;
     void callx(Address effectiveAddress) noexcept;
@@ -1396,7 +1347,7 @@ private:
     void processInstruction(Opcodes opcode, uint8_t mask, uint8_t src1, const Register& src2, int16_t displacement, TreatAsCOBR) noexcept;
     void processInstruction(Opcodes opcode, uint8_t mask, Register& src1, const Register& src2, int16_t displacement, TreatAsCOBR) noexcept;
     void processInstruction(const COBRInstruction& instruction);
-    void processInstruction(Opcodes opcode, Register& srcDest, Address effectiveAddress, TreatAsMEM) noexcept;
+    void processInstruction(const MEMInstruction&, Register& srcDest, Address effectiveAddress, TreatAsMEM) noexcept;
     void processInstruction(const MEMInstruction&);
     void processInstruction(const REGInstruction& inst, Register& srcDest, const Register& src1, const Register& src2, TreatAsREG) noexcept;
     void processInstruction(const REGInstruction&);
