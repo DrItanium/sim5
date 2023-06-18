@@ -316,6 +316,9 @@ union Register {
     constexpr bool operator!=(const Register& other) const noexcept {
         return other.o != o;
     }
+    [[nodiscard]] constexpr Ordinal asBitPosition() const noexcept {
+        return computeBitPosition(bytes[0]);
+    }
 };
 static_assert(sizeof(Register) == sizeof(Ordinal));
 class CTRLInstruction {
@@ -1000,13 +1003,13 @@ private:
         return branchIfBitGeneric<true>(computeBitPosition(bitpos), against, displacement);
     }
     inline void bbc(const Register& bitpos, const Register& against, int16_t displacement) {
-        return branchIfBitGeneric<true>(computeBitPosition(bitpos.bytes[0]), against, displacement);
+        return branchIfBitGeneric<true>(bitpos.asBitPosition(), against, displacement);
     }
     inline void bbs(uint8_t bitpos, const Register& against, int16_t displacement) {
         return branchIfBitGeneric<false>(computeBitPosition(bitpos), against, displacement);
     }
     inline void bbs(const Register& bitpos, const Register& against, int16_t displacement) {
-        return branchIfBitGeneric<false>(computeBitPosition(bitpos.bytes[0]), against, displacement);
+        return branchIfBitGeneric<false>(bitpos.asBitPosition(), against, displacement);
     }
     template<typename Q>
     requires Is960Comparable<Q>
