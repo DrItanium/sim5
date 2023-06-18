@@ -133,12 +133,6 @@ union Register {
     [[nodiscard]] constexpr uint8_t getMajorOpcode() const noexcept {
         return bytes[3];
     }
-    [[nodiscard]] constexpr bool isCTRL() const noexcept {
-        return bytes[3] < 0x20;
-    }
-    [[nodiscard]] constexpr bool isCOBR() const noexcept {
-        return (bytes[3] & 0b1110'0000) == 0b0010'0000;
-    }
     struct {
         Integer aligned : 2;
         Integer important : 30;
@@ -352,11 +346,18 @@ union Register {
         pfp.rt = 0;
     }
     [[nodiscard]] constexpr ByteOrdinal getReturnType() const noexcept { return pfp.rt; }
+    [[nodiscard]] constexpr bool isCTRL() const noexcept {
+        return o < 0x2000'0000;
+        //return getMajorOpcode() < 0x20;
+    }
+    [[nodiscard]] constexpr bool isCOBR() const noexcept {
+        return (getMajorOpcode() & 0b1110'0000) == 0b0010'0000;
+    }
     [[nodiscard]] constexpr bool isMEMFormat() const noexcept {
-        return bytes[3] >= 0x80;
+        return o >= 0x8000'0000;
     }
     [[nodiscard]] constexpr auto isREGFormat() const noexcept {
-        return bytes[3] >= 0x58 && bytes[3] < 0x80;
+        return getMajorOpcode() >= 0x58 && getMajorOpcode() < 0x80;
     }
     [[nodiscard]] constexpr auto getOpcode() const noexcept {
         if (isREGFormat()) {
