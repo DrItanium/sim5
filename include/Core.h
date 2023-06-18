@@ -445,85 +445,7 @@ public:
     [[nodiscard]] constexpr ByteOrdinal getSrc2() const noexcept { return src2; }
     [[nodiscard]] constexpr ByteOrdinal getSrc1() const noexcept { return src1; }
     [[nodiscard]] constexpr ByteOrdinal getSrcDest() const noexcept { return srcDest; }
-    [[nodiscard]] constexpr bool treatSrc1AsLiteral() const noexcept { return getM1() && !getS1(); }
-    [[nodiscard]] constexpr bool treatSrc2AsLiteral() const noexcept { return getM2() && !getS2(); }
-    [[nodiscard]] constexpr bool treatSrc1AsSFR() const noexcept { return !getM1() && getS1(); }
-    [[nodiscard]] constexpr bool treatSrc2AsSFR() const noexcept { return !getM2() && getS2(); }
     [[nodiscard]] constexpr ByteOrdinal getMask() const noexcept { return opcode & 0b111; }
-    [[nodiscard]] constexpr bool treatSrcDestAsLiteral(bool srcOnly) const noexcept { return srcOnly & m3; }
-    [[nodiscard]] constexpr bool treatSrcDestAsSFR(bool dstOnly) const noexcept { return dstOnly & m3; }
-    [[nodiscard]] constexpr Ordinal src1AsLiteral(TreatAsOrdinal) const noexcept { return static_cast<Ordinal>(getSrc1()); }
-    [[nodiscard]] constexpr LongOrdinal src1AsLiteral(TreatAsLongOrdinal) const noexcept { return static_cast<LongOrdinal>(getSrc1()); }
-    [[nodiscard]] constexpr LongReal src1AsLiteral(TreatAsLongReal) const noexcept {
-        switch (getSrc1()) {
-            case 0b10000:
-                return +0.0;
-            case 0b10110:
-                return +1.0;
-            default:
-                return NAN;
-        }
-    }
-    [[nodiscard]] constexpr Real src1AsLiteral(TreatAsReal) const noexcept {
-        switch (getSrc1()) {
-            case 0b10000:
-                return +0.0f;
-            case 0b10110:
-                return +1.0f;
-            default:
-                return NAN;
-        }
-    }
-    [[nodiscard]] constexpr ExtendedReal src1AsLiteral(TreatAsExtendedReal) const noexcept {
-        switch (getSrc1()) {
-            case 0b10000:
-                return +0.0;
-            case 0b10110:
-                return +1.0;
-            default:
-                return NAN;
-        }
-    }
-    template<typename T>
-    [[nodiscard]] constexpr T src1AsLiteral() const noexcept {
-        return src1AsLiteral(TreatAs<T>{});
-    }
-    [[nodiscard]] constexpr LongReal src2AsLiteral(TreatAsLongReal) const noexcept {
-        switch (getSrc2()) {
-            case 0b10000:
-                return +0.0;
-            case 0b10110:
-                return +1.0;
-            default:
-                return NAN;
-        }
-    }
-    [[nodiscard]] constexpr Real src2AsLiteral(TreatAsReal) const noexcept {
-        switch (getSrc2()) {
-            case 0b10000:
-                return +0.0f;
-            case 0b10110:
-                return +1.0f;
-            default:
-                return NAN;
-        }
-    }
-    [[nodiscard]] constexpr ExtendedReal src2AsLiteral(TreatAsExtendedReal) const noexcept {
-        switch (getSrc2()) {
-            case 0b10000:
-                return +0.0;
-            case 0b10110:
-                return +1.0;
-            default:
-                return NAN;
-        }
-    }
-    [[nodiscard]] constexpr Ordinal src2AsLiteral(TreatAsOrdinal) const noexcept { return static_cast<Ordinal>(getSrc2()); }
-    [[nodiscard]] constexpr LongOrdinal src2AsLiteral(TreatAsLongOrdinal) const noexcept { return static_cast<LongOrdinal>(getSrc2()); }
-    template<typename T>
-    [[nodiscard]] constexpr T src2AsLiteral() const noexcept {
-        return src2AsLiteral(TreatAs<T>{});
-    }
 private:
     union {
         Ordinal raw_;
@@ -940,9 +862,9 @@ private:
     [[nodiscard]] Register& getSFR(ByteOrdinal index) noexcept;
     [[nodiscard]] Register& getSFR(ByteOrdinal index, ByteOrdinal offset) noexcept;
     [[nodiscard]] const Register& getSFR(ByteOrdinal index) const noexcept;
-    [[nodiscard]] const Register& getSrc1Register(TreatAsREG) const noexcept;
-    [[nodiscard]] const Register& getSrc2Register(TreatAsREG) const noexcept;
-    [[nodiscard]] Ordinal unpackSrc1(ByteOrdinal offset, TreatAsOrdinal, TreatAsREG) noexcept;
+    [[nodiscard]] const Register& getSrc1Register(const REGInstruction&) const noexcept;
+    [[nodiscard]] const Register& getSrc2Register(const REGInstruction&) const noexcept;
+    [[nodiscard]] Ordinal unpackSrc1(const REGInstruction&, ByteOrdinal offset, TreatAsOrdinal) noexcept;
     template<typename Q>
     void moveGPR(ByteOrdinal destIndex, ByteOrdinal srcIndex, std::function<Q(Q)> transform, TreatAs<Q>) noexcept {
         DEBUG_ENTER_FUNCTION;
@@ -966,7 +888,7 @@ private:
     bool fullConditionCodeCheck() noexcept;
     bool fullConditionCodeCheck(uint8_t mask) noexcept;
     Ordinal computeAddress() noexcept;
-    void performRegisterTransfer(ByteOrdinal mask, ByteOrdinal count) noexcept;
+    void performRegisterTransfer(const REGInstruction&, ByteOrdinal mask, ByteOrdinal count) noexcept;
 private:
     void sendIAC(const iac::Message& msg) noexcept;
     void dispatchInterrupt(uint8_t vector) noexcept;
@@ -1417,7 +1339,8 @@ private:
     void processInstruction(Opcodes opcode, uint8_t mask, Register& src1, const Register& src2, int16_t displacement, TreatAsCOBR) noexcept;
     void processInstruction(const COBRInstruction& instruction);
     void processInstruction(Opcodes opcode, Register& srcDest, Address effectiveAddress, TreatAsMEM) noexcept;
-    void processInstruction(Opcodes opcode, Register& srcDest, const Register& src1, const Register& src2, TreatAsREG) noexcept;
+    void processInstruction(const REGInstruction& inst, Register& srcDest, const Register& src1, const Register& src2, TreatAsREG) noexcept;
+    void processInstruction(const REGInstruction&);
 private:
     void modpc(Register& dest, Ordinal src1o, Ordinal src2o) noexcept;
     void modxc(Register& control, Register& dest, Ordinal src1, Ordinal src2) noexcept;

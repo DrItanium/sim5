@@ -25,39 +25,39 @@
 #include "BinaryOperations.h"
 
 const Register&
-Core::getSrc1Register(TreatAsREG) const noexcept {
-    if (instruction_.reg.m1) {
+Core::getSrc1Register(const REGInstruction& inst) const noexcept {
+    if (auto src1 = inst.getSrc1(); inst.getM1()) {
         /// @todo what to do if s1 is also set?
-        return constants_.get(instruction_.reg.src1);
-    } else if (instruction_.reg.s1) {
-        return getSFR(instruction_.reg.src1);
+        return constants_.get(src1);
+    } else if (inst.getS1()) {
+        return getSFR(src1);
     } else {
-        return getGPR(instruction_.reg.src1);
+        return getGPR(src1);
     }
 }
 
 const Register&
-Core::getSrc2Register(TreatAsREG) const noexcept {
-    if (instruction_.reg.m2) {
+Core::getSrc2Register(const REGInstruction& inst) const noexcept {
+    if (auto src2 = inst.getSrc2(); inst.getM2()) {
         /// @todo what to do if s1 is also set?
-        return constants_.get(instruction_.reg.src2);
-    } else if (instruction_.reg.s2) {
-        return getSFR(instruction_.reg.src2);
+        return constants_.get(src2);
+    } else if (inst.getS2()) {
+        return getSFR(src2);
     } else {
-        return getGPR(instruction_.reg.src2);
+        return getGPR(src2);
     }
 }
 
 
 Ordinal
-Core::unpackSrc1(ByteOrdinal offset, TreatAsOrdinal, TreatAsREG) noexcept {
-    if (instruction_.reg.m1) {
+Core::unpackSrc1(const REGInstruction& inst, ByteOrdinal offset, TreatAsOrdinal) noexcept {
+    if (auto src1 = inst.getSrc1(); inst.getM1()) {
         // literals should always return zero if offset is greater than zero
-        return offset == 0 ? constants_.getValue<Ordinal>(instruction_.reg.src1) : 0;
-    } else if (instruction_.reg.s1) {
-        return getSFR(instruction_.reg.src1, offset).o;
+        return offset == 0 ? constants_.getValue<Ordinal>(src1) : 0;
+    } else if (inst.getS1()) {
+        return static_cast<Ordinal>(getSFR(src1, offset));
     } else {
-        return getGPRValue(instruction_.reg.src1, offset, TreatAsOrdinal{});
+        return getGPRValue(src1, offset, TreatAsOrdinal{});
     }
 }
 

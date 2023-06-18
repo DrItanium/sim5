@@ -371,13 +371,13 @@ Core::stq(Address effectiveAddress, const QuadRegister& source) noexcept {
 
 
 void
-Core::performRegisterTransfer(ByteOrdinal mask, ByteOrdinal count) noexcept {
+Core::performRegisterTransfer(const REGInstruction& inst, ByteOrdinal mask, ByteOrdinal count) noexcept {
     // perform the register transfer first and then check to see if we were
     // offset at all
     for (ByteOrdinal i = 0; i < count; ++i) {
-        setGPR(instruction_.reg.srcDest, i, unpackSrc1(i, TreatAsOrdinal{}, TreatAsREG{}), TreatAsOrdinal{});
+        setGPR(inst.getSrcDest(), i, unpackSrc1(inst, i, TreatAsOrdinal{}), TreatAsOrdinal{});
     }
-    if (((instruction_.reg.srcDest & mask) != 0) || ((instruction_.reg.src1 & mask) != 0)) {
+    if (((inst.getSrcDest() & mask) != 0) || ((inst.getSrc1() & mask) != 0)) {
         nextInstruction();
         invalidOpcodeFault();
     }
@@ -483,6 +483,13 @@ Core::processInstruction(const COBRInstruction& cobr) {
     }
 }
 void
+Core::processInstruction(const REGInstruction & inst) {
+    auto& regDest = getGPR(instruction_.reg.srcDest);
+    const auto& src1 = getSrc1Register(inst);
+    const auto& src2 = getSrc2Register(inst);
+    processInstruction(inst, regDest, src1, src2, TreatAsREG{});
+}
+void
 Core::cycle() noexcept {
     DEBUG_ENTER_FUNCTION;
     DEBUG_LOG_LEVEL(1) {
@@ -503,10 +510,7 @@ Core::cycle() noexcept {
         Register& destination = getGPR(instruction_.reg.srcDest);
         processInstruction(opcode, destination, effectiveAddress, TreatAsMEM{});
     } else if (instruction_.isREGFormat()) {
-        auto& regDest = getGPR(instruction_.reg.srcDest);
-        const auto& src1 = getSrc1Register(TreatAsREG{});
-        const auto& src2 = getSrc2Register(TreatAsREG{});
-        processInstruction(opcode, regDest, src1, src2, TreatAsREG{});
+        processInstruction(REGInstruction{instruction_});
     } else {
         unimplementedFault();
     }
@@ -1001,8 +1005,8 @@ Core::processInstruction(Opcodes opcode, Register& srcDest, Address effectiveAdd
 }
 
 void
-Core::processInstruction(Opcodes opcode, Register& regDest, const Register& src1, const Register& src2, TreatAsREG) noexcept {
-    switch (opcode) {
+Core::processInstruction(const REGInstruction& inst, Register& regDest, const Register& src1, const Register& src2, TreatAsREG) noexcept {
+    switch (inst.getOpcode()) {
         case Opcodes::notbit:
             notbit(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
             break;
@@ -1124,13 +1128,13 @@ Core::processInstruction(Opcodes opcode, Register& regDest, const Register& src1
             regDest.setValue<Ordinal>(static_cast<Ordinal>(src1));
             break;
         case Opcodes::movl:
-            performRegisterTransfer(0b1, 2);
+            performRegisterTransfer(inst, 0b1, 2);
             break;
         case Opcodes::movt:
-            performRegisterTransfer(0b11, 3);
+            performRegisterTransfer(inst, 0b11, 3);
             break;
         case Opcodes::movq:
-            performRegisterTransfer(0b11, 4);
+            performRegisterTransfer(inst, 0b11, 4);
             break;
         case Opcodes::syncf:
             syncf();
