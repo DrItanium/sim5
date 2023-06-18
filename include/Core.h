@@ -440,6 +440,88 @@ private:
         };
     };
 };
+struct MEMInstruction {
+public:
+    enum class AddressingMode : uint8_t {
+        // MEMA
+        AbsoluteOffset = 0b0000,
+        // these are not real but for the sake of simplicity we are describing it this way
+        Reserved0 = 0b0001,
+        Reserved1 = 0b0010,
+        Reserved2 = 0b0011,
+        RegisterIndirect = 0b0100,
+        IPWithDisplacement = 0b0101,
+        Reserved3 = 0b0110,
+        RegisterIndirectWithIndex = 0b0111,
+        RegisterIndirectWithOffset = 0b1000,
+        Reserved4 = 0b1001,
+        Reserved5 = 0b1010,
+        Reserved6 = 0b1011,
+        AbsoluteDisplacement = 0b1100,
+        RegisterIndirectWithDisplacement = 0b1101,
+        IndexWithDisplacement = 0b1110,
+        RegisterIndirectWithIndexAndDisplacement = 0b1111,
+    };
+    static constexpr bool usesOptionalDisplacement(AddressingMode mode) noexcept {
+        switch (mode) {
+            case AddressingMode::IPWithDisplacement:
+            case AddressingMode::AbsoluteDisplacement:
+            case AddressingMode::RegisterIndirectWithDisplacement:
+            case AddressingMode::IndexWithDisplacement:
+            case AddressingMode::RegisterIndirectWithIndexAndDisplacement:
+                return true;
+            default:
+                return false;
+        }
+    }
+    explicit MEMInstruction(const Register& backingStore, Integer displacement) : raw_((Ordinal)backingStore), displacement_(displacement) {}
+    [[nodiscard]] constexpr Ordinal getValue() const noexcept { return raw_; }
+    [[nodiscard]] constexpr Integer getDisplacement() const noexcept { return displacement_; }
+    [[nodiscard]] constexpr Opcodes getOpcode() const noexcept { return static_cast<Opcodes>(generic.opcode); }
+    [[nodiscard]] constexpr bool isMEMA() const noexcept { return discriminant.kind == 0; }
+    [[nodiscard]] constexpr bool isMEMB() const noexcept { return discriminant.kind == 1; }
+    [[nodiscard]] constexpr ByteOrdinal getABase() const noexcept { return generic.abase; }
+    [[nodiscard]] constexpr ByteOrdinal getSrcDest() const noexcept { return generic.srcDest; }
+    [[nodiscard]] constexpr AddressingMode getAddressingMode() const noexcept {
+        return static_cast<AddressingMode>(memb.mode & (isMEMA() ? 0b1100 : 0b1111));
+    }
+    [[nodiscard]] constexpr Ordinal getOffset() const noexcept { return mema.offset; }
+    [[nodiscard]] constexpr ByteOrdinal getIndex() const noexcept { return memb.index; }
+    [[nodiscard]] constexpr ByteOrdinal getScale() const noexcept { return memb.scale; }
+    [[nodiscard]] constexpr bool usesOptionalDisplacement() const noexcept { return usesOptionalDisplacement(getAddressingMode()); }
+private:
+    union {
+        Ordinal raw_;
+        struct {
+            Ordinal dc : 12;
+            Ordinal kind : 1;
+            Ordinal rest : 19;
+        } discriminant;
+        struct {
+            Ordinal dc : 13;
+            BackingUnionType abase : 5;
+            BackingUnionType srcDest : 5;
+            Ordinal opcode : 8;
+        } generic;
+        struct {
+            Ordinal offset : 12;
+            Ordinal mode : 2;
+            Ordinal abase : 5;
+            Ordinal srcDest : 5;
+            Ordinal opcode : 8;
+        } mema;
+        struct {
+            Ordinal index : 5;
+            Ordinal dc : 2;
+            Ordinal scale : 3;
+            Ordinal mode : 4;
+            Ordinal abase : 5;
+            Ordinal srcDest : 5;
+            Ordinal opcode : 8;
+        } memb;
+    };
+    Integer displacement_;
+};
 union LongRegister {
 public:
     LongRegister() = default;
