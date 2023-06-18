@@ -1352,7 +1352,6 @@ private:
     void processInstruction(Opcodes opcode, uint8_t mask, uint8_t src1, const Register& src2, int16_t displacement, TreatAsCOBR) noexcept;
     void processInstruction(Opcodes opcode, uint8_t mask, Register& src1, const Register& src2, int16_t displacement, TreatAsCOBR) noexcept;
     void processInstruction(const COBRInstruction& instruction);
-    void processInstruction(const MEMInstruction&, Register& srcDest, Address effectiveAddress, TreatAsMEM) noexcept;
     void processInstruction(const MEMInstruction&);
     void processInstruction(const REGInstruction& inst, Register& srcDest, const Register& src1, const Register& src2, TreatAsREG) noexcept;
     void processInstruction(const REGInstruction&);

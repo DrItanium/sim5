@@ -428,9 +428,74 @@ Core::processInstruction(const REGInstruction & inst) {
 }
 void
 Core::processInstruction(const MEMInstruction & inst) {
-    if (auto effectiveAddress = computeAddress(inst); effectiveAddress) {
-        Register &destination = getGPR(inst.getSrcDest());
-        processInstruction(inst, destination, *effectiveAddress, TreatAsMEM{});
+    if (auto eao = computeAddress(inst); eao) {
+        Register &srcDest= getGPR(inst.getSrcDest());
+        auto effectiveAddress = *eao;
+        switch (inst.getOpcode()) {
+            case Opcodes::balx:
+                balx(srcDest, effectiveAddress);
+                break;
+            case Opcodes::bx:
+                bx(effectiveAddress);
+                break;
+            case Opcodes::callx:
+                callx(effectiveAddress);
+                break;
+            case Opcodes::st:
+                store(effectiveAddress, srcDest.getValue<Ordinal>(), TreatAs<Ordinal>{});
+                break;
+            case Opcodes::stob:
+                store(effectiveAddress, srcDest.getValue<Ordinal>(), TreatAs<ByteOrdinal>{});
+                break;
+            case Opcodes::stos:
+                store(effectiveAddress, srcDest.getValue<Ordinal>(), TreatAs<ShortOrdinal>{});
+                break;
+            case Opcodes::stib:
+                stib(static_cast<Integer>(srcDest), effectiveAddress);
+                break;
+            case Opcodes::stis:
+                stis(static_cast<Integer>(srcDest), effectiveAddress);
+                break;
+            case Opcodes::ld:
+                srcDest.setValue<Ordinal>(load(effectiveAddress, TreatAsOrdinal{}));
+                break;
+            case Opcodes::ldob:
+                srcDest.setValue<Ordinal>(load(effectiveAddress, TreatAs<ByteOrdinal>{}));
+                break;
+            case Opcodes::ldos:
+                srcDest.setValue<Ordinal>(load(effectiveAddress, TreatAs<ShortOrdinal>{}));
+                break;
+            case Opcodes::ldib:
+                ldib(effectiveAddress, srcDest);
+                break;
+            case Opcodes::ldis:
+                ldis(effectiveAddress, srcDest);
+                break;
+            case Opcodes::ldl:
+                ldl(inst, effectiveAddress, getGPR(inst.getSrcDest(), TreatAsLongRegister{}));
+                break;
+            case Opcodes::stl:
+                stl(inst, effectiveAddress, getGPR(inst.getSrcDest(), TreatAsLongRegister{}));
+                break;
+            case Opcodes::ldt:
+                ldt(inst, effectiveAddress, getGPR(inst.getSrcDest(), TreatAsTripleRegister{}));
+                break;
+            case Opcodes::stt:
+                stt(inst, effectiveAddress, getGPR(inst.getSrcDest(), TreatAsTripleRegister{}));
+                break;
+            case Opcodes::ldq:
+                ldq(inst, effectiveAddress, getGPR(inst.getSrcDest(), TreatAsQuadRegister{}));
+                break;
+            case Opcodes::stq:
+                stq(inst, effectiveAddress, getGPR(inst.getSrcDest(), TreatAsQuadRegister{}));
+                break;
+            case Opcodes::lda:
+                srcDest.setValue<Ordinal>(effectiveAddress);
+                break;
+            default:
+                unimplementedFault();
+                break;
+        }
     } else {
         invalidOpcodeFault();
     }
@@ -874,74 +939,6 @@ Core::processInstruction(Opcodes opcode, uint8_t mask, Register& src1, const Reg
         case Opcodes::cmpible:
         case Opcodes::cmpibo: // always branches
             cmpibGeneric(mask, src1.getValue<Integer>(), src2.getValue<Integer>(), displacement);
-            break;
-        default:
-            unimplementedFault();
-            break;
-    }
-}
-void
-Core::processInstruction(const MEMInstruction& inst, Register& srcDest, Address effectiveAddress, TreatAsMEM) noexcept {
-    switch (inst.getOpcode()) {
-        case Opcodes::balx:
-            balx(srcDest, effectiveAddress);
-            break;
-        case Opcodes::bx:
-            bx(effectiveAddress);
-            break;
-        case Opcodes::callx:
-            callx(effectiveAddress);
-            break;
-        case Opcodes::st:
-            store(effectiveAddress, srcDest.getValue<Ordinal>(), TreatAs<Ordinal>{});
-            break;
-        case Opcodes::stob:
-            store(effectiveAddress, srcDest.getValue<Ordinal>(), TreatAs<ByteOrdinal>{});
-            break;
-        case Opcodes::stos:
-            store(effectiveAddress, srcDest.getValue<Ordinal>(), TreatAs<ShortOrdinal>{});
-            break;
-        case Opcodes::stib:
-            stib(static_cast<Integer>(srcDest), effectiveAddress);
-            break;
-        case Opcodes::stis:
-            stis(static_cast<Integer>(srcDest), effectiveAddress);
-            break;
-        case Opcodes::ld:
-            srcDest.setValue<Ordinal>(load(effectiveAddress, TreatAsOrdinal{}));
-            break;
-        case Opcodes::ldob:
-            srcDest.setValue<Ordinal>(load(effectiveAddress, TreatAs<ByteOrdinal>{}));
-            break;
-        case Opcodes::ldos:
-            srcDest.setValue<Ordinal>(load(effectiveAddress, TreatAs<ShortOrdinal>{}));
-            break;
-        case Opcodes::ldib:
-            ldib(effectiveAddress, srcDest);
-            break;
-        case Opcodes::ldis:
-            ldis(effectiveAddress, srcDest);
-            break;
-        case Opcodes::ldl:
-            ldl(inst, effectiveAddress, getGPR(inst.getSrcDest(), TreatAsLongRegister{}));
-            break;
-        case Opcodes::stl:
-            stl(inst, effectiveAddress, getGPR(inst.getSrcDest(), TreatAsLongRegister{}));
-            break;
-        case Opcodes::ldt:
-            ldt(inst, effectiveAddress, getGPR(inst.getSrcDest(), TreatAsTripleRegister{}));
-            break;
-        case Opcodes::stt:
-            stt(inst, effectiveAddress, getGPR(inst.getSrcDest(), TreatAsTripleRegister{}));
-            break;
-        case Opcodes::ldq:
-            ldq(inst, effectiveAddress, getGPR(inst.getSrcDest(), TreatAsQuadRegister{}));
-            break;
-        case Opcodes::stq:
-            stq(inst, effectiveAddress, getGPR(inst.getSrcDest(), TreatAsQuadRegister{}));
-            break;
-        case Opcodes::lda:
-            srcDest.setValue<Ordinal>(effectiveAddress);
             break;
         default:
             unimplementedFault();
