@@ -133,10 +133,7 @@ union Register {
     [[nodiscard]] constexpr uint8_t getMajorOpcode() const noexcept {
         return bytes[3];
     }
-    struct {
-        Integer aligned : 2;
-        Integer important : 30;
-    } alignedTransfer;
+
     struct {
         BackingUnionType s2 : 1;
         BackingUnionType t : 1;
@@ -299,7 +296,6 @@ union Register {
         BackingUnionType interimPriority : 5;
         BackingUnionType rest : 11;
     } processorControls;
-    [[nodiscard]] constexpr bool inPhysicalAddressingMode() const noexcept { return !processorControls.addressingMode; }
     [[nodiscard]] constexpr bool inVirtualAddressingMode() const noexcept { return processorControls.addressingMode; }
     struct {
         BackingUnionType v : 1;
@@ -323,41 +319,20 @@ union Register {
     void setPriority(Ordinal value) noexcept { processControls.priority = value; }
     [[nodiscard]] constexpr ByteOrdinal getPriority() const noexcept { return processControls.priority; }
     [[nodiscard]] constexpr bool inSupervisorMode() const noexcept { return processControls.executionMode; }
-    [[nodiscard]] constexpr bool inUserMode() const noexcept { return !inSupervisorMode(); }
-    [[nodiscard]] constexpr bool inInterruptedState() const noexcept { return processControls.state != 0; }
-    [[nodiscard]] constexpr bool inExecutingState() const noexcept { return processControls.state == 0; }
-    constexpr bool isMEMA() const noexcept { return !mem.selector; }
-    constexpr bool isMEMB() const noexcept { return mem.selector; }
-    constexpr bool isDoubleWide() const noexcept {
-        return isMEMB() && (memb.group || (memb.modeMinor == 0b01));
-    }
+    [[nodiscard]] constexpr bool isMEMA() const noexcept { return !mem.selector; }
     void clear() noexcept {
         o = 0;
     }
-    constexpr Ordinal getPFPAddress() noexcept {
+    [[nodiscard]] constexpr Ordinal getPFPAddress() noexcept {
         Register copy(o);
         copy.pfpAddress.align = 0;
         return copy.o;
     }
-    void setPFPAddress(Ordinal address) noexcept {
-        o = address;
-        pfp.unused = 0;
-        pfp.p = 0;
-        pfp.rt = 0;
-    }
     [[nodiscard]] constexpr ByteOrdinal getReturnType() const noexcept { return pfp.rt; }
-    [[nodiscard]] constexpr bool isCTRL() const noexcept {
-        return o < 0x2000'0000;
-    }
-    [[nodiscard]] constexpr bool isCOBR() const noexcept {
-        return (o >= 0x2000'0000) && (o < 0x4000'0000);
-    }
-    [[nodiscard]] constexpr bool isMEMFormat() const noexcept {
-        return o >= 0x8000'0000;
-    }
-    [[nodiscard]] constexpr auto isREGFormat() const noexcept {
-        return o >= 0x4000'0000 && o < 0x8000'0000;
-    }
+    [[nodiscard]] constexpr bool isCTRL() const noexcept { return o < 0x2000'0000; }
+    [[nodiscard]] constexpr bool isCOBR() const noexcept { return (o >= 0x2000'0000) && (o < 0x4000'0000); }
+    [[nodiscard]] constexpr bool isMEMFormat() const noexcept { return o >= 0x8000'0000; }
+    [[nodiscard]] constexpr auto isREGFormat() const noexcept { return o >= 0x4000'0000 && o < 0x8000'0000; }
     [[nodiscard]] constexpr auto getOpcode() const noexcept {
         if (isREGFormat()) {
             uint16_t baseValue = static_cast<uint16_t>(getMajorOpcode()) << 4;
@@ -366,7 +341,7 @@ union Register {
             return static_cast<Opcodes>(getMajorOpcode());
         }
     }
-    bool getCarryBit() const noexcept { return arith.conditionCode & 0b010; }
+    [[nodiscard]] constexpr bool getCarryBit() const noexcept { return arith.conditionCode & 0b010; }
     [[nodiscard]] Ordinal modify(Ordinal mask, Ordinal src) noexcept;
     void setValue(Real value, TreatAsReal) noexcept { r = value; }
     void setValue(Ordinal value, TreatAsOrdinal) noexcept {
@@ -433,11 +408,11 @@ union Register {
     constexpr bool operator!=(const Register& other) const noexcept {
         return other.o != o;
     }
-    constexpr auto getDisplacement(TreatAsCTRL) const noexcept {
+    [[nodiscard]] constexpr auto getDisplacement(TreatAsCTRL) const noexcept {
         // clear the lowest two bits since those can be reserved for other things
         return alignTo4ByteBoundaries(ctrl.displacement, TreatAs<Integer>{});
     }
-    constexpr auto getDisplacement(TreatAsCOBR) const noexcept {
+    [[nodiscard]] constexpr auto getDisplacement(TreatAsCOBR) const noexcept {
         // clear the lowest two bits
         return alignTo4ByteBoundaries(cobrDisplacement.displacement, TreatAs<Integer>{});
     }
