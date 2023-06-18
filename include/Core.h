@@ -163,11 +163,6 @@ union Register {
         BackingUnionType opcode : 8;
     } reg;
     struct {
-        /// @todo check the bp and sfr bits eventually
-        Integer displacement : 24;
-        BackingUnionType opcode : 8;
-    } ctrl;
-    struct {
         Ordinal offset: 12;
         BackingUnionType selector : 1;
         BackingUnionType selector2 : 1;
@@ -407,10 +402,6 @@ union Register {
     }
     constexpr bool operator!=(const Register& other) const noexcept {
         return other.o != o;
-    }
-    [[nodiscard]] constexpr auto getDisplacement(TreatAsCTRL) const noexcept {
-        // clear the lowest two bits since those can be reserved for other things
-        return alignTo4ByteBoundaries(ctrl.displacement, TreatAs<Integer>{});
     }
     [[nodiscard]] constexpr auto getDisplacement(TreatAsCOBR) const noexcept {
         // clear the lowest two bits
