@@ -34,7 +34,7 @@
 #include <iostream>
 #include <optional>
 constexpr uint8_t getDebugLoggingLevel() noexcept {
-    return 1;
+    return 0;
 }
 #define DEBUG_LOG_LEVEL(lvl) if constexpr (getDebugLoggingLevel() >= lvl)
 #define DEBUG_ENTER_FUNCTION DEBUG_LOG_LEVEL(6) std::cout << "Entering Function: " << __PRETTY_FUNCTION__ << std::endl
@@ -504,7 +504,7 @@ private:
             Ordinal rest : 19;
         } discriminant;
         struct {
-            Ordinal dc : 13;
+            Ordinal dc : 14;
             BackingUnionType abase : 5;
             BackingUnionType srcDest : 5;
             Ordinal opcode : 8;
