@@ -225,8 +225,8 @@ constexpr Ordinal computeChecksumOffset(Address segmentTableBase, Address prcbBa
 }
 static_assert(computeChecksumOffset(0, 0xb0, 0x6ec) == 0xffff'f864, "checksum offset is broken!");
 template<typename T>
-constexpr Address alignTo4ByteBoundaries(T value, TreatAs<T>) noexcept {
-    constexpr Address Mask = ~(0b11);
+constexpr T alignTo4ByteBoundaries(T value, TreatAs<T>) noexcept {
+    constexpr T Mask = ~(0b11);
     return value & Mask;
 }
 using SegmentSelector = Ordinal;

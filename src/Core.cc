@@ -462,7 +462,26 @@ Core::faultGeneric() noexcept {
         constraintRangeFault();
     }
 }
-
+void
+Core::processInstruction(const COBRInstruction& cobr) {
+    Register& src2 = cobr.getS2() ? getSFR(cobr.getSrc2()) : getGPR(cobr.getSrc2());
+    if (cobr.getM1()) {
+        auto src1Value = static_cast<uint8_t>(cobr.getSrc1());
+        processInstruction(cobr.getOpcode(),
+                           cobr.getMask(),
+                           src1Value,
+                           src2,
+                           static_cast<ShortInteger>(cobr.getDisplacement()),
+                           TreatAsCOBR{});
+    } else {
+        processInstruction(cobr.getOpcode(),
+                           cobr.getMask(),
+                           getGPR(cobr.getSrc1()),
+                           src2,
+                           static_cast<ShortInteger>(cobr.getDisplacement()),
+                           TreatAsCOBR{});
+    }
+}
 void
 Core::cycle() noexcept {
     DEBUG_ENTER_FUNCTION;
@@ -478,23 +497,7 @@ Core::cycle() noexcept {
     if (auto opcode = (Opcodes)instruction_; instruction_.isCTRL()) {
         processInstruction(CTRLInstruction{instruction_});
     } else if (instruction_.isCOBR()) {
-        Register& src2 = instruction_.cobr.s2 ? getSFR(instruction_.cobr.src2) : getGPR(instruction_.cobr.src2);
-        if (instruction_.cobr.m1) {
-            auto src1Value = static_cast<uint8_t>(instruction_.cobr.src1);
-            processInstruction(opcode,
-                               instruction_.getInstructionMask(),
-                               src1Value,
-                               src2,
-                               static_cast<ShortInteger>(instruction_.getDisplacement(TreatAsCOBR{})),
-                               TreatAsCOBR{});
-        } else {
-            processInstruction(opcode,
-                               instruction_.getInstructionMask(),
-                               getGPR(instruction_.cobr.src1),
-                               src2,
-                               static_cast<ShortInteger>(instruction_.getDisplacement(TreatAsCOBR{})),
-                               TreatAsCOBR{});
-        }
+        processInstruction(COBRInstruction{instruction_});
     } else if (instruction_.isMEMFormat()) {
         auto effectiveAddress = computeAddress();
         Register& destination = getGPR(instruction_.reg.srcDest);

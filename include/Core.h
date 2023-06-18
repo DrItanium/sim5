@@ -409,13 +409,14 @@ union Register {
     }
 };
 static_assert(sizeof(Register) == sizeof(Ordinal));
-struct CTRLInstruction {
+class CTRLInstruction {
 public:
     explicit CTRLInstruction(const Register& backingStore) : backingStore_(backingStore.getValue<Ordinal>()) { }
     [[nodiscard]] constexpr Opcodes getOpcode() const noexcept { return static_cast<Opcodes>(opcode); }
     [[nodiscard]] constexpr Integer getDisplacement() const noexcept { return alignTo4ByteBoundaries(displacement, TreatAsInteger{}); }
     [[nodiscard]] constexpr bool predictedTaken() const noexcept { return (displacement & 0b10) != 0; }
     [[nodiscard]] constexpr bool predictedNotTaken() const noexcept { return (displacement & 0b10) == 0; }
+    [[nodiscard]] constexpr Ordinal getValue() const noexcept { return backingStore_; }
 private:
     union {
         Ordinal backingStore_;
@@ -425,7 +426,31 @@ private:
             BackingUnionType opcode: 8;
         };
     };
-
+};
+struct COBRInstruction {
+public:
+    explicit COBRInstruction(const Register& backingStore) : raw_((Ordinal)backingStore) {}
+    [[nodiscard]] constexpr Integer getDisplacement() const noexcept { return alignTo4ByteBoundaries(displacement, TreatAsInteger{}); }
+    [[nodiscard]] constexpr bool getS2() const noexcept { return (displacement & 0b01) != 0; }
+    [[nodiscard]] constexpr bool getM1() const noexcept { return m1; }
+    [[nodiscard]] constexpr ByteOrdinal getSrc2() const noexcept { return src2; }
+    [[nodiscard]] constexpr ByteOrdinal getSrc1() const noexcept { return src1; }
+    [[nodiscard]] constexpr Opcodes getOpcode() const noexcept { return static_cast<Opcodes>(opcode); }
+    [[nodiscard]] constexpr Ordinal getValue() const noexcept { return raw_; }
+    [[nodiscard]] constexpr ByteOrdinal getMask() const noexcept { return opcode & 0b111; }
+private:
+    union {
+        Ordinal raw_;
+        struct {
+            //BackingUnionType s2 : 1;
+            //BackingUnionType t : 1;
+            Integer displacement : 13;
+            BackingUnionType m1: 1;
+            BackingUnionType src2: 5;
+            BackingUnionType src1: 5;
+            BackingUnionType opcode : 8;
+        };
+    };
 };
 union LongRegister {
 public:
@@ -1298,9 +1323,10 @@ private:
     void faultGeneric() noexcept;
     void balx(Register& linkRegister, Address ordinal) noexcept;
     void processInstruction(Opcodes opcode, Integer displacement, TreatAsCTRL) noexcept;
-    inline void processInstruction(const CTRLInstruction& instruction) noexcept { processInstruction(instruction.getOpcode(), instruction.getDisplacement(), TreatAsCTRL{}); }
+    inline void processInstruction(const CTRLInstruction& instruction) { processInstruction(instruction.getOpcode(), instruction.getDisplacement(), TreatAsCTRL{}); }
     void processInstruction(Opcodes opcode, uint8_t mask, uint8_t src1, const Register& src2, int16_t displacement, TreatAsCOBR) noexcept;
     void processInstruction(Opcodes opcode, uint8_t mask, Register& src1, const Register& src2, int16_t displacement, TreatAsCOBR) noexcept;
+    void processInstruction(const COBRInstruction& instruction);
     void processInstruction(Opcodes opcode, Register& srcDest, Address effectiveAddress, TreatAsMEM) noexcept;
     void processInstruction(Opcodes opcode, Register& srcDest, const Register& src1, const Register& src2, TreatAsREG) noexcept;
 private:
