@@ -174,115 +174,37 @@ Core::fmark() noexcept {
     }
 }
 
-Ordinal
-Core::computeAddress() noexcept {
+std::optional<Ordinal>
+Core::computeAddress(const MEMInstruction& inst) noexcept {
     DEBUG_ENTER_FUNCTION;
     Ordinal result = 0;
-    if (instruction_.isMEMA()) {
-        DEBUG_LOG_LEVEL(1) {
-            std::cout << '\t' << __PRETTY_FUNCTION__ << ": ismema operation" << std::endl;
-        }
-        result = instruction_.mem.offset;
-        DEBUG_LOG_LEVEL(1) {
-            std::cout << "\t\t\t" << __PRETTY_FUNCTION__ << ": result 0x" << std::hex << result << std::endl;
-        }
-        if (instruction_.mema.action) {
-            auto abaseValue = getGPRValue<Ordinal>(instruction_.mema.abase);
-            DEBUG_LOG_LEVEL(1) {
-                std::cout << "\t\t\t" << __PRETTY_FUNCTION__ << ": abase = 0x" << std::hex << abaseValue << std::endl;
-            }
-            result += abaseValue;
-        }
-        DEBUG_LOG_LEVEL(1) {
-            std::cout << "\t\t\t" << __PRETTY_FUNCTION__ << ": result (after) 0x" << std::hex << result << std::endl;
-        }
-    } else {
-        DEBUG_LOG_LEVEL(1) {
-            std::cout << '\t' << __PRETTY_FUNCTION__ << ": ismemb operation" << std::endl;
-        }
-        DEBUG_LOG_LEVEL(1) {
-            std::cout << "\t\t" << __PRETTY_FUNCTION__ << ": mode: 0x" << std::hex << static_cast<Ordinal>(instruction_.memb_grp3.group) << std::endl;
-        }
-        // okay so we need to figure out the minor mode after figuring out if
-        // it is a double wide operation or not
-        if (instruction_.memb.group) {
-            DEBUG_LOG_LEVEL(4) {
-                std::cout << "\t\t" << __PRETTY_FUNCTION__ << ": group bit is high" << std::endl;
-            }
-            // okay so it is going to be the displacement versions
-            // load 32-bits into the optionalDisplacement field
-            instructionLength_ = 8;
-            auto iresult = static_cast<Integer>(load(ip_.a + 4, TreatAsOrdinal{})); // load the optional displacement
-            DEBUG_LOG_LEVEL(1) {
-                std::cout << "\t\t\t" << __PRETTY_FUNCTION__ << ": iresult 0x" << std::hex << iresult << std::endl;
-            }
-            if (instruction_.memb_grp2.useIndex) {
-                DEBUG_LOG_LEVEL(1) {
-                    std::cout << "\t\t\t" << __PRETTY_FUNCTION__ << ": use index" << std::endl;
-                }
-                auto idx = getGPRValue<Integer>(instruction_.memb_grp2.index);
-                DEBUG_LOG_LEVEL(1) {
-                    std::cout << "\t\t\t" << __PRETTY_FUNCTION__ << ": index 0x" << std::hex << idx << std::endl;
-                    std::cout << "\t\t\t" << __PRETTY_FUNCTION__ << ": scale 0x" << std::hex << static_cast<Ordinal>(instruction_.memb_grp2.scale) << std::endl;
-                }
-                auto value = idx << static_cast<Integer>(instruction_.memb_grp2.scale);
-                DEBUG_LOG_LEVEL(1) {
-                    std::cout << "\t\t\t" << __PRETTY_FUNCTION__ << ": value (index << scale) = 0x" << std::hex << value << std::endl;
-                }
-                iresult += value;
-                DEBUG_LOG_LEVEL(1) {
-                    std::cout << "\t\t\t" << __PRETTY_FUNCTION__ << ": iresult (after) 0x" << std::hex << iresult << std::endl;
-                }
-            }
-            if (instruction_.memb_grp2.registerIndirect) {
-                auto abaseValue = getGPRValue<Integer>(instruction_.memb_grp2.abase);
-                DEBUG_LOG_LEVEL(1) {
-                    std::cout << "\t\t\t" << __PRETTY_FUNCTION__ << ": register indirect" << std::endl;
-                    std::cout << "\t\t\t" << __PRETTY_FUNCTION__ << ": abase = 0x" << std::hex << abaseValue << std::endl;
-                }
-                iresult += abaseValue;
-                DEBUG_LOG_LEVEL(1) {
-                    std::cout << "\t\t\t" << __PRETTY_FUNCTION__ << ": iresult (after) 0x" << std::hex << iresult << std::endl;
-                }
-            }
-            result = static_cast<Ordinal>(iresult);
-        } else {
-            DEBUG_LOG_LEVEL(4) {
-                std::cout << "\t\t" << __PRETTY_FUNCTION__ << ": group bit is low" << std::endl;
-            }
-            // okay so the other group isn't as cleanly designed
-            switch (instruction_.memb.modeMinor) {
-                case 0b00: // Register Indirect
-                    DEBUG_LOG_LEVEL(1) {
-                        std::cout << "\t\t\t" << __PRETTY_FUNCTION__ << ": register indirect" << std::endl;
-                        std::cout << "\t\t\t" << __PRETTY_FUNCTION__ << ": abase 0x" << std::hex << instruction_.memb.abase << std::endl;
-                    }
-                    result = getGPRValue(instruction_.memb.abase, TreatAsOrdinal{});
-                    break;
-                case 0b01: // IP With Displacement 
-                    DEBUG_LOG_LEVEL(1){
-                        std::cout << "\t\t\t" << __PRETTY_FUNCTION__ << ": ip with displacement" << std::endl;
-                    }
-                    instructionLength_ = 8;
-                    result = static_cast<Ordinal>(ip_.i + load(ip_.a + 4, TreatAsInteger{}) + 8);
-                    break;
-                case 0b11: // Register Indirect With Index
-                    DEBUG_LOG_LEVEL(1) {
-                        std::cout << "\t\t\t" << __PRETTY_FUNCTION__ << ": register indirect with index" << std::endl;
-                    }
-                    result = getGPRValue(instruction_.memb.abase, TreatAsOrdinal{}) + (getGPRValue(instruction_.memb.index, TreatAsOrdinal{}) << instruction_.memb.scale);
-                    break;
-                default:
-                    result = -1;
-                    break;
-            }
-        }
+    if (inst.usesOptionalDisplacement()) {
+        instructionLength_ = 8;
     }
-    DEBUG_LOG_LEVEL(1) {
-        std::cout << "\t\t" << __PRETTY_FUNCTION__ << ": result = 0x" << std::hex << result << std::endl;
+    using K = MEMInstruction::AddressingMode;
+    switch (inst.getAddressingMode()) {
+        case K::AbsoluteOffset:
+            return inst.getOffset();
+        case K::RegisterIndirectWithOffset:
+            return inst.getOffset() + getGPRValue<Ordinal>(inst.getABase());
+        case K::RegisterIndirect:
+            return getGPRValue<Ordinal>(inst.getABase());
+        case K::IPWithDisplacement:
+            return static_cast<Ordinal>(inst.getDisplacement() + ip_.getValue<Integer>() + 8);
+        case K::RegisterIndirectWithIndex:
+            return getGPRValue<Ordinal>(inst.getABase()) + inst.scaleValue<Ordinal>(getGPRValue<Ordinal>(inst.getIndex()));
+        case K::AbsoluteDisplacement:
+            return static_cast<Ordinal>(inst.getDisplacement());
+        case K::RegisterIndirectWithDisplacement:
+            return static_cast<Ordinal>(getGPRValue<Integer>(inst.getABase()) + inst.getDisplacement());
+        case K::IndexWithDisplacement:
+            return static_cast<Ordinal>(inst.scaleValue<Integer>(getGPRValue<Integer>(inst.getIndex())) +inst.getDisplacement());
+        case K::RegisterIndirectWithIndexAndDisplacement:
+            return static_cast<Ordinal>(getGPRValue<Integer>(inst.getABase()) + inst.scaleValue(getGPRValue<Integer>(inst.getIndex())) + inst.getDisplacement());
+        default:
+            break;
     }
-    DEBUG_LEAVE_FUNCTION;
-    return result;
+    return std::nullopt;
 }
 
 void
@@ -490,6 +412,15 @@ Core::processInstruction(const REGInstruction & inst) {
     processInstruction(inst, regDest, src1, src2, TreatAsREG{});
 }
 void
+Core::processInstruction(const MEMInstruction & inst) {
+    if (auto effectiveAddress = computeAddress(inst); effectiveAddress) {
+        Register &destination = getGPR(inst.getSrcDest());
+        processInstruction(inst.getOpcode(), destination, *effectiveAddress, TreatAsMEM{});
+    } else {
+        invalidOpcodeFault();
+    }
+}
+void
 Core::cycle() noexcept {
     DEBUG_ENTER_FUNCTION;
     DEBUG_LOG_LEVEL(1) {
@@ -506,9 +437,8 @@ Core::cycle() noexcept {
     } else if (instruction_.isCOBR()) {
         processInstruction(COBRInstruction{instruction_});
     } else if (instruction_.isMEMFormat()) {
-        auto effectiveAddress = computeAddress();
-        Register& destination = getGPR(instruction_.mem.srcDest);
-        processInstruction(instruction_.getOpcode(), destination, effectiveAddress, TreatAsMEM{});
+        // always load the next word for simplicity
+        processInstruction(MEMInstruction{instruction_, load(ip_.o + 4, TreatAsInteger{})});
     } else if (instruction_.isREGFormat()) {
         processInstruction(REGInstruction{instruction_});
     } else {

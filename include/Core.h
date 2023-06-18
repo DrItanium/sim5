@@ -32,6 +32,7 @@
 #include "BinaryOperations.h"
 #include <istream>
 #include <iostream>
+#include <optional>
 constexpr uint8_t getDebugLoggingLevel() noexcept {
     return 0;
 }
@@ -485,13 +486,18 @@ public:
     [[nodiscard]] constexpr AddressingMode getAddressingMode() const noexcept {
         return static_cast<AddressingMode>(memb.mode & (isMEMA() ? 0b1100 : 0b1111));
     }
-    [[nodiscard]] constexpr Ordinal getOffset() const noexcept { return mema.offset; }
+    [[nodiscard]] constexpr Ordinal getOffset() const noexcept { return memaOffset; }
     [[nodiscard]] constexpr ByteOrdinal getIndex() const noexcept { return memb.index; }
     [[nodiscard]] constexpr ByteOrdinal getScale() const noexcept { return memb.scale; }
     [[nodiscard]] constexpr bool usesOptionalDisplacement() const noexcept { return usesOptionalDisplacement(getAddressingMode()); }
+    template<typename T>
+    [[nodiscard]] constexpr T scaleValue(T input) const noexcept {
+        return input << memb.scale;
+    }
 private:
     union {
         Ordinal raw_;
+        Ordinal memaOffset : 12;
         struct {
             Ordinal dc : 12;
             Ordinal kind : 1;
@@ -503,13 +509,6 @@ private:
             BackingUnionType srcDest : 5;
             Ordinal opcode : 8;
         } generic;
-        struct {
-            Ordinal offset : 12;
-            Ordinal mode : 2;
-            Ordinal abase : 5;
-            Ordinal srcDest : 5;
-            Ordinal opcode : 8;
-        } mema;
         struct {
             Ordinal index : 5;
             Ordinal dc : 2;
@@ -946,7 +945,7 @@ private:
     [[nodiscard]] bool conditionCodeEqualsMask(uint8_t mask) const noexcept;
     bool fullConditionCodeCheck() noexcept;
     bool fullConditionCodeCheck(uint8_t mask) noexcept;
-    Ordinal computeAddress() noexcept;
+    std::optional<Ordinal> computeAddress(const MEMInstruction&) noexcept;
     void performRegisterTransfer(const REGInstruction&, ByteOrdinal mask, ByteOrdinal count) noexcept;
 private:
     void sendIAC(const iac::Message& msg) noexcept;
@@ -1398,6 +1397,7 @@ private:
     void processInstruction(Opcodes opcode, uint8_t mask, Register& src1, const Register& src2, int16_t displacement, TreatAsCOBR) noexcept;
     void processInstruction(const COBRInstruction& instruction);
     void processInstruction(Opcodes opcode, Register& srcDest, Address effectiveAddress, TreatAsMEM) noexcept;
+    void processInstruction(const MEMInstruction&);
     void processInstruction(const REGInstruction& inst, Register& srcDest, const Register& src1, const Register& src2, TreatAsREG) noexcept;
     void processInstruction(const REGInstruction&);
 private:
