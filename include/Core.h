@@ -135,22 +135,6 @@ union Register {
     }
 
     struct {
-        BackingUnionType s2 : 1;
-        BackingUnionType t : 1;
-        Integer displacement : 11;
-        BackingUnionType m1: 1;
-        BackingUnionType src2: 5;
-        BackingUnionType src1: 5;
-        BackingUnionType opcode : 8;
-    } cobr;
-    struct {
-        Integer displacement : 13;
-        BackingUnionType m1: 1;
-        BackingUnionType src2: 5;
-        BackingUnionType src1: 5;
-        BackingUnionType opcode : 8;
-    } cobrDisplacement;
-    struct {
         BackingUnionType src1 : 5;
         BackingUnionType s1 : 1;
         BackingUnionType s2 : 1;
@@ -403,10 +387,6 @@ union Register {
     constexpr bool operator!=(const Register& other) const noexcept {
         return other.o != o;
     }
-    [[nodiscard]] constexpr auto getDisplacement(TreatAsCOBR) const noexcept {
-        // clear the lowest two bits
-        return alignTo4ByteBoundaries(cobrDisplacement.displacement, TreatAs<Integer>{});
-    }
 };
 static_assert(sizeof(Register) == sizeof(Ordinal));
 class CTRLInstruction {
@@ -448,6 +428,115 @@ private:
             BackingUnionType m1: 1;
             BackingUnionType src2: 5;
             BackingUnionType src1: 5;
+            BackingUnionType opcode : 8;
+        };
+    };
+};
+struct REGInstruction {
+public:
+    explicit REGInstruction(const Register& backingStore) : raw_((Ordinal)backingStore) {}
+    [[nodiscard]] constexpr Ordinal getValue() const noexcept { return raw_; }
+    [[nodiscard]] constexpr Opcodes getOpcode() const noexcept { return static_cast<Opcodes>(static_cast<ShortOrdinal>(opcode << 4) | static_cast<ShortOrdinal>(opcodeExt)); }
+    [[nodiscard]] constexpr bool getS1() const noexcept { return s1; }
+    [[nodiscard]] constexpr bool getS2() const noexcept { return s2; }
+    [[nodiscard]] constexpr bool getM1() const noexcept { return m1; }
+    [[nodiscard]] constexpr bool getM2() const noexcept { return m2; }
+    [[nodiscard]] constexpr bool getM3() const noexcept { return m3; }
+    [[nodiscard]] constexpr ByteOrdinal getSrc2() const noexcept { return src2; }
+    [[nodiscard]] constexpr ByteOrdinal getSrc1() const noexcept { return src1; }
+    [[nodiscard]] constexpr ByteOrdinal getSrcDest() const noexcept { return srcDest; }
+    [[nodiscard]] constexpr bool treatSrc1AsLiteral() const noexcept { return getM1() && !getS1(); }
+    [[nodiscard]] constexpr bool treatSrc2AsLiteral() const noexcept { return getM2() && !getS2(); }
+    [[nodiscard]] constexpr bool treatSrc1AsSFR() const noexcept { return !getM1() && getS1(); }
+    [[nodiscard]] constexpr bool treatSrc2AsSFR() const noexcept { return !getM2() && getS2(); }
+    [[nodiscard]] constexpr ByteOrdinal getMask() const noexcept { return opcode & 0b111; }
+    [[nodiscard]] constexpr bool treatSrcDestAsLiteral(bool srcOnly) const noexcept { return srcOnly & m3; }
+    [[nodiscard]] constexpr bool treatSrcDestAsSFR(bool dstOnly) const noexcept { return dstOnly & m3; }
+    [[nodiscard]] constexpr Ordinal src1AsLiteral(TreatAsOrdinal) const noexcept { return static_cast<Ordinal>(getSrc1()); }
+    [[nodiscard]] constexpr LongOrdinal src1AsLiteral(TreatAsLongOrdinal) const noexcept { return static_cast<LongOrdinal>(getSrc1()); }
+    [[nodiscard]] constexpr LongReal src1AsLiteral(TreatAsLongReal) const noexcept {
+        switch (getSrc1()) {
+            case 0b10000:
+                return +0.0;
+            case 0b10110:
+                return +1.0;
+            default:
+                return NAN;
+        }
+    }
+    [[nodiscard]] constexpr Real src1AsLiteral(TreatAsReal) const noexcept {
+        switch (getSrc1()) {
+            case 0b10000:
+                return +0.0f;
+            case 0b10110:
+                return +1.0f;
+            default:
+                return NAN;
+        }
+    }
+    [[nodiscard]] constexpr ExtendedReal src1AsLiteral(TreatAsExtendedReal) const noexcept {
+        switch (getSrc1()) {
+            case 0b10000:
+                return +0.0;
+            case 0b10110:
+                return +1.0;
+            default:
+                return NAN;
+        }
+    }
+    template<typename T>
+    [[nodiscard]] constexpr T src1AsLiteral() const noexcept {
+        return src1AsLiteral(TreatAs<T>{});
+    }
+    [[nodiscard]] constexpr LongReal src2AsLiteral(TreatAsLongReal) const noexcept {
+        switch (getSrc2()) {
+            case 0b10000:
+                return +0.0;
+            case 0b10110:
+                return +1.0;
+            default:
+                return NAN;
+        }
+    }
+    [[nodiscard]] constexpr Real src2AsLiteral(TreatAsReal) const noexcept {
+        switch (getSrc2()) {
+            case 0b10000:
+                return +0.0f;
+            case 0b10110:
+                return +1.0f;
+            default:
+                return NAN;
+        }
+    }
+    [[nodiscard]] constexpr ExtendedReal src2AsLiteral(TreatAsExtendedReal) const noexcept {
+        switch (getSrc2()) {
+            case 0b10000:
+                return +0.0;
+            case 0b10110:
+                return +1.0;
+            default:
+                return NAN;
+        }
+    }
+    [[nodiscard]] constexpr Ordinal src2AsLiteral(TreatAsOrdinal) const noexcept { return static_cast<Ordinal>(getSrc2()); }
+    [[nodiscard]] constexpr LongOrdinal src2AsLiteral(TreatAsLongOrdinal) const noexcept { return static_cast<LongOrdinal>(getSrc2()); }
+    template<typename T>
+    [[nodiscard]] constexpr T src2AsLiteral() const noexcept {
+        return src2AsLiteral(TreatAs<T>{});
+    }
+private:
+    union {
+        Ordinal raw_;
+        struct {
+            BackingUnionType src1 : 5;
+            BackingUnionType s1 : 1;
+            BackingUnionType s2 : 1;
+            BackingUnionType opcodeExt : 4;
+            BackingUnionType m1 : 1;
+            BackingUnionType m2 : 1;
+            BackingUnionType m3 : 1;
+            BackingUnionType src2 : 5;
+            BackingUnionType srcDest : 5;
             BackingUnionType opcode : 8;
         };
     };
