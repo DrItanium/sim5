@@ -133,19 +133,6 @@ union Register {
     [[nodiscard]] constexpr uint8_t getMajorOpcode() const noexcept {
         return bytes[3];
     }
-
-    struct {
-        BackingUnionType src1 : 5;
-        BackingUnionType s1 : 1;
-        BackingUnionType s2 : 1;
-        BackingUnionType opcodeExt : 4;
-        BackingUnionType m1 : 1;
-        BackingUnionType m2 : 1;
-        BackingUnionType m3 : 1;
-        BackingUnionType src2 : 5;
-        BackingUnionType srcDest : 5;
-        BackingUnionType opcode : 8;
-    } reg;
     struct {
         Ordinal offset: 12;
         BackingUnionType selector : 1;
@@ -312,14 +299,7 @@ union Register {
     [[nodiscard]] constexpr bool isCOBR() const noexcept { return (o >= 0x2000'0000) && (o < 0x4000'0000); }
     [[nodiscard]] constexpr bool isMEMFormat() const noexcept { return o >= 0x8000'0000; }
     [[nodiscard]] constexpr auto isREGFormat() const noexcept { return o >= 0x4000'0000 && o < 0x8000'0000; }
-    [[nodiscard]] constexpr auto getOpcode() const noexcept {
-        if (isREGFormat()) {
-            uint16_t baseValue = static_cast<uint16_t>(getMajorOpcode()) << 4;
-            return static_cast<Opcodes>(baseValue | static_cast<uint16_t>(reg.opcodeExt));
-        } else {
-            return static_cast<Opcodes>(getMajorOpcode());
-        }
-    }
+    [[nodiscard]] constexpr auto getOpcode() const noexcept;
     [[nodiscard]] constexpr bool getCarryBit() const noexcept { return arith.conditionCode & 0b010; }
     [[nodiscard]] Ordinal modify(Ordinal mask, Ordinal src) noexcept;
     void setValue(Real value, TreatAsReal) noexcept { r = value; }
@@ -368,9 +348,6 @@ union Register {
         return getValue(TreatAs<T>{});
     }
 
-    explicit constexpr operator Opcodes() const noexcept {
-        return getOpcode();
-    }
     ByteOrdinal& operator[](ByteOrdinal index) noexcept {
         return bytes[index & 0b11];
     }
@@ -956,8 +933,8 @@ private:
     void branch(Integer displacement) noexcept;
     void branchConditional(bool condition, Integer displacement) noexcept;
     void scanbyte(Ordinal src1, Ordinal src2) noexcept;
-    void emul(LongRegister& dest, Ordinal src1, Ordinal src2) noexcept;
-    void ediv(LongRegister& dest, Ordinal src1, const LongRegister& src2) noexcept;
+    void emul(const REGInstruction& inst, LongRegister& dest, Ordinal src1, Ordinal src2) noexcept;
+    void ediv(const REGInstruction& inst, LongRegister& dest, Ordinal src1, const LongRegister& src2) noexcept;
     void arithmeticWithCarryGeneric(Ordinal result, bool src2MSB, bool src1MSB, bool destMSB) noexcept;
     inline void advanceCOBRDisplacement(Integer displacement) noexcept {
         ip_.i += displacement;
@@ -1608,4 +1585,12 @@ static_assert(computeNextFrame<Core::C*3, Core::NotC>(0xFDED'0000) == 0xFDED'008
 static_assert(computeNextFrame<Core::C*4, Core::NotC>(0xFDED'0000) == 0xFDED'00C0);
 
 void installToMainMemory(std::istream& stream, Address baseAddress);
+constexpr auto
+Register::getOpcode() const noexcept {
+    if (isREGFormat()) {
+        return REGInstruction(*this).getOpcode();
+    } else {
+        return static_cast<Opcodes>(getMajorOpcode());
+    }
+}
 #endif // end SIM5_CORE_H__

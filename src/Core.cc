@@ -91,13 +91,13 @@ Core::arithmeticWithCarryGeneric(Ordinal result, bool src2MSB, bool src1MSB, boo
 
 
 void
-Core::emul(LongRegister& dest, Ordinal src1, Ordinal src2) noexcept {
-    if (!aligned(instruction_.reg.srcDest, TreatAsLongRegister{})) {
+Core::emul(const REGInstruction& inst, LongRegister& dest, Ordinal src1, Ordinal src2) noexcept {
+    if (!aligned(inst.getSrcDest(), TreatAsLongRegister{})) {
         /// Since this is unaligned and the destination will always be aligned,
         /// we just do an expensive access of the two unaligned registers
         /// instead. Set the both to 0xFFFF'FFFF
-        auto& lower = getGPR(instruction_.reg.srcDest);
-        auto& upper = getGPR(instruction_.reg.srcDest + 1);
+        auto& lower = getGPR(inst.getSrcDest());
+        auto& upper = getGPR(inst.getSrcDest() + 1);
         lower.template setValue<Ordinal>(0xFFFF'FFFF);
         upper.template setValue<Ordinal>(0xFFFF'FFFF);
         invalidOpcodeFault();
@@ -108,13 +108,13 @@ Core::emul(LongRegister& dest, Ordinal src1, Ordinal src2) noexcept {
 
 
 void
-Core::ediv(LongRegister& dest, Ordinal src1, const LongRegister& src2) noexcept {
-    if (!aligned(instruction_.reg.srcDest, TreatAsLongRegister{}) || !aligned(instruction_.reg.src2, TreatAsLongRegister{})) {
+Core::ediv(const REGInstruction& inst, LongRegister& dest, Ordinal src1, const LongRegister& src2) noexcept {
+    if (!aligned(inst.getSrcDest(), TreatAsLongRegister{}) || !aligned(inst.getSrc2(), TreatAsLongRegister{})) {
         /// Since this is unaligned and the destination will always be aligned,
         /// we just do an expensive access of the two unaligned registers
         /// instead. Set the both to 0xFFFF'FFFF
-        auto& lower = getGPR(instruction_.reg.srcDest);
-        auto& upper = getGPR(instruction_.reg.srcDest + 1);
+        auto& lower = getGPR(inst.getSrcDest());
+        auto& upper = getGPR(inst.getSrcDest() + 1);
         lower.template setValue<Ordinal>(0xFFFF'FFFF);
         upper.template setValue<Ordinal>(0xFFFF'FFFF);
         invalidOpcodeFault();
@@ -484,7 +484,7 @@ Core::processInstruction(const COBRInstruction& cobr) {
 }
 void
 Core::processInstruction(const REGInstruction & inst) {
-    auto& regDest = getGPR(instruction_.reg.srcDest);
+    auto& regDest = getGPR(inst.getSrcDest());
     const auto& src1 = getSrc1Register(inst);
     const auto& src2 = getSrc2Register(inst);
     processInstruction(inst, regDest, src1, src2, TreatAsREG{});
@@ -501,14 +501,14 @@ Core::cycle() noexcept {
     DEBUG_LOG_LEVEL(1) {
         std::cout << "\t\t" << __PRETTY_FUNCTION__  << ": " << disassembleInstruction(ip_.getValue<Ordinal>(), instruction_) << std::endl;
     }
-    if (auto opcode = (Opcodes)instruction_; instruction_.isCTRL()) {
+    if (instruction_.isCTRL()) {
         processInstruction(CTRLInstruction{instruction_});
     } else if (instruction_.isCOBR()) {
         processInstruction(COBRInstruction{instruction_});
     } else if (instruction_.isMEMFormat()) {
         auto effectiveAddress = computeAddress();
-        Register& destination = getGPR(instruction_.reg.srcDest);
-        processInstruction(opcode, destination, effectiveAddress, TreatAsMEM{});
+        Register& destination = getGPR(instruction_.mem.srcDest);
+        processInstruction(instruction_.getOpcode(), destination, effectiveAddress, TreatAsMEM{});
     } else if (instruction_.isREGFormat()) {
         processInstruction(REGInstruction{instruction_});
     } else {
@@ -1191,12 +1191,13 @@ Core::processInstruction(const REGInstruction& inst, Register& regDest, const Re
             atmod(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
             break;
         case Opcodes::emul:
-            emul(getGPR(instruction_.reg.srcDest, TreatAsLongRegister{}), static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
+            emul(inst, getGPR(inst.getSrcDest(), TreatAsLongRegister{}), static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
             break;
         case Opcodes::ediv:
-            ediv(getGPR(instruction_.reg.srcDest, TreatAsLongRegister{}),
+            ediv(inst,
+                 getGPR(inst.getSrcDest(), TreatAsLongRegister{}),
                  static_cast<Ordinal>(src1),
-                 getGPR(instruction_.reg.src2, TreatAsLongRegister{}));
+                 getGPR(inst.getSrc2(), TreatAsLongRegister{}));
             break;
         case Opcodes::calls:
             calls(static_cast<Ordinal>(src1));
@@ -1290,7 +1291,7 @@ Core::processInstruction(const REGInstruction& inst, Register& regDest, const Re
             fill(static_cast<Ordinal>(src1), static_cast<Ordinal>(src2), static_cast<Ordinal>(regDest));
             break;
         case Opcodes::ldtime:
-            ldtime(getGPR(instruction_.reg.srcDest, TreatAsLongRegister{}));
+            ldtime(getGPR(inst.getSrcDest(), TreatAsLongRegister{}));
             break;
         case Opcodes::condwait:
             condwait(static_cast<Ordinal>(src1));
