@@ -418,6 +418,24 @@ union Register {
     }
 };
 static_assert(sizeof(Register) == sizeof(Ordinal));
+struct CTRLInstruction {
+public:
+    explicit CTRLInstruction(const Register& backingStore) : backingStore_(backingStore.getValue<Ordinal>()) { }
+    [[nodiscard]] constexpr Opcodes getOpcode() const noexcept { return static_cast<Opcodes>(opcode); }
+    [[nodiscard]] constexpr Integer getDisplacement() const noexcept { return alignTo4ByteBoundaries(displacement, TreatAsInteger{}); }
+    [[nodiscard]] constexpr bool predictedTaken() const noexcept { return (displacement & 0b10) != 0; }
+    [[nodiscard]] constexpr bool predictedNotTaken() const noexcept { return (displacement & 0b10) == 0; }
+private:
+    union {
+        Ordinal backingStore_;
+        struct {
+            /// @todo check the bp and sfr bits eventually
+            Integer displacement: 24;
+            BackingUnionType opcode: 8;
+        };
+    };
+
+};
 union LongRegister {
 public:
     LongRegister() = default;
@@ -1289,6 +1307,7 @@ private:
     void faultGeneric() noexcept;
     void balx(Register& linkRegister, Address ordinal) noexcept;
     void processInstruction(Opcodes opcode, Integer displacement, TreatAsCTRL) noexcept;
+    inline void processInstruction(const CTRLInstruction& instruction) noexcept { processInstruction(instruction.getOpcode(), instruction.getDisplacement(), TreatAsCTRL{}); }
     void processInstruction(Opcodes opcode, uint8_t mask, uint8_t src1, const Register& src2, int16_t displacement, TreatAsCOBR) noexcept;
     void processInstruction(Opcodes opcode, uint8_t mask, Register& src1, const Register& src2, int16_t displacement, TreatAsCOBR) noexcept;
     void processInstruction(Opcodes opcode, Register& srcDest, Address effectiveAddress, TreatAsMEM) noexcept;

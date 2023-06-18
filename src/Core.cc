@@ -476,7 +476,7 @@ Core::cycle() noexcept {
         std::cout << "\t\t" << __PRETTY_FUNCTION__  << ": " << disassembleInstruction(ip_.getValue<Ordinal>(), instruction_) << std::endl;
     }
     if (auto opcode = (Opcodes)instruction_; instruction_.isCTRL()) {
-        processInstruction(opcode, static_cast<Integer>(instruction_.getDisplacement(TreatAsCTRL{})), TreatAsCTRL{});
+        processInstruction(CTRLInstruction{instruction_});
     } else if (instruction_.isCOBR()) {
         Register& src2 = instruction_.cobr.s2 ? getSFR(instruction_.cobr.src2) : getGPR(instruction_.cobr.src2);
         if (instruction_.cobr.m1) {
