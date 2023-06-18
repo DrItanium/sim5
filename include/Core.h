@@ -1347,13 +1347,10 @@ private:
     void subi(Register& dest, Integer src1, Integer src2) noexcept;
     void faultGeneric() noexcept;
     void balx(Register& linkRegister, Address ordinal) noexcept;
-    void processInstruction(Opcodes opcode, Integer displacement, TreatAsCTRL) noexcept;
-    inline void processInstruction(const CTRLInstruction& instruction) { processInstruction(instruction.getOpcode(), instruction.getDisplacement(), TreatAsCTRL{}); }
-    void processInstruction(Opcodes opcode, uint8_t mask, uint8_t src1, const Register& src2, int16_t displacement, TreatAsCOBR) noexcept;
-    void processInstruction(Opcodes opcode, uint8_t mask, Register& src1, const Register& src2, int16_t displacement, TreatAsCOBR) noexcept;
     void processInstruction(const COBRInstruction& instruction);
     void processInstruction(const MEMInstruction&);
     void processInstruction(const REGInstruction&);
+    void processInstruction(const CTRLInstruction&);
 private:
     void modpc(Register& dest, Ordinal src1o, Ordinal src2o) noexcept;
     void modxc(Register& control, Register& dest, Ordinal src1, Ordinal src2) noexcept;

@@ -390,21 +390,88 @@ Core::faultGeneric() noexcept {
 }
 void
 Core::processInstruction(const COBRInstruction& cobr) {
+    auto opcode = cobr.getOpcode();
+    auto displacement = static_cast<ShortInteger>(cobr.getDisplacement());
+    auto mask = cobr.getMask();
+    // there are two versions of COBR instructions
+    // ones where the src1 field is a register and can act as a destination or source
+    // the other where src1 is a literal and can only be used as a source
+    // thus there are two paths to take here and not all versions are actually accessible in all forms
     if (auto& src2 = getSrc2Register(cobr); cobr.getM1()) {
-        auto src1Value = static_cast<uint8_t>(cobr.getSrc1());
-        processInstruction(cobr.getOpcode(),
-                           cobr.getMask(),
-                           src1Value,
-                           src2,
-                           static_cast<ShortInteger>(cobr.getDisplacement()),
-                           TreatAsCOBR{});
+        auto src1 = static_cast<uint8_t>(cobr.getSrc1());
+        switch(opcode) {
+            case Opcodes::bbc:
+                bbc(src1, src2, displacement);
+                break;
+            case Opcodes::bbs:
+                bbs(src1, src2, displacement);
+                break;
+            case Opcodes::cmpobg:
+            case Opcodes::cmpobe:
+            case Opcodes::cmpobge:
+            case Opcodes::cmpobl:
+            case Opcodes::cmpobne:
+            case Opcodes::cmpoble:
+                cmpobGeneric(mask, src1, static_cast<Ordinal>(src2), displacement);
+                break;
+            case Opcodes::cmpibno: // never branches
+            case Opcodes::cmpibg:
+            case Opcodes::cmpibe:
+            case Opcodes::cmpibge:
+            case Opcodes::cmpibl:
+            case Opcodes::cmpibne:
+            case Opcodes::cmpible:
+            case Opcodes::cmpibo: // always branches
+                cmpibGeneric(mask, src1, static_cast<Integer>(src2), displacement);
+                break;
+            default:
+                // test instructions perform modifications to src1 so we must error out
+                // in this case!
+                unimplementedFault();
+                break;
+        }
     } else {
-        processInstruction(cobr.getOpcode(),
-                           cobr.getMask(),
-                           getSrc1Register(cobr),
-                           src2,
-                           static_cast<ShortInteger>(cobr.getDisplacement()),
-                           TreatAsCOBR{});
+        auto& src1 = getSrc1Register(cobr);
+        switch(opcode) {
+            case Opcodes::bbc:
+                bbc(src1, src2, displacement);
+                break;
+            case Opcodes::bbs:
+                bbs(src1, src2, displacement);
+                break;
+            case Opcodes::testno:
+            case Opcodes::testg:
+            case Opcodes::teste:
+            case Opcodes::testge:
+            case Opcodes::testl:
+            case Opcodes::testne:
+            case Opcodes::testle:
+            case Opcodes::testo: {
+                src1.setValue<Ordinal>(fullConditionCodeCheck(mask) ? 1 : 0);
+                break;
+            }
+            case Opcodes::cmpobg:
+            case Opcodes::cmpobe:
+            case Opcodes::cmpobge:
+            case Opcodes::cmpobl:
+            case Opcodes::cmpobne:
+            case Opcodes::cmpoble:
+                cmpobGeneric(mask, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2), displacement);
+                break;
+            case Opcodes::cmpibno: // never branches
+            case Opcodes::cmpibg:
+            case Opcodes::cmpibe:
+            case Opcodes::cmpibge:
+            case Opcodes::cmpibl:
+            case Opcodes::cmpibne:
+            case Opcodes::cmpible:
+            case Opcodes::cmpibo: // always branches
+                cmpibGeneric(mask, static_cast<Integer>(src1), static_cast<Integer>(src2), displacement);
+                break;
+            default:
+                unimplementedFault();
+                break;
+        }
     }
 }
 Register&
@@ -1146,16 +1213,16 @@ Core::subo(Register& dest, Ordinal src1, Ordinal src2) noexcept {
     sub<Ordinal>(dest, src1, src2, TreatAsOrdinal{});
 }
 void
-Core::processInstruction(Opcodes opcode, Integer displacement, TreatAsCTRL) noexcept {
-    switch (opcode) {
+Core::processInstruction(const CTRLInstruction &instruction) {
+    switch (instruction.getOpcode()) {
         case Opcodes::bal: // bal
-            bal(displacement);
+            bal(instruction.getDisplacement());
             break;
         case Opcodes::b: // b
-            branch(displacement);
+            branch(instruction.getDisplacement());
             break;
         case Opcodes::call: // call
-            call(displacement);
+            call(instruction.getDisplacement());
             break;
         case Opcodes::ret: // ret
             ret();
@@ -1170,7 +1237,7 @@ Core::processInstruction(Opcodes opcode, Integer displacement, TreatAsCTRL) noex
         case Opcodes::bo:
             // the branch instructions have the mask encoded into the opcode
             // itself so we can just use it and save a ton of space overall
-            branchConditional(fullConditionCodeCheck(), displacement);
+            branchConditional(fullConditionCodeCheck(), instruction.getDisplacement());
             break;
         case Opcodes::faultno:
         case Opcodes::faulte:
@@ -1188,89 +1255,6 @@ Core::processInstruction(Opcodes opcode, Integer displacement, TreatAsCTRL) noex
     }
 }
 
-void
-Core::processInstruction(Opcodes opcode, uint8_t mask, uint8_t src1, const Register& src2, int16_t displacement, TreatAsCOBR) noexcept {
-    switch(opcode) {
-        case Opcodes::bbc:
-            bbc(src1, src2, displacement);
-            break;
-        case Opcodes::bbs:
-            bbs(src1, src2, displacement);
-            break;
-        case Opcodes::cmpobg:
-        case Opcodes::cmpobe:
-        case Opcodes::cmpobge:
-        case Opcodes::cmpobl:
-        case Opcodes::cmpobne:
-        case Opcodes::cmpoble:
-            cmpobGeneric(mask, src1, src2.getValue<Ordinal>(), displacement);
-            break;
-        case Opcodes::cmpibno: // never branches
-        case Opcodes::cmpibg:
-        case Opcodes::cmpibe:
-        case Opcodes::cmpibge:
-        case Opcodes::cmpibl:
-        case Opcodes::cmpibne:
-        case Opcodes::cmpible:
-        case Opcodes::cmpibo: // always branches
-            cmpibGeneric(mask, src1, src2.getValue<Integer>(), displacement);
-            break;
-        default:
-            // test instructions perform modifications to src1 so we must error out
-            // in this case!
-            unimplementedFault();
-            break;
-    }
-}
-
-void
-Core::processInstruction(Opcodes opcode, uint8_t mask, Register& src1, const Register& src2, int16_t displacement, TreatAsCOBR) noexcept {
-    switch(opcode) {
-        case Opcodes::bbc:
-            bbc(src1, src2, displacement);
-            break;
-        case Opcodes::bbs:
-            bbs(src1, src2, displacement);
-            break;
-        case Opcodes::testno:
-        case Opcodes::testg:
-        case Opcodes::teste:
-        case Opcodes::testge:
-        case Opcodes::testl:
-        case Opcodes::testne:
-        case Opcodes::testle:
-        case Opcodes::testo: {
-            DEBUG_LOG_LEVEL(1) {
-                std::cout << "\t\t" << "testGeneric: "
-                          << "mask: 0x" << std::hex << static_cast<int>(mask)
-                          << std::endl;
-            }
-            src1.setValue<Ordinal>(fullConditionCodeCheck(mask) ? 1 : 0);
-            break;
-        }
-        case Opcodes::cmpobg:
-        case Opcodes::cmpobe:
-        case Opcodes::cmpobge:
-        case Opcodes::cmpobl:
-        case Opcodes::cmpobne:
-        case Opcodes::cmpoble:
-            cmpobGeneric(mask, src1.getValue<Ordinal>(), src2.getValue<Ordinal>(), displacement);
-            break;
-        case Opcodes::cmpibno: // never branches
-        case Opcodes::cmpibg:
-        case Opcodes::cmpibe:
-        case Opcodes::cmpibge:
-        case Opcodes::cmpibl:
-        case Opcodes::cmpibne:
-        case Opcodes::cmpible:
-        case Opcodes::cmpibo: // always branches
-            cmpibGeneric(mask, src1.getValue<Integer>(), src2.getValue<Integer>(), displacement);
-            break;
-        default:
-            unimplementedFault();
-            break;
-    }
-}
 
 void
 Core::modpc(Register& regDest, Ordinal src1o, Ordinal src2o) noexcept {
