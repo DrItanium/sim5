@@ -198,9 +198,13 @@ Core::computeAddress(const MEMInstruction& inst) noexcept {
         case K::RegisterIndirectWithDisplacement:
             return static_cast<Ordinal>(getGPRValue<Integer>(inst.getABase()) + inst.getDisplacement());
         case K::IndexWithDisplacement:
-            return static_cast<Ordinal>(inst.scaleValue<Integer>(getGPRValue<Integer>(inst.getIndex())) +inst.getDisplacement());
+            return static_cast<Ordinal>(
+                    inst.scaleValue<Integer>(getGPRValue<Integer>(inst.getIndex()))
+                            + inst.getDisplacement());
         case K::RegisterIndirectWithIndexAndDisplacement:
-            return static_cast<Ordinal>(getGPRValue<Integer>(inst.getABase()) + inst.scaleValue(getGPRValue<Integer>(inst.getIndex())) + inst.getDisplacement());
+            return static_cast<Ordinal>(getGPRValue<Integer>(inst.getABase())
+                    + inst.scaleValue<Integer>(getGPRValue<Integer>(inst.getIndex()))
+                    + inst.getDisplacement());
         default:
             break;
     }
