@@ -849,6 +849,7 @@ Core::processInstruction(const MEMInstruction & inst) {
             case Opcodes::stis:
                 stis(static_cast<Integer>(srcDest), effectiveAddress);
                 break;
+            case Opcodes::ldvm:
             case Opcodes::ldv:
                 // we don't care about tag bits so fall through
             case Opcodes::ldm:
@@ -872,6 +873,7 @@ Core::processInstruction(const MEMInstruction & inst) {
             case Opcodes::ldis:
                 ldis(effectiveAddress, srcDest);
                 break;
+            case Opcodes::ldvml:
             case Opcodes::ldvl:
             case Opcodes::ldml:
                 // fallthrough since we don't have tag bits at all!
@@ -889,12 +891,14 @@ Core::processInstruction(const MEMInstruction & inst) {
             case Opcodes::stt:
                 stt(inst, effectiveAddress, getGPR(inst.getSrcDest(), TreatAsTripleRegister{}));
                 break;
+            case Opcodes::ldvmq:
             case Opcodes::ldvq:
             case Opcodes::ldmq:
                 // fallthrough to ldq since we don't support tag bits at this point!
             case Opcodes::ldq:
                 ldq(inst, effectiveAddress, getGPR(inst.getSrcDest(), TreatAsQuadRegister{}));
                 break;
+            case Opcodes::stvmq:
             case Opcodes::stvq:
             case Opcodes::stq:
                 stq(inst, effectiveAddress, getGPR(inst.getSrcDest(), TreatAsQuadRegister{}));
