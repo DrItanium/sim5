@@ -27,6 +27,7 @@
 #include <compare>
 #include <type_traits>
 #include <concepts>
+#include <bitset>
 using Address = uint32_t;
 using ByteOrdinal = uint8_t;
 using ByteInteger = int8_t;
@@ -586,5 +587,6 @@ union TaggedWord {
         Ordinal tag : 1;
     } accessDescriptor;
 };
+/// @todo look into std::bitset
 
 #endif // end SIM5_TYPES_H__
