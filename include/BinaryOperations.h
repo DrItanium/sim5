@@ -55,8 +55,14 @@ concept Is960Comparable = std::three_way_comparable<T> || requires (T a, T b) {
     { a == b };
 };
 [[nodiscard]] constexpr Ordinal rotateOperation(Ordinal src, Ordinal length) noexcept {
+    // the implementations are equivalent
+#if 0
     return (src << length)  | (src >> ((-length) & 31u));
+#else
+    return std::rotl<Ordinal>(src, length);
+#endif
 }
+
 
 [[nodiscard]] constexpr Ordinal computeBitPosition(Ordinal value) noexcept {
     constexpr Ordinal positionTable[32] {
