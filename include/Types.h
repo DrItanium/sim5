@@ -289,31 +289,6 @@ struct FaultRecord {
     }
 };
 
-/**
- * @brief Another way to look at the configuration bits within a segment descriptor but how the Extended Architecture does it
- */
-struct StorageDescriptor {
-     Ordinal entryType : 3;
-     Ordinal accessed : 1;
-     Ordinal altered : 1;
-     Ordinal mixed : 1;
-     Ordinal cacheable : 1;
-     Ordinal local : 1;
-     Ordinal preserved0 : 10;
-     Ordinal objectLength : 6;
-     Ordinal preserved1 : 4;
-     Ordinal objectType : 4;
-
-     [[nodiscard]] constexpr bool isSimpleObjectDescriptor() const noexcept { return (entryType & 0b110) == 0b010; }
-     [[nodiscard]] constexpr bool isPagedObjectDescriptor() const noexcept { return (entryType & 0b110) == 0b100; }
-     [[nodiscard]] constexpr bool isBipagedObjectDescriptor() const noexcept { return (entryType & 0b110) == 0b110; }
-     [[nodiscard]] constexpr bool valid() const noexcept { return (entryType & 0b1) != 0; }
-     [[nodiscard]] constexpr bool hasBeenAccessed() const noexcept { return accessed; }
-     [[nodiscard]] constexpr bool hasBeenAltered() const noexcept { return altered; }
-     [[nodiscard]] constexpr bool isMixed() const noexcept { return mixed; }
-     [[nodiscard]] constexpr bool isCacheable() const noexcept { return cacheable; }
-     [[nodiscard]] constexpr bool isLocal() const noexcept { return local; }
-};
 
 struct FaultTableEntry {
 public:
@@ -487,6 +462,75 @@ struct AccessDescriptor {
 struct VirtualAddressFormat {
     ObjectOffset offset;
     AccessDescriptor ad;
+};
+class TypeDefinitionObject {
+public:
+    enum class ObjectType : ByteOrdinal {
+        Generic,
+        TDO,
+        ProcessObject,
+        DomainObject,
+        Semaphore,
+        PortObject,
+        Reserved0,
+        Reserved1,
+        Available0,
+        Available1,
+        Available2,
+        Available3,
+        Available4,
+        Available5,
+        Available6,
+        Available7,
+    };
+public:
+    constexpr explicit TypeDefinitionObject(Ordinal value) : raw_(value) { }
+    [[nodiscard]] constexpr bool canAmplifyAnyAD() const noexcept { return superTDO; }
+    [[nodiscard]] constexpr bool canAmplifyOnlyMatchingADs() const noexcept { return !superTDO; }
+    [[nodiscard]] constexpr bool managesObjectsUsingThisTDO() const noexcept { return extended; }
+    [[nodiscard]] constexpr bool managesObjectsUsingSameObjectType() const noexcept { return !extended; }
+    [[nodiscard]] constexpr ObjectType getType() const noexcept { return static_cast<ObjectType>(type); }
+private:
+    union {
+        Ordinal raw_;
+        struct {
+            Ordinal superTDO : 1;
+            Ordinal extended : 1;
+            Ordinal reserved : 26;
+            Ordinal type : 4;
+        };
+    };
+};
+/**
+ * @brief How the extended architecture describes its SegmentDescriptor
+ */
+struct StorageDescriptor {
+    Ordinal preserved0;
+    Ordinal typeDefintionObjectAD;
+    Ordinal baseAddress;
+    Ordinal valid : 1;
+    Ordinal entryType : 2;
+    Ordinal accessed : 1;
+    Ordinal altered : 1;
+    Ordinal mixed : 1;
+    Ordinal cacheable : 1;
+    Ordinal local : 1;
+    Ordinal preserved1 : 10;
+    Ordinal objectLength : 6;
+    Ordinal preserved2 : 4;
+    Ordinal objectType : 4;
+
+    [[nodiscard]] constexpr bool isSimpleObjectDescriptor() const noexcept { return entryType == 0b10; }
+    [[nodiscard]] constexpr bool isPagedObjectDescriptor() const noexcept { return entryType == 0b10; }
+    [[nodiscard]] constexpr bool isBipagedObjectDescriptor() const noexcept { return entryType == 0b11; }
+    [[nodiscard]] constexpr bool isValid() const noexcept { return valid; }
+    [[nodiscard]] constexpr bool hasBeenAccessed() const noexcept { return accessed; }
+    [[nodiscard]] constexpr bool hasBeenAltered() const noexcept { return altered; }
+    [[nodiscard]] constexpr bool isMixed() const noexcept { return mixed; }
+    [[nodiscard]] constexpr bool isCacheable() const noexcept { return cacheable; }
+    [[nodiscard]] constexpr bool isLocal() const noexcept { return local; }
+    [[nodiscard]] constexpr Address getBaseAddress() const noexcept { return baseAddress & (~0b111111); }
+    [[nodiscard]] constexpr explicit operator bool() const noexcept { return isValid(); }
 };
 
 #endif // end SIM5_TYPES_H__
