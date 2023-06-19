@@ -545,7 +545,35 @@ private:
 static_assert(sizeof(StorageDescriptor) == sizeof(QuadOrdinal));
 
 /**
- * @brief An ordinal with a 33rd bit which denotes its type. It is encoded in a 64-bit number for simplicity
+ * @brief An ordinal with a 33rd bit which denotes its type. It is encoded in a 64-bit number for simplicity.
+ * According to the BiiN CPU manual:
+ * "8.2.4 Tagging
+ *      An object contains access descriptors and/or data, that is, any binary information. Access
+ *      descriptors and data can reside in the same object and can be interleaved in any arbitrary order.
+ *
+ *      In some systems (such as BiiN(TM) Systems), a tag bit is associated with each 4-byte aligned
+ *      word in memory to indicate whether the word is data or an access descriptor. An access descriptor must
+ *      be aligned to 4-byte boundary with a tag bit of one. A tag bit of zero indicates data.
+ *
+ *      In other systems, the tag bit is not used. The interpretation of a word as a data or an access
+ *      descriptor depends on the operation; see chapter 16
+ *
+ *      In a word-aligned read or write of the whole word, the tag bit is either preserved or set to zero depending
+ *      on the operation. In a non-word aligned read, or a partial read of a word, the tag bit of the returned value is
+ *      always forced to zero. Similarly, in a non-word aligned write, or a partial write of a word, the tag bit of any
+ *      of the modified words is always forced to zero. The data manipulation (arithmetic or logical) instructions
+ *      require source operands with zero tag bits, and generate values with zero tag bits.
+ *      "
+ *  Looking at the i960XA datasheet, I see that there is a pin labeled "Cache/Tag" (which interestingly enough
+ *  seems to be in the same position as the Kx and Mx processors as well). It seems to be a multi function pin which
+ *  acts as an output in the AS state and then a I/O pin during the DEN and WAIT states. I believe that the BiiN systems
+ *  had either a separate memory store for these tag bits or something like it. Basically, there is one bit per 4-byte word
+ *  that is loaded from when the accessors are aligned to 4-bytes. You cannot forge these tag bits because they are hard wired
+ *  to zero except in specific cases.
+ *
+ *  From the simulator's perspective, the 33-bit values are actually a subset of a 64-bit processor. We use the extra
+ *  bit as separate memory _spaces_ which keep them in separate areas. When using the normal i960 instructions we are
+ *  operating on the _lower_ 4 gigabytes. Only specific instructions allow access to the upper 32-bit conceptual memory space.
  */
 union TaggedWord {
     LongOrdinal whole_ : 33;
