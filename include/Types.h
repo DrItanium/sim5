@@ -456,7 +456,6 @@ struct AccessDescriptor {
     Ordinal typeRights : 3;
     Ordinal local : 1;
     Ordinal objectIndex : 26;
-    /// @todo support tag bits somehow
 };
 
 struct VirtualAddressFormat {
@@ -484,6 +483,7 @@ public:
         Available7,
     };
 public:
+    constexpr TypeDefinitionObject() : raw_(0) { }
     constexpr explicit TypeDefinitionObject(Ordinal value) : raw_(value) { }
     [[nodiscard]] constexpr bool canAmplifyAnyAD() const noexcept { return superTDO; }
     [[nodiscard]] constexpr bool canAmplifyOnlyMatchingADs() const noexcept { return !superTDO; }
@@ -519,14 +519,14 @@ public:
     [[nodiscard]] constexpr Address getBaseAddress() const noexcept { return baseAddress & (~0b111111); }
     [[nodiscard]] constexpr explicit operator bool() const noexcept { return isValid(); }
     [[nodiscard]] constexpr QuadOrdinal getWholeValue() const noexcept { return raw_; }
-    [[nodiscard]] constexpr const TypeDefinitionObject& getTDO() const noexcept { return tdo; }
-    [[nodiscard]] TypeDefinitionObject& getTDO() noexcept { return tdo; }
+    [[nodiscard]] const TypeDefinitionObject& getTDO() const noexcept { return *reinterpret_cast<const TypeDefinitionObject*>(&tdo); }
+    [[nodiscard]] TypeDefinitionObject& getTDO() noexcept { return *reinterpret_cast<TypeDefinitionObject*>(&tdo); }
 private:
     union {
         QuadOrdinal raw_;
         struct {
             Ordinal preserved0;
-            TypeDefinitionObject tdo;
+            Ordinal tdo;
             Ordinal baseAddress;
             Ordinal valid: 1;
             Ordinal entryType: 2;
@@ -543,5 +543,20 @@ private:
     };
 };
 static_assert(sizeof(StorageDescriptor) == sizeof(QuadOrdinal));
+
+/**
+ * @brief An ordinal with a 33rd bit which denotes its type. It is encoded in a 64-bit number for simplicity
+ */
+union TaggedWord {
+    LongOrdinal whole_ : 33;
+    struct {
+        Ordinal data;
+        Ordinal tag : 1;
+    } dataWord;
+    struct {
+        AccessDescriptor descriptor;
+        Ordinal tag : 1;
+    } accessDescriptor;
+};
 
 #endif // end SIM5_TYPES_H__
