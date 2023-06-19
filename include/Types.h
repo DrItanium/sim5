@@ -289,6 +289,32 @@ struct FaultRecord {
     }
 };
 
+/**
+ * @brief Another way to look at the configuration bits within a segment descriptor but how the Extended Architecture does it
+ */
+struct StorageDescriptor {
+     Ordinal entryType : 3;
+     Ordinal accessed : 1;
+     Ordinal altered : 1;
+     Ordinal mixed : 1;
+     Ordinal cacheable : 1;
+     Ordinal local : 1;
+     Ordinal preserved0 : 10;
+     Ordinal objectLength : 6;
+     Ordinal preserved1 : 4;
+     Ordinal objectType : 4;
+
+     [[nodiscard]] constexpr bool isSimpleObjectDescriptor() const noexcept { return (entryType & 0b110) == 0b010; }
+     [[nodiscard]] constexpr bool isPagedObjectDescriptor() const noexcept { return (entryType & 0b110) == 0b100; }
+     [[nodiscard]] constexpr bool isBipagedObjectDescriptor() const noexcept { return (entryType & 0b110) == 0b110; }
+     [[nodiscard]] constexpr bool valid() const noexcept { return (entryType & 0b1) != 0; }
+     [[nodiscard]] constexpr bool hasBeenAccessed() const noexcept { return accessed; }
+     [[nodiscard]] constexpr bool hasBeenAltered() const noexcept { return altered; }
+     [[nodiscard]] constexpr bool isMixed() const noexcept { return mixed; }
+     [[nodiscard]] constexpr bool isCacheable() const noexcept { return cacheable; }
+     [[nodiscard]] constexpr bool isLocal() const noexcept { return local; }
+};
+
 struct FaultTableEntry {
 public:
     explicit constexpr FaultTableEntry(Ordinal addr, SegmentSelector selector) noexcept : handlerFunctionAddress_(addr), selector_(selector) { }
@@ -439,6 +465,28 @@ union PortFlags {
         Ordinal q : 1;
         Ordinal reserved : 14;
     };
+};
+
+struct ObjectOffset {
+    Ordinal pageOffset : 12;
+    Ordinal pageIndex : 10;
+    Ordinal directoryIndex : 10;
+    constexpr bool isSimple() const noexcept { return pageIndex == 0 && directoryIndex == 0; }
+    constexpr bool isPaged() const noexcept { return directoryIndex == 0; }
+};
+
+struct AccessDescriptor {
+    Ordinal readRights : 1;
+    Ordinal writeRights : 1;
+    Ordinal typeRights : 3;
+    Ordinal local : 1;
+    Ordinal objectIndex : 26;
+    /// @todo support tag bits somehow
+};
+
+struct VirtualAddressFormat {
+    ObjectOffset offset;
+    AccessDescriptor ad;
 };
 
 #endif // end SIM5_TYPES_H__
