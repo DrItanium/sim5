@@ -504,22 +504,9 @@ private:
 /**
  * @brief How the extended architecture describes its SegmentDescriptor
  */
-struct StorageDescriptor {
-    Ordinal preserved0;
-    Ordinal typeDefintionObjectAD;
-    Ordinal baseAddress;
-    Ordinal valid : 1;
-    Ordinal entryType : 2;
-    Ordinal accessed : 1;
-    Ordinal altered : 1;
-    Ordinal mixed : 1;
-    Ordinal cacheable : 1;
-    Ordinal local : 1;
-    Ordinal preserved1 : 10;
-    Ordinal objectLength : 6;
-    Ordinal preserved2 : 4;
-    Ordinal objectType : 4;
-
+class StorageDescriptor {
+public:
+    constexpr explicit StorageDescriptor(QuadOrdinal value) : raw_(value) { }
     [[nodiscard]] constexpr bool isSimpleObjectDescriptor() const noexcept { return entryType == 0b10; }
     [[nodiscard]] constexpr bool isPagedObjectDescriptor() const noexcept { return entryType == 0b10; }
     [[nodiscard]] constexpr bool isBipagedObjectDescriptor() const noexcept { return entryType == 0b11; }
@@ -531,6 +518,30 @@ struct StorageDescriptor {
     [[nodiscard]] constexpr bool isLocal() const noexcept { return local; }
     [[nodiscard]] constexpr Address getBaseAddress() const noexcept { return baseAddress & (~0b111111); }
     [[nodiscard]] constexpr explicit operator bool() const noexcept { return isValid(); }
+    [[nodiscard]] constexpr QuadOrdinal getWholeValue() const noexcept { return raw_; }
+    [[nodiscard]] constexpr const TypeDefinitionObject& getTDO() const noexcept { return tdo; }
+    [[nodiscard]] TypeDefinitionObject& getTDO() noexcept { return tdo; }
+private:
+    union {
+        QuadOrdinal raw_;
+        struct {
+            Ordinal preserved0;
+            TypeDefinitionObject tdo;
+            Ordinal baseAddress;
+            Ordinal valid: 1;
+            Ordinal entryType: 2;
+            Ordinal accessed: 1;
+            Ordinal altered: 1;
+            Ordinal mixed: 1;
+            Ordinal cacheable: 1;
+            Ordinal local: 1;
+            Ordinal preserved1: 10;
+            Ordinal objectLength: 6;
+            Ordinal preserved2: 4;
+            Ordinal objectType: 4;
+        };
+    };
 };
+static_assert(sizeof(StorageDescriptor) == sizeof(QuadOrdinal));
 
 #endif // end SIM5_TYPES_H__
