@@ -464,11 +464,12 @@ concept MustBeRegisterType = std::same_as<T, Register> ||
                              std::same_as<T, QuadRegister>;
 class CTRLInstruction {
 public:
-    explicit CTRLInstruction(const Register& backingStore) : backingStore_(backingStore.getValue<Ordinal>()) { }
+    explicit constexpr CTRLInstruction(Ordinal value) : backingStore_(value) {}
+    explicit CTRLInstruction(const Register& backingStore) : CTRLInstruction(static_cast<Ordinal>(backingStore)) { }
     [[nodiscard]] constexpr Opcodes getOpcode() const noexcept { return static_cast<Opcodes>(opcode); }
     [[nodiscard]] constexpr Integer getDisplacement() const noexcept { return alignTo4ByteBoundaries(displacement, TreatAsInteger{}); }
-    [[nodiscard]] constexpr bool predictedTaken() const noexcept { return (displacement & 0b10) != 0; }
-    [[nodiscard]] constexpr bool predictedNotTaken() const noexcept { return (displacement & 0b10) == 0; }
+    [[nodiscard]] constexpr bool predictedTaken() const noexcept { return t != 0; }
+    [[nodiscard]] constexpr bool predictedNotTaken() const noexcept { return t == 0; }
     [[nodiscard]] constexpr Ordinal getValue() const noexcept { return backingStore_; }
 private:
     union {
@@ -477,6 +478,10 @@ private:
             /// @todo check the bp and sfr bits eventually
             Integer displacement: 24;
             BackingUnionType opcode: 8;
+        };
+        struct {
+            BackingUnionType unused : 1;
+            BackingUnionType t : 1;
         };
     };
 };
