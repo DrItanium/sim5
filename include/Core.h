@@ -513,6 +513,14 @@ private:
         };
     };
 };
+constexpr COBRInstruction dummyCOBR { 0x32, 4, 5, false, 0xFF };
+static_assert(dummyCOBR.getDisplacement() == 0xFC);
+static_assert(dummyCOBR.getS2() == 1);
+static_assert(dummyCOBR.getT());
+static_assert(dummyCOBR.getSrc1() == 4);
+static_assert(dummyCOBR.getSrc2() == 5);
+static_assert(dummyCOBR.getOpcode() == Opcodes::cmpobe);
+static_assert(dummyCOBR.getMask() == 0b010);
 struct REGInstruction {
 public:
     explicit constexpr REGInstruction(Ordinal value) : raw_(value) { }
