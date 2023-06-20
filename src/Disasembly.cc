@@ -112,16 +112,55 @@ namespace {
         }
     }
     void
-    disassembleInstruction(Address address, std::ostream& out, const REGInstruction& inst) {
+    generateOneArgForm(std::ostream& out, const REGInstruction& inst) {
 
+    }
+    void
+    generateTwoArgForm(std::ostream& out, const REGInstruction& inst) {
+
+    }
+    void
+    generateThreeArgForm(std::ostream& out, const REGInstruction& inst) {
+
+    }
+    void
+    generateOneArgForm(std::ostream& out, const COBRInstruction& inst) {
+
+    }
+    void
+    generateTwoArgForm(std::ostream& out, const COBRInstruction& inst) {
+
+    }
+    void
+    generateThreeArgForm(std::ostream& out, const COBRInstruction& inst) {
+
+    }
+    void
+    disassembleInstruction(Address address, std::ostream& out, const REGInstruction& inst) {
+        switch (inst.getOpcode()) {
+            case Opcodes::mark:
+            case Opcodes::fmark:
+            case Opcodes::flushreg:
+            case Opcodes::saveprcs:
+                break;
+            default:
+                generateThreeArgForm(out, inst);
+                // by default, we want this to be the three argument version
+                break;
+        }
     }
     void
     disassembleInstruction(Address address, std::ostream& out, const COBRInstruction& inst) {
 
     }
     void
-    disassembleInstruction(Address address, std::ostream& out, const MEMInstruction& inst) {
+    generateEffectiveAddress(std::ostream& out, const MEMInstruction& inst) noexcept {
 
+    }
+    void
+    disassembleInstruction(Address address, std::ostream& out, const MEMInstruction& inst) {
+        generateEffectiveAddress(out, inst);
+        /// @todo generate the second argument
     }
 }
 
