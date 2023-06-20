@@ -523,10 +523,32 @@ static_assert(dummyCOBR.getOpcode() == Opcodes::cmpobe);
 static_assert(dummyCOBR.getMask() == 0b010);
 struct REGInstruction {
 public:
+    constexpr REGInstruction(ByteOrdinal opcodePrimary,
+                             ByteOrdinal sd,
+                             ByteOrdinal src2r,
+                             bool mf3, bool mf2, bool mf1,
+                             ByteOrdinal opcode2,
+                             bool sf2,
+                             bool sf1,
+                             ByteOrdinal src1r) : src1(src1r),
+                                                  s1(sf1),
+                                                  s2(sf2),
+                                                  opcodeExt(opcode2),
+                                                  m1(mf1),
+                                                  m2(mf2),
+                                                  m3(mf3),
+                                                  src2(src2r),
+                                                  srcDest(sd),
+                                                  opcode(opcodePrimary) {
+
+    }
+
     explicit constexpr REGInstruction(Ordinal value) : raw_(value) { }
     explicit REGInstruction(const Register& backingStore) : REGInstruction(static_cast<Ordinal>(backingStore)) { }
     [[nodiscard]] constexpr Ordinal getValue() const noexcept { return raw_; }
     [[nodiscard]] constexpr Opcodes getOpcode() const noexcept { return static_cast<Opcodes>(static_cast<ShortOrdinal>(opcode << 4) | static_cast<ShortOrdinal>(opcodeExt)); }
+    [[nodiscard]] constexpr ByteOrdinal getPrimaryOpcode() const noexcept { return opcode; }
+    [[nodiscard]] constexpr ByteOrdinal getSecondaryOpcode() const noexcept { return opcodeExt; }
     [[nodiscard]] constexpr bool getS1() const noexcept { return s1; }
     [[nodiscard]] constexpr bool getS2() const noexcept { return s2; }
     [[nodiscard]] constexpr bool getM1() const noexcept { return m1; }
@@ -553,6 +575,10 @@ private:
         };
     };
 };
+constexpr REGInstruction dummyReg{0x58, 7, 8, false, true, false, 0x2, false, false, 9};
+static_assert(dummyReg.getOpcode() == Opcodes::andnot);
+static_assert(dummyReg.getPrimaryOpcode() == 0x58);
+static_assert(dummyReg.getSecondaryOpcode() == 0x2);
 struct MEMInstruction {
 public:
     enum class AddressingMode : uint8_t {
