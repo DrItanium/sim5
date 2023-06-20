@@ -511,7 +511,8 @@ private:
 };
 struct REGInstruction {
 public:
-    explicit REGInstruction(const Register& backingStore) : raw_((Ordinal)backingStore) {}
+    explicit constexpr REGInstruction(Ordinal value) : raw_(value) { }
+    explicit REGInstruction(const Register& backingStore) : REGInstruction(static_cast<Ordinal>(backingStore)) { }
     [[nodiscard]] constexpr Ordinal getValue() const noexcept { return raw_; }
     [[nodiscard]] constexpr Opcodes getOpcode() const noexcept { return static_cast<Opcodes>(static_cast<ShortOrdinal>(opcode << 4) | static_cast<ShortOrdinal>(opcodeExt)); }
     [[nodiscard]] constexpr bool getS1() const noexcept { return s1; }
