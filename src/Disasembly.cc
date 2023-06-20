@@ -125,13 +125,6 @@ disassembleInstruction(Ordinal lower, Integer upper) {
 
 std::string
 disassembleInstruction(LongOrdinal value) {
-    union {
-        LongOrdinal raw;
-        struct {
-            Ordinal lower;
-            Integer upper;
-        };
-    } conv;
-    conv.raw = value;
-    return disassembleInstruction(conv.lower, conv.upper);
+    LongRegister temp{value};
+    return disassembleInstruction(temp.getValue<Ordinal>(0), temp.getValue<Integer>(1));
 }

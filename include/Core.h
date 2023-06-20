@@ -324,6 +324,7 @@ union Register {
 static_assert(sizeof(Register) == sizeof(Ordinal));
 union LongRegister {
 public:
+    explicit LongRegister(LongOrdinal value) noexcept : lo(value) { }
     LongRegister() = default;
     [[nodiscard]] constexpr LongOrdinal getValue(TreatAsLongOrdinal) const noexcept { return lo; }
     [[nodiscard]] constexpr LongInteger getValue(TreatAsLongInteger) const noexcept { return li; }
