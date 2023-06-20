@@ -248,10 +248,10 @@ union Register {
         return copy.o;
     }
     [[nodiscard]] constexpr ByteOrdinal getReturnType() const noexcept { return pfp.rt; }
-    [[nodiscard]] constexpr bool isCTRL() const noexcept { return o < 0x2000'0000; }
-    [[nodiscard]] constexpr bool isCOBR() const noexcept { return (o >= 0x2000'0000) && (o < 0x4000'0000); }
-    [[nodiscard]] constexpr bool isMEMFormat() const noexcept { return o >= 0x8000'0000; }
-    [[nodiscard]] constexpr auto isREGFormat() const noexcept { return o >= 0x4000'0000 && o < 0x8000'0000; }
+    [[nodiscard]] constexpr bool isCTRL() const noexcept { return ::isCTRL(o); }
+    [[nodiscard]] constexpr bool isCOBR() const noexcept { return ::isCOBR(o); }
+    [[nodiscard]] constexpr bool isMEMFormat() const noexcept { return ::isMEMFormat(o); }
+    [[nodiscard]] constexpr auto isREGFormat() const noexcept { return ::isREGFormat(o); }
     [[nodiscard]] constexpr auto getOpcode() const noexcept;
     [[nodiscard]] constexpr bool getCarryBit() const noexcept { return arith.conditionCode & 0b010; }
     [[nodiscard]] Ordinal modify(Ordinal mask, Ordinal src) noexcept;

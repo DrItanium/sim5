@@ -87,3 +87,51 @@ disassembleInstruction(Address addr, const Register& reg) {
     auto str = ss.str();
     return str;
 }
+
+namespace {
+    void disassembleInstruction(std::ostream& out, const REGInstruction& inst) {
+
+    }
+    void disassembleInstruction(std::ostream& out, const CTRLInstruction& inst) {
+
+    }
+    void
+    disassembleInstruction(std::ostream& out, const COBRInstruction& inst) {
+
+    }
+    void
+    disassembleInstruction(std::ostream& out, const MEMInstruction& inst) {
+
+    }
+}
+
+std::string
+disassembleInstruction(Ordinal lower, Integer upper) {
+    std::ostringstream ss;
+    ss << getOpcodeMnemonic(Register{lower});
+    if (isCTRL(lower)) {
+        disassembleInstruction(ss, CTRLInstruction{lower});
+    } else if (isCOBR(lower)) {
+        disassembleInstruction(ss, COBRInstruction{lower});
+    } else if (isREGFormat(lower)) {
+        disassembleInstruction(ss, REGInstruction{lower});
+    } else {
+        // is mem operation
+        disassembleInstruction(ss, MEMInstruction{lower, upper});
+    }
+    auto str = ss.str();
+    return str;
+}
+
+std::string
+disassembleInstruction(LongOrdinal value) {
+    union {
+        LongOrdinal raw;
+        struct {
+            Ordinal lower;
+            Integer upper;
+        };
+    } conv;
+    conv.raw = value;
+    return disassembleInstruction(conv.lower, conv.upper);
+}

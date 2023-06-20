@@ -589,4 +589,8 @@ union TaggedWord {
 };
 /// @todo look into std::bitset
 
+[[nodiscard]] constexpr bool isCTRL(Ordinal o) noexcept { return o < 0x2000'0000; }
+[[nodiscard]] constexpr bool isCOBR(Ordinal o) noexcept { return (o >= 0x2000'0000) && (o < 0x4000'0000); }
+[[nodiscard]] constexpr bool isMEMFormat(Ordinal o) noexcept { return o >= 0x8000'0000; }
+[[nodiscard]] constexpr auto isREGFormat(Ordinal o) noexcept { return o >= 0x4000'0000 && o < 0x8000'0000; }
 #endif // end SIM5_TYPES_H__

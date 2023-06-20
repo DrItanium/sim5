@@ -28,6 +28,7 @@
 #define SIM960_DISASSEMBLY_H
 #include "Core.h"
 #include <string>
+#include <sstream>
 enum class OperandLayout{
     None = 0b0000'0000,
     Src1 = 0b0000'0001,
@@ -36,5 +37,6 @@ enum class OperandLayout{
     Displacement = 0b0000'1000,
 };
 std::string disassembleInstruction(Address addr, const Register& reg);
-
+std::string disassembleInstruction(LongOrdinal fullValue);
+std::string disassembleInstruction(Ordinal lower, Integer upper);
 #endif //SIM960_DISASSEMBLY_H
