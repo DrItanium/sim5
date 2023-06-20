@@ -37,6 +37,6 @@ enum class OperandLayout{
     Displacement = 0b0000'1000,
 };
 std::string disassembleInstruction(Address addr, const Register& reg);
-std::string disassembleInstruction(LongOrdinal fullValue);
-std::string disassembleInstruction(Ordinal lower, Integer upper);
+std::string disassembleInstruction(Address address, LongOrdinal fullValue);
+std::string disassembleInstruction(Address address, Ordinal lower, Integer upper);
 #endif //SIM960_DISASSEMBLY_H

@@ -29,14 +29,17 @@
 #include <string>
 
 namespace {
-    std::string getOpcodeMnemonic(const Register& reg) {
-        switch (reg.getOpcode()) {
+    std::string getOpcodeMnemonic(Opcodes code) {
+        switch (code) {
 #define X(name, code, str, level, privileged, fmt) case Opcodes:: name : return str ;
 #include "Opcodes.def"
 #undef X
             default:
                 return "unknown/unimplemented";
         }
+    }
+    std::string getOpcodeMnemonic(const Register& rawValue) {
+        return getOpcodeMnemonic(rawValue.getOpcode());
     }
     const std::string RegisterDecodeTable[32] {
             "pfp",
@@ -89,42 +92,59 @@ disassembleInstruction(Address addr, const Register& reg) {
 }
 
 namespace {
-    void disassembleInstruction(std::ostream& out, const REGInstruction& inst) {
-
+    void
+    disassembleInstruction(Address address, std::ostream& out, const CTRLInstruction& inst) {
+        switch (inst.getOpcode()) {
+            case Opcodes::ret:
+            case Opcodes::faultno:
+            case Opcodes::faulte:
+            case Opcodes::faultg:
+            case Opcodes::faultge:
+            case Opcodes::faultl:
+            case Opcodes::faultne:
+            case Opcodes::faultle:
+            case Opcodes::faulto:
+                // no arguments
+                break;
+            default:
+                out << " 0x" << std::hex << inst.getDisplacement();
+                break;
+        }
     }
-    void disassembleInstruction(std::ostream& out, const CTRLInstruction& inst) {
+    void
+    disassembleInstruction(Address address, std::ostream& out, const REGInstruction& inst) {
 
     }
     void
-    disassembleInstruction(std::ostream& out, const COBRInstruction& inst) {
+    disassembleInstruction(Address address, std::ostream& out, const COBRInstruction& inst) {
 
     }
     void
-    disassembleInstruction(std::ostream& out, const MEMInstruction& inst) {
+    disassembleInstruction(Address address, std::ostream& out, const MEMInstruction& inst) {
 
     }
 }
 
 std::string
-disassembleInstruction(Ordinal lower, Integer upper) {
+disassembleInstruction(Address address, Ordinal lower, Integer upper) {
     std::ostringstream ss;
     ss << getOpcodeMnemonic(Register{lower});
     if (isCTRL(lower)) {
-        disassembleInstruction(ss, CTRLInstruction{lower});
+        disassembleInstruction(address, ss, CTRLInstruction{lower});
     } else if (isCOBR(lower)) {
-        disassembleInstruction(ss, COBRInstruction{lower});
+        disassembleInstruction(address, ss, COBRInstruction{lower});
     } else if (isREGFormat(lower)) {
-        disassembleInstruction(ss, REGInstruction{lower});
+        disassembleInstruction(address, ss, REGInstruction{lower});
     } else {
         // is mem operation
-        disassembleInstruction(ss, MEMInstruction{lower, upper});
+        disassembleInstruction(address, ss, MEMInstruction{lower, upper});
     }
     auto str = ss.str();
     return str;
 }
 
 std::string
-disassembleInstruction(LongOrdinal value) {
+disassembleInstruction(Address address, LongOrdinal value) {
     LongRegister temp{value};
-    return disassembleInstruction(temp.getValue<Ordinal>(0), temp.getValue<Integer>(1));
+    return disassembleInstruction(address, temp.getValue<Ordinal>(0), temp.getValue<Integer>(1));
 }
