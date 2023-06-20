@@ -322,160 +322,6 @@ union Register {
     }
 };
 static_assert(sizeof(Register) == sizeof(Ordinal));
-class CTRLInstruction {
-public:
-    explicit CTRLInstruction(const Register& backingStore) : backingStore_(backingStore.getValue<Ordinal>()) { }
-    [[nodiscard]] constexpr Opcodes getOpcode() const noexcept { return static_cast<Opcodes>(opcode); }
-    [[nodiscard]] constexpr Integer getDisplacement() const noexcept { return alignTo4ByteBoundaries(displacement, TreatAsInteger{}); }
-    [[nodiscard]] constexpr bool predictedTaken() const noexcept { return (displacement & 0b10) != 0; }
-    [[nodiscard]] constexpr bool predictedNotTaken() const noexcept { return (displacement & 0b10) == 0; }
-    [[nodiscard]] constexpr Ordinal getValue() const noexcept { return backingStore_; }
-private:
-    union {
-        Ordinal backingStore_;
-        struct {
-            /// @todo check the bp and sfr bits eventually
-            Integer displacement: 24;
-            BackingUnionType opcode: 8;
-        };
-    };
-};
-struct COBRInstruction {
-public:
-    explicit COBRInstruction(const Register& backingStore) : raw_((Ordinal)backingStore) {}
-    [[nodiscard]] constexpr Integer getDisplacement() const noexcept { return alignTo4ByteBoundaries(displacement, TreatAsInteger{}); }
-    [[nodiscard]] constexpr bool getS2() const noexcept { return (displacement & 0b01) != 0; }
-    [[nodiscard]] constexpr bool getM1() const noexcept { return m1; }
-    [[nodiscard]] constexpr ByteOrdinal getSrc2() const noexcept { return src2; }
-    [[nodiscard]] constexpr ByteOrdinal getSrc1() const noexcept { return src1; }
-    [[nodiscard]] constexpr Opcodes getOpcode() const noexcept { return static_cast<Opcodes>(opcode); }
-    [[nodiscard]] constexpr Ordinal getValue() const noexcept { return raw_; }
-    [[nodiscard]] constexpr ByteOrdinal getMask() const noexcept { return opcode & 0b111; }
-private:
-    union {
-        Ordinal raw_;
-        struct {
-            //BackingUnionType s2 : 1;
-            //BackingUnionType t : 1;
-            Integer displacement : 13;
-            BackingUnionType m1: 1;
-            BackingUnionType src2: 5;
-            BackingUnionType src1: 5;
-            BackingUnionType opcode : 8;
-        };
-    };
-};
-struct REGInstruction {
-public:
-    explicit REGInstruction(const Register& backingStore) : raw_((Ordinal)backingStore) {}
-    [[nodiscard]] constexpr Ordinal getValue() const noexcept { return raw_; }
-    [[nodiscard]] constexpr Opcodes getOpcode() const noexcept { return static_cast<Opcodes>(static_cast<ShortOrdinal>(opcode << 4) | static_cast<ShortOrdinal>(opcodeExt)); }
-    [[nodiscard]] constexpr bool getS1() const noexcept { return s1; }
-    [[nodiscard]] constexpr bool getS2() const noexcept { return s2; }
-    [[nodiscard]] constexpr bool getM1() const noexcept { return m1; }
-    [[nodiscard]] constexpr bool getM2() const noexcept { return m2; }
-    [[nodiscard]] constexpr bool getM3() const noexcept { return m3; }
-    [[nodiscard]] constexpr ByteOrdinal getSrc2() const noexcept { return src2; }
-    [[nodiscard]] constexpr ByteOrdinal getSrc1() const noexcept { return src1; }
-    [[nodiscard]] constexpr ByteOrdinal getSrcDest() const noexcept { return srcDest; }
-    [[nodiscard]] constexpr ByteOrdinal getMask() const noexcept { return opcode & 0b111; }
-private:
-    union {
-        Ordinal raw_;
-        struct {
-            BackingUnionType src1 : 5;
-            BackingUnionType s1 : 1;
-            BackingUnionType s2 : 1;
-            BackingUnionType opcodeExt : 4;
-            BackingUnionType m1 : 1;
-            BackingUnionType m2 : 1;
-            BackingUnionType m3 : 1;
-            BackingUnionType src2 : 5;
-            BackingUnionType srcDest : 5;
-            BackingUnionType opcode : 8;
-        };
-    };
-};
-struct MEMInstruction {
-public:
-    enum class AddressingMode : uint8_t {
-        // MEMA
-        AbsoluteOffset = 0b0000,
-        // these are not real but for the sake of simplicity we are describing it this way
-        Reserved0 = 0b0001,
-        Reserved1 = 0b0010,
-        Reserved2 = 0b0011,
-        RegisterIndirect = 0b0100,
-        IPWithDisplacement = 0b0101,
-        Reserved3 = 0b0110,
-        RegisterIndirectWithIndex = 0b0111,
-        RegisterIndirectWithOffset = 0b1000,
-        Reserved4 = 0b1001,
-        Reserved5 = 0b1010,
-        Reserved6 = 0b1011,
-        AbsoluteDisplacement = 0b1100,
-        RegisterIndirectWithDisplacement = 0b1101,
-        IndexWithDisplacement = 0b1110,
-        RegisterIndirectWithIndexAndDisplacement = 0b1111,
-    };
-    static constexpr bool usesOptionalDisplacement(AddressingMode mode) noexcept {
-        switch (mode) {
-            case AddressingMode::IPWithDisplacement:
-            case AddressingMode::AbsoluteDisplacement:
-            case AddressingMode::RegisterIndirectWithDisplacement:
-            case AddressingMode::IndexWithDisplacement:
-            case AddressingMode::RegisterIndirectWithIndexAndDisplacement:
-                return true;
-            default:
-                return false;
-        }
-    }
-    explicit MEMInstruction(const Register& backingStore, Integer displacement) : raw_((Ordinal)backingStore), displacement_(displacement) {}
-    [[nodiscard]] constexpr Ordinal getValue() const noexcept { return raw_; }
-    [[nodiscard]] constexpr Integer getDisplacement() const noexcept { return displacement_; }
-    [[nodiscard]] constexpr Opcodes getOpcode() const noexcept { return static_cast<Opcodes>(generic.opcode); }
-    [[nodiscard]] constexpr bool isMEMA() const noexcept { return discriminant.kind == 0; }
-    [[nodiscard]] constexpr bool isMEMB() const noexcept { return discriminant.kind == 1; }
-    [[nodiscard]] constexpr ByteOrdinal getABase() const noexcept { return generic.abase; }
-    [[nodiscard]] constexpr ByteOrdinal getSrcDest() const noexcept { return generic.srcDest; }
-    [[nodiscard]] constexpr AddressingMode getAddressingMode() const noexcept {
-        return static_cast<AddressingMode>(memb.mode & (isMEMA() ? 0b1100 : 0b1111));
-    }
-    [[nodiscard]] constexpr Ordinal getOffset() const noexcept { return memaOffset; }
-    [[nodiscard]] constexpr ByteOrdinal getIndex() const noexcept { return memb.index; }
-    [[nodiscard]] constexpr ByteOrdinal getScale() const noexcept { return memb.scale; }
-    [[nodiscard]] constexpr bool usesOptionalDisplacement() const noexcept { return usesOptionalDisplacement(getAddressingMode()); }
-    template<typename T>
-    [[nodiscard]] constexpr T scaleValue(T input) const noexcept {
-        return input << memb.scale;
-    }
-private:
-    union {
-        Ordinal raw_;
-        Ordinal memaOffset : 12;
-        struct {
-            Ordinal dc : 12;
-            Ordinal kind : 1;
-            Ordinal rest : 19;
-        } discriminant;
-        struct {
-            Ordinal dc : 14;
-            BackingUnionType abase : 5;
-            BackingUnionType srcDest : 5;
-            Ordinal opcode : 8;
-        } generic;
-        struct {
-            Ordinal index : 5;
-            Ordinal dc : 2;
-            Ordinal scale : 3;
-            Ordinal mode : 4;
-            Ordinal abase : 5;
-            Ordinal srcDest : 5;
-            Ordinal opcode : 8;
-        } memb;
-    };
-    Integer displacement_;
-};
 union LongRegister {
 public:
     LongRegister() = default;
@@ -616,6 +462,161 @@ concept MustBeRegisterType = std::same_as<T, Register> ||
                              std::same_as<T, LongRegister> ||
                              std::same_as<T, TripleRegister> ||
                              std::same_as<T, QuadRegister>;
+class CTRLInstruction {
+public:
+    explicit CTRLInstruction(const Register& backingStore) : backingStore_(backingStore.getValue<Ordinal>()) { }
+    [[nodiscard]] constexpr Opcodes getOpcode() const noexcept { return static_cast<Opcodes>(opcode); }
+    [[nodiscard]] constexpr Integer getDisplacement() const noexcept { return alignTo4ByteBoundaries(displacement, TreatAsInteger{}); }
+    [[nodiscard]] constexpr bool predictedTaken() const noexcept { return (displacement & 0b10) != 0; }
+    [[nodiscard]] constexpr bool predictedNotTaken() const noexcept { return (displacement & 0b10) == 0; }
+    [[nodiscard]] constexpr Ordinal getValue() const noexcept { return backingStore_; }
+private:
+    union {
+        Ordinal backingStore_;
+        struct {
+            /// @todo check the bp and sfr bits eventually
+            Integer displacement: 24;
+            BackingUnionType opcode: 8;
+        };
+    };
+};
+struct COBRInstruction {
+public:
+    explicit COBRInstruction(const Register& backingStore) : raw_((Ordinal)backingStore) {}
+    [[nodiscard]] constexpr Integer getDisplacement() const noexcept { return alignTo4ByteBoundaries(displacement, TreatAsInteger{}); }
+    [[nodiscard]] constexpr bool getS2() const noexcept { return (displacement & 0b01) != 0; }
+    [[nodiscard]] constexpr bool getM1() const noexcept { return m1; }
+    [[nodiscard]] constexpr ByteOrdinal getSrc2() const noexcept { return src2; }
+    [[nodiscard]] constexpr ByteOrdinal getSrc1() const noexcept { return src1; }
+    [[nodiscard]] constexpr Opcodes getOpcode() const noexcept { return static_cast<Opcodes>(opcode); }
+    [[nodiscard]] constexpr Ordinal getValue() const noexcept { return raw_; }
+    [[nodiscard]] constexpr ByteOrdinal getMask() const noexcept { return opcode & 0b111; }
+private:
+    union {
+        Ordinal raw_;
+        struct {
+            //BackingUnionType s2 : 1;
+            //BackingUnionType t : 1;
+            Integer displacement : 13;
+            BackingUnionType m1: 1;
+            BackingUnionType src2: 5;
+            BackingUnionType src1: 5;
+            BackingUnionType opcode : 8;
+        };
+    };
+};
+struct REGInstruction {
+public:
+    explicit REGInstruction(const Register& backingStore) : raw_((Ordinal)backingStore) {}
+    [[nodiscard]] constexpr Ordinal getValue() const noexcept { return raw_; }
+    [[nodiscard]] constexpr Opcodes getOpcode() const noexcept { return static_cast<Opcodes>(static_cast<ShortOrdinal>(opcode << 4) | static_cast<ShortOrdinal>(opcodeExt)); }
+    [[nodiscard]] constexpr bool getS1() const noexcept { return s1; }
+    [[nodiscard]] constexpr bool getS2() const noexcept { return s2; }
+    [[nodiscard]] constexpr bool getM1() const noexcept { return m1; }
+    [[nodiscard]] constexpr bool getM2() const noexcept { return m2; }
+    [[nodiscard]] constexpr bool getM3() const noexcept { return m3; }
+    [[nodiscard]] constexpr ByteOrdinal getSrc2() const noexcept { return src2; }
+    [[nodiscard]] constexpr ByteOrdinal getSrc1() const noexcept { return src1; }
+    [[nodiscard]] constexpr ByteOrdinal getSrcDest() const noexcept { return srcDest; }
+    [[nodiscard]] constexpr ByteOrdinal getMask() const noexcept { return opcode & 0b111; }
+private:
+    union {
+        Ordinal raw_;
+        struct {
+            BackingUnionType src1 : 5;
+            BackingUnionType s1 : 1;
+            BackingUnionType s2 : 1;
+            BackingUnionType opcodeExt : 4;
+            BackingUnionType m1 : 1;
+            BackingUnionType m2 : 1;
+            BackingUnionType m3 : 1;
+            BackingUnionType src2 : 5;
+            BackingUnionType srcDest : 5;
+            BackingUnionType opcode : 8;
+        };
+    };
+};
+struct MEMInstruction {
+public:
+    enum class AddressingMode : uint8_t {
+        // MEMA
+        AbsoluteOffset = 0b0000,
+        // these are not real but for the sake of simplicity we are describing it this way
+        Reserved0 = 0b0001,
+        Reserved1 = 0b0010,
+        Reserved2 = 0b0011,
+        RegisterIndirect = 0b0100,
+        IPWithDisplacement = 0b0101,
+        Reserved3 = 0b0110,
+        RegisterIndirectWithIndex = 0b0111,
+        RegisterIndirectWithOffset = 0b1000,
+        Reserved4 = 0b1001,
+        Reserved5 = 0b1010,
+        Reserved6 = 0b1011,
+        AbsoluteDisplacement = 0b1100,
+        RegisterIndirectWithDisplacement = 0b1101,
+        IndexWithDisplacement = 0b1110,
+        RegisterIndirectWithIndexAndDisplacement = 0b1111,
+    };
+    static constexpr bool usesOptionalDisplacement(AddressingMode mode) noexcept {
+        switch (mode) {
+            case AddressingMode::IPWithDisplacement:
+            case AddressingMode::AbsoluteDisplacement:
+            case AddressingMode::RegisterIndirectWithDisplacement:
+            case AddressingMode::IndexWithDisplacement:
+            case AddressingMode::RegisterIndirectWithIndexAndDisplacement:
+                return true;
+            default:
+                return false;
+        }
+    }
+    constexpr MEMInstruction(Ordinal base, Integer displacement) : raw_(base), displacement_(displacement) {}
+    MEMInstruction(const Register& backingStore, Integer displacement) : MEMInstruction(static_cast<Ordinal>(backingStore), displacement) { }
+    [[nodiscard]] constexpr Ordinal getValue() const noexcept { return raw_; }
+    [[nodiscard]] constexpr Integer getDisplacement() const noexcept { return displacement_; }
+    [[nodiscard]] constexpr Opcodes getOpcode() const noexcept { return static_cast<Opcodes>(generic.opcode); }
+    [[nodiscard]] constexpr bool isMEMA() const noexcept { return discriminant.kind == 0; }
+    [[nodiscard]] constexpr bool isMEMB() const noexcept { return discriminant.kind == 1; }
+    [[nodiscard]] constexpr ByteOrdinal getABase() const noexcept { return generic.abase; }
+    [[nodiscard]] constexpr ByteOrdinal getSrcDest() const noexcept { return generic.srcDest; }
+    [[nodiscard]] constexpr AddressingMode getAddressingMode() const noexcept {
+        return static_cast<AddressingMode>(memb.mode & (isMEMA() ? 0b1100 : 0b1111));
+    }
+    [[nodiscard]] constexpr Ordinal getOffset() const noexcept { return memaOffset; }
+    [[nodiscard]] constexpr ByteOrdinal getIndex() const noexcept { return memb.index; }
+    [[nodiscard]] constexpr ByteOrdinal getScale() const noexcept { return memb.scale; }
+    [[nodiscard]] constexpr bool usesOptionalDisplacement() const noexcept { return usesOptionalDisplacement(getAddressingMode()); }
+    template<typename T>
+    [[nodiscard]] constexpr T scaleValue(T input) const noexcept {
+        return input << memb.scale;
+    }
+private:
+    union {
+        Ordinal raw_;
+        Ordinal memaOffset : 12;
+        struct {
+            Ordinal dc : 12;
+            Ordinal kind : 1;
+            Ordinal rest : 19;
+        } discriminant;
+        struct {
+            Ordinal dc : 14;
+            BackingUnionType abase : 5;
+            BackingUnionType srcDest : 5;
+            Ordinal opcode : 8;
+        } generic;
+        struct {
+            Ordinal index : 5;
+            Ordinal dc : 2;
+            Ordinal scale : 3;
+            Ordinal mode : 4;
+            Ordinal abase : 5;
+            Ordinal srcDest : 5;
+            Ordinal opcode : 8;
+        } memb;
+    };
+    Integer displacement_;
+};
 // On the i960 this is separated out into two parts, locals and globals
 // The idea is that globals are always available and locals are per function.
 // You are supposed to have multiple local frames on chip to accelerate
