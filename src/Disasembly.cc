@@ -154,6 +154,20 @@ namespace {
 
     }
     void
+    computeScale(std::ostream& out, const MEMInstruction& inst) noexcept {
+        switch (inst.getScale() & 0b111) {
+            case 0b001: out << " * 2"; break;
+            case 0b010: out << " * 4"; break;
+            case 0b011: out << " * 8"; break;
+            case 0b100: out << " * 16"; break;
+            // these are extended supported versions
+            case 0b101: out << " * 32 <reserved>"; break;
+            case 0b110: out << " * 64 <reserved>"; break;
+            case 0b111: out << " * 128 <reserved>"; break;
+            default: break;
+        }
+    }
+    void
     generateEffectiveAddress(std::ostream& out, const MEMInstruction& inst) noexcept {
 
     }
