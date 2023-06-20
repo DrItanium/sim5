@@ -482,26 +482,30 @@ private:
 };
 struct COBRInstruction {
 public:
-    explicit COBRInstruction(const Register& backingStore) : raw_((Ordinal)backingStore) {}
+    explicit constexpr COBRInstruction(Ordinal value) : raw_(value) { }
+    explicit COBRInstruction(const Register& backingStore) : COBRInstruction((Ordinal)backingStore) {}
     [[nodiscard]] constexpr Integer getDisplacement() const noexcept { return alignTo4ByteBoundaries(displacement, TreatAsInteger{}); }
-    [[nodiscard]] constexpr bool getS2() const noexcept { return (displacement & 0b01) != 0; }
+    [[nodiscard]] constexpr bool getS2() const noexcept { return s2; }
     [[nodiscard]] constexpr bool getM1() const noexcept { return m1; }
     [[nodiscard]] constexpr ByteOrdinal getSrc2() const noexcept { return src2; }
     [[nodiscard]] constexpr ByteOrdinal getSrc1() const noexcept { return src1; }
     [[nodiscard]] constexpr Opcodes getOpcode() const noexcept { return static_cast<Opcodes>(opcode); }
     [[nodiscard]] constexpr Ordinal getValue() const noexcept { return raw_; }
     [[nodiscard]] constexpr ByteOrdinal getMask() const noexcept { return opcode & 0b111; }
+    [[nodiscard]] constexpr bool getT() const noexcept { return t; }
 private:
     union {
         Ordinal raw_;
         struct {
-            //BackingUnionType s2 : 1;
-            //BackingUnionType t : 1;
             Integer displacement : 13;
             BackingUnionType m1: 1;
             BackingUnionType src2: 5;
             BackingUnionType src1: 5;
             BackingUnionType opcode : 8;
+        };
+        struct {
+            BackingUnionType s2 : 1;
+            BackingUnionType t : 1;
         };
     };
 };
