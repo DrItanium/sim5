@@ -87,19 +87,27 @@ constexpr Ordinal EventNoticeFault = 0x000e'0001;
 constexpr Ordinal OverrideFault = 0x0010'0000;
 
 enum class Opcodes : uint16_t {
-#define X(name, opcode, str, level, privileged) name = opcode ,
+#define X(name, opcode, str, level, privileged, fmt) name = opcode ,
 #include "Opcodes.def"
 #undef X
 };
-template<Opcodes code>
-constexpr bool IsPrivileged = false;
-#define X(name, opcode, str, level, privileged) template<> constexpr bool IsPrivileged< Opcodes :: name > = privileged;
+constexpr bool isPrivileged(Opcodes code) noexcept {
+    switch (code)  {
+#define X(name, opcode, str, level, privileged, fmt) case Opcodes:: name : return privileged;
 #include "Opcodes.def"
 #undef X
+        default:
+            return false;
+    }
+}
+template<Opcodes code>
+constexpr bool IsPrivileged = isPrivileged(code);
+static_assert(IsPrivileged<Opcodes::send>);
+static_assert(!IsPrivileged<Opcodes::addi>);
 
 constexpr ArchitectureLevel getArchitectureLevel(Opcodes code) noexcept {
     switch (code) {
-#define X(name, opcode, str, level, privileged) case Opcodes :: name : return ArchitectureLevel :: level ;
+#define X(name, opcode, str, level, privileged, fmt) case Opcodes :: name : return ArchitectureLevel :: level ;
 #include "Opcodes.def"
 #undef X
         default:
