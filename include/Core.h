@@ -464,12 +464,14 @@ concept MustBeRegisterType = std::same_as<T, Register> ||
                              std::same_as<T, QuadRegister>;
 class CTRLInstruction {
 public:
+    constexpr CTRLInstruction(ByteOrdinal code, Integer disp) : displacement(disp), opcode(code) {}
     explicit constexpr CTRLInstruction(Ordinal value) : backingStore_(value) {}
     explicit CTRLInstruction(const Register& backingStore) : CTRLInstruction(static_cast<Ordinal>(backingStore)) { }
     [[nodiscard]] constexpr Opcodes getOpcode() const noexcept { return static_cast<Opcodes>(opcode); }
     [[nodiscard]] constexpr Integer getDisplacement() const noexcept { return alignTo4ByteBoundaries(displacement, TreatAsInteger{}); }
-    [[nodiscard]] constexpr bool predictedTaken() const noexcept { return t != 0; }
-    [[nodiscard]] constexpr bool predictedNotTaken() const noexcept { return t == 0; }
+    [[nodiscard]] constexpr bool getPredictionBit() const noexcept { return (displacement & 0b10); }
+    [[nodiscard]] constexpr bool predictedTaken() const noexcept { return getPredictionBit() != 0; }
+    [[nodiscard]] constexpr bool predictedNotTaken() const noexcept { return getPredictionBit() == 0; }
     [[nodiscard]] constexpr Ordinal getValue() const noexcept { return backingStore_; }
 private:
     union {
@@ -479,25 +481,26 @@ private:
             Integer displacement: 24;
             BackingUnionType opcode: 8;
         };
-        struct {
-            BackingUnionType unused : 1;
-            BackingUnionType t : 1;
-        };
     };
 };
+constexpr CTRLInstruction dummyBranch{0x8, 0xFDEC};
+static_assert(dummyBranch.getOpcode() == Opcodes::b);
+static_assert(dummyBranch.getDisplacement() == 0xFDEC);
+static_assert(dummyBranch.predictedNotTaken());
 struct COBRInstruction {
 public:
+    constexpr COBRInstruction(ByteOrdinal code, ByteOrdinal s1, ByteOrdinal s2, bool m1_, Integer disp) : displacement(disp), m1(m1_), src2(s2), src1(s1), opcode(code) {}
     explicit constexpr COBRInstruction(Ordinal value) : raw_(value) { }
     explicit COBRInstruction(const Register& backingStore) : COBRInstruction((Ordinal)backingStore) {}
     [[nodiscard]] constexpr Integer getDisplacement() const noexcept { return alignTo4ByteBoundaries(displacement, TreatAsInteger{}); }
-    [[nodiscard]] constexpr bool getS2() const noexcept { return s2; }
+    [[nodiscard]] constexpr bool getS2() const noexcept { return (displacement & 0b1); }
+    [[nodiscard]] constexpr bool getT() const noexcept { return (displacement & 0b10); }
     [[nodiscard]] constexpr bool getM1() const noexcept { return m1; }
     [[nodiscard]] constexpr ByteOrdinal getSrc2() const noexcept { return src2; }
     [[nodiscard]] constexpr ByteOrdinal getSrc1() const noexcept { return src1; }
     [[nodiscard]] constexpr Opcodes getOpcode() const noexcept { return static_cast<Opcodes>(opcode); }
     [[nodiscard]] constexpr Ordinal getValue() const noexcept { return raw_; }
     [[nodiscard]] constexpr ByteOrdinal getMask() const noexcept { return opcode & 0b111; }
-    [[nodiscard]] constexpr bool getT() const noexcept { return t; }
 private:
     union {
         Ordinal raw_;
@@ -507,10 +510,6 @@ private:
             BackingUnionType src2: 5;
             BackingUnionType src1: 5;
             BackingUnionType opcode : 8;
-        };
-        struct {
-            BackingUnionType s2 : 1;
-            BackingUnionType t : 1;
         };
     };
 };
