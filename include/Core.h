@@ -717,6 +717,7 @@ private:
     LongRegister longRegisters[8];
     TripleRegister tripleRegisters[4];
     QuadRegister quadRegisters[4];
+
 };
 /**
  * @brief is the given byte index aligned to long register boundaries?
@@ -1660,7 +1661,7 @@ private:
     uint8_t localRegisterFrameIndex_ = 0;
     RegisterBlock32 sfrs_;
     RegisterBlock32 constants_;
-    FloatingPointRegister fp[4];
+    RegisterFrame fp;
     Register ip_;
     Register ac_;
     Register pc_;

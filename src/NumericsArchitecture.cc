@@ -92,3 +92,19 @@ void
 Core::cmprl(LongReal src1, LongReal src2) noexcept {
     cmpGeneric<LongReal>(src1, src2);
 }
+
+void
+Core::movr(const REGInstruction &inst) {
+    // so the manual does not state the registers have to be aligned!
+    unimplementedFault();
+}
+
+void
+Core::movrl(const REGInstruction &inst) {
+    unimplementedFault();
+}
+
+void
+Core::movre(const REGInstruction &inst) {
+    unimplementedFault();
+}
