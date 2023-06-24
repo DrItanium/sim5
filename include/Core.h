@@ -465,6 +465,14 @@ private:
     QuadRegister backingStore_;
     ExtendedReal extendedReal_;
 };
+
+/**
+ * @brief a 80-bit floating point register
+ */
+union FloatingPointRegister {
+    long double floatValue;
+    Ordinal components[3];
+};
 using TreatAsTripleRegister = TreatAs<TripleRegister>;
 template<typename T>
 concept MustBeRegisterType = std::same_as<T, Register> ||
@@ -1641,6 +1649,10 @@ private:
     void ldib(Address address, Register& dest);
     void ldis(Address address, Register& dest);
 private:
+    void movre(const REGInstruction& inst);
+    void movrl(const REGInstruction& inst);
+    void movr(const REGInstruction& inst);
+private:
     Ordinal systemAddressTableBase_ = 0;
     Ordinal prcbAddress_ = 0;
     RegisterFrame globals_;
@@ -1648,6 +1660,7 @@ private:
     uint8_t localRegisterFrameIndex_ = 0;
     RegisterBlock32 sfrs_;
     RegisterBlock32 constants_;
+    FloatingPointRegister fp[4];
     Register ip_;
     Register ac_;
     Register pc_;

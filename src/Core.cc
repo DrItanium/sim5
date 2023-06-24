@@ -814,6 +814,15 @@ Core::processInstruction(const REGInstruction & inst) {
         case Opcodes::receive:
             receive(static_cast<SegmentSelector>(src1), regDest);
             break;
+        case Opcodes::movr:
+            movr(inst);
+            break;
+        case Opcodes::movrl:
+            movrl(inst);
+            break;
+        case Opcodes::movre:
+            movre(inst);
+            break;
         default:
             unimplementedFault();
             break;
