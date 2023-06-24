@@ -101,18 +101,86 @@ Core::movr(const REGInstruction &inst) {
 
 void
 Core::movrl(const REGInstruction &inst) {
-    unimplementedFault();
+    // this instruction does no modification but instead just acts as a transfer of bits
+    union {
+        double floatValue;
+        Ordinal components[2];
+        LongOrdinal whole;
+    } src;
+    src.floatValue = 0.0;
+    if (inst.getM1()) {
+        // it is a floating point operation of some kind
+        switch (inst.getSrc1()) {
+            case 0b00000: // fp0
+                src.floatValue = static_cast<LongReal>(fp.get(0, TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{}));
+                break;
+            case 0b00001: // fp1
+                src.floatValue = static_cast<LongReal>(fp.get(4, TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{}));
+                break;
+            case 0b00010: // fp2
+                src.floatValue = static_cast<LongReal>(fp.get(8, TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{}));
+                break;
+            case 0b00011: // fp3
+                src.floatValue = static_cast<LongReal>(fp.get(12, TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{}));
+                break;
+            case 0b10000: // +0.0
+                src.floatValue = +0.0;
+                break;
+            case 0b10110: // +1.0
+                src.floatValue = +1.0;
+                break;
+            default:
+                invalidOpcodeFault();
+                return;
+        }
+    } else {
+        // okay so it is a GPR
+        src.components[0] = getGPRValue<Ordinal>(inst.getSrc1());
+        src.components[1] = getGPRValue<Ordinal>(inst.getSrc1() + 1);
+    }
+
+    // okay now checkout the destination as well
+    if (inst.getM3()) {
+        // fp
+        switch (inst.getSrcDest()) {
+            case 0b00000: // fp0
+            {
+                auto& tgt = fp.get(0, TreatAsTripleRegister{});
+                tgt.setValue(src.floatValue, TreatAsExtendedReal{});
+                break;
+            }
+            case 0b00001: // fp1
+            {
+                auto& tgt = fp.get(4, TreatAsTripleRegister{});
+                tgt.setValue(src.floatValue, TreatAsExtendedReal{});
+                break;
+            }
+            case 0b00010: // fp2
+            {
+                auto& tgt = fp.get(8, TreatAsTripleRegister{});
+                tgt.setValue(src.floatValue, TreatAsExtendedReal{});
+                break;
+            }
+            case 0b00011: // fp3
+            {
+                auto& tgt = fp.get(12, TreatAsTripleRegister{});
+                tgt.setValue(src.floatValue, TreatAsExtendedReal{});
+                break;
+            }
+            default:
+                invalidOpcodeFault();
+                return;
+        }
+    } else {
+        // gpr
+        auto& tgt = getGPR(inst.getSrcDest(), TreatAsLongRegister{});
+        tgt.setValue(src.floatValue, TreatAsLongReal{});
+    }
 }
 
 void
 Core::movre(const REGInstruction &inst) {
     // this instruction does no modification but instead just acts as a transfer of bits
-
-    auto internalOperation = [](TripleRegister& src, TripleRegister& dest) noexcept {
-        dest.setValue<Ordinal>(0, src.getValue<Ordinal>(0));
-        dest.setValue<Ordinal>(1, src.getValue<Ordinal>(1));
-        dest.setValue<Ordinal>(2, src.getValue<Ordinal>(2) & 0x0000'FFFF);
-    };
     FloatingPointRegister src;
     src.floatValue = 0.0;
     if (inst.getM1()) {
