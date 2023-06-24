@@ -165,6 +165,7 @@ Core::movr(const REGInstruction &inst) {
         auto& tgt = getGPR(inst.getSrcDest(), TreatAsRegister{});
         tgt.setValue<Real>(src.r);
     }
+    /// @todo implement floating point faults
 }
 
 void
@@ -246,6 +247,7 @@ Core::movrl(const REGInstruction &inst) {
         auto& tgt = getGPR(inst.getSrcDest(), TreatAsLongRegister{});
         tgt.setValue(src.floatValue, TreatAsLongReal{});
     }
+    /// @todo implement floating point faults
 }
 
 void
