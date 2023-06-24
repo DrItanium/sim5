@@ -96,7 +96,75 @@ Core::cmprl(LongReal src1, LongReal src2) noexcept {
 void
 Core::movr(const REGInstruction &inst) {
     // so the manual does not state the registers have to be aligned!
-    unimplementedFault();
+    // this instruction does no modification but instead just acts as a transfer of bits
+    Register src;
+    if (inst.getM1()) {
+        // it is a floating point operation of some kind
+        switch (inst.getSrc1()) {
+            case 0b00000: // fp0
+                src.r= static_cast<Real>(fp.get(0, TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{}));
+                break;
+            case 0b00001: // fp1
+                src.r = static_cast<Real>(fp.get(4, TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{}));
+                break;
+            case 0b00010: // fp2
+                src.r = static_cast<Real>(fp.get(8, TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{}));
+                break;
+            case 0b00011: // fp3
+                src.r = static_cast<Real>(fp.get(12, TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{}));
+                break;
+            case 0b10000: // +0.0
+                src.r = +0.0;
+                break;
+            case 0b10110: // +1.0
+                src.r = +1.0;
+                break;
+            default:
+                invalidOpcodeFault();
+                return;
+        }
+    } else {
+        // okay so it is a GPR
+        src = getGPR(inst.getSrc1());
+    }
+
+    // okay now checkout the destination as well
+    if (inst.getM3()) {
+        // fp
+        switch (inst.getSrcDest()) {
+            case 0b00000: // fp0
+            {
+                auto& tgt = fp.get(0, TreatAsTripleRegister{});
+                tgt.setValue(src.r, TreatAsExtendedReal{});
+                break;
+            }
+            case 0b00001: // fp1
+            {
+                auto& tgt = fp.get(4, TreatAsTripleRegister{});
+                tgt.setValue(src.r, TreatAsExtendedReal{});
+                break;
+            }
+            case 0b00010: // fp2
+            {
+                auto& tgt = fp.get(8, TreatAsTripleRegister{});
+                tgt.setValue(src.r, TreatAsExtendedReal{});
+                break;
+            }
+            case 0b00011: // fp3
+            {
+                auto& tgt = fp.get(12, TreatAsTripleRegister{});
+                tgt.setValue(src.r, TreatAsExtendedReal{});
+                break;
+            }
+            default:
+                invalidOpcodeFault();
+                return;
+        }
+    } else {
+        // gpr
+        auto& tgt = getGPR(inst.getSrcDest(), TreatAsRegister{});
+        tgt.setValue<Real>(src.r);
+    }
 }
 
 void
@@ -105,7 +173,6 @@ Core::movrl(const REGInstruction &inst) {
     union {
         double floatValue;
         Ordinal components[2];
-        LongOrdinal whole;
     } src;
     src.floatValue = 0.0;
     if (inst.getM1()) {
@@ -172,6 +239,9 @@ Core::movrl(const REGInstruction &inst) {
                 return;
         }
     } else {
+        /// @note unaligned register groups do not seem to be explicitly supported. My guess is that since the move
+        /// and store operations are supposed to operate on aligned register packs there is no need to be that explicit.
+        /// So I will also make that assumption as well.
         // gpr
         auto& tgt = getGPR(inst.getSrcDest(), TreatAsLongRegister{});
         tgt.setValue(src.floatValue, TreatAsLongReal{});
