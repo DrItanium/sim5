@@ -619,3 +619,23 @@ Core::scalerl(const REGInstruction &inst) {
                },
                unpackSrc2(inst, TreatAsLongReal{}));
 }
+
+void
+Core::addr(const REGInstruction &inst) {
+    std::visit([this, &inst](auto src1, auto src2) {
+                   using K0 = std::decay_t<decltype(src1)>;
+                   using K1 = std::decay_t<decltype(src2)>;
+                   if constexpr (std::is_same_v<K0, K1>) {
+                        if constexpr (std::is_same_v<K0, ExtendedReal>)  {
+                            fpassignment(inst, src2 + src1, TreatAsExtendedReal {});
+                        } else {
+                            ///@todo implement support for mixed assignment where the destination is 80bit but the computation was 32-bit
+                        }
+                   } else {
+                       // if they are different then it means mixed addition
+                       fpassignment(inst, src2 + src1, TreatAsExtendedReal{});
+                   }
+               },
+               unpackSrc1(inst, TreatAsReal{}),
+               unpackSrc2(inst, TreatAsReal{}));
+}

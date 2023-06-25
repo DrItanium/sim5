@@ -1723,6 +1723,8 @@ private:
     void cmprl(LongReal src1, LongReal src2) noexcept;
     void scaler(const REGInstruction& inst);
     void scalerl(const REGInstruction& inst);
+    void addr(const REGInstruction& inst);
+    void addrl(const REGInstruction& inst);
     void fpassignment(const REGInstruction& inst, ExtendedReal value, TreatAsExtendedReal);
     void fpassignment(const REGInstruction& inst, Real value, TreatAsReal);
     void fpassignment(const REGInstruction& inst, LongReal value, TreatAsLongReal);
