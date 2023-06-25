@@ -638,3 +638,32 @@ void
 Core::cosrl(const REGInstruction &inst) {
     unimplementedFault();
 }
+
+
+void
+Core::processFPInstruction(const REGInstruction &inst ) {
+    if (isFloatingPointInstruction(inst.getOpcode())) {
+        switch (inst.getOpcode()) {
+            case Opcodes::movre:
+                movre(inst);
+                break;
+            case Opcodes::cpyrsre:
+                cpyrsre(inst);
+                break;
+            case Opcodes::cpysre:
+                cpysre(inst);
+                break;
+#define X(name) case Opcodes :: name ## r : name ## r (inst) ; break;\
+            case Opcodes:: name ## rl : name ## rl (inst); break
+            X(class);
+            X(cos);
+            X(mov);
+#undef X
+            default:
+                unimplementedFault();
+                break;
+        }
+    } else {
+        unimplementedFault();
+    }
+}

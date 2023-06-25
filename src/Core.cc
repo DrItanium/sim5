@@ -811,26 +811,10 @@ Core::processInstruction(const REGInstruction & inst) {
         case Opcodes::receive:
             receive(static_cast<SegmentSelector>(src1), regDest);
             break;
-        case Opcodes::movre:
-            movre(inst);
-            break;
-        case Opcodes::cpyrsre:
-            cpyrsre(inst);
-            break;
-        case Opcodes::cpysre:
-            cpysre(inst);
-            break;
-#define X(name) case Opcodes :: name ## r : name ## r (inst) ; break;\
-            case Opcodes:: name ## rl : name ## rl (inst); break
-            X(class);
-            X(cos);
-            X(mov);
-#undef X
-
 
 
         default:
-            unimplementedFault();
+            processFPInstruction(inst);
             break;
     }
 }

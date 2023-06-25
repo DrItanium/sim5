@@ -1432,6 +1432,7 @@ private:
     void processInstruction(const MEMInstruction&);
     void processInstruction(const REGInstruction&);
     void processInstruction(const CTRLInstruction&);
+    void processFPInstruction(const REGInstruction&);
 private:
     void modpc(Register& dest, Ordinal src1o, Ordinal src2o) noexcept;
     void modxc(Register& control, Register& dest, Ordinal src1, Ordinal src2) noexcept;
