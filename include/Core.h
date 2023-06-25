@@ -1660,6 +1660,7 @@ private:
     void movr(const REGInstruction& inst);
     void cpyrsre(const REGInstruction& inst);
     void cpysre(const REGInstruction& inst);
+    void fpassignment(const REGInstruction& inst, ExtendedReal value);
 private:
     Ordinal systemAddressTableBase_ = 0;
     Ordinal prcbAddress_ = 0;

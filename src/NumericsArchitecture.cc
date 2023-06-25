@@ -402,42 +402,7 @@ Core::cpyrsre(const REGInstruction &inst) {
     } else {
         src2 = getGPR(inst.getSrc2(), TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{});
     }
-    if (ExtendedReal result = std::signbit(src2) != 0 ? std::fabs(src1) : -std::fabs(src1); inst.getM3()) {
-        // fp
-        switch (inst.getSrcDest()) {
-            case 0b00000: // fp0
-            {
-                auto& tgt = fp.get(0, TreatAsTripleRegister{});
-                tgt.setValue(result, TreatAsExtendedReal {});
-                break;
-            }
-            case 0b00001: // fp1
-            {
-                auto& tgt = fp.get(4, TreatAsTripleRegister{});
-                tgt.setValue(result, TreatAsExtendedReal {});
-                break;
-            }
-            case 0b00010: // fp2
-            {
-                auto& tgt = fp.get(8, TreatAsTripleRegister{});
-                tgt.setValue(result, TreatAsExtendedReal {});
-                break;
-            }
-            case 0b00011: // fp3
-            {
-                auto& tgt = fp.get(12, TreatAsTripleRegister{});
-                tgt.setValue(result, TreatAsExtendedReal {});
-                break;
-            }
-            default:
-                invalidOpcodeFault();
-                return;
-        }
-    } else {
-        // gpr
-        auto& tgt = getGPR(inst.getSrcDest(), TreatAsTripleRegister{});
-        tgt.setValue(result, TreatAsExtendedReal {});
-    }
+    fpassignment(inst, std::signbit(src2) != 0 ? std::fabs(src1) : -std::fabs(src1));
 }
 
 void
@@ -505,7 +470,12 @@ Core::cpysre(const REGInstruction &inst) {
     } else {
         src2 = getGPR(inst.getSrc2(), TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{});
     }
-    if (ExtendedReal result = std::signbit(src2) == 0 ? std::fabs(src1) : -std::fabs(src1); inst.getM3()) {
+    fpassignment(inst, std::signbit(src2) == 0 ? std::fabs(src1) : -std::fabs(src1));
+}
+
+void
+Core::fpassignment(const REGInstruction &inst, ExtendedReal result) {
+    if(inst.getM3()) {
         // fp
         switch (inst.getSrcDest()) {
             case 0b00000: // fp0
@@ -534,11 +504,10 @@ Core::cpysre(const REGInstruction &inst) {
             }
             default:
                 invalidOpcodeFault();
-                return;
+                break;
         }
     } else {
         // gpr
-        auto& tgt = getGPR(inst.getSrcDest(), TreatAsTripleRegister{});
-        tgt.setValue(result, TreatAsExtendedReal {});
+        getGPR(inst.getSrcDest(), TreatAsTripleRegister {}).setValue(result, TreatAsExtendedReal {});
     }
 }
