@@ -335,3 +335,210 @@ Core::movre(const REGInstruction &inst) {
         tgt.setValue<Ordinal>(2, src.components[2] & 0x0000'FFFF);
     }
 }
+
+void
+Core::cpyrsre(const REGInstruction &inst) {
+
+    /*
+     * we transfer the sign bit from src2 into it
+     * If src2 is negative then dst <- abs(src1)
+     * else dst <- -abs(src1);
+     * endif
+     */
+    ExtendedReal src1, src2;
+    if (inst.getM1()) {
+        // it is a floating point operation of some kind
+        switch (inst.getSrc1()) {
+            case 0b00000: // fp0
+                src1 = fp.get(0, TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{});
+                break;
+            case 0b00001: // fp1
+                src1 = fp.get(4, TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{});
+                break;
+            case 0b00010: // fp2
+                src1 = fp.get(8, TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{});
+                break;
+            case 0b00011: // fp3
+                src1 = fp.get(12, TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{});
+                break;
+            case 0b10000: // +0.0
+                src1 = +0.0;
+                break;
+            case 0b10110: // +1.0
+                src1 = +1.0;
+                break;
+            default:
+                invalidOpcodeFault();
+                return;
+        }
+    } else {
+        src1 = getGPR(inst.getSrc1(), TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{});
+    }
+    if (inst.getM2()) {
+        // it is a floating point operation of some kind
+        switch (inst.getSrc2()) {
+            case 0b00000: // fp0
+                src2 = fp.get(0, TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{});
+                break;
+            case 0b00001: // fp1
+                src2 = fp.get(4, TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{});
+                break;
+            case 0b00010: // fp2
+                src2 = fp.get(8, TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{});
+                break;
+            case 0b00011: // fp3
+                src2 = fp.get(12, TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{});
+                break;
+            case 0b10000: // +0.0
+                src2 = +0.0;
+                break;
+            case 0b10110: // +1.0
+                src2 = +1.0;
+                break;
+            default:
+                invalidOpcodeFault();
+                return;
+        }
+    } else {
+        src2 = getGPR(inst.getSrc2(), TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{});
+    }
+    if (ExtendedReal result = std::signbit(src2) != 0 ? std::fabs(src1) : -std::fabs(src1); inst.getM3()) {
+        // fp
+        switch (inst.getSrcDest()) {
+            case 0b00000: // fp0
+            {
+                auto& tgt = fp.get(0, TreatAsTripleRegister{});
+                tgt.setValue(result, TreatAsExtendedReal {});
+                break;
+            }
+            case 0b00001: // fp1
+            {
+                auto& tgt = fp.get(4, TreatAsTripleRegister{});
+                tgt.setValue(result, TreatAsExtendedReal {});
+                break;
+            }
+            case 0b00010: // fp2
+            {
+                auto& tgt = fp.get(8, TreatAsTripleRegister{});
+                tgt.setValue(result, TreatAsExtendedReal {});
+                break;
+            }
+            case 0b00011: // fp3
+            {
+                auto& tgt = fp.get(12, TreatAsTripleRegister{});
+                tgt.setValue(result, TreatAsExtendedReal {});
+                break;
+            }
+            default:
+                invalidOpcodeFault();
+                return;
+        }
+    } else {
+        // gpr
+        auto& tgt = getGPR(inst.getSrcDest(), TreatAsTripleRegister{});
+        tgt.setValue(result, TreatAsExtendedReal {});
+    }
+}
+
+void
+Core::cpysre(const REGInstruction &inst) {
+    /*
+     * we transfer the sign bit from src2 into it
+     * If src2 is positive then dst <- abs(src1)
+     * else dst <- -abs(src1);
+     * endif
+     */
+    ExtendedReal src1, src2;
+    if (inst.getM1()) {
+        // it is a floating point operation of some kind
+        switch (inst.getSrc1()) {
+            case 0b00000: // fp0
+                src1 = fp.get(0, TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{});
+                break;
+            case 0b00001: // fp1
+                src1 = fp.get(4, TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{});
+                break;
+            case 0b00010: // fp2
+                src1 = fp.get(8, TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{});
+                break;
+            case 0b00011: // fp3
+                src1 = fp.get(12, TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{});
+                break;
+            case 0b10000: // +0.0
+                src1 = +0.0;
+                break;
+            case 0b10110: // +1.0
+                src1 = +1.0;
+                break;
+            default:
+                invalidOpcodeFault();
+                return;
+        }
+    } else {
+        src1 = getGPR(inst.getSrc1(), TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{});
+    }
+    if (inst.getM2()) {
+        // it is a floating point operation of some kind
+        switch (inst.getSrc2()) {
+            case 0b00000: // fp0
+                src2 = fp.get(0, TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{});
+                break;
+            case 0b00001: // fp1
+                src2 = fp.get(4, TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{});
+                break;
+            case 0b00010: // fp2
+                src2 = fp.get(8, TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{});
+                break;
+            case 0b00011: // fp3
+                src2 = fp.get(12, TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{});
+                break;
+            case 0b10000: // +0.0
+                src2 = +0.0;
+                break;
+            case 0b10110: // +1.0
+                src2 = +1.0;
+                break;
+            default:
+                invalidOpcodeFault();
+                return;
+        }
+    } else {
+        src2 = getGPR(inst.getSrc2(), TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{});
+    }
+    if (ExtendedReal result = std::signbit(src2) == 0 ? std::fabs(src1) : -std::fabs(src1); inst.getM3()) {
+        // fp
+        switch (inst.getSrcDest()) {
+            case 0b00000: // fp0
+            {
+                auto& tgt = fp.get(0, TreatAsTripleRegister{});
+                tgt.setValue(result, TreatAsExtendedReal {});
+                break;
+            }
+            case 0b00001: // fp1
+            {
+                auto& tgt = fp.get(4, TreatAsTripleRegister{});
+                tgt.setValue(result, TreatAsExtendedReal {});
+                break;
+            }
+            case 0b00010: // fp2
+            {
+                auto& tgt = fp.get(8, TreatAsTripleRegister{});
+                tgt.setValue(result, TreatAsExtendedReal {});
+                break;
+            }
+            case 0b00011: // fp3
+            {
+                auto& tgt = fp.get(12, TreatAsTripleRegister{});
+                tgt.setValue(result, TreatAsExtendedReal {});
+                break;
+            }
+            default:
+                invalidOpcodeFault();
+                return;
+        }
+    } else {
+        // gpr
+        auto& tgt = getGPR(inst.getSrcDest(), TreatAsTripleRegister{});
+        tgt.setValue(result, TreatAsExtendedReal {});
+    }
+}

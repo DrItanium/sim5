@@ -460,7 +460,12 @@ public:
         return true;
     }
     [[nodiscard]] constexpr ExtendedReal getValue(TreatAsExtendedReal) const noexcept { return extendedReal_; }
-    void setValue(ExtendedReal value, TreatAsExtendedReal) noexcept { extendedReal_ = value; }
+    void setValue(ExtendedReal value, TreatAsExtendedReal) noexcept {
+        // this can lead to garbage so make sure that we mask out the upper 16-bits
+        extendedReal_ = value;
+        // clear out the uppermost 16-bits
+        backingStore_[2].o &= 0x0000'FFFF;
+    }
 private:
     QuadRegister backingStore_;
     ExtendedReal extendedReal_;
@@ -1653,6 +1658,8 @@ private:
     void movre(const REGInstruction& inst);
     void movrl(const REGInstruction& inst);
     void movr(const REGInstruction& inst);
+    void cpyrsre(const REGInstruction& inst);
+    void cpysre(const REGInstruction& inst);
 private:
     Ordinal systemAddressTableBase_ = 0;
     Ordinal prcbAddress_ = 0;
