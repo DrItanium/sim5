@@ -49,6 +49,7 @@ Core::processFPInstruction(const REGInstruction &inst ) {
             X(atan);
             X(sqrt);
             X(round);
+            X(scale);
 #undef X
             default:
                 unimplementedFault();
@@ -597,4 +598,24 @@ Core::roundrl(const REGInstruction &inst) {
                    fpassignment(inst, std::round(value), TreatAs<K>{});
                },
                unpackSrc1(inst, TreatAsLongReal{}));
+}
+
+void
+Core::scaler(const REGInstruction &inst) {
+    std::visit([this, &inst](auto src2) {
+                   using K = std::decay_t<decltype(src2)>;
+                   auto src1 = static_cast<Integer>(getSrc1Register(inst));
+                   fpassignment(inst, std::scalbn(src2, src1), TreatAs<K>{});
+               },
+               unpackSrc2(inst, TreatAsReal{}));
+}
+
+void
+Core::scalerl(const REGInstruction &inst) {
+    std::visit([this, &inst](auto src2) {
+                   using K = std::decay_t<decltype(src2)>;
+                   auto src1 = static_cast<Integer>(getSrc1Register(inst));
+                   fpassignment(inst, std::scalbn(src2, src1), TreatAs<K>{});
+               },
+               unpackSrc2(inst, TreatAsLongReal{}));
 }

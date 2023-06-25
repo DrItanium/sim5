@@ -1721,6 +1721,8 @@ private:
     void roundrl(const REGInstruction& inst);
     void cmpr(Real src1, Real src2) noexcept;
     void cmprl(LongReal src1, LongReal src2) noexcept;
+    void scaler(const REGInstruction& inst);
+    void scalerl(const REGInstruction& inst);
     void fpassignment(const REGInstruction& inst, ExtendedReal value, TreatAsExtendedReal);
     void fpassignment(const REGInstruction& inst, Real value, TreatAsReal);
     void fpassignment(const REGInstruction& inst, LongReal value, TreatAsLongReal);
