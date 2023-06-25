@@ -216,63 +216,8 @@ Core::cpysre(const REGInstruction &inst) {
      * else dst <- -abs(src1);
      * endif
      */
-    ExtendedReal src1, src2;
-    if (inst.getM1()) {
-        // it is a floating point operation of some kind
-        switch (inst.getSrc1()) {
-            case 0b00000: // fp0
-                src1 = fp.get(0, TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{});
-                break;
-            case 0b00001: // fp1
-                src1 = fp.get(4, TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{});
-                break;
-            case 0b00010: // fp2
-                src1 = fp.get(8, TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{});
-                break;
-            case 0b00011: // fp3
-                src1 = fp.get(12, TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{});
-                break;
-            case 0b10000: // +0.0
-                src1 = +0.0;
-                break;
-            case 0b10110: // +1.0
-                src1 = +1.0;
-                break;
-            default:
-                invalidOpcodeFault();
-                return;
-        }
-    } else {
-        src1 = getGPR(inst.getSrc1(), TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{});
-    }
-    if (inst.getM2()) {
-        // it is a floating point operation of some kind
-        switch (inst.getSrc2()) {
-            case 0b00000: // fp0
-                src2 = fp.get(0, TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{});
-                break;
-            case 0b00001: // fp1
-                src2 = fp.get(4, TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{});
-                break;
-            case 0b00010: // fp2
-                src2 = fp.get(8, TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{});
-                break;
-            case 0b00011: // fp3
-                src2 = fp.get(12, TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{});
-                break;
-            case 0b10000: // +0.0
-                src2 = +0.0;
-                break;
-            case 0b10110: // +1.0
-                src2 = +1.0;
-                break;
-            default:
-                invalidOpcodeFault();
-                return;
-        }
-    } else {
-        src2 = getGPR(inst.getSrc2(), TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{});
-    }
+    auto src2 = unpackSrc2(inst, TreatAsExtendedReal{});
+    auto src1 = unpackSrc1(inst, TreatAsExtendedReal{});
     fpassignment(inst, std::signbit(src2) == 0 ? std::fabs(src1) : -std::fabs(src1), TreatAsExtendedReal{});
 }
 
@@ -519,16 +464,6 @@ Core::unpackSrc2(const REGInstruction &inst, TreatAsReal) const {
         return getGPR(inst.getSrc2()).getValue<Real>();
     }
 }
-void
-Core::cosr(const REGInstruction &inst) {
-
-    unimplementedFault();
-}
-
-void
-Core::cosrl(const REGInstruction &inst) {
-    unimplementedFault();
-}
 
 ExtendedReal
 Core::unpackSrc1(const REGInstruction &inst, TreatAsExtendedReal) const {
@@ -554,4 +489,22 @@ Core::unpackSrc2(const REGInstruction &inst, TreatAsExtendedReal) const {
     } else {
         return getGPR(inst.getSrc2(), TreatAsTripleRegister{}).getValue<ExtendedReal>();
     }
+}
+
+void
+Core::cosr(const REGInstruction &inst) {
+    std::visit([this, &inst](auto value) {
+                   using K = std::decay_t<decltype(value)>;
+                   fpassignment(inst, std::cos(value), TreatAs<K>{});
+               },
+               unpackSrc1(inst, TreatAsReal{}));
+}
+
+void
+Core::cosrl(const REGInstruction &inst) {
+    std::visit([this, &inst](auto value) {
+                   using K = std::decay_t<decltype(value)>;
+                   fpassignment(inst, std::cos(value), TreatAs<K>{});
+               },
+               unpackSrc1(inst, TreatAsLongReal{}));
 }
