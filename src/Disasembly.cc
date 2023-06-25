@@ -31,7 +31,7 @@
 namespace {
     std::string getOpcodeMnemonic(Opcodes code) {
         switch (code) {
-#define X(name, code, str, level, privileged, fmt) case Opcodes:: name : return str ;
+#define X(name, code, str, level, privileged, fmt, flt) case Opcodes:: name : return str ;
 #include "Opcodes.def"
 #undef X
             default:

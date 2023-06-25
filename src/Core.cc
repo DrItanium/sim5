@@ -760,12 +760,6 @@ Core::processInstruction(const REGInstruction & inst) {
         case Opcodes::dmovt:
             dmovt(regDest, static_cast<Ordinal>(src1));
             break;
-        case Opcodes::classr:
-            classr(inst);
-            break;
-        case Opcodes::classrl:
-            classrl(inst);
-            break;
         case Opcodes::cmpstr:
             cmpstr(static_cast<Ordinal>(src1), static_cast<Ordinal>(src2), static_cast<Ordinal>(regDest));
             break;
@@ -817,12 +811,6 @@ Core::processInstruction(const REGInstruction & inst) {
         case Opcodes::receive:
             receive(static_cast<SegmentSelector>(src1), regDest);
             break;
-        case Opcodes::movr:
-            movr(inst);
-            break;
-        case Opcodes::movrl:
-            movrl(inst);
-            break;
         case Opcodes::movre:
             movre(inst);
             break;
@@ -832,6 +820,15 @@ Core::processInstruction(const REGInstruction & inst) {
         case Opcodes::cpysre:
             cpysre(inst);
             break;
+#define X(name) case Opcodes :: name ## r : name ## r (inst) ; break;\
+            case Opcodes:: name ## rl : name ## rl (inst); break
+            X(class);
+            X(cos);
+            X(mov);
+#undef X
+
+
+
         default:
             unimplementedFault();
             break;

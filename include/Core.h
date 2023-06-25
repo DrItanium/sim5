@@ -87,13 +87,13 @@ constexpr Ordinal EventNoticeFault = 0x000e'0001;
 constexpr Ordinal OverrideFault = 0x0010'0000;
 
 enum class Opcodes : uint16_t {
-#define X(name, opcode, str, level, privileged, fmt) name = opcode ,
+#define X(name, opcode, str, level, privileged, fmt, flt) name = opcode ,
 #include "Opcodes.def"
 #undef X
 };
 constexpr bool isPrivileged(Opcodes code) noexcept {
     switch (code)  {
-#define X(name, opcode, str, level, privileged, fmt) case Opcodes:: name : return privileged;
+#define X(name, opcode, str, level, privileged, fmt, flt) case Opcodes:: name : return privileged;
 #include "Opcodes.def"
 #undef X
         default:
@@ -107,7 +107,7 @@ static_assert(!IsPrivileged<Opcodes::addi>);
 
 constexpr ArchitectureLevel getArchitectureLevel(Opcodes code) noexcept {
     switch (code) {
-#define X(name, opcode, str, level, privileged, fmt) case Opcodes :: name : return ArchitectureLevel :: level ;
+#define X(name, opcode, str, level, privileged, fmt, flt) case Opcodes :: name : return ArchitectureLevel :: level ;
 #include "Opcodes.def"
 #undef X
         default:
@@ -1650,7 +1650,9 @@ private:
     void cosrl(const REGInstruction& inst);
     void cmpr(Real src1, Real src2) noexcept;
     void cmprl(LongReal src1, LongReal src2) noexcept;
-    void fpassignment(const REGInstruction& inst, ExtendedReal value);
+    void fpassignment(const REGInstruction& inst, ExtendedReal value, TreatAsExtendedReal);
+    void fpassignment(const REGInstruction& inst, Real value, TreatAsReal);
+    void fpassignment(const REGInstruction& inst, LongReal value, TreatAsLongReal);
 private:
     Ordinal systemAddressTableBase_ = 0;
     Ordinal prcbAddress_ = 0;

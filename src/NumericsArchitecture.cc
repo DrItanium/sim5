@@ -462,7 +462,7 @@ Core::cpyrsre(const REGInstruction &inst) {
     } else {
         src2 = getGPR(inst.getSrc2(), TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{});
     }
-    fpassignment(inst, std::signbit(src2) != 0 ? std::fabs(src1) : -std::fabs(src1));
+    fpassignment(inst, std::signbit(src2) != 0 ? std::fabs(src1) : -std::fabs(src1), TreatAsExtendedReal{});
 }
 
 void
@@ -530,11 +530,11 @@ Core::cpysre(const REGInstruction &inst) {
     } else {
         src2 = getGPR(inst.getSrc2(), TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{});
     }
-    fpassignment(inst, std::signbit(src2) == 0 ? std::fabs(src1) : -std::fabs(src1));
+    fpassignment(inst, std::signbit(src2) == 0 ? std::fabs(src1) : -std::fabs(src1), TreatAsExtendedReal{});
 }
 
 void
-Core::fpassignment(const REGInstruction &inst, ExtendedReal result) {
+Core::fpassignment(const REGInstruction &inst, ExtendedReal result, TreatAsExtendedReal) {
     if(inst.getM3()) {
         // fp
         switch (inst.getSrcDest()) {
@@ -570,4 +570,71 @@ Core::fpassignment(const REGInstruction &inst, ExtendedReal result) {
         // gpr
         getGPR(inst.getSrcDest(), TreatAsTripleRegister {}).setValue(result, TreatAsExtendedReal {});
     }
+}
+
+void
+Core::cosr(const REGInstruction &inst) {
+    Real src1, src2;
+    if (inst.getM1()) {
+        // it is a floating point operation of some kind
+        switch (inst.getSrc1()) {
+            case 0b00000: // fp0
+                src1 = fp.get(0, TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{});
+                break;
+            case 0b00001: // fp1
+                src1 = fp.get(4, TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{});
+                break;
+            case 0b00010: // fp2
+                src1 = fp.get(8, TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{});
+                break;
+            case 0b00011: // fp3
+                src1 = fp.get(12, TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{});
+                break;
+            case 0b10000: // +0.0
+                src1 = +0.0;
+                break;
+            case 0b10110: // +1.0
+                src1 = +1.0;
+                break;
+            default:
+                invalidOpcodeFault();
+                return;
+        }
+    } else {
+        src1 = getGPR(inst.getSrc1(), TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{});
+    }
+    if (inst.getM2()) {
+        // it is a floating point operation of some kind
+        switch (inst.getSrc2()) {
+            case 0b00000: // fp0
+                src2 = fp.get(0, TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{});
+                break;
+            case 0b00001: // fp1
+                src2 = fp.get(4, TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{});
+                break;
+            case 0b00010: // fp2
+                src2 = fp.get(8, TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{});
+                break;
+            case 0b00011: // fp3
+                src2 = fp.get(12, TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{});
+                break;
+            case 0b10000: // +0.0
+                src2 = +0.0;
+                break;
+            case 0b10110: // +1.0
+                src2 = +1.0;
+                break;
+            default:
+                invalidOpcodeFault();
+                return;
+        }
+    } else {
+        src2 = getGPR(inst.getSrc2(), TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{});
+    }
+    unimplementedFault();
+}
+
+void
+Core::cosrl(const REGInstruction &inst) {
+    unimplementedFault();
 }
