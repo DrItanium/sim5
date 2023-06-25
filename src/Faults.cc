@@ -315,3 +315,12 @@ Core::invalidOperandFault() const {
                        (Ordinal)ip_,
                        false);
 }
+
+void
+Core::floatingInvalidOperationFault() {
+    throw FaultRecord((Ordinal)pc_,
+                       (Ordinal)ac_,
+                       FloatingPointInvalidOperationFault,
+                       (Ordinal)ip_,
+                       true);
+}

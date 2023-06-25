@@ -257,18 +257,21 @@ constexpr Ordinal computeNextFrame(Ordinal base) noexcept {
 template<typename Q>
 requires Is960Comparable<Q>
 constexpr ByteOrdinal performCompare(Q src1, Q src2) noexcept {
-    if constexpr (std::is_floating_point_v<Q>) {
-        // unordered checks, one or both are NaN
-        if (std::isnan(src1) || std::isnan(src2)) {
-            return 0b000;
-        }
-    }
     if (src1 < src2) {
         return 0b100;
     } else if (src1 == src2) {
         return 0b010;
     } else {
-        return 0b001;
+        if constexpr (std::is_floating_point_v<Q>) {
+            // unordered checks, one or both are NaN if the greater than check fails
+           if (src1 > src2)  {
+               return 0b001;
+           } else {
+               return 0b000;
+           }
+        } else {
+            return 0b001;
+        }
     }
 }
 static_assert(performCompare<Ordinal>(0u, 1u) == 0b100);
@@ -331,12 +334,5 @@ static_assert(isLessThanOrEqualTo<Integer>(0, 0));
 static_assert(isLessThanOrEqualTo<Integer>(-1, -1));
 static_assert(isLessThanOrEqualTo<Real>(1.0, 2.0));
 
-template<typename Q>
-constexpr bool isUnordered(Q src1, Q src2) noexcept {
-    return performCompare<Q>(src1, src2) == 0b000;
-}
-static_assert(!isUnordered<Ordinal>(0, 0));
-static_assert(!isUnordered<Real>(0, 0));
-static_assert(isUnordered<Real>(NAN, 0));
 
 #endif // end SIM5_BINARY_OPERATIONS_H__

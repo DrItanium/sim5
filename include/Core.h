@@ -87,6 +87,17 @@ constexpr Ordinal InvalidDescriptorFault = 0x000d'0001;
 constexpr Ordinal EventNoticeFault = 0x000e'0001;
 constexpr Ordinal OverrideFault = 0x0010'0000;
 
+constexpr Ordinal FloatingPointFaultBase = 0x0004'0000;
+template<uint8_t subtype>
+constexpr Ordinal FloatingPointFaultSubType= FloatingPointFaultBase | subtype;
+
+constexpr auto FloatingPointOverflowFault = FloatingPointFaultSubType<0b0000'0001>;
+constexpr auto FloatingPointUnderflowFault  = FloatingPointFaultSubType<0b0000'0010>;
+constexpr auto FloatingPointInvalidOperationFault  = FloatingPointFaultSubType<0b0000'0100>;
+constexpr auto FloatingPointZeroDivideOperationFault = FloatingPointFaultSubType<0b0000'1000>;
+constexpr auto FloatingPointInexactFault = FloatingPointFaultSubType<0b0001'0000>;
+constexpr auto FloatingPointReservedEncodingFault = FloatingPointFaultSubType<0b0010'0000>;
+
 enum class Opcodes : uint16_t {
 #define X(name, opcode, str, level, privileged, fmt, flt) name = opcode ,
 #include "Opcodes.def"
@@ -1455,6 +1466,7 @@ private:
     void invalidOperandFault();
     void invalidDescriptorFault(SegmentSelector selector);
     void eventNoticeFault();
+    void floatingInvalidOperationFault();
     void generateFault(const FaultRecord& record) ;
     void addi(Register& dest, Integer src1, Integer src2);
     void addo(Register& dest, Ordinal src1, Ordinal src2);
@@ -1719,12 +1731,14 @@ private:
     void sqrtrl(const REGInstruction& inst);
     void roundr(const REGInstruction& inst);
     void roundrl(const REGInstruction& inst);
-    void cmpr(Real src1, Real src2) noexcept;
-    void cmprl(LongReal src1, LongReal src2) noexcept;
     void scaler(const REGInstruction& inst);
     void scalerl(const REGInstruction& inst);
     void addr(const REGInstruction& inst);
     void addrl(const REGInstruction& inst);
+    void cmpr(const REGInstruction& inst) noexcept;
+    void cmprl(const REGInstruction& inst) noexcept;
+    void cmpor(const REGInstruction& inst);
+    void cmporl(const REGInstruction& inst);
     void fpassignment(const REGInstruction& inst, ExtendedReal value, TreatAsExtendedReal);
     void fpassignment(const REGInstruction& inst, Real value, TreatAsReal);
     void fpassignment(const REGInstruction& inst, LongReal value, TreatAsLongReal);

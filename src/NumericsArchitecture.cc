@@ -50,6 +50,9 @@ Core::processFPInstruction(const REGInstruction &inst ) {
             X(sqrt);
             X(round);
             X(scale);
+            X(add);
+            X(cmpo);
+            X(cmp);
 #undef X
             default:
                 unimplementedFault();
@@ -118,16 +121,12 @@ Core::classrl(const REGInstruction& inst) {
                },
                unpackSrc1(inst, TreatAsLongReal{}));
 }
-
-void
-Core::cmpr(Real src1, Real src2) noexcept {
-    cmpGeneric<Real>(src1, src2);
+template<typename T>
+requires std::floating_point<T>
+bool isNAN(T value) noexcept {
+    return std::fpclassify(value) == FP_NAN;
 }
 
-void
-Core::cmprl(LongReal src1, LongReal src2) noexcept {
-    cmpGeneric<LongReal>(src1, src2);
-}
 
 void
 Core::movr(const REGInstruction &inst) {
@@ -619,23 +618,87 @@ Core::scalerl(const REGInstruction &inst) {
                },
                unpackSrc2(inst, TreatAsLongReal{}));
 }
-
+template<typename T0, typename T1, typename T2>
+constexpr bool BothAreSameAs = std::is_same_v<T0, T1> && std::is_same_v<T0, T2>;
+template<typename T0, typename T1>
+constexpr bool BothAreReal = BothAreSameAs<T0, T1, Real>;
+template<typename T0, typename T1>
+constexpr bool BothAreLongReal = BothAreSameAs<T0, T1, LongReal>;
 void
 Core::addr(const REGInstruction &inst) {
     std::visit([this, &inst](auto src1, auto src2) {
                    using K0 = std::decay_t<decltype(src1)>;
                    using K1 = std::decay_t<decltype(src2)>;
-                   if constexpr (std::is_same_v<K0, K1>) {
-                        if constexpr (std::is_same_v<K0, ExtendedReal>)  {
-                            fpassignment(inst, src2 + src1, TreatAsExtendedReal {});
-                        } else {
-                            ///@todo implement support for mixed assignment where the destination is 80bit but the computation was 32-bit
-                        }
+                   if constexpr (BothAreReal<K0, K1>) {
+                       // if we get real/real then we assign as real, every other case mixed so treat them as long double/long double
+                       fpassignment(inst, src2 + src1, TreatAsReal{});
                    } else {
-                       // if they are different then it means mixed addition
+                       // if they are different then it means mixed addition so we should always do 80-bit operations
                        fpassignment(inst, src2 + src1, TreatAsExtendedReal{});
                    }
                },
                unpackSrc1(inst, TreatAsReal{}),
                unpackSrc2(inst, TreatAsReal{}));
+}
+
+void
+Core::addrl(const REGInstruction &inst) {
+    std::visit([this, &inst](auto src1, auto src2) {
+                   using K0 = std::decay_t<decltype(src1)>;
+                   using K1 = std::decay_t<decltype(src2)>;
+                   if constexpr (BothAreLongReal<K0, K1>) {
+                       fpassignment(inst, src2 + src1, TreatAsLongReal{});
+                   } else {
+                       // if they are different then it means mixed addition so we should always do 80-bit operations
+                       fpassignment(inst, src2 + src1, TreatAsExtendedReal{});
+                   }
+               },
+               unpackSrc1(inst, TreatAsLongReal{}),
+               unpackSrc2(inst, TreatAsLongReal{}));
+}
+
+void
+Core::cmpor(const REGInstruction &inst) {
+    cmpr(inst);
+    if (!ac_.getConditionCode()) {
+        floatingInvalidOperationFault();
+    }
+}
+
+void
+Core::cmporl(const REGInstruction &inst) {
+    cmprl(inst);
+    if (!ac_.getConditionCode()) {
+        floatingInvalidOperationFault();
+    }
+}
+
+void
+Core::cmpr(const REGInstruction &inst) noexcept {
+    std::visit([this, &inst](auto src1, auto src2) {
+                   using K0 = std::decay_t<decltype(src1)>;
+                   using K1 = std::decay_t<decltype(src2)>;
+                   if constexpr (BothAreReal<K0, K1>) {
+                       cmpGeneric<Real>(src1, src2);
+                   } else {
+                       cmpGeneric<ExtendedReal>(src1, src2);
+                   }
+               },
+               unpackSrc1(inst, TreatAsReal{}),
+               unpackSrc2(inst, TreatAsReal{}));
+}
+
+void
+Core::cmprl(const REGInstruction &inst) noexcept {
+    std::visit([this, &inst](auto src1, auto src2) {
+                   using K0 = std::decay_t<decltype(src1)>;
+                   using K1 = std::decay_t<decltype(src2)>;
+                   if constexpr (BothAreLongReal<K0, K1>) {
+                       cmpGeneric<LongReal>(src1, src2);
+                   } else {
+                       cmpGeneric<ExtendedReal>(src1, src2);
+                   }
+               },
+               unpackSrc1(inst, TreatAsLongReal{}),
+               unpackSrc2(inst, TreatAsLongReal{}));
 }
