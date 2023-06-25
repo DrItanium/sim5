@@ -617,3 +617,78 @@ Core::processFPInstruction(const REGInstruction &inst ) {
         unimplementedFault();
     }
 }
+
+namespace {
+    TripleRegister bogus;
+}
+const TripleRegister&
+Core::getFloatingPointRegister(ByteOrdinal index) const {
+    switch (index) {
+        case 0b00000: // fp0
+            return fp.get(0, TreatAsTripleRegister{});
+        case 0b00001: // fp1
+            return fp.get(4, TreatAsTripleRegister{});
+        case 0b00010: // fp2
+            return fp.get(8, TreatAsTripleRegister{});
+        case 0b00011: // fp3
+            return fp.get(12, TreatAsTripleRegister{});
+        case 0b10000: // +0.0
+            return fpZero;
+        case 0b10110: // +1.0
+            return fpOne;
+        default:
+            invalidOpcodeFault();
+            return bogus;
+    }
+}
+TripleRegister&
+Core::getFloatingPointRegister(ByteOrdinal index) {
+    switch (index) {
+        case 0b00000: // fp0
+            return fp.get(0, TreatAsTripleRegister{});
+        case 0b00001: // fp1
+            return fp.get(4, TreatAsTripleRegister{});
+        case 0b00010: // fp2
+            return fp.get(8, TreatAsTripleRegister{});
+        case 0b00011: // fp3
+            return fp.get(12, TreatAsTripleRegister{});
+        default:
+            invalidOpcodeFault();
+            return bogus;
+    }
+}
+
+Core::MixedLongRealSourceArgument
+Core::unpackSrc1(const REGInstruction& inst, TreatAsLongReal) const {
+    if (inst.getM1()) {
+        return getFloatingPointRegister(inst.getSrc1()).getValue<ExtendedReal >();
+    } else {
+        return getGPR(inst.getSrc1(), TreatAsLongRegister{}).getValue<LongReal>();
+    }
+}
+Core::MixedLongRealSourceArgument
+Core::unpackSrc2(const REGInstruction& inst, TreatAsLongReal) const {
+    if (inst.getM2()) {
+        return getFloatingPointRegister(inst.getSrc2()).getValue<ExtendedReal >();
+    } else {
+        return getGPR(inst.getSrc2(), TreatAsLongRegister{}).getValue<LongReal>();
+    }
+}
+
+Core::MixedRealSourceArgument
+Core::unpackSrc1(const REGInstruction &inst, TreatAsReal) const {
+    if (inst.getM1()) {
+        return getFloatingPointRegister(inst.getSrc1()).getValue<ExtendedReal >();
+    } else {
+        return getGPR(inst.getSrc1()).getValue<Real>();
+    }
+}
+
+Core::MixedRealSourceArgument
+Core::unpackSrc2(const REGInstruction &inst, TreatAsReal) const {
+    if (inst.getM2()) {
+        return getFloatingPointRegister(inst.getSrc2()).getValue<ExtendedReal >();
+    } else {
+        return getGPR(inst.getSrc2()).getValue<Real>();
+    }
+}

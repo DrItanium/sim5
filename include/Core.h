@@ -33,6 +33,7 @@
 #include <istream>
 #include <iostream>
 #include <optional>
+#include <variant>
 constexpr uint8_t getDebugLoggingLevel() noexcept {
     return 0;
 }
@@ -432,9 +433,10 @@ private:
 };
 static_assert(sizeof(QuadRegister) == (2*sizeof(LongOrdinal)));
 using TreatAsQuadRegister = TreatAs<QuadRegister>;
-class TripleRegister {
+union TripleRegister {
 public:
     TripleRegister() = default;
+    explicit constexpr TripleRegister(ExtendedReal value) noexcept : extendedReal_(value) {}
     TripleRegister& operator=(const TripleRegister& other) noexcept {
         setValue<Ordinal>(0, other.getValue<Ordinal>(0));
         setValue<Ordinal>(1, other.getValue<Ordinal>(1));
@@ -482,11 +484,16 @@ public:
         // clear out the uppermost 16-bits
         backingStore_[2].o &= 0x0000'FFFF;
     }
+    template<typename T>
+    constexpr T getValue() const noexcept {
+        return getValue(TreatAs<T>{});
+    }
 private:
     QuadRegister backingStore_;
     ExtendedReal extendedReal_;
 };
-
+constexpr TripleRegister fpOne{+1.0};
+constexpr TripleRegister fpZero{+0.0};
 /**
  * @brief a 80-bit floating point register
  */
@@ -1407,7 +1414,7 @@ private:
     void typeMismatchFault();
     void typeContentsFault();
     void markTraceFault();
-    void invalidOpcodeFault();
+    void invalidOpcodeFault() const;
     void protectionLengthFault();
     void invalidOperandFault();
     void invalidDescriptorFault(SegmentSelector selector);
@@ -1656,6 +1663,7 @@ private:
     void ldib(Address address, Register& dest);
     void ldis(Address address, Register& dest);
 private:
+
     void movre(const REGInstruction& inst);
     void movrl(const REGInstruction& inst);
     void movr(const REGInstruction& inst);
@@ -1668,6 +1676,16 @@ private:
     void cmpr(Real src1, Real src2) noexcept;
     void cmprl(LongReal src1, LongReal src2) noexcept;
     void fpassignment(const REGInstruction& inst, ExtendedReal value, TreatAsExtendedReal);
+    void fpassignment(const REGInstruction& inst, Real value, TreatAsReal);
+    void fpassignment(const REGInstruction& inst, LongReal value, TreatAsLongReal);
+    using MixedRealSourceArgument = std::variant<Real, ExtendedReal>;
+    using MixedLongRealSourceArgument = std::variant<LongReal, ExtendedReal>;
+    MixedRealSourceArgument unpackSrc1(const REGInstruction& index, TreatAsReal) const;
+    MixedRealSourceArgument unpackSrc2(const REGInstruction& index, TreatAsReal) const;
+    MixedLongRealSourceArgument unpackSrc1(const REGInstruction& index, TreatAsLongReal) const;
+    MixedLongRealSourceArgument unpackSrc2(const REGInstruction& index, TreatAsLongReal) const;
+    TripleRegister& getFloatingPointRegister(ByteOrdinal index);
+    const TripleRegister& getFloatingPointRegister(ByteOrdinal index) const;
 private:
     Ordinal systemAddressTableBase_ = 0;
     Ordinal prcbAddress_ = 0;

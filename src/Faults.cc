@@ -187,7 +187,7 @@ Core::unimplementedFault() {
 }
 
 void
-Core::invalidOpcodeFault() {
+Core::invalidOpcodeFault() const {
     throw FaultRecord ((Ordinal)pc_,
                        (Ordinal)ac_,
                        InvalidOpcodeFault,
