@@ -39,7 +39,7 @@ Core::getSrc1Register(const REGInstruction& inst) const noexcept {
 const Register&
 Core::getSrc2Register(const REGInstruction& inst) const noexcept {
     if (auto src2 = inst.getSrc2(); inst.getM2()) {
-        /// @todo what to do if s1 is also set?
+        /// @todo what to do if s2 is also set?
         return constants_.get(src2);
     } else if (inst.getS2()) {
         return getSFR(src2);

@@ -34,7 +34,7 @@ Core::dmovt(Register& dest, Ordinal src) noexcept {
 }
 
 void
-Core::classr(const REGInstruction& inst) noexcept {
+Core::classr(const REGInstruction& inst) {
     Register src;
     if (inst.getM1()) {
         // it is a floating point operation of some kind
@@ -87,7 +87,7 @@ Core::classr(const REGInstruction& inst) noexcept {
     }
 }
 void
-Core::classrl(const REGInstruction& inst) noexcept {
+Core::classrl(const REGInstruction& inst) {
     LongReal src1 = 0.0;
     if (inst.getM1()) {
         // it is a floating point operation of some kind

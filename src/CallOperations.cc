@@ -87,7 +87,7 @@ Core::setupNewFrameInternals(Ordinal fp, Ordinal temp) noexcept {
 
 
 void
-Core::callx(Address effectiveAddress) noexcept {
+Core::callx(Address effectiveAddress) {
     DEBUG_ENTER_FUNCTION;
     // wait for any uncompleted instructions to finish
     auto temp = getNextFrameBase(); // round stack pointer to next boundary
@@ -131,7 +131,7 @@ Core::callx(Address effectiveAddress) noexcept {
 
 
 void
-Core::call(Integer displacement) noexcept {
+Core::call(Integer displacement) {
     DEBUG_ENTER_FUNCTION;
     // wait for any uncompleted instructions to finish
     auto temp = getNextFrameBase(); // round stack pointer to next boundary
@@ -174,10 +174,9 @@ Core::call(Integer displacement) noexcept {
 }
 
 void
-Core::calls(Ordinal src1) noexcept {
+Core::calls(Ordinal src1) {
     if (auto targ = src1; targ > 259) {
         protectionLengthFault();
-        //generateFault(ProtectionLengthFault);
     } else {
         syncf();
         auto tempPE = load<Ordinal>(getSystemProcedureTableBase() + 48 + (4 * targ));
@@ -279,7 +278,7 @@ Core::interruptReturn() {
     }
 }
 void
-Core::ret() noexcept {
+Core::ret() {
     DEBUG_ENTER_FUNCTION;
     syncf();
     auto& pfp = getGPR(PFPIndex);
@@ -335,7 +334,7 @@ Core::restoreRIPToIP() {
 }
 
 void
-Core::flushreg() noexcept {
+Core::flushreg() {
     if constexpr (NumberOfLocalRegisterFrames > 1) {
         for (auto curr = localRegisterFrameIndex_+ 1; curr != localRegisterFrameIndex_; curr = ((curr + 1) % NumberOfLocalRegisterFrames)) {
             frames_[curr].relinquishOwnership([this](const RegisterFrame& frame, Address dest) noexcept { saveRegisterFrame(frame, dest); });
@@ -368,13 +367,13 @@ Core::saveReturnAddress(ByteOrdinal linkRegister) noexcept {
 }
 
 void
-Core::balx(ByteOrdinal linkRegister, Ordinal branchTo) noexcept {
+Core::balx(ByteOrdinal linkRegister, Ordinal branchTo) {
     saveReturnAddress(linkRegister);
     setIP(branchTo);
 }
 
 void
-Core::balx(Register& linkRegister, Ordinal branchTo) noexcept {
+Core::balx(Register& linkRegister, Ordinal branchTo) {
     saveReturnAddress(linkRegister);
     setIP(branchTo);
 }

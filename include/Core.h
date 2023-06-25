@@ -961,7 +961,7 @@ private:
     [[nodiscard]] const Register& getSrc1Register(const REGInstruction&) const noexcept;
     [[nodiscard]] const Register& getSrc2Register(const REGInstruction&) const noexcept;
     [[nodiscard]] Register& getSrc1Register(const COBRInstruction&) noexcept;
-    [[nodiscard]] const Register& getSrc2Register(const COBRInstruction&) const noexcept;
+    [[nodiscard]] const Register& getSrc2Register(const COBRInstruction&) const noexcept ;
     [[nodiscard]] Ordinal unpackSrc1(const REGInstruction&, ByteOrdinal offset, TreatAsOrdinal) noexcept;
     template<typename Q>
     void moveGPR(ByteOrdinal destIndex, ByteOrdinal srcIndex, std::function<Q(Q)> transform, TreatAs<Q>) noexcept {
@@ -986,7 +986,7 @@ private:
     bool fullConditionCodeCheck() noexcept;
     bool fullConditionCodeCheck(uint8_t mask) noexcept;
     std::optional<Ordinal> computeAddress(const MEMInstruction&) noexcept;
-    void performRegisterTransfer(const REGInstruction&, ByteOrdinal mask, ByteOrdinal count) noexcept;
+    void performRegisterTransfer(const REGInstruction&, ByteOrdinal mask, ByteOrdinal count) ;
 private:
     void sendIAC(const iac::Message& msg) noexcept;
     void dispatchInterrupt(uint8_t vector) noexcept;
@@ -1017,13 +1017,13 @@ private:
 #endif
 private:
     // instructions
-    void syncf() noexcept;
-    void mark() noexcept;
-    void fmark() noexcept;
-    void synld(Register& dest, Ordinal src) noexcept;
-    void synmov(const Register& dest, Ordinal src) noexcept;
-    void synmovl(const Register& dest, Ordinal src) noexcept;
-    void synmovq(const Register& dest, Ordinal src) noexcept;
+    void syncf() ;
+    void mark() ;
+    void fmark() ;
+    void synld(Register& dest, Ordinal src) ;
+    void synmov(const Register& dest, Ordinal src) ;
+    void synmovl(const Register& dest, Ordinal src) ;
+    void synmovq(const Register& dest, Ordinal src) ;
     template<bool doScan>
     inline void
     xbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
@@ -1053,10 +1053,10 @@ private:
     }
     void branch(Integer displacement) noexcept;
     void branchConditional(bool condition, Integer displacement) noexcept;
-    void scanbyte(Ordinal src1, Ordinal src2) noexcept;
-    void emul(const REGInstruction& inst, LongRegister& dest, Ordinal src1, Ordinal src2) noexcept;
-    void ediv(const REGInstruction& inst, LongRegister& dest, Ordinal src1, const LongRegister& src2) noexcept;
-    void arithmeticWithCarryGeneric(Ordinal result, bool src2MSB, bool src1MSB, bool destMSB) noexcept;
+    void scanbyte(Ordinal src1, Ordinal src2) ;
+    void emul(const REGInstruction& inst, LongRegister& dest, Ordinal src1, Ordinal src2) ;
+    void ediv(const REGInstruction& inst, LongRegister& dest, Ordinal src1, const LongRegister& src2) ;
+    void arithmeticWithCarryGeneric(Ordinal result, bool src2MSB, bool src1MSB, bool destMSB) ;
     inline void advanceCOBRDisplacement(Integer displacement) noexcept {
         ip_.i += displacement;
         advanceInstruction_ = false;
@@ -1142,28 +1142,28 @@ private:
     inline void cmpibGeneric(uint8_t mask, Integer src1, Integer src2, int16_t displacement) noexcept {
         cmpxbGeneric(mask, src1, src2, displacement, TreatAsInteger{});
     }
-    void flushreg() noexcept;
-    void balx(ByteOrdinal linkRegister, Ordinal branchTo) noexcept;
-    void calls(Ordinal value) noexcept;
-    void ldl(const MEMInstruction&, Address address, LongRegister& destination) noexcept;
-    void ldq(const MEMInstruction&, Address address, QuadRegister& destination) noexcept;
-    void ldt(const MEMInstruction&, Address address, TripleRegister& destination) noexcept;
-    void stq(const MEMInstruction&, Address address, const QuadRegister& src) noexcept;
-    void stt(const MEMInstruction&, Address address, const TripleRegister& src) noexcept;
-    void stl(const MEMInstruction&, Address address, const LongRegister& src) noexcept;
-    void ret() noexcept;
-    void call(Integer displacement) noexcept;
-    void callx(Address effectiveAddress) noexcept;
+    void flushreg() ;
+    void balx(ByteOrdinal linkRegister, Ordinal branchTo) ;
+    void calls(Ordinal value) ;
+    void ldl(const MEMInstruction&, Address address, LongRegister& destination) ;
+    void ldq(const MEMInstruction&, Address address, QuadRegister& destination) ;
+    void ldt(const MEMInstruction&, Address address, TripleRegister& destination) ;
+    void stq(const MEMInstruction&, Address address, const QuadRegister& src) ;
+    void stt(const MEMInstruction&, Address address, const TripleRegister& src) ;
+    void stl(const MEMInstruction&, Address address, const LongRegister& src) ;
+    void ret() ;
+    void call(Integer displacement) ;
+    void callx(Address effectiveAddress) ;
 private:
     void enterCall(Ordinal fp);
     void leaveCall();
     void restoreStandardFrame() noexcept;
 private:
-    void performConditionalSubtract(Register& dest, Integer src1, Integer src2, TreatAsInteger) noexcept;
-    void performConditionalSubtract(Register& dest, Ordinal src1, Ordinal src2, TreatAsOrdinal) noexcept;
-    void performConditionalAdd(Register& dest, Integer src1, Integer src2, TreatAsInteger) noexcept;
-    void performConditionalAdd(Register& dest, Ordinal src1, Ordinal src2, TreatAsOrdinal) noexcept;
-    void performSelect(Register& dest, Ordinal src1, Ordinal src2) noexcept;
+    void performConditionalSubtract(Register& dest, Integer src1, Integer src2, TreatAsInteger) ;
+    void performConditionalSubtract(Register& dest, Ordinal src1, Ordinal src2, TreatAsOrdinal) ;
+    void performConditionalAdd(Register& dest, Integer src1, Integer src2, TreatAsInteger) ;
+    void performConditionalAdd(Register& dest, Ordinal src1, Ordinal src2, TreatAsOrdinal) ;
+    void performSelect(Register& dest, Ordinal src1, Ordinal src2) ;
 protected:
 #define X(type) \
         type load(Address addr, TreatAs< type > ) const noexcept; \
@@ -1276,7 +1276,7 @@ private:
             andnot(dest, s1, src2);
         }
     }
-    inline void addc(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+    inline void addc(Register& dest, Ordinal src1, Ordinal src2) {
         LongOrdinal result = static_cast<LongOrdinal>(src2) + static_cast<LongOrdinal>(src1);
         result += (ac_.getCarryBit() ? 1 : 0);
         dest.setValue<Ordinal>(result);
@@ -1288,7 +1288,7 @@ private:
                                    mostSignificantBit(src1),
                                    mostSignificantBit(dest.getValue<Ordinal>()));
     }
-    inline void subc(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+    inline void subc(Register& dest, Ordinal src1, Ordinal src2) {
         LongOrdinal result = static_cast<LongOrdinal>(src2) - static_cast<LongOrdinal>(src1) - 1;
         result += (ac_.getCarryBit() ? 1 : 0);
         dest.setValue<Ordinal>(result);
@@ -1299,7 +1299,7 @@ private:
     }
     template<typename Q>
     requires MustBeOrdinalOrInteger<Q>
-    void remainderOperation(Register& dest, Q src1, Q src2) noexcept {
+    void remainderOperation(Register& dest, Q src1, Q src2) {
         if (src1 == 0) {
             zeroDivideFault();
         } else {
@@ -1309,17 +1309,17 @@ private:
             nextInstruction();
         }
     }
-    void remi(Register& dest, Integer src1, Integer src2) noexcept {
+    void remi(Register& dest, Integer src1, Integer src2) {
         remainderOperation<Integer>(dest, src1, src2);
         nextInstruction();
         faultOnOverflow(dest);
     }
-    void remo(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+    void remo(Register& dest, Ordinal src1, Ordinal src2) {
         remainderOperation<Ordinal>(dest, src1, src2);
     }
     template<typename Q>
     requires MustBeOrdinalOrInteger<Q>
-    void divideOperation(Register& dest, Q src1, Q src2) noexcept {
+    void divideOperation(Register& dest, Q src1, Q src2) {
         if (src1 == 0) {
             /// @todo fix this
             zeroDivideFault();
@@ -1335,7 +1335,7 @@ private:
     void divo(Register& dest, Ordinal src1, Ordinal src2) noexcept {
         divideOperation<Ordinal>(dest, src1, src2);
     }
-    void atadd(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+    void atadd(Register& dest, Ordinal src1, Ordinal src2) {
         syncf();
         lockBus();
         auto addr = maskValue<decltype(src1), 0xFFFF'FFFC>(src1) ;
@@ -1347,7 +1347,7 @@ private:
         dest.setValue<Ordinal>(temp);
         unlockBus();
     }
-    void atmod(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+    void atmod(Register& dest, Ordinal src1, Ordinal src2) {
         syncf();
         lockBus();
         auto addr = maskValue<decltype(src1), 0xFFFF'FFFC>(src1) ;
@@ -1412,9 +1412,9 @@ private:
     void invalidOperandFault();
     void invalidDescriptorFault(SegmentSelector selector);
     void eventNoticeFault();
-    void generateFault(const FaultRecord& record);
-    void addi(Register& dest, Integer src1, Integer src2) noexcept;
-    void addo(Register& dest, Ordinal src1, Ordinal src2) noexcept;
+    void generateFault(const FaultRecord& record) ;
+    void addi(Register& dest, Integer src1, Integer src2);
+    void addo(Register& dest, Ordinal src1, Ordinal src2);
     void saveReturnAddress(ByteOrdinal registerIndex) noexcept;
     void saveReturnAddress(Register& linkRegister) noexcept;
     void setupNewFrameInternals(Ordinal fp, Ordinal temp) noexcept;
@@ -1427,27 +1427,27 @@ private:
      */
     void nextInstruction() noexcept;
     void setIP(Ordinal value) noexcept;
-    void subo(Register& dest, Ordinal src1, Ordinal src2) noexcept;
-    void subi(Register& dest, Integer src1, Integer src2) noexcept;
-    void faultGeneric() noexcept;
-    void balx(Register& linkRegister, Address ordinal) noexcept;
+    void subo(Register& dest, Ordinal src1, Ordinal src2);
+    void subi(Register& dest, Integer src1, Integer src2);
+    void faultGeneric();
+    void balx(Register& linkRegister, Address ordinal);
     void processInstruction(const COBRInstruction& instruction);
     void processInstruction(const MEMInstruction&);
     void processInstruction(const REGInstruction&);
     void processInstruction(const CTRLInstruction&);
     void processFPInstruction(const REGInstruction&);
 private:
-    void modpc(Register& dest, Ordinal src1o, Ordinal src2o) noexcept;
-    void modxc(Register& control, Register& dest, Ordinal src1, Ordinal src2) noexcept;
-    void shlo(Register& srcDest, Ordinal src1, Ordinal src2) noexcept;
-    void shli(Register& srcDest, Integer src1, Integer src2) noexcept;
-    void rotate(Register& dest, Ordinal src1, Ordinal src2) noexcept;
-    void shri(Register& dest, Integer src1, Integer src2) noexcept;
-    void shro(Register& dest, Ordinal src1, Ordinal src2) noexcept;
-    void mulo(Register& dest, Ordinal src1, Ordinal src2) noexcept;
-    void muli(Register& dest, Integer src1, Integer src2) noexcept;
-    void modify(Register& dest, Ordinal src1, Ordinal src2) noexcept;
-    void extract(Register& dest, Ordinal src1, Ordinal src2) noexcept;
+    void modpc(Register& dest, Ordinal src1o, Ordinal src2o);
+    void modxc(Register& control, Register& dest, Ordinal src1, Ordinal src2);
+    void shlo(Register& srcDest, Ordinal src1, Ordinal src2) ;
+    void shli(Register& srcDest, Integer src1, Integer src2) ;
+    void rotate(Register& dest, Ordinal src1, Ordinal src2) ;
+    void shri(Register& dest, Integer src1, Integer src2) ;
+    void shro(Register& dest, Ordinal src1, Ordinal src2) ;
+    void mulo(Register& dest, Ordinal src1, Ordinal src2) ;
+    void muli(Register& dest, Integer src1, Integer src2) ;
+    void modify(Register& dest, Ordinal src1, Ordinal src2) ;
+    void extract(Register& dest, Ordinal src1, Ordinal src2) ;
 protected:
     static decltype(auto) doRandom() {
         return rand();
@@ -1518,19 +1518,19 @@ private: // numerics extensions
     void dmovt(Register& dest, Ordinal src) noexcept;
     /// @todo add support for the dedicated floating point registers as overloaded forms
 private: // protected extensions instructions
-    void signal(SegmentSelector sel) noexcept;
-    void wait(SegmentSelector src) noexcept;
-    void sendserv(SegmentSelector src) noexcept;
+    void signal(SegmentSelector sel) ;
+    void wait(SegmentSelector src) ;
+    void sendserv(SegmentSelector src) ;
     void send(SegmentSelector target, Ordinal src1, SegmentSelector src2);
-    void schedprcs(SegmentSelector src) noexcept;
-    void saveprcs() noexcept;
-    void resumprcs(SegmentSelector ss) noexcept;
-    void receive(SegmentSelector src, Register& dest) noexcept;
-    void ldtime(LongRegister& dest) noexcept;
-    void ldphy(Address address, Register& dest) noexcept;
-    void inspacc(Ordinal src, Register& dest) noexcept;
-    void condwait(SegmentSelector src) noexcept;
-    void condrec(SegmentSelector src, Register& dest) noexcept;
+    void schedprcs(SegmentSelector src) ;
+    void saveprcs() ;
+    void resumprcs(SegmentSelector ss) ;
+    void receive(SegmentSelector src, Register& dest) ;
+    void ldtime(LongRegister& dest) ;
+    void ldphy(Address address, Register& dest) ;
+    void inspacc(Ordinal src, Register& dest) ;
+    void condwait(SegmentSelector src) ;
+    void condrec(SegmentSelector src, Register& dest) ;
     void cmpstr(Ordinal src1, Ordinal src2, Ordinal len) noexcept;
     void movstr(Ordinal destAddress, Ordinal srcAddress, Ordinal len) noexcept;
     void movqstr(Ordinal destAddress, Ordinal srcAddress, Ordinal len) noexcept;
@@ -1661,15 +1661,13 @@ private:
     void movr(const REGInstruction& inst);
     void cpyrsre(const REGInstruction& inst);
     void cpysre(const REGInstruction& inst);
-    void classr(const REGInstruction& inst) noexcept;
-    void classrl(const REGInstruction& inst) noexcept;
+    void classr(const REGInstruction& inst);
+    void classrl(const REGInstruction& inst);
     void cosr(const REGInstruction& inst);
     void cosrl(const REGInstruction& inst);
     void cmpr(Real src1, Real src2) noexcept;
     void cmprl(LongReal src1, LongReal src2) noexcept;
     void fpassignment(const REGInstruction& inst, ExtendedReal value, TreatAsExtendedReal);
-    void fpassignment(const REGInstruction& inst, Real value, TreatAsReal);
-    void fpassignment(const REGInstruction& inst, LongReal value, TreatAsLongReal);
 private:
     Ordinal systemAddressTableBase_ = 0;
     Ordinal prcbAddress_ = 0;

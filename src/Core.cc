@@ -29,23 +29,23 @@
 
 
 void
-Core::mulo(Register& regDest, Ordinal src1o, Ordinal src2o) noexcept {
+Core::mulo(Register& regDest, Ordinal src1o, Ordinal src2o) {
     mult<Ordinal>(regDest, src1o, src2o, TreatAsOrdinal{});
 }
 
 
 void
-Core::muli(Register& regDest, Integer src1o, Integer src2o) noexcept {
+Core::muli(Register& regDest, Integer src1o, Integer src2o) {
     mult<Integer>(regDest, src1o, src2o, TreatAsInteger{});
 }
 
 void
-Core::modify(Register& regDest, Ordinal src1o, Ordinal src2o) noexcept {
+Core::modify(Register& regDest, Ordinal src1o, Ordinal src2o) {
     regDest.setValue<Ordinal>(::modify(src1o, src2o, regDest.getValue<Ordinal>()));
 }
 
 void
-Core::extract(Register& regDest, Ordinal bitpos, Ordinal len) noexcept {
+Core::extract(Register& regDest, Ordinal bitpos, Ordinal len) {
     // taken from the Hx manual as it isn't insane
     auto actualBitpos = bitpos > 32 ? 32 : bitpos;
     regDest.setValue<Ordinal>((static_cast<Ordinal>(regDest) >> actualBitpos) & ~(0xFFFF'FFFF << len));
@@ -53,7 +53,7 @@ Core::extract(Register& regDest, Ordinal bitpos, Ordinal len) noexcept {
 
 
 void
-Core::scanbyte(Ordinal src1, Ordinal src2) noexcept {
+Core::scanbyte(Ordinal src1, Ordinal src2) {
     DEBUG_LOG_LEVEL(1) {
         std::cout << "\t\t" << __PRETTY_FUNCTION__ << ": "
                   << "src1 0x" << std::hex << src1
@@ -68,7 +68,7 @@ Core::scanbyte(Ordinal src1, Ordinal src2) noexcept {
 }
 
 void
-Core::arithmeticWithCarryGeneric(Ordinal result, bool src2MSB, bool src1MSB, bool destMSB) noexcept {
+Core::arithmeticWithCarryGeneric(Ordinal result, bool src2MSB, bool src1MSB, bool destMSB) {
     // since we are clearing the conditionCode we should just do an assignment
     ac_.clearConditionCode();
     // set the overflow bit
@@ -87,7 +87,7 @@ Core::arithmeticWithCarryGeneric(Ordinal result, bool src2MSB, bool src1MSB, boo
 
 
 void
-Core::emul(const REGInstruction& inst, LongRegister& dest, Ordinal src1, Ordinal src2) noexcept {
+Core::emul(const REGInstruction& inst, LongRegister& dest, Ordinal src1, Ordinal src2) {
     if (!aligned(inst.getSrcDest(), TreatAsLongRegister{})) {
         /// Since this is unaligned and the destination will always be aligned,
         /// we just do an expensive access of the two unaligned registers
@@ -104,7 +104,7 @@ Core::emul(const REGInstruction& inst, LongRegister& dest, Ordinal src1, Ordinal
 
 
 void
-Core::ediv(const REGInstruction& inst, LongRegister& dest, Ordinal src1, const LongRegister& src2) noexcept {
+Core::ediv(const REGInstruction& inst, LongRegister& dest, Ordinal src1, const LongRegister& src2) {
     if (!aligned(inst.getSrcDest(), TreatAsLongRegister{}) || !aligned(inst.getSrc2(), TreatAsLongRegister{})) {
         /// Since this is unaligned and the destination will always be aligned,
         /// we just do an expensive access of the two unaligned registers
@@ -153,7 +153,7 @@ Core::getSFR(ByteOrdinal index) const noexcept {
 }
 
 void
-Core::mark() noexcept {
+Core::mark() {
     nextInstruction();
     if (pc_.processControls.traceEnable && tc_.trace.breakpointTraceMode) {
         markTraceFault();
@@ -161,7 +161,7 @@ Core::mark() noexcept {
 }
 
 void
-Core::fmark() noexcept {
+Core::fmark() {
     // advance first so that our return value will always be correct
     nextInstruction();
     if (pc_.processControls.traceEnable) {
@@ -208,7 +208,7 @@ Core::computeAddress(const MEMInstruction& inst) noexcept {
 }
 
 void
-Core::ldl(const MEMInstruction& inst, Address effectiveAddress, LongRegister& destination) noexcept {
+Core::ldl(const MEMInstruction& inst, Address effectiveAddress, LongRegister& destination) {
     if (!aligned(inst.getSrcDest(), TreatAsLongRegister{})) {
         invalidOperandFault();
         /// @todo perform an unaligned load into registers
@@ -221,7 +221,7 @@ Core::ldl(const MEMInstruction& inst, Address effectiveAddress, LongRegister& de
 
 
 void
-Core::stl(const MEMInstruction& inst, Address effectiveAddress, const LongRegister& source) noexcept {
+Core::stl(const MEMInstruction& inst, Address effectiveAddress, const LongRegister& source) {
     if (!aligned(inst.getSrcDest(), TreatAsLongRegister{})) {
         invalidOperandFault();
         /// @todo perform an unaligned load into registers
@@ -233,7 +233,7 @@ Core::stl(const MEMInstruction& inst, Address effectiveAddress, const LongRegist
 }
 
 void
-Core::ldt(const MEMInstruction& inst, Address effectiveAddress, TripleRegister& destination) noexcept {
+Core::ldt(const MEMInstruction& inst, Address effectiveAddress, TripleRegister& destination) {
     if (!aligned(inst.getSrcDest(), TreatAsTripleRegister{})) {
         invalidOperandFault();
         /// @todo perform an unaligned load into registers
@@ -248,7 +248,7 @@ Core::ldt(const MEMInstruction& inst, Address effectiveAddress, TripleRegister& 
 
 
 void
-Core::stt(const MEMInstruction& inst, Address effectiveAddress, const TripleRegister& source) noexcept {
+Core::stt(const MEMInstruction& inst, Address effectiveAddress, const TripleRegister& source) {
     if (!aligned(inst.getSrcDest(), TreatAsTripleRegister{})) {
         invalidOperandFault();
     } else {
@@ -262,7 +262,7 @@ Core::stt(const MEMInstruction& inst, Address effectiveAddress, const TripleRegi
 
 
 void
-Core::ldq(const MEMInstruction& inst, Address effectiveAddress, QuadRegister& destination) noexcept {
+Core::ldq(const MEMInstruction& inst, Address effectiveAddress, QuadRegister& destination) {
     DEBUG_ENTER_FUNCTION;
     if (!aligned(inst.getSrcDest(), TreatAsQuadRegister{})) {
         invalidOperandFault();
@@ -277,7 +277,7 @@ Core::ldq(const MEMInstruction& inst, Address effectiveAddress, QuadRegister& de
 
 
 void
-Core::stq(const MEMInstruction& inst, Address effectiveAddress, const QuadRegister& source) noexcept {
+Core::stq(const MEMInstruction& inst, Address effectiveAddress, const QuadRegister& source) {
     DEBUG_ENTER_FUNCTION;
     if (!aligned(inst.getSrcDest(), TreatAsQuadRegister{})) {
         invalidOperandFault();
@@ -293,7 +293,7 @@ Core::stq(const MEMInstruction& inst, Address effectiveAddress, const QuadRegist
 
 
 void
-Core::performRegisterTransfer(const REGInstruction& inst, ByteOrdinal mask, ByteOrdinal count) noexcept {
+Core::performRegisterTransfer(const REGInstruction& inst, ByteOrdinal mask, ByteOrdinal count) {
     // perform the register transfer first and then check to see if we were
     // offset at all
     for (ByteOrdinal i = 0; i < count; ++i) {
@@ -378,7 +378,7 @@ Core::fullConditionCodeCheck(uint8_t mask) noexcept {
 }
 
 void
-Core::faultGeneric() noexcept {
+Core::faultGeneric() {
     nextInstruction();
     if (fullConditionCodeCheck()) {
         constraintRangeFault();
@@ -981,7 +981,7 @@ Core::begin() noexcept {
 
 
 void
-Core::synld(Register& dest, Ordinal src) noexcept {
+Core::synld(Register& dest, Ordinal src) {
     DEBUG_ENTER_FUNCTION;
     ac_.clearConditionCode();
     if (auto tempa = maskValue<decltype(src), 0xFFFF'FFFC>(src); tempa == 0xFF00'0004) {
@@ -998,7 +998,7 @@ Core::synld(Register& dest, Ordinal src) noexcept {
 }
 
 void
-Core::synmov(const Register& dest, Ordinal src) noexcept {
+Core::synmov(const Register& dest, Ordinal src) {
     DEBUG_ENTER_FUNCTION;
     ac_.clearConditionCode();
     auto value = load(src, TreatAsOrdinal{});
@@ -1025,7 +1025,7 @@ Core::synmov(const Register& dest, Ordinal src) noexcept {
 }
 
 void
-Core::synmovl(const Register& dest, Ordinal src) noexcept {
+Core::synmovl(const Register& dest, Ordinal src) {
     ac_.clearConditionCode();
     auto tempa = maskValue<Ordinal, 0xFFFF'FFF8>(dest.getValue(TreatAsOrdinal{}));
     auto temp = load(src, TreatAsLongOrdinal{});
@@ -1037,7 +1037,7 @@ Core::synmovl(const Register& dest, Ordinal src) noexcept {
 }
 
 void
-Core::synmovq(const Register& dest, Ordinal src) noexcept {
+Core::synmovq(const Register& dest, Ordinal src) {
     DEBUG_ENTER_FUNCTION;
     ac_.clearConditionCode();
     auto temp = load(src, TreatAsQuadOrdinal{});
@@ -1054,12 +1054,12 @@ Core::synmovq(const Register& dest, Ordinal src) noexcept {
 
 
 void
-Core::performSelect(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+Core::performSelect(Register& dest, Ordinal src1, Ordinal src2) {
     dest.setValue(fullConditionCodeCheck() ? src2 : src1, TreatAsOrdinal{});
 }
 
 void
-Core::performConditionalSubtract(Register& dest, Integer src1, Integer src2, TreatAsInteger) noexcept {
+Core::performConditionalSubtract(Register& dest, Integer src1, Integer src2, TreatAsInteger) {
     if (fullConditionCodeCheck()) {
         subi(dest, src1, src2);
     }
@@ -1067,7 +1067,7 @@ Core::performConditionalSubtract(Register& dest, Integer src1, Integer src2, Tre
 
 
 void
-Core::performConditionalSubtract(Register& dest, Ordinal src1, Ordinal src2, TreatAsOrdinal) noexcept {
+Core::performConditionalSubtract(Register& dest, Ordinal src1, Ordinal src2, TreatAsOrdinal) {
     if (fullConditionCodeCheck()) {
         subo(dest, src1, src2);
     }
@@ -1075,7 +1075,7 @@ Core::performConditionalSubtract(Register& dest, Ordinal src1, Ordinal src2, Tre
 
 
 void
-Core::performConditionalAdd(Register& dest, Integer src1, Integer src2, TreatAsInteger) noexcept {
+Core::performConditionalAdd(Register& dest, Integer src1, Integer src2, TreatAsInteger) {
     if (fullConditionCodeCheck()) {
         addi(dest, src1, src2);
     }
@@ -1083,7 +1083,7 @@ Core::performConditionalAdd(Register& dest, Integer src1, Integer src2, TreatAsI
 
 
 void
-Core::performConditionalAdd(Register& dest, Ordinal src1, Ordinal src2, TreatAsOrdinal) noexcept {
+Core::performConditionalAdd(Register& dest, Ordinal src1, Ordinal src2, TreatAsOrdinal) {
     if (fullConditionCodeCheck()) {
         addo(dest, src1, src2);
     }
@@ -1185,7 +1185,7 @@ Core::start() noexcept {
 
 
 void
-Core::addi(Register& dest, Integer src1, Integer src2) noexcept {
+Core::addi(Register& dest, Integer src1, Integer src2) {
     add<Integer>(dest, src1, src2, TreatAsInteger{});
     nextInstruction();
     faultOnOverflow(dest);
@@ -1193,7 +1193,7 @@ Core::addi(Register& dest, Integer src1, Integer src2) noexcept {
 
 
 void
-Core::addo(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+Core::addo(Register& dest, Ordinal src1, Ordinal src2) {
     add<Ordinal>(dest, src1, src2, TreatAsOrdinal{});
 }
 
@@ -1232,7 +1232,7 @@ Core::setIP(Ordinal value) noexcept {
 }
 
 void
-Core::subi(Register& dest, Integer src1, Integer src2) noexcept {
+Core::subi(Register& dest, Integer src1, Integer src2) {
     sub<Integer>(dest, src1, src2, TreatAsInteger{});
     nextInstruction();
     faultOnOverflow(dest);
@@ -1240,7 +1240,7 @@ Core::subi(Register& dest, Integer src1, Integer src2) noexcept {
 
 
 void
-Core::subo(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+Core::subo(Register& dest, Ordinal src1, Ordinal src2) {
     sub<Ordinal>(dest, src1, src2, TreatAsOrdinal{});
 }
 void
@@ -1288,7 +1288,7 @@ Core::processInstruction(const CTRLInstruction &instruction) {
 
 
 void
-Core::modpc(Register& regDest, Ordinal src1o, Ordinal src2o) noexcept {
+Core::modpc(Register& regDest, Ordinal src1o, Ordinal src2o) {
     if (auto mask = src1o; mask != 0) {
         if (!pc_.inSupervisorMode()) {
             typeMismatchFault();
@@ -1304,27 +1304,27 @@ Core::modpc(Register& regDest, Ordinal src1o, Ordinal src2o) noexcept {
 }
 
 void
-Core::modxc(Register& control, Register& dest, Ordinal src1, Ordinal src2) noexcept {
+Core::modxc(Register& control, Register& dest, Ordinal src1, Ordinal src2) {
     dest.setValue<Ordinal>(control.modify(src1, src2));
 }
 
 void
-Core::shlo(Register& srcDest, Ordinal src1, Ordinal src2) noexcept {
+Core::shlo(Register& srcDest, Ordinal src1, Ordinal src2) {
     srcDest.setValue<Ordinal>(src1 < 32 ? src2 << src1 : 0);
 }
 
 void
-Core::shli(Register& srcDest, Integer src1, Integer src2) noexcept {
+Core::shli(Register& srcDest, Integer src1, Integer src2) {
     srcDest.setValue<Integer>(src2 << src1);
 }
 
 void
-Core::rotate(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+Core::rotate(Register& dest, Ordinal src1, Ordinal src2) {
     dest.setValue<Ordinal>(rotateOperation(src2, src1));
 }
 
 void
-Core::shri(Register& dest, Integer src1, Integer src2) noexcept {
+Core::shri(Register& dest, Integer src1, Integer src2) {
     /*
      * if (src >= 0) {
      *  if (len < 32) {
@@ -1350,7 +1350,7 @@ Core::shri(Register& dest, Integer src1, Integer src2) noexcept {
 
 
 void
-Core::syncf() noexcept {
+Core::syncf() {
     // Wait for all faults to be generated that are associated with any prior
     // uncompleted instructions
 }
@@ -1359,7 +1359,7 @@ Core::syncf() noexcept {
 
 
 void
-Core::shro(Register &dest, Ordinal src1, Ordinal src2) noexcept {
+Core::shro(Register &dest, Ordinal src1, Ordinal src2) {
     dest.setValue<Ordinal>((static_cast<Ordinal>(src1) < 32) ? static_cast<Ordinal>(src2) >> static_cast<Ordinal>(src1) : 0);
 }
 

@@ -27,7 +27,7 @@
 #include <cstring>
 
 void
-Core::saveprcs() noexcept {
+Core::saveprcs() {
     unimplementedFault();
 }
 
@@ -100,40 +100,40 @@ Core::fill(Ordinal dest, Ordinal value, Ordinal len) noexcept {
 
 }
 void
-Core::ldtime(LongRegister &dest) noexcept {
+Core::ldtime(LongRegister &dest) {
     dest.setValue(getProcessExecutionTime() - getResidualTimeSlice());
 }
 
 void
-Core::condwait(SegmentSelector src) noexcept {
+Core::condwait(SegmentSelector src) {
     /// @todo implement
     unimplementedFault();
 }
 
 void
-Core::inspacc(Ordinal src, Register &dest) noexcept {
+Core::inspacc(Ordinal src, Register &dest) {
     /// @todo implement
     unimplementedFault();
 }
 void
-Core::ldphy(Address address, Register& dest) noexcept {
+Core::ldphy(Address address, Register& dest) {
     dest.setValue<Ordinal>(translateToPhysicalAddress(address));
 }
 void
-Core::wait(SegmentSelector src) noexcept {
+Core::wait(SegmentSelector src) {
     unimplementedFault();
 }
 
 void
-Core::condrec(SegmentSelector src, Register &dest) noexcept {
+Core::condrec(SegmentSelector src, Register &dest) {
     unimplementedFault();
 }
 void
-Core::resumprcs(SegmentSelector src) noexcept {
+Core::resumprcs(SegmentSelector src) {
     unimplementedFault();
 }
 void
-Core::signal(SegmentSelector sel) noexcept {
+Core::signal(SegmentSelector sel) {
     unimplementedFault();
 }
 
@@ -142,16 +142,16 @@ Core::send(SegmentSelector target, Ordinal src1, SegmentSelector src2) {
     unimplementedFault();
 }
 void
-Core::sendserv(SegmentSelector src) noexcept {
+Core::sendserv(SegmentSelector src) {
     unimplementedFault();
 }
 void
-Core::schedprcs(SegmentSelector src) noexcept {
+Core::schedprcs(SegmentSelector src) {
     unimplementedFault();
 }
 
 void
-Core::receive(SegmentSelector src, Register &dest) noexcept {
+Core::receive(SegmentSelector src, Register &dest) {
     unimplementedFault();
 }
 
