@@ -35,108 +35,55 @@ Core::dmovt(Register& dest, Ordinal src) noexcept {
 
 void
 Core::classr(const REGInstruction& inst) {
-    Register src;
-    if (inst.getM1()) {
-        // it is a floating point operation of some kind
-        switch (inst.getSrc1()) {
-            case 0b00000: // fp0
-                src.r= static_cast<Real>(fp.get(0, TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{}));
-                break;
-            case 0b00001: // fp1
-                src.r = static_cast<Real>(fp.get(4, TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{}));
-                break;
-            case 0b00010: // fp2
-                src.r = static_cast<Real>(fp.get(8, TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{}));
-                break;
-            case 0b00011: // fp3
-                src.r = static_cast<Real>(fp.get(12, TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{}));
-                break;
-            case 0b10000: // +0.0
-                src.r = +0.0;
-                break;
-            case 0b10110: // +1.0
-                src.r = +1.0;
-                break;
-            default:
-                invalidOpcodeFault();
-                return;
-        }
-    } else {
-        // okay so it is a GPR
-        src = getGPR(inst.getSrc1());
-    }
-    switch(std::fpclassify(src.r)) {
-        case FP_ZERO:
-            ac_.arith.arithmeticStatus = 0;
-            break;
-        case FP_SUBNORMAL:
-            ac_.arith.arithmeticStatus = 0b001;
-            break;
-        case FP_NORMAL:
-            ac_.arith.arithmeticStatus = 0b010;
-            break;
-        case FP_INFINITE:
-            ac_.arith.arithmeticStatus = 0b011;
-            break;
-        case FP_NAN:
-            ac_.arith.arithmeticStatus = issignaling(src.r) ? 0b101 : 0b100;
-            break;
-        default:
-            ac_.arith.arithmeticStatus = 0b110;
-            break;
-    }
+    std::visit([this](auto value) {
+                   switch(std::fpclassify(value)) {
+                       case FP_ZERO:
+                           ac_.arith.arithmeticStatus = 0;
+                           break;
+                       case FP_SUBNORMAL:
+                           ac_.arith.arithmeticStatus = 0b001;
+                           break;
+                       case FP_NORMAL:
+                           ac_.arith.arithmeticStatus = 0b010;
+                           break;
+                       case FP_INFINITE:
+                           ac_.arith.arithmeticStatus = 0b011;
+                           break;
+                       case FP_NAN:
+                           ac_.arith.arithmeticStatus = issignaling(value) ? 0b101 : 0b100;
+                           break;
+                       default:
+                           ac_.arith.arithmeticStatus = 0b110;
+                           break;
+                   }
+               },
+               unpackSrc1(inst, TreatAsReal{}));
 }
 void
 Core::classrl(const REGInstruction& inst) {
-    LongReal src1 = 0.0;
-    if (inst.getM1()) {
-        // it is a floating point operation of some kind
-        switch (inst.getSrc1()) {
-            case 0b00000: // fp0
-                src1 = static_cast<LongReal>(fp.get(0, TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{}));
-                break;
-            case 0b00001: // fp1
-                src1 = static_cast<LongReal>(fp.get(4, TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{}));
-                break;
-            case 0b00010: // fp2
-                src1 = static_cast<LongReal>(fp.get(8, TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{}));
-                break;
-            case 0b00011: // fp3
-                src1 = static_cast<LongReal>(fp.get(12, TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{}));
-                break;
-            case 0b10000: // +0.0
-                src1 = +0.0;
-                break;
-            case 0b10110: // +1.0
-                src1 = +1.0;
-                break;
-            default:
-                invalidOpcodeFault();
-                return;
-        }
-    } else {
-        src1 = getGPR(inst.getSrc1(), TreatAsLongRegister{}).getValue<LongReal>();
-    }
-    switch(std::fpclassify(src1)) {
-        case FP_ZERO:
-            ac_.arith.arithmeticStatus = 0;
-            break;
-        case FP_SUBNORMAL:
-            ac_.arith.arithmeticStatus = 0b001;
-            break;
-        case FP_NORMAL:
-            ac_.arith.arithmeticStatus = 0b010;
-            break;
-        case FP_INFINITE:
-            ac_.arith.arithmeticStatus = 0b011;
-            break;
-        case FP_NAN:
-            ac_.arith.arithmeticStatus = issignaling(src1) ? 0b101 : 0b100;
-            break;
-        default:
-            ac_.arith.arithmeticStatus = 0b110;
-            break;
-    }
+    std::visit([this](auto value) {
+                   switch(std::fpclassify(value)) {
+                       case FP_ZERO:
+                           ac_.setConditionCode(0);
+                           break;
+                       case FP_SUBNORMAL:
+                           ac_.setConditionCode(0b001);
+                           break;
+                       case FP_NORMAL:
+                           ac_.setConditionCode(0b010);
+                           break;
+                       case FP_INFINITE:
+                           ac_.setConditionCode(0b011);
+                           break;
+                       case FP_NAN:
+                           ac_.setConditionCode(issignaling(value) ? 0b101 : 0b100);
+                           break;
+                       default:
+                           ac_.setConditionCode(0b110);
+                           break;
+                   }
+               },
+               unpackSrc1(inst, TreatAsLongReal{}));
 }
 
 void
@@ -569,15 +516,83 @@ Core::fpassignment(const REGInstruction &inst, ExtendedReal result, TreatAsExten
 }
 
 void
-Core::cosr(const REGInstruction &inst) {
-
-    unimplementedFault();
+Core::fpassignment(const REGInstruction &inst, Real result, TreatAsReal) {
+    if(inst.getM3()) {
+        // fp
+        switch (inst.getSrcDest()) {
+            case 0b00000: // fp0
+            {
+                auto& tgt = fp.get(0, TreatAsTripleRegister{});
+                tgt.setValue(result, TreatAsExtendedReal {});
+                break;
+            }
+            case 0b00001: // fp1
+            {
+                auto& tgt = fp.get(4, TreatAsTripleRegister{});
+                tgt.setValue(result, TreatAsExtendedReal{});
+                break;
+            }
+            case 0b00010: // fp2
+            {
+                auto& tgt = fp.get(8, TreatAsTripleRegister{});
+                tgt.setValue(result, TreatAsExtendedReal{});
+                break;
+            }
+            case 0b00011: // fp3
+            {
+                auto& tgt = fp.get(12, TreatAsTripleRegister{});
+                tgt.setValue(result, TreatAsExtendedReal{});
+                break;
+            }
+            default:
+                invalidOpcodeFault();
+                break;
+        }
+    } else {
+        // gpr
+        getGPR(inst.getSrcDest()).setValue(result, TreatAsReal{});
+    }
 }
 
 void
-Core::cosrl(const REGInstruction &inst) {
-    unimplementedFault();
+Core::fpassignment(const REGInstruction &inst, LongReal result, TreatAsLongReal) {
+    if(inst.getM3()) {
+        // fp
+        switch (inst.getSrcDest()) {
+            case 0b00000: // fp0
+            {
+                auto& tgt = fp.get(0, TreatAsTripleRegister{});
+                tgt.setValue(result, TreatAsExtendedReal {});
+                break;
+            }
+            case 0b00001: // fp1
+            {
+                auto& tgt = fp.get(4, TreatAsTripleRegister{});
+                tgt.setValue(result, TreatAsExtendedReal{});
+                break;
+            }
+            case 0b00010: // fp2
+            {
+                auto& tgt = fp.get(8, TreatAsTripleRegister{});
+                tgt.setValue(result, TreatAsExtendedReal{});
+                break;
+            }
+            case 0b00011: // fp3
+            {
+                auto& tgt = fp.get(12, TreatAsTripleRegister{});
+                tgt.setValue(result, TreatAsExtendedReal{});
+                break;
+            }
+            default:
+                invalidOpcodeFault();
+                break;
+        }
+    } else {
+        // gpr
+        getGPR(inst.getSrcDest(), TreatAsLongRegister{}).setValue(result, TreatAsLongReal{});
+    }
 }
+
 namespace {
     ExtendedReal cosre(ExtendedReal input, TreatAsExtendedReal) {
         return std::cos(input);
@@ -632,10 +647,6 @@ Core::getFloatingPointRegister(ByteOrdinal index) const {
             return fp.get(8, TreatAsTripleRegister{});
         case 0b00011: // fp3
             return fp.get(12, TreatAsTripleRegister{});
-        case 0b10000: // +0.0
-            return fpZero;
-        case 0b10110: // +1.0
-            return fpOne;
         default:
             invalidOpcodeFault();
             return bogus;
@@ -661,7 +672,11 @@ Core::getFloatingPointRegister(ByteOrdinal index) {
 Core::MixedLongRealSourceArgument
 Core::unpackSrc1(const REGInstruction& inst, TreatAsLongReal) const {
     if (inst.getM1()) {
-        return getFloatingPointRegister(inst.getSrc1()).getValue<ExtendedReal >();
+        if (inst.src1IsFPLiteral()) {
+            return getFloatingPointLiteral<LongReal>(inst.getSrc1());
+        } else {
+            return getFloatingPointRegister(inst.getSrc1()).getValue<ExtendedReal >();
+        }
     } else {
         return getGPR(inst.getSrc1(), TreatAsLongRegister{}).getValue<LongReal>();
     }
@@ -669,7 +684,11 @@ Core::unpackSrc1(const REGInstruction& inst, TreatAsLongReal) const {
 Core::MixedLongRealSourceArgument
 Core::unpackSrc2(const REGInstruction& inst, TreatAsLongReal) const {
     if (inst.getM2()) {
-        return getFloatingPointRegister(inst.getSrc2()).getValue<ExtendedReal >();
+        if (inst.src2IsFPLiteral()) {
+            return getFloatingPointLiteral<LongReal>(inst.getSrc2());
+        } else {
+            return getFloatingPointRegister(inst.getSrc2()).getValue<ExtendedReal >();
+        }
     } else {
         return getGPR(inst.getSrc2(), TreatAsLongRegister{}).getValue<LongReal>();
     }
@@ -678,7 +697,11 @@ Core::unpackSrc2(const REGInstruction& inst, TreatAsLongReal) const {
 Core::MixedRealSourceArgument
 Core::unpackSrc1(const REGInstruction &inst, TreatAsReal) const {
     if (inst.getM1()) {
-        return getFloatingPointRegister(inst.getSrc1()).getValue<ExtendedReal >();
+        if (inst.src1IsFPLiteral()) {
+            return getFloatingPointLiteral<Real>(inst.getSrc1());
+        } else {
+            return getFloatingPointRegister(inst.getSrc1()).getValue<ExtendedReal >();
+        }
     } else {
         return getGPR(inst.getSrc1()).getValue<Real>();
     }
@@ -687,8 +710,22 @@ Core::unpackSrc1(const REGInstruction &inst, TreatAsReal) const {
 Core::MixedRealSourceArgument
 Core::unpackSrc2(const REGInstruction &inst, TreatAsReal) const {
     if (inst.getM2()) {
-        return getFloatingPointRegister(inst.getSrc2()).getValue<ExtendedReal >();
+        if (inst.src2IsFPLiteral()) {
+            return getFloatingPointLiteral<Real>(inst.getSrc2());
+        } else {
+            return getFloatingPointRegister(inst.getSrc2()).getValue<ExtendedReal >();
+        }
     } else {
         return getGPR(inst.getSrc2()).getValue<Real>();
     }
+}
+void
+Core::cosr(const REGInstruction &inst) {
+
+    unimplementedFault();
+}
+
+void
+Core::cosrl(const REGInstruction &inst) {
+    unimplementedFault();
 }

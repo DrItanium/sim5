@@ -492,8 +492,17 @@ private:
     QuadRegister backingStore_;
     ExtendedReal extendedReal_;
 };
-constexpr TripleRegister fpOne{+1.0};
-constexpr TripleRegister fpZero{+0.0};
+template<typename T>
+requires std::floating_point<T>
+constexpr T literalOne() noexcept {
+    return static_cast<T>(+1.0);
+}
+template<typename T>
+requires std::floating_point<T>
+constexpr T literalZero() noexcept {
+    return static_cast<T>(+0.0);
+}
+
 /**
  * @brief a 80-bit floating point register
  */
@@ -603,6 +612,32 @@ public:
     [[nodiscard]] constexpr ByteOrdinal getSrc1() const noexcept { return src1; }
     [[nodiscard]] constexpr ByteOrdinal getSrcDest() const noexcept { return srcDest; }
     [[nodiscard]] constexpr ByteOrdinal getMask() const noexcept { return opcode & 0b111; }
+    [[nodiscard]] constexpr bool src1IsFPLiteral() const noexcept {
+        if (getM1()) {
+            switch (src1) {
+                case 0b10110:
+                case 0b10000:
+                    return true;
+                default:
+                    return false;
+            }
+        } else {
+            return false;
+        }
+    }
+    [[nodiscard]] constexpr bool src2IsFPLiteral() const noexcept {
+        if (getM2()) {
+            switch (src2) {
+                case 0b10110:
+                case 0b10000:
+                    return true;
+                default:
+                    return false;
+            }
+        } else {
+            return false;
+        }
+    }
 private:
     union {
         Ordinal raw_;
@@ -1415,6 +1450,7 @@ private:
     void typeContentsFault();
     void markTraceFault();
     void invalidOpcodeFault() const;
+    void invalidOperandFault() const;
     void protectionLengthFault();
     void invalidOperandFault();
     void invalidDescriptorFault(SegmentSelector selector);
@@ -1686,6 +1722,19 @@ private:
     MixedLongRealSourceArgument unpackSrc2(const REGInstruction& index, TreatAsLongReal) const;
     TripleRegister& getFloatingPointRegister(ByteOrdinal index);
     const TripleRegister& getFloatingPointRegister(ByteOrdinal index) const;
+    template<typename T>
+    requires std::floating_point<T>
+    T getFloatingPointLiteral(ByteOrdinal index) const {
+        switch (index) {
+            case 0b10000: // +0.0
+                return static_cast<T>(+0.0);
+            case 0b10110: // +1.0
+                return static_cast<T>(+1.0);
+            default:
+                invalidOpcodeFault();
+                return 0.0;
+        }
+    }
 private:
     Ordinal systemAddressTableBase_ = 0;
     Ordinal prcbAddress_ = 0;

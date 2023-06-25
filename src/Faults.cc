@@ -306,3 +306,12 @@ Core::supervisorProcedureTableEntry_FaultCall(const FaultRecord& record, Address
     // at this point, it is safe to call the generic handler
     faultCallGeneric(record, procedureAddress, temp);
 }
+
+void
+Core::invalidOperandFault() const {
+    throw FaultRecord ((Ordinal)pc_,
+                       (Ordinal)ac_,
+                       InvalidOperandFault,
+                       (Ordinal)ip_,
+                       false);
+}
