@@ -823,6 +823,12 @@ Core::processInstruction(const REGInstruction & inst) {
         case Opcodes::movre:
             movre(inst);
             break;
+        case Opcodes::cpyrsre:
+            cpyrsre(inst);
+            break;
+        case Opcodes::cpysre:
+            cpysre(inst);
+            break;
         default:
             unimplementedFault();
             break;
