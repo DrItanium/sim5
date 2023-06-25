@@ -27,6 +27,36 @@
 #include <cmath>
 
 void
+Core::processFPInstruction(const REGInstruction &inst ) {
+    if (isFloatingPointInstruction(inst.getOpcode())) {
+        switch (inst.getOpcode()) {
+            case Opcodes::movre:
+                movre(inst);
+                break;
+            case Opcodes::cpyrsre:
+                cpyrsre(inst);
+                break;
+            case Opcodes::cpysre:
+                cpysre(inst);
+                break;
+#define X(name) case Opcodes :: name ## r : name ## r (inst) ; break;\
+            case Opcodes:: name ## rl : name ## rl (inst); break
+            X(class);
+            X(cos);
+            X(mov);
+            X(sin);
+            X(tan);
+            X(atan);
+#undef X
+            default:
+                unimplementedFault();
+                break;
+        }
+    } else {
+        unimplementedFault();
+    }
+}
+void
 Core::dmovt(Register& dest, Ordinal src) noexcept {
     dest.setValue<Ordinal>(src);
     auto decimal = static_cast<uint8_t>(src) ;
@@ -350,33 +380,6 @@ namespace {
     }
 }
 
-void
-Core::processFPInstruction(const REGInstruction &inst ) {
-    if (isFloatingPointInstruction(inst.getOpcode())) {
-        switch (inst.getOpcode()) {
-            case Opcodes::movre:
-                movre(inst);
-                break;
-            case Opcodes::cpyrsre:
-                cpyrsre(inst);
-                break;
-            case Opcodes::cpysre:
-                cpysre(inst);
-                break;
-#define X(name) case Opcodes :: name ## r : name ## r (inst) ; break;\
-            case Opcodes:: name ## rl : name ## rl (inst); break
-            X(class);
-            X(cos);
-            X(mov);
-#undef X
-            default:
-                unimplementedFault();
-                break;
-        }
-    } else {
-        unimplementedFault();
-    }
-}
 
 namespace {
     TripleRegister bogus;
@@ -505,6 +508,57 @@ Core::cosrl(const REGInstruction &inst) {
     std::visit([this, &inst](auto value) {
                    using K = std::decay_t<decltype(value)>;
                    fpassignment(inst, std::cos(value), TreatAs<K>{});
+               },
+               unpackSrc1(inst, TreatAsLongReal{}));
+}
+void
+Core::sinr(const REGInstruction &inst) {
+    std::visit([this, &inst](auto value) {
+                   using K = std::decay_t<decltype(value)>;
+                   fpassignment(inst, std::sin(value), TreatAs<K>{});
+               },
+               unpackSrc1(inst, TreatAsReal{}));
+}
+
+void
+Core::sinrl(const REGInstruction &inst) {
+    std::visit([this, &inst](auto value) {
+                   using K = std::decay_t<decltype(value)>;
+                   fpassignment(inst, std::sin(value), TreatAs<K>{});
+               },
+               unpackSrc1(inst, TreatAsLongReal{}));
+}
+void
+Core::tanr(const REGInstruction &inst) {
+    std::visit([this, &inst](auto value) {
+                   using K = std::decay_t<decltype(value)>;
+                   fpassignment(inst, std::tan(value), TreatAs<K>{});
+               },
+               unpackSrc1(inst, TreatAsReal{}));
+}
+
+void
+Core::tanrl(const REGInstruction &inst) {
+    std::visit([this, &inst](auto value) {
+                   using K = std::decay_t<decltype(value)>;
+                   fpassignment(inst, std::tan(value), TreatAs<K>{});
+               },
+               unpackSrc1(inst, TreatAsLongReal{}));
+}
+void
+Core::atanr(const REGInstruction &inst) {
+    std::visit([this, &inst](auto value) {
+                   using K = std::decay_t<decltype(value)>;
+                   fpassignment(inst, std::atan(value), TreatAs<K>{});
+               },
+               unpackSrc1(inst, TreatAsReal{}));
+}
+
+void
+Core::atanrl(const REGInstruction &inst) {
+    std::visit([this, &inst](auto value) {
+                   using K = std::decay_t<decltype(value)>;
+                   fpassignment(inst, std::atan(value), TreatAs<K>{});
                },
                unpackSrc1(inst, TreatAsLongReal{}));
 }
