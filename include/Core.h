@@ -117,6 +117,19 @@ constexpr ArchitectureLevel getArchitectureLevel(Opcodes code) noexcept {
 template<Opcodes code>
 constexpr auto ArchitectureLevel_v = getArchitectureLevel(code);
 static_assert(ArchitectureLevel_v<Opcodes::b> == ArchitectureLevel::Core);
+
+constexpr bool isFloatingPointInstruction(Opcodes code) noexcept {
+    switch (code) {
+#define X(name, opcode, str, level, privileged, fmt, flt) case Opcodes :: name : return flt ;
+#include "Opcodes.def"
+#undef X
+        default:
+            return false;
+    }
+}
+template<Opcodes code>
+constexpr auto IsFloatingPointInstruction_v = isFloatingPointInstruction(code);
+static_assert(IsFloatingPointInstruction_v<Opcodes::cpyrsre>);
 enum class BootResult : uint8_t {
     Success,
     SelfTestFailure,
