@@ -941,7 +941,7 @@ Core::cycle() noexcept {
         } else {
             unimplementedFault();
         }
-    } catch (FaultRecord& record) {
+    } catch (const FaultRecord& record) {
         /// @todo support nested fault records
         if (record.saveReturnAddress) {
             saveReturnAddress(RIPIndex);
