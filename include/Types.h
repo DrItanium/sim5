@@ -271,8 +271,9 @@ struct FaultRecord {
      * @brief The address of the faulting instruction
      */
     Address addr;
+    bool saveReturnAddress;
     FaultRecord() = default;
-    FaultRecord(Ordinal p, Ordinal a, Ordinal t, Address adr) : unused(0), overrideFaultData{0}, faultData{0}, overrideType(0), pc(p), ac(a), type(t), addr(adr) { }
+    FaultRecord(Ordinal p, Ordinal a, Ordinal t, Address adr, bool mustSaveReturnAddress) : unused(0), overrideFaultData{0}, faultData{0}, overrideType(0), pc(p), ac(a), type(t), addr(adr), saveReturnAddress(mustSaveReturnAddress) { }
     [[nodiscard]] constexpr uint8_t getFaultFlags() const noexcept { return static_cast<uint8_t>(type >> 24); }
     [[nodiscard]] constexpr uint8_t getFaultType() const noexcept { return static_cast<uint8_t>(type >> 16); }
     [[nodiscard]] constexpr uint8_t getFaultSubtype() const noexcept { return static_cast<uint8_t>(type); }
@@ -593,4 +594,5 @@ union TaggedWord {
 [[nodiscard]] constexpr bool isCOBR(Ordinal o) noexcept { return (o >= 0x2000'0000) && (o < 0x4000'0000); }
 [[nodiscard]] constexpr bool isMEMFormat(Ordinal o) noexcept { return o >= 0x8000'0000; }
 [[nodiscard]] constexpr auto isREGFormat(Ordinal o) noexcept { return o >= 0x4000'0000 && o < 0x8000'0000; }
+
 #endif // end SIM5_TYPES_H__

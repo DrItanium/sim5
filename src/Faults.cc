@@ -124,24 +124,22 @@ Core::generateFault(const FaultRecord& record) {
 
 void
 Core::zeroDivideFault() {
-    FaultRecord record((Ordinal)pc_,
+    throw FaultRecord ((Ordinal)pc_,
                        (Ordinal)ac_,
                        ZeroDivideFault,
-                       (Ordinal)ip_);
-    saveReturnAddress(RIPIndex);
-    generateFault(record);
+                       (Ordinal)ip_,
+                       true);
 }
 
 void
 Core::integerOverflowFault() {
     if (ac_.arith.integerOverflowMask == 0) {
-        FaultRecord record((Ordinal) pc_,
+        throw FaultRecord ((Ordinal) pc_,
                            (Ordinal) ac_,
                            IntegerOverflowFault,
-                           (Ordinal) ip_);
-        saveReturnAddress(RIPIndex);
+                           (Ordinal) ip_,
+                           true);
         // saved ip will be the next instruction
-        generateFault(record);
     } else {
         ac_.arith.integerOverflowFlag = 1;
     }
@@ -149,84 +147,78 @@ Core::integerOverflowFault() {
 
 void
 Core::constraintRangeFault() {
-    FaultRecord record((Ordinal)pc_,
+    throw FaultRecord ((Ordinal)pc_,
                        (Ordinal)ac_,
                        ConstraintRangeFault,
-                       (Ordinal)ip_);
-    // saved ip isn't used!
-    generateFault(record);
+                       (Ordinal)ip_,
+                       false);
 }
 
 void
 Core::invalidSSFault() {
-    FaultRecord record((Ordinal)pc_,
+    throw FaultRecord ((Ordinal)pc_,
                        (Ordinal)ac_,
                        InvalidSSFault,
-                       (Ordinal)ip_);
-    // saved ip isn't used
-    generateFault(record);
+                       (Ordinal)ip_,
+                       false);
 }
 
 void
 Core::markTraceFault() {
-    FaultRecord record((Ordinal)pc_,
+    throw FaultRecord ((Ordinal)pc_,
                        (Ordinal)ac_,
                        MarkTraceFault,
-                       (Ordinal)ip_);
+                       (Ordinal)ip_,
+                       false);
     // saved ip isn't used
-    generateFault(record);
+    //generateFault(record);
 }
 
 void
 Core::unimplementedFault() {
-    FaultRecord record((Ordinal)pc_,
+    throw FaultRecord ((Ordinal)pc_,
                        (Ordinal)ac_,
                        UnimplementedFault,
-                       (Ordinal)ip_);
+                       (Ordinal)ip_,
+                       false);
     // saved ip isn't used
-    generateFault(record);
-    throw std::logic_error("unimplemented");
+    //generateFault(record);
+    //throw std::logic_error("unimplemented");
 }
 
 void
 Core::invalidOpcodeFault() {
-    FaultRecord record((Ordinal)pc_,
+    throw FaultRecord ((Ordinal)pc_,
                        (Ordinal)ac_,
                        InvalidOpcodeFault,
-                       (Ordinal)ip_);
-    // saved ip isn't used
-    generateFault(record);
-    throw std::logic_error("invalid opcode");
+                       (Ordinal)ip_,
+                       false);
 }
 
 void
 Core::invalidOperandFault() {
-    FaultRecord record((Ordinal)pc_,
+    throw FaultRecord ((Ordinal)pc_,
                        (Ordinal)ac_,
                        InvalidOperandFault,
-                       (Ordinal)ip_);
-    // saved ip isn't used
-    generateFault(record);
-    throw std::logic_error("invalid operand");
+                       (Ordinal)ip_,
+                       false);
 }
 
 void
 Core::protectionLengthFault() {
-    FaultRecord record((Ordinal)pc_,
+    throw FaultRecord((Ordinal)pc_,
                        (Ordinal)ac_,
                        SegmentLengthFault,
-                       (Ordinal)ip_);
-    // saved ip isn't used
-    generateFault(record);
+                       (Ordinal)ip_,
+                       false);
 }
 void
 Core::typeMismatchFault() {
-    FaultRecord record((Ordinal)pc_,
+    throw FaultRecord ((Ordinal)pc_,
                        (Ordinal)ac_,
                        TypeMismatchFault,
-                       (Ordinal)ip_);
-    // saved ip isn't used
-    generateFault(record);
+                       (Ordinal)ip_,
+                       false);
 }
 
 void
@@ -234,19 +226,20 @@ Core::invalidDescriptorFault(SegmentSelector ss) {
     FaultRecord record((Ordinal)pc_,
                        (Ordinal)ac_,
                        InvalidDescriptorFault,
-                       (Ordinal)ip_);
+                       (Ordinal)ip_,
+                       false);
     record.faultData[1] = (ss & ~0b11111);
     setGPR(RIPIndex, (Ordinal)ip_, TreatAsOrdinal{});
-    generateFault(record);
+    throw record;
 }
 void
 Core::eventNoticeFault() {
-    FaultRecord record((Ordinal)pc_,
+    throw FaultRecord ((Ordinal)pc_,
                        (Ordinal)ac_,
                        EventNoticeFault,
-                       (Ordinal)ip_);
-    saveReturnAddress(RIPIndex);
-    generateFault(record);
+                       (Ordinal)ip_,
+                       true);
+
 }
 void
 Core::procedureTableEntry_FaultCall(const FaultRecord& record, const FaultTableEntry& entry) noexcept {

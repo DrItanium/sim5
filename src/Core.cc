@@ -928,17 +928,22 @@ Core::cycle() noexcept {
     DEBUG_LOG_LEVEL(1) {
         std::cout << "\t\t" << __PRETTY_FUNCTION__  << ": " << disassembleInstruction(ip_.getValue<Ordinal>(), instruction_) << std::endl;
     }
-    if (instruction_.isCTRL()) {
-        processInstruction(CTRLInstruction{instruction_});
-    } else if (instruction_.isCOBR()) {
-        processInstruction(COBRInstruction{instruction_});
-    } else if (instruction_.isMEMFormat()) {
-        // always load the next word for simplicity
-        processInstruction(MEMInstruction{instruction_, load(ip_.o + 4, TreatAsInteger{})});
-    } else if (instruction_.isREGFormat()) {
-        processInstruction(REGInstruction{instruction_});
-    } else {
-        unimplementedFault();
+    try {
+        if (instruction_.isCTRL()) {
+            processInstruction(CTRLInstruction{instruction_});
+        } else if (instruction_.isCOBR()) {
+            processInstruction(COBRInstruction{instruction_});
+        } else if (instruction_.isMEMFormat()) {
+            // always load the next word for simplicity
+            processInstruction(MEMInstruction{instruction_, load(ip_.o + 4, TreatAsInteger{})});
+        } else if (instruction_.isREGFormat()) {
+            processInstruction(REGInstruction{instruction_});
+        } else {
+            unimplementedFault();
+        }
+    } catch (FaultRecord& record) {
+        /// @todo support nested fault records
+        generateFault(record);
     }
     if (advanceInstruction_) {
         nextInstruction();

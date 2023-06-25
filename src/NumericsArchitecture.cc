@@ -29,16 +29,12 @@
 void
 Core::dmovt(Register& dest, Ordinal src) noexcept {
     dest.setValue<Ordinal>(src);
-    if (auto decimal = static_cast<uint8_t>(src); decimal >= 0b00110000 && decimal <= 0b00111001) {
-        ac_.arith.conditionCode = 0b000;
-    } else {
-        ac_.arith.conditionCode = 0b010;
-    }
+    auto decimal = static_cast<uint8_t>(src) ;
+    ac_.setConditionResult(decimal >= 0b00110000 && decimal <= 0b00111001);
 }
 
 void
 Core::classr(const REGInstruction& inst) noexcept {
-
     Register src;
     if (inst.getM1()) {
         // it is a floating point operation of some kind
