@@ -1720,6 +1720,8 @@ private:
     MixedRealSourceArgument unpackSrc2(const REGInstruction& index, TreatAsReal) const;
     MixedLongRealSourceArgument unpackSrc1(const REGInstruction& index, TreatAsLongReal) const;
     MixedLongRealSourceArgument unpackSrc2(const REGInstruction& index, TreatAsLongReal) const;
+    ExtendedReal unpackSrc1(const REGInstruction& index, TreatAsExtendedReal) const;
+    ExtendedReal unpackSrc2(const REGInstruction& index, TreatAsExtendedReal) const;
     TripleRegister& getFloatingPointRegister(ByteOrdinal index);
     const TripleRegister& getFloatingPointRegister(ByteOrdinal index) const;
     template<typename T>
