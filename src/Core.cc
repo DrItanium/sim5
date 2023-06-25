@@ -943,6 +943,9 @@ Core::cycle() noexcept {
         }
     } catch (FaultRecord& record) {
         /// @todo support nested fault records
+        if (record.saveReturnAddress) {
+            saveReturnAddress(RIPIndex);
+        }
         generateFault(record);
     }
     if (advanceInstruction_) {
