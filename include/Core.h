@@ -178,6 +178,13 @@ union Register {
         BackingUnionType floatingPointNormalizingMode : 1;
         BackingUnionType floatingPointRoundingControl : 2;
     } arith;
+    [[nodiscard]] constexpr auto getConditionCode() const noexcept { return arith.conditionCode; }
+    void setConditionCode(uint8_t code) noexcept { arith.conditionCode = code; }
+    void setConditionResult(bool state) noexcept { setConditionCode(state ? 0b010 : 0b000); }
+    void clearConditionCode() noexcept { arith.conditionCode = 0b000; }
+    void setPriority(Ordinal value) noexcept { processControls.priority = value; }
+    [[nodiscard]] constexpr ByteOrdinal getPriority() const noexcept { return processControls.priority; }
+    [[nodiscard]] constexpr bool inSupervisorMode() const noexcept { return processControls.executionMode; }
 
     struct {
         BackingUnionType rt : 3;
@@ -256,10 +263,6 @@ union Register {
     } pageTableEntry;
 
     /// @todo add support for external IAC processing
-    [[nodiscard]] constexpr auto getConditionCode() const noexcept { return arith.conditionCode; }
-    void setPriority(Ordinal value) noexcept { processControls.priority = value; }
-    [[nodiscard]] constexpr ByteOrdinal getPriority() const noexcept { return processControls.priority; }
-    [[nodiscard]] constexpr bool inSupervisorMode() const noexcept { return processControls.executionMode; }
     void clear() noexcept {
         o = 0;
     }

@@ -60,21 +60,17 @@ Core::scanbyte(Ordinal src1, Ordinal src2) noexcept {
                   << ", src2 0x" << std::hex << src2
                   << std::endl;
     }
-    if (Register s2(src2), s1(src1);
-            s1.bytes[0] == s2.bytes[0] ||
-            s1.bytes[1] == s2.bytes[1] ||
-            s1.bytes[2] == s2.bytes[2] ||
-            s1.bytes[3] == s2.bytes[3]) {
-        ac_.arith.conditionCode = 0b010;
-    } else {
-        ac_.arith.conditionCode = 0;
-    }
+    Register s2(src2), s1(src1);
+    ac_.setConditionResult(s1.bytes[0] == s2.bytes[0] ||
+                           s1.bytes[1] == s2.bytes[1] ||
+                           s1.bytes[2] == s2.bytes[2] ||
+                           s1.bytes[3] == s2.bytes[3]);
 }
 
 void
 Core::arithmeticWithCarryGeneric(Ordinal result, bool src2MSB, bool src1MSB, bool destMSB) noexcept {
     // since we are clearing the conditionCode we should just do an assignment
-    ac_.arith.conditionCode = 0;
+    ac_.clearConditionCode();
     // set the overflow bit
     if ((src2MSB == src1MSB) && (src2MSB != destMSB)) {
         ac_.arith.conditionCode |= 0b001;
@@ -601,7 +597,7 @@ Core::processInstruction(const REGInstruction & inst) {
             scanbyte(static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
             break;
         case Opcodes::chkbit: // chkbit
-            ac_.arith.conditionCode = ((static_cast<Ordinal>(src2) & computeBitPosition(static_cast<Ordinal>(src1))) == 0 ? 0b000 : 0b010);
+            ac_.setConditionResult((static_cast<Ordinal>(src2) & computeBitPosition(static_cast<Ordinal>(src1))) == 0 );
             break;
         case Opcodes::addc:
             addc(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
@@ -979,15 +975,15 @@ Core::begin() noexcept {
 void
 Core::synld(Register& dest, Ordinal src) noexcept {
     DEBUG_ENTER_FUNCTION;
-    ac_.arith.conditionCode = 0b000;
+    ac_.clearConditionCode();
     if (auto tempa = maskValue<decltype(src), 0xFFFF'FFFC>(src); tempa == 0xFF00'0004) {
         // interrupt control register needs to be read through this
-        ac_.arith.conditionCode = 0b010;
+        ac_.setConditionResult(true);
         // copy the contents of the interrupt control register to a target
         // register
         dest.setValue(ictl_.o, TreatAsOrdinal{});
     } else {
-        ac_.arith.conditionCode = 0b010;
+        ac_.setConditionResult(true);
         dest.setValue(load(tempa, TreatAsOrdinal{}), TreatAsOrdinal{});
     }
     DEBUG_LEAVE_FUNCTION;
@@ -996,7 +992,7 @@ Core::synld(Register& dest, Ordinal src) noexcept {
 void
 Core::synmov(const Register& dest, Ordinal src) noexcept {
     DEBUG_ENTER_FUNCTION;
-    ac_.arith.conditionCode = 0b000;
+    ac_.clearConditionCode();
     auto value = load(src, TreatAsOrdinal{});
     DEBUG_LOG_LEVEL(1) {
         std::cout << "\t\t" << __PRETTY_FUNCTION__ << ": loaded value @ 0x" << std::hex << src
@@ -1008,42 +1004,42 @@ Core::synmov(const Register& dest, Ordinal src) noexcept {
             std::cout << "\t\t" << __PRETTY_FUNCTION__ << ": ictl before 0x" << std::hex << ictl_.getValue<Ordinal>() << std::endl;
         }
         ictl_.setValue<Ordinal>(load(src, TreatAsOrdinal{}));
-        ac_.arith.conditionCode = 0b010;
+        ac_.setConditionResult(true);
         DEBUG_LOG_LEVEL(1) {
             std::cout << "\t\t" << __PRETTY_FUNCTION__ << ": ictl after 0x" << std::hex << ictl_.getValue<Ordinal>() << std::endl;
         }
     } else {
         store(tempa, value, TreatAsOrdinal{});
         // wait for completion
-        ac_.arith.conditionCode = 0b010;
+        ac_.setConditionResult(true);
     }
     DEBUG_LEAVE_FUNCTION;
 }
 
 void
 Core::synmovl(const Register& dest, Ordinal src) noexcept {
-    ac_.arith.conditionCode = 0b000;
+    ac_.clearConditionCode();
     auto tempa = maskValue<Ordinal, 0xFFFF'FFF8>(dest.getValue(TreatAsOrdinal{}));
     auto temp = load(src, TreatAsLongOrdinal{});
     // observing execution shows that there is a delay here on the Sx processor
     // not sure what it is doing
     store(tempa, temp, TreatAsLongOrdinal{});
     // wait for completion
-    ac_.arith.conditionCode = 0b010;
+    ac_.setConditionResult(true);
 }
 
 void
 Core::synmovq(const Register& dest, Ordinal src) noexcept {
     DEBUG_ENTER_FUNCTION;
-    ac_.arith.conditionCode = 0b000;
+    ac_.clearConditionCode();
     auto temp = load(src, TreatAsQuadOrdinal{});
     if (auto tempa = maskValue<Ordinal, 0xFFFF'FFF0>(dest.getValue(TreatAsOrdinal{})); tempa == 0xFF00'0010) {
         sendIAC(iac::Message{temp});
-        ac_.arith.conditionCode = 0b010;
+        ac_.setConditionResult(true);
     } else {
         store(tempa, temp, TreatAsQuadOrdinal{});
         // wait for completion
-        ac_.arith.conditionCode = 0b010;
+        ac_.setConditionResult(true);
     }
     DEBUG_LEAVE_FUNCTION;
 }
@@ -1132,7 +1128,7 @@ Core::start() noexcept {
         }
 
 
-        ac_.arith.conditionCode = 0b000; // clear condition code
+        ac_.clearConditionCode();
         Register temp_{0};
         addc(temp_, 0xFFFF'FFFF, x[0]);
         DEBUG_LOG_LEVEL(4) {
