@@ -761,7 +761,10 @@ Core::processInstruction(const REGInstruction & inst) {
             dmovt(regDest, static_cast<Ordinal>(src1));
             break;
         case Opcodes::classr:
-            classr(static_cast<Real>(src1));
+            classr(inst);
+            break;
+        case Opcodes::classrl:
+            classrl(inst);
             break;
         case Opcodes::cmpstr:
             cmpstr(static_cast<Ordinal>(src1), static_cast<Ordinal>(src2), static_cast<Ordinal>(regDest));

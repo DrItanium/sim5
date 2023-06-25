@@ -1499,22 +1499,6 @@ private:
     void badFault(const FaultRecord& record);
 private: // numerics extensions
     void dmovt(Register& dest, Ordinal src) noexcept;
-    void classr(Real src) noexcept;
-    void classrl(LongReal src) noexcept;
-    void cosr(Register& dest, Real literal) noexcept;
-    void cosrl(LongRegister& dest, LongReal literal) noexcept;
-    inline void cosr(Register& dest, const Register& src) noexcept { cosr(dest, (Real)src); }
-    inline void cosrl(LongRegister& dest, const LongRegister& src) noexcept { cosrl(dest, src.getValue<LongReal>()); }
-    void sinr(Register& dest, Real literal) noexcept;
-    void sinrl(LongRegister& dest, LongReal literal) noexcept;
-    inline void sinr(Register& dest, const Register& src) noexcept { sinr(dest, (Real)src); }
-    inline void sinrl(LongRegister& dest, const LongRegister& src) noexcept { sinrl(dest, src.getValue<LongReal>()); }
-    void tanr(Register& dest, Real literal) noexcept;
-    void tanrl(LongRegister& dest, LongReal literal) noexcept;
-    inline void tanr(Register& dest, const Register& src) noexcept { tanr(dest, (Real)src); }
-    inline void tanrl(LongRegister& dest, const LongRegister& src) noexcept { tanrl(dest, src.getValue<LongReal>()); }
-    void cmpr(Real src1, Real src2) noexcept;
-    void cmprl(LongReal src1, LongReal src2) noexcept;
     /// @todo add support for the dedicated floating point registers as overloaded forms
 private: // protected extensions instructions
     void signal(SegmentSelector sel) noexcept;
@@ -1660,6 +1644,12 @@ private:
     void movr(const REGInstruction& inst);
     void cpyrsre(const REGInstruction& inst);
     void cpysre(const REGInstruction& inst);
+    void classr(const REGInstruction& inst) noexcept;
+    void classrl(const REGInstruction& inst) noexcept;
+    void cosr(const REGInstruction& inst);
+    void cosrl(const REGInstruction& inst);
+    void cmpr(Real src1, Real src2) noexcept;
+    void cmprl(LongReal src1, LongReal src2) noexcept;
     void fpassignment(const REGInstruction& inst, ExtendedReal value);
 private:
     Ordinal systemAddressTableBase_ = 0;

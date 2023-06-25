@@ -37,8 +37,39 @@ Core::dmovt(Register& dest, Ordinal src) noexcept {
 }
 
 void
-Core::classr(Real src) noexcept {
-    switch(std::fpclassify(src)) {
+Core::classr(const REGInstruction& inst) noexcept {
+
+    Register src;
+    if (inst.getM1()) {
+        // it is a floating point operation of some kind
+        switch (inst.getSrc1()) {
+            case 0b00000: // fp0
+                src.r= static_cast<Real>(fp.get(0, TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{}));
+                break;
+            case 0b00001: // fp1
+                src.r = static_cast<Real>(fp.get(4, TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{}));
+                break;
+            case 0b00010: // fp2
+                src.r = static_cast<Real>(fp.get(8, TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{}));
+                break;
+            case 0b00011: // fp3
+                src.r = static_cast<Real>(fp.get(12, TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{}));
+                break;
+            case 0b10000: // +0.0
+                src.r = +0.0;
+                break;
+            case 0b10110: // +1.0
+                src.r = +1.0;
+                break;
+            default:
+                invalidOpcodeFault();
+                return;
+        }
+    } else {
+        // okay so it is a GPR
+        src = getGPR(inst.getSrc1());
+    }
+    switch(std::fpclassify(src.r)) {
         case FP_ZERO:
             ac_.arith.arithmeticStatus = 0;
             break;
@@ -52,7 +83,7 @@ Core::classr(Real src) noexcept {
             ac_.arith.arithmeticStatus = 0b011;
             break;
         case FP_NAN:
-            ac_.arith.arithmeticStatus = issignaling(src) ? 0b101 : 0b100;
+            ac_.arith.arithmeticStatus = issignaling(src.r) ? 0b101 : 0b100;
             break;
         default:
             ac_.arith.arithmeticStatus = 0b110;
@@ -60,8 +91,37 @@ Core::classr(Real src) noexcept {
     }
 }
 void
-Core::classrl(LongReal src) noexcept {
-    switch(std::fpclassify(src)) {
+Core::classrl(const REGInstruction& inst) noexcept {
+    LongReal src1 = 0.0;
+    if (inst.getM1()) {
+        // it is a floating point operation of some kind
+        switch (inst.getSrc1()) {
+            case 0b00000: // fp0
+                src1 = static_cast<LongReal>(fp.get(0, TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{}));
+                break;
+            case 0b00001: // fp1
+                src1 = static_cast<LongReal>(fp.get(4, TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{}));
+                break;
+            case 0b00010: // fp2
+                src1 = static_cast<LongReal>(fp.get(8, TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{}));
+                break;
+            case 0b00011: // fp3
+                src1 = static_cast<LongReal>(fp.get(12, TreatAsTripleRegister{}).getValue(TreatAsExtendedReal{}));
+                break;
+            case 0b10000: // +0.0
+                src1 = +0.0;
+                break;
+            case 0b10110: // +1.0
+                src1 = +1.0;
+                break;
+            default:
+                invalidOpcodeFault();
+                return;
+        }
+    } else {
+        src1 = getGPR(inst.getSrc1(), TreatAsLongRegister{}).getValue<LongReal>();
+    }
+    switch(std::fpclassify(src1)) {
         case FP_ZERO:
             ac_.arith.arithmeticStatus = 0;
             break;
@@ -75,7 +135,7 @@ Core::classrl(LongReal src) noexcept {
             ac_.arith.arithmeticStatus = 0b011;
             break;
         case FP_NAN:
-            ac_.arith.arithmeticStatus = issignaling(src) ? 0b101 : 0b100;
+            ac_.arith.arithmeticStatus = issignaling(src1) ? 0b101 : 0b100;
             break;
         default:
             ac_.arith.arithmeticStatus = 0b110;
