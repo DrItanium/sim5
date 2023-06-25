@@ -1715,6 +1715,10 @@ private:
     void tanrl(const REGInstruction& inst);
     void atanr(const REGInstruction& inst);
     void atanrl(const REGInstruction& inst);
+    void sqrtr(const REGInstruction& inst);
+    void sqrtrl(const REGInstruction& inst);
+    void roundr(const REGInstruction& inst);
+    void roundrl(const REGInstruction& inst);
     void cmpr(Real src1, Real src2) noexcept;
     void cmprl(LongReal src1, LongReal src2) noexcept;
     void fpassignment(const REGInstruction& inst, ExtendedReal value, TreatAsExtendedReal);

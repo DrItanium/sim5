@@ -47,6 +47,8 @@ Core::processFPInstruction(const REGInstruction &inst ) {
             X(sin);
             X(tan);
             X(atan);
+            X(sqrt);
+            X(round);
 #undef X
             default:
                 unimplementedFault();
@@ -559,6 +561,40 @@ Core::atanrl(const REGInstruction &inst) {
     std::visit([this, &inst](auto value) {
                    using K = std::decay_t<decltype(value)>;
                    fpassignment(inst, std::atan(value), TreatAs<K>{});
+               },
+               unpackSrc1(inst, TreatAsLongReal{}));
+}
+void
+Core::sqrtr(const REGInstruction &inst) {
+    std::visit([this, &inst](auto value) {
+                   using K = std::decay_t<decltype(value)>;
+                   fpassignment(inst, std::sqrt(value), TreatAs<K>{});
+               },
+               unpackSrc1(inst, TreatAsReal{}));
+}
+
+void
+Core::sqrtrl(const REGInstruction &inst) {
+    std::visit([this, &inst](auto value) {
+                   using K = std::decay_t<decltype(value)>;
+                   fpassignment(inst, std::sqrt(value), TreatAs<K>{});
+               },
+               unpackSrc1(inst, TreatAsLongReal{}));
+}
+void
+Core::roundr(const REGInstruction &inst) {
+    std::visit([this, &inst](auto value) {
+                   using K = std::decay_t<decltype(value)>;
+                   fpassignment(inst, std::round(value), TreatAs<K>{});
+               },
+               unpackSrc1(inst, TreatAsReal{}));
+}
+
+void
+Core::roundrl(const REGInstruction &inst) {
+    std::visit([this, &inst](auto value) {
+                   using K = std::decay_t<decltype(value)>;
+                   fpassignment(inst, std::round(value), TreatAs<K>{});
                },
                unpackSrc1(inst, TreatAsLongReal{}));
 }
