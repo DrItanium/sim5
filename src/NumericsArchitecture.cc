@@ -866,3 +866,29 @@ Core::remrl(const REGInstruction &inst) {
                unpackSrc1(inst, TreatAsLongReal{}),
                unpackSrc2(inst, TreatAsLongReal{}));
 }
+
+void
+Core::logbnr(const REGInstruction &inst) {
+   unimplementedFault();
+}
+void
+Core::logbnrl(const REGInstruction &inst) {
+    unimplementedFault();
+}
+void
+Core::logr(const REGInstruction &inst) {
+    unimplementedFault();
+}
+void
+Core::logrl(const REGInstruction &inst) {
+    unimplementedFault();
+}
+
+void
+Core::logepr(const REGInstruction &inst) {
+   unimplementedFault();
+}
+void
+Core::logeprl(const REGInstruction &inst) {
+    unimplementedFault();
+}

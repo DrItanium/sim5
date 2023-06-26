@@ -1898,6 +1898,14 @@ private:
                 break;
         }
     }
+    void logbnr(const REGInstruction& inst);
+    void logbnrl(const REGInstruction& inst);
+    void logr(const REGInstruction& inst);
+    void logrl(const REGInstruction& inst);
+    void logepr(const REGInstruction& inst);
+    void logeprl(const REGInstruction& inst);
+    void expr(const REGInstruction& inst);
+    void exprl(const REGInstruction& inst);
 private:
     Ordinal systemAddressTableBase_ = 0;
     Ordinal prcbAddress_ = 0;
