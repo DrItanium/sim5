@@ -869,11 +869,27 @@ Core::remrl(const REGInstruction &inst) {
 
 void
 Core::logbnr(const REGInstruction &inst) {
-   unimplementedFault();
+    std::visit([this, &inst](auto src1) {
+                   using K = std::decay_t<decltype(src1)>;
+                   if constexpr (std::is_same_v<K, ExtendedReal>) {
+                       fpassignment(inst, std::logbl(src1), TreatAs<K>{});
+                   } else {
+                       fpassignment(inst, std::logbf(src1), TreatAs<K>{});
+                   }
+               },
+               unpackSrc1(inst, TreatAsReal{}));
 }
 void
 Core::logbnrl(const REGInstruction &inst) {
-    unimplementedFault();
+    std::visit([this, &inst](auto src1) {
+                   using K = std::decay_t<decltype(src1)>;
+                   if constexpr (std::is_same_v<K, ExtendedReal>) {
+                       fpassignment(inst, std::logbl(src1), TreatAs<K>{});
+                   } else {
+                       fpassignment(inst, std::logb(src1), TreatAs<K>{});
+                   }
+               },
+               unpackSrc1(inst, TreatAsLongReal{}));
 }
 void
 Core::logr(const REGInstruction &inst) {
