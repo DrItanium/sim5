@@ -55,6 +55,8 @@ Core::processFPInstruction(const REGInstruction &inst ) {
             X(cvtril);
             X(cvtzri);
             X(cvtzril);
+            X(cvtilr);
+            X(cvtir);
 #undef X
             default:
                 unimplementedFault();
@@ -691,21 +693,24 @@ Core::subrl(const REGInstruction &inst) {
                unpackSrc1(inst, TreatAsLongReal{}),
                unpackSrc2(inst, TreatAsLongReal{}));
 }
-
 void
 Core::divr(const REGInstruction &inst) {
     std::visit([this, &inst](auto denominator, auto numerator) {
                    using K0 = std::decay_t<decltype(numerator)>;
                    using K1 = std::decay_t<decltype(denominator)>;
                    if (denominator == 0.0) {
-                        floatingZeroDivideOperationFault();
-                   } else {
-                       if constexpr (BothAreReal<K0, K1>) {
-                           // if we get real/real then we assign as real, every other case mixed so treat them as long double/long double
-                           fpassignment(inst, numerator / denominator, TreatAsReal{});
+                       if (std::fpclassify(numerator) == FP_NORMAL) {
+                           floatingZeroDivideOperationFault();
                        } else {
-                           fpassignment(inst, numerator / denominator, TreatAsExtendedReal{});
+                           floatingInvalidOperationFault();
                        }
+                   }
+                   /// @todo add the other fault handlers as well
+                   if constexpr (BothAreReal<K0, K1>) {
+                       // if we get real/real then we assign as real, every other case mixed so treat them as long double/long double
+                       fpassignment(inst, numerator / denominator, TreatAsReal{});
+                   } else {
+                       fpassignment(inst, numerator / denominator, TreatAsExtendedReal{});
                    }
                },
                unpackSrc1(inst, TreatAsReal{}),
@@ -718,14 +723,18 @@ Core::divrl(const REGInstruction &inst) {
                    using K0 = std::decay_t<decltype(numerator)>;
                    using K1 = std::decay_t<decltype(denominator)>;
                    if (denominator == 0.0) {
-                       floatingZeroDivideOperationFault();
-                   } else {
-                       if constexpr (BothAreLongReal<K0, K1>) {
-                           // if we get real/real then we assign as real, every other case mixed so treat them as long double/long double
-                           fpassignment(inst, numerator / denominator, TreatAsLongReal{});
+                       if (std::fpclassify(numerator) == FP_NORMAL) {
+                           floatingZeroDivideOperationFault();
                        } else {
-                           fpassignment(inst, numerator / denominator, TreatAsExtendedReal{});
+                           floatingInvalidOperationFault();
                        }
+                   }
+                   /// @todo add the other fault handlers as well
+                   if constexpr (BothAreLongReal<K0, K1>) {
+                       // if we get real/real then we assign as real, every other case mixed so treat them as long double/long double
+                       fpassignment(inst, numerator / denominator, TreatAsLongReal{});
+                   } else {
+                       fpassignment(inst, numerator / denominator, TreatAsExtendedReal{});
                    }
                },
                unpackSrc1(inst, TreatAsLongReal{}),
