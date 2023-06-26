@@ -1577,7 +1577,8 @@ private:
     void badFault(const FaultRecord& record);
 private: // numerics extensions
     void dmovt(Register& dest, Ordinal src) noexcept;
-    /// @todo add support for the dedicated floating point registers as overloaded forms
+    void dsubc(Register& dest, Ordinal src1, Ordinal src2);
+    void daddc(Register& dest, Ordinal src1, Ordinal src2);
 private: // protected extensions instructions
     void signal(SegmentSelector sel) ;
     void wait(SegmentSelector src) ;

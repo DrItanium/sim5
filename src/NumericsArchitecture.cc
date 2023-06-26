@@ -71,6 +71,13 @@ Core::processFPInstruction(const REGInstruction &inst ) {
             X(sqrtrl);
             X(tanr);
             X(tanrl);
+            X(logeprl);
+            X(logepr);
+            X(logbnrl);
+            X(logbnr);
+            X(logr);
+            X(logrl);
+
 #undef X
             default:
                 unimplementedFault();
@@ -89,13 +96,11 @@ Core::dmovt(Register& dest, Ordinal src) noexcept {
 
 void
 Core::classr(const REGInstruction& inst) {
-    std::visit([this](auto value) { performClassification(value); },
-               unpackSrc1(inst, TreatAsReal{}));
+    std::visit([this](auto value) { performClassification(value); }, unpackSrc1(inst, TreatAsReal{}));
 }
 void
 Core::classrl(const REGInstruction& inst) {
-    std::visit([this](auto value) { performClassification(value); },
-               unpackSrc1(inst, TreatAsLongReal{}));
+    std::visit([this](auto value) { performClassification(value); }, unpackSrc1(inst, TreatAsLongReal{}));
 }
 
 void
