@@ -894,9 +894,19 @@ Core::remr(const REGInstruction &inst) {
                    using K0 = std::decay_t<decltype(src1)>;
                    using K1 = std::decay_t<decltype(src2)>;
                    if constexpr (BothAreReal<K0, K1>) {
-                       fpassignment(inst, src2 * src1, TreatAsReal{});
+                       int quad;
+                       auto result = std::remquo(src2, src1, &quad);
+                       /// @todo fix this up to do the right thing! Right now it is just the lowest quotient bits
+                       ac_.arith.arithmeticStatus = quad;
+                       // assign the quad bits to the arithmetic status register
+                       fpassignment(inst, result, TreatAsReal{});
                    } else {
-                       fpassignment(inst, src2 * src1, TreatAsExtendedReal{});
+                       int quad;
+                       auto result = std::remquo(src2, src1, &quad);
+                       /// @todo fix this up to do the right thing! Right now it is just the lowest quotient bits
+                       ac_.arith.arithmeticStatus = quad;
+                       // assign the quad bits to the arithmetic status register
+                       fpassignment(inst, result, TreatAsExtendedReal{});
                    }
                },
                unpackSrc1(inst, TreatAsReal{}),
@@ -909,9 +919,20 @@ Core::remrl(const REGInstruction &inst) {
                    using K0 = std::decay_t<decltype(src1)>;
                    using K1 = std::decay_t<decltype(src2)>;
                    if constexpr (BothAreLongReal<K0, K1>) {
-                       fpassignment(inst, src2 * src1, TreatAsLongReal{});
+                       int quad;
+                       auto result = std::remquo(src2, src1, &quad);
+                       /// @todo fix this up to do the right thing! Right now it is just the lowest quotient bits
+                       ac_.arith.arithmeticStatus = quad;
+
+                       // assign the quad bits to the arithmetic status register
+                       fpassignment(inst, result, TreatAsLongReal{});
                    } else {
-                       fpassignment(inst, src2 * src1, TreatAsExtendedReal{});
+                       int quad;
+                       auto result = std::remquo(src2, src1, &quad);
+                       /// @todo fix this up to do the right thing! Right now it is just the lowest quotient bits
+                       ac_.arith.arithmeticStatus = quad;
+                       // assign the quad bits to the arithmetic status register
+                       fpassignment(inst, result, TreatAsExtendedReal{});
                    }
                },
                unpackSrc1(inst, TreatAsLongReal{}),
