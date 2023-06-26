@@ -805,14 +805,14 @@ constexpr bool aligned(ByteOrdinal index, TreatAsTripleRegister) noexcept { retu
 class RegisterBlock32 {
 public:
     RegisterBlock32() = default;
-    Register& get(ByteOrdinal index) noexcept { return registers_[index & 0b11111]; }
-    const Register& get(ByteOrdinal index) const noexcept { return registers_[index & 0b11111]; }
+    [[nodiscard]] Register& get(ByteOrdinal index) noexcept { return registers_[index & 0b11111]; }
+    [[nodiscard]] const Register& get(ByteOrdinal index) const noexcept { return registers_[index & 0b11111]; }
     template<typename T>
     void setValue(ByteOrdinal index, T value) noexcept {
         get(index).setValue(value, TreatAs<T>{});
     }
     template<typename T>
-    T getValue(ByteOrdinal index) const noexcept {
+    [[nodiscard]] T getValue(ByteOrdinal index) const noexcept {
         return get(index).getValue(TreatAs<T>{});
     }
 private:
@@ -949,10 +949,10 @@ private:
     void unlockBus() noexcept;
     /// @todo insert iac dispatch here
     /// @todo insert routines for getting registers and such
-    auto& currentLocalRegisterSet() noexcept { return frames_[localRegisterFrameIndex_]; }
-    const auto& currentLocalRegisterSet() const noexcept { return frames_[localRegisterFrameIndex_]; }
-    auto& getLocals() noexcept { return currentLocalRegisterSet().getUnderlyingFrame(); }
-    const auto& getLocals() const noexcept { return currentLocalRegisterSet().getUnderlyingFrame(); }
+    [[nodiscard]] auto& currentLocalRegisterSet() noexcept { return frames_[localRegisterFrameIndex_]; }
+    [[nodiscard]] const auto& currentLocalRegisterSet() const noexcept { return frames_[localRegisterFrameIndex_]; }
+    [[nodiscard]] auto& getLocals() noexcept { return currentLocalRegisterSet().getUnderlyingFrame(); }
+    [[nodiscard]] const auto& getLocals() const noexcept { return currentLocalRegisterSet().getUnderlyingFrame(); }
     template<typename T>
     requires MustBeRegisterType<T>
     [[nodiscard]] T& getGPR(ByteOrdinal index, TreatAs<T>) {
