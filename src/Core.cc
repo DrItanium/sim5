@@ -1499,3 +1499,11 @@ void
 Core::bbs(const Register& bitpos, const Register& against, int16_t displacement) {
     return branchIfBitGeneric<false>(bitpos.asBitPosition(), against, displacement);
 }
+void
+Core::scanbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+    xbit<true>(dest, src1, src2);
+}
+void
+Core::spanbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+    xbit<false>(dest, src1, src2);
+}

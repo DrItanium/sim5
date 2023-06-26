@@ -983,12 +983,8 @@ private:
             return getLocals().get(index, TreatAs<T>{});
         }
     }
-    [[nodiscard]] Register& getGPR(ByteOrdinal index) noexcept {
-        return getGPR(index, TreatAsRegister{});
-    }
-    [[nodiscard]] const Register& getGPR(ByteOrdinal index) const noexcept {
-        return getGPR(index, TreatAsRegister{});
-    }
+    [[nodiscard]] Register& getGPR(ByteOrdinal index) noexcept;
+    [[nodiscard]] const Register& getGPR(ByteOrdinal index) const noexcept;
     [[nodiscard]] Register& getGPR(ByteOrdinal index, ByteOrdinal offset) noexcept { return getGPR((index + offset) & 0b11111); }
     [[nodiscard]] const Register& getGPR(ByteOrdinal index, ByteOrdinal offset) const noexcept { return getGPR((index + offset) & 0b11111); }
     [[nodiscard]] inline Ordinal getGPRValue(ByteOrdinal index, TreatAsOrdinal) const noexcept { return getGPR(index).getValue(TreatAsOrdinal{}); }
@@ -1001,9 +997,9 @@ private:
     [[nodiscard]] constexpr Ordinal getSystemAddressTableBase() const noexcept { return systemAddressTableBase_; }
     [[nodiscard]] Ordinal getSystemProcedureTableBase() const noexcept;
     [[nodiscard]] Ordinal getSupervisorStackPointer() const noexcept;
-    inline void setGPR(ByteOrdinal index, Ordinal value, TreatAsOrdinal) noexcept { getGPR(index).setValue(value, TreatAsOrdinal{}); }
-    inline void setGPR(ByteOrdinal index, ByteOrdinal offset, Ordinal value, TreatAsOrdinal) noexcept { getGPR(index, offset).setValue(value, TreatAsOrdinal{}); }
-    inline void setGPR(ByteOrdinal index, Integer value, TreatAsInteger) noexcept { getGPR(index).setValue(value, TreatAsInteger{}); }
+    void setGPR(ByteOrdinal index, Ordinal value, TreatAsOrdinal) noexcept;
+    void setGPR(ByteOrdinal index, ByteOrdinal offset, Ordinal value, TreatAsOrdinal) noexcept;
+    void setGPR(ByteOrdinal index, Integer value, TreatAsInteger) noexcept;
     [[nodiscard]] Register& getSFR(ByteOrdinal index) noexcept;
     [[nodiscard]] Register& getSFR(ByteOrdinal index, ByteOrdinal offset) noexcept;
     [[nodiscard]] const Register& getSFR(ByteOrdinal index) const noexcept;
@@ -1094,12 +1090,8 @@ private:
         dest.o = 0xFFFF'FFFF;
         ac_.arith.conditionCode = 0;
     }
-    void scanbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
-        xbit<true>(dest, src1, src2);
-    }
-    void spanbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
-        xbit<false>(dest, src1, src2);
-    }
+    void scanbit(Register& dest, Ordinal src1, Ordinal src2) noexcept;
+    void spanbit(Register& dest, Ordinal src1, Ordinal src2) noexcept;
     void branch(Integer displacement) noexcept;
     void branchConditional(bool condition, Integer displacement) noexcept;
     void scanbyte(Ordinal src1, Ordinal src2) ;

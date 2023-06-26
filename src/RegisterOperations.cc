@@ -67,6 +67,7 @@ Register::modify(Ordinal mask, Ordinal src) noexcept {
     o = ::modify(mask, src, o);
     return tmp;
 }
+
 Core::LocalRegisterSet&
 Core::getNextPack() noexcept {
     if constexpr (NumberOfLocalRegisterFrames > 1) {
@@ -92,4 +93,24 @@ Core::getPreviousPack() noexcept {
     } else {
         return frames_[0];
     }
+}
+void
+Core::setGPR(ByteOrdinal index, Ordinal value, TreatAsOrdinal) noexcept {
+    getGPR(index).setValue(value, TreatAsOrdinal{});
+}
+void
+Core::setGPR(ByteOrdinal index, ByteOrdinal offset, Ordinal value, TreatAsOrdinal) noexcept {
+    getGPR(index, offset).setValue(value, TreatAsOrdinal{});
+}
+void
+Core::setGPR(ByteOrdinal index, Integer value, TreatAsInteger) noexcept {
+    getGPR(index).setValue(value, TreatAsInteger{});
+}
+Register&
+Core::getGPR(ByteOrdinal index) noexcept {
+    return getGPR(index, TreatAsRegister{});
+}
+const Register&
+Core::getGPR(ByteOrdinal index) const noexcept {
+    return getGPR(index, TreatAsRegister{});
 }
