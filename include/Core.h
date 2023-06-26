@@ -1747,6 +1747,8 @@ private:
     void mulrl(const REGInstruction& inst);
     void divr(const REGInstruction& inst);
     void divrl(const REGInstruction& inst);
+    void remr(const REGInstruction& inst);
+    void remrl(const REGInstruction& inst);
     void cmpr(const REGInstruction& inst) ;
     void cmprl(const REGInstruction& inst) ;
     void cmpor(const REGInstruction& inst);

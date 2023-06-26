@@ -1,4 +1,4 @@
-// sim
+// sim5
 // Copyright (c) 2022, Joshua Scoggins
 // All rights reserved.
 //
@@ -28,6 +28,7 @@
 #include <type_traits>
 #include <concepts>
 #include <bitset>
+#include "Platform.h"
 using Address = uint32_t;
 using ByteOrdinal = uint8_t;
 using ByteInteger = int8_t;

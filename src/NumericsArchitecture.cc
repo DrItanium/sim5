@@ -888,3 +888,32 @@ Core::mulrl(const REGInstruction &inst) {
                unpackSrc1(inst, TreatAsLongReal{}),
                unpackSrc2(inst, TreatAsLongReal{}));
 }
+void
+Core::remr(const REGInstruction &inst) {
+    std::visit([this, &inst](auto src1, auto src2) {
+                   using K0 = std::decay_t<decltype(src1)>;
+                   using K1 = std::decay_t<decltype(src2)>;
+                   if constexpr (BothAreReal<K0, K1>) {
+                       fpassignment(inst, src2 * src1, TreatAsReal{});
+                   } else {
+                       fpassignment(inst, src2 * src1, TreatAsExtendedReal{});
+                   }
+               },
+               unpackSrc1(inst, TreatAsReal{}),
+               unpackSrc2(inst, TreatAsReal{}));
+}
+
+void
+Core::remrl(const REGInstruction &inst) {
+    std::visit([this, &inst](auto src1, auto src2) {
+                   using K0 = std::decay_t<decltype(src1)>;
+                   using K1 = std::decay_t<decltype(src2)>;
+                   if constexpr (BothAreLongReal<K0, K1>) {
+                       fpassignment(inst, src2 * src1, TreatAsLongReal{});
+                   } else {
+                       fpassignment(inst, src2 * src1, TreatAsExtendedReal{});
+                   }
+               },
+               unpackSrc1(inst, TreatAsLongReal{}),
+               unpackSrc2(inst, TreatAsLongReal{}));
+}
