@@ -1874,6 +1874,30 @@ private:
         }
         return input;
     }
+    template<typename T>
+    requires std::floating_point<T>
+    void performClassification(T value) {
+        switch(std::fpclassify(value)) {
+            case FP_ZERO:
+                ac_.arith.arithmeticStatus = 0;
+                break;
+            case FP_SUBNORMAL:
+                ac_.arith.arithmeticStatus = 0b001;
+                break;
+            case FP_NORMAL:
+                ac_.arith.arithmeticStatus = 0b010;
+                break;
+            case FP_INFINITE:
+                ac_.arith.arithmeticStatus = 0b011;
+                break;
+            case FP_NAN:
+                ac_.arith.arithmeticStatus = issignaling(value) ? 0b101 : 0b100;
+                break;
+            default:
+                ac_.arith.arithmeticStatus = 0b110;
+                break;
+        }
+    }
 private:
     Ordinal systemAddressTableBase_ = 0;
     Ordinal prcbAddress_ = 0;

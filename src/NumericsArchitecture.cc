@@ -31,26 +31,19 @@ void
 Core::processFPInstruction(const REGInstruction &inst ) {
     if (isFloatingPointInstruction(inst.getOpcode())) {
         switch (inst.getOpcode()) {
-#define X(name) case Opcodes :: name ## r : name ## r (inst) ; break;\
-            case Opcodes:: name ## rl : name ## rl (inst); break
-            X(class);
-            X(cos);
-            X(mov);
-            X(sin);
-            X(tan);
-            X(atan);
-            X(sqrt);
-            X(round);
-            X(scale);
-            X(add);
-            X(cmpo);
-            X(cmp);
-            X(div);
-            X(sub);
-            X(mul);
-#undef X
 #define X(name) case Opcodes:: name : name (inst); break
-            X(movre);
+            X(addr);
+            X(addrl);
+            X(atanr);
+            X(atanrl);
+            X(classr);
+            X(classrl);
+            X(cmpr);
+            X(cmprl);
+            X(cmpor);
+            X(cmporl);
+            X(cosr);
+            X(cosrl);
             X(cpyrsre);
             X(cpysre);
             X(cvtri);
@@ -59,6 +52,25 @@ Core::processFPInstruction(const REGInstruction &inst ) {
             X(cvtzril);
             X(cvtilr);
             X(cvtir);
+            X(divr);
+            X(divrl);
+            X(movr);
+            X(movre);
+            X(movrl);
+            X(mulr);
+            X(mulrl);
+            X(roundr);
+            X(roundrl);
+            X(subr);
+            X(subrl);
+            X(scaler);
+            X(scalerl);
+            X(sinr);
+            X(sinrl);
+            X(sqrtr);
+            X(sqrtrl);
+            X(tanr);
+            X(tanrl);
 #undef X
             default:
                 unimplementedFault();
@@ -77,62 +89,14 @@ Core::dmovt(Register& dest, Ordinal src) noexcept {
 
 void
 Core::classr(const REGInstruction& inst) {
-    std::visit([this](auto value) {
-                   switch(std::fpclassify(value)) {
-                       case FP_ZERO:
-                           ac_.arith.arithmeticStatus = 0;
-                           break;
-                       case FP_SUBNORMAL:
-                           ac_.arith.arithmeticStatus = 0b001;
-                           break;
-                       case FP_NORMAL:
-                           ac_.arith.arithmeticStatus = 0b010;
-                           break;
-                       case FP_INFINITE:
-                           ac_.arith.arithmeticStatus = 0b011;
-                           break;
-                       case FP_NAN:
-                           ac_.arith.arithmeticStatus = issignaling(value) ? 0b101 : 0b100;
-                           break;
-                       default:
-                           ac_.arith.arithmeticStatus = 0b110;
-                           break;
-                   }
-               },
+    std::visit([this](auto value) { performClassification(value); },
                unpackSrc1(inst, TreatAsReal{}));
 }
 void
 Core::classrl(const REGInstruction& inst) {
-    std::visit([this](auto value) {
-                   switch(std::fpclassify(value)) {
-                       case FP_ZERO:
-                           ac_.setConditionCode(0);
-                           break;
-                       case FP_SUBNORMAL:
-                           ac_.setConditionCode(0b001);
-                           break;
-                       case FP_NORMAL:
-                           ac_.setConditionCode(0b010);
-                           break;
-                       case FP_INFINITE:
-                           ac_.setConditionCode(0b011);
-                           break;
-                       case FP_NAN:
-                           ac_.setConditionCode(issignaling(value) ? 0b101 : 0b100);
-                           break;
-                       default:
-                           ac_.setConditionCode(0b110);
-                           break;
-                   }
-               },
+    std::visit([this](auto value) { performClassification(value); },
                unpackSrc1(inst, TreatAsLongReal{}));
 }
-template<typename T>
-requires std::floating_point<T>
-bool isNAN(T value) noexcept {
-    return std::fpclassify(value) == FP_NAN;
-}
-
 
 void
 Core::movr(const REGInstruction &inst) {
@@ -490,24 +454,10 @@ Core::unpackSrc2(const REGInstruction &inst, TreatAsExtendedReal) const {
         return handleSubnormalCase(getGPR(inst.getSrc2(), TreatAsTripleRegister{}).getValue<ExtendedReal>());
     }
 }
-template<typename T>
-requires std::floating_point<T>
-bool isSignalingNaN(T value) noexcept {
-    return issignaling(value);
-}
-
-template<typename T>
-requires std::floating_point<T>
-bool isInfinite(T value) noexcept {
-    return std::fpclassify(value) == FP_INFINITE;
-}
 void
 Core::cosr(const REGInstruction &inst) {
     std::visit([this, &inst](auto value) {
                    using K = std::decay_t<decltype(value)>;
-                   if (isInfinite(value) || isSignalingNaN(value)) {
-                       floatingInvalidOperationFault();
-                   }
                    fpassignment(inst, std::cos(value), TreatAs<K>{});
                },
                unpackSrc1(inst, TreatAsReal{}));
@@ -517,9 +467,6 @@ void
 Core::cosrl(const REGInstruction &inst) {
     std::visit([this, &inst](auto value) {
                    using K = std::decay_t<decltype(value)>;
-                   if (isInfinite(value) || isSignalingNaN(value)) {
-                       floatingInvalidOperationFault();
-                   }
                    fpassignment(inst, std::cos(value), TreatAs<K>{});
                },
                unpackSrc1(inst, TreatAsLongReal{}));
@@ -528,9 +475,6 @@ void
 Core::sinr(const REGInstruction &inst) {
     std::visit([this, &inst](auto value) {
                    using K = std::decay_t<decltype(value)>;
-                   if (isInfinite(value) || isSignalingNaN(value)) {
-                       floatingInvalidOperationFault();
-                   }
                    fpassignment(inst, std::sin(value), TreatAs<K>{});
                },
                unpackSrc1(inst, TreatAsReal{}));
@@ -540,9 +484,6 @@ void
 Core::sinrl(const REGInstruction &inst) {
     std::visit([this, &inst](auto value) {
                    using K = std::decay_t<decltype(value)>;
-                   if (isInfinite(value) || isSignalingNaN(value)) {
-                       floatingInvalidOperationFault();
-                   }
                    fpassignment(inst, std::sin(value), TreatAs<K>{});
                },
                unpackSrc1(inst, TreatAsLongReal{}));
@@ -551,9 +492,6 @@ void
 Core::tanr(const REGInstruction &inst) {
     std::visit([this, &inst](auto value) {
                    using K = std::decay_t<decltype(value)>;
-                   if (isInfinite(value) || isSignalingNaN(value)) {
-                       floatingInvalidOperationFault();
-                   }
                    fpassignment(inst, std::tan(value), TreatAs<K>{});
                },
                unpackSrc1(inst, TreatAsReal{}));
@@ -563,9 +501,6 @@ void
 Core::tanrl(const REGInstruction &inst) {
     std::visit([this, &inst](auto value) {
                    using K = std::decay_t<decltype(value)>;
-                   if (isInfinite(value) || isSignalingNaN(value)) {
-                       floatingInvalidOperationFault();
-                   }
                    fpassignment(inst, std::tan(value), TreatAs<K>{});
                },
                unpackSrc1(inst, TreatAsLongReal{}));
@@ -574,9 +509,6 @@ void
 Core::atanr(const REGInstruction &inst) {
     std::visit([this, &inst](auto value) {
                    using K = std::decay_t<decltype(value)>;
-                   if (isSignalingNaN(value)) {
-                       floatingInvalidOperationFault();
-                   }
                    fpassignment(inst, std::atan(value), TreatAs<K>{});
                },
                unpackSrc1(inst, TreatAsReal{}));
@@ -586,9 +518,6 @@ void
 Core::atanrl(const REGInstruction &inst) {
     std::visit([this, &inst](auto value) {
                    using K = std::decay_t<decltype(value)>;
-                   if (isSignalingNaN(value)) {
-                       floatingInvalidOperationFault();
-                   }
                    fpassignment(inst, std::atan(value), TreatAs<K>{});
                },
                unpackSrc1(inst, TreatAsLongReal{}));
@@ -597,9 +526,6 @@ void
 Core::sqrtr(const REGInstruction &inst) {
     std::visit([this, &inst](auto value) {
                    using K = std::decay_t<decltype(value)>;
-                   if (isSignalingNaN(value) || (value < -0.0)) {
-                       floatingInvalidOperationFault();
-                   }
                    fpassignment(inst, std::sqrt(value), TreatAs<K>{});
                },
                unpackSrc1(inst, TreatAsReal{}));
@@ -609,9 +535,6 @@ void
 Core::sqrtrl(const REGInstruction &inst) {
     std::visit([this, &inst](auto value) {
                    using K = std::decay_t<decltype(value)>;
-                   if (isSignalingNaN(value) || (value < -0.0)) {
-                       floatingInvalidOperationFault();
-                   }
                    fpassignment(inst, std::sqrt(value), TreatAs<K>{});
                },
                unpackSrc1(inst, TreatAsLongReal{}));
