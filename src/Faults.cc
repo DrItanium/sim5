@@ -324,3 +324,35 @@ Core::floatingInvalidOperationFault() {
                        (Ordinal)ip_,
                        true);
 }
+void
+Core::floatingOverflowFault() {
+    throw FaultRecord((Ordinal)pc_,
+                      (Ordinal)ac_,
+                      FloatingPointOverflowFault,
+                      (Ordinal)ip_,
+                      true);
+}
+void
+Core::floatingUnderflowFault() {
+    throw FaultRecord((Ordinal)pc_,
+                      (Ordinal)ac_,
+                      FloatingPointUnderflowFault,
+                      (Ordinal)ip_,
+                      true);
+}
+void
+Core::floatingZeroDivideOperationFault() {
+    throw FaultRecord((Ordinal)pc_,
+                      (Ordinal)ac_,
+                      FloatingPointZeroDivideOperationFault,
+                      (Ordinal)ip_,
+                      true);
+}
+void
+Core::floatingInexactFault() {
+    throw FaultRecord((Ordinal)pc_,
+                      (Ordinal)ac_,
+                      FloatingPointInexactFault,
+                      (Ordinal)ip_,
+                      true);
+}

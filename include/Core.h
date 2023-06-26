@@ -1467,6 +1467,11 @@ private:
     void invalidDescriptorFault(SegmentSelector selector);
     void eventNoticeFault();
     void floatingInvalidOperationFault();
+    void floatingZeroDivideOperationFault();
+    void floatingOverflowFault();
+    void floatingUnderflowFault();
+    void floatingInexactFault();
+    void floatingReservedEncodingFault();
     void generateFault(const FaultRecord& record) ;
     void addi(Register& dest, Integer src1, Integer src2);
     void addo(Register& dest, Ordinal src1, Ordinal src2);
@@ -1735,23 +1740,35 @@ private:
     void scalerl(const REGInstruction& inst);
     void addr(const REGInstruction& inst);
     void addrl(const REGInstruction& inst);
+    void subr(const REGInstruction& inst);
+    void subrl(const REGInstruction& inst);
+    void mulr(const REGInstruction& inst);
+    void mulrl(const REGInstruction& inst);
+    void divr(const REGInstruction& inst);
+    void divrl(const REGInstruction& inst);
     void cmpr(const REGInstruction& inst) noexcept;
     void cmprl(const REGInstruction& inst) noexcept;
     void cmpor(const REGInstruction& inst);
     void cmporl(const REGInstruction& inst);
+    void cvtilr(const REGInstruction& inst);
+    void cvtir(const REGInstruction& inst);
+    void cvtri(const REGInstruction& inst);
+    void cvtril(const REGInstruction& inst);
+    void cvtzri(const REGInstruction& inst);
+    void cvtzril(const REGInstruction& inst);
     void fpassignment(const REGInstruction& inst, ExtendedReal value, TreatAsExtendedReal);
     void fpassignment(const REGInstruction& inst, Real value, TreatAsReal);
     void fpassignment(const REGInstruction& inst, LongReal value, TreatAsLongReal);
     using MixedRealSourceArgument = std::variant<Real, ExtendedReal>;
     using MixedLongRealSourceArgument = std::variant<LongReal, ExtendedReal>;
-    MixedRealSourceArgument unpackSrc1(const REGInstruction& index, TreatAsReal) const;
-    MixedRealSourceArgument unpackSrc2(const REGInstruction& index, TreatAsReal) const;
-    MixedLongRealSourceArgument unpackSrc1(const REGInstruction& index, TreatAsLongReal) const;
-    MixedLongRealSourceArgument unpackSrc2(const REGInstruction& index, TreatAsLongReal) const;
-    ExtendedReal unpackSrc1(const REGInstruction& index, TreatAsExtendedReal) const;
-    ExtendedReal unpackSrc2(const REGInstruction& index, TreatAsExtendedReal) const;
-    TripleRegister& getFloatingPointRegister(ByteOrdinal index);
-    const TripleRegister& getFloatingPointRegister(ByteOrdinal index) const;
+    [[nodiscard]] MixedRealSourceArgument unpackSrc1(const REGInstruction& index, TreatAsReal) const;
+    [[nodiscard]] MixedRealSourceArgument unpackSrc2(const REGInstruction& index, TreatAsReal) const;
+    [[nodiscard]] MixedLongRealSourceArgument unpackSrc1(const REGInstruction& index, TreatAsLongReal) const;
+    [[nodiscard]] MixedLongRealSourceArgument unpackSrc2(const REGInstruction& index, TreatAsLongReal) const;
+    [[nodiscard]] ExtendedReal unpackSrc1(const REGInstruction& index, TreatAsExtendedReal) const;
+    [[nodiscard]] ExtendedReal unpackSrc2(const REGInstruction& index, TreatAsExtendedReal) const;
+    [[nodiscard]] TripleRegister& getFloatingPointRegister(ByteOrdinal index);
+    [[nodiscard]] const TripleRegister& getFloatingPointRegister(ByteOrdinal index) const;
     template<typename T>
     requires std::floating_point<T>
     T getFloatingPointLiteral(ByteOrdinal index) const {

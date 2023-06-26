@@ -30,15 +30,6 @@ void
 Core::processFPInstruction(const REGInstruction &inst ) {
     if (isFloatingPointInstruction(inst.getOpcode())) {
         switch (inst.getOpcode()) {
-            case Opcodes::movre:
-                movre(inst);
-                break;
-            case Opcodes::cpyrsre:
-                cpyrsre(inst);
-                break;
-            case Opcodes::cpysre:
-                cpysre(inst);
-                break;
 #define X(name) case Opcodes :: name ## r : name ## r (inst) ; break;\
             case Opcodes:: name ## rl : name ## rl (inst); break
             X(class);
@@ -53,6 +44,17 @@ Core::processFPInstruction(const REGInstruction &inst ) {
             X(add);
             X(cmpo);
             X(cmp);
+            X(div);
+            X(sub);
+#undef X
+#define X(name) case Opcodes:: name : name (inst); break
+            X(movre);
+            X(cpyrsre);
+            X(cpysre);
+            X(cvtri);
+            X(cvtril);
+            X(cvtzri);
+            X(cvtzril);
 #undef X
             default:
                 unimplementedFault();
@@ -658,6 +660,79 @@ Core::addrl(const REGInstruction &inst) {
 }
 
 void
+Core::subr(const REGInstruction &inst) {
+    std::visit([this, &inst](auto src1, auto src2) {
+                   using K0 = std::decay_t<decltype(src1)>;
+                   using K1 = std::decay_t<decltype(src2)>;
+                   if constexpr (BothAreReal<K0, K1>) {
+                       // if we get real/real then we assign as real, every other case mixed so treat them as long double/long double
+                       fpassignment(inst, src2 - src1, TreatAsReal{});
+                   } else {
+                       // if they are different then it means mixed subtraction so we should always do 80-bit operations
+                       fpassignment(inst, src2 - src1, TreatAsExtendedReal{});
+                   }
+               },
+               unpackSrc1(inst, TreatAsReal{}),
+               unpackSrc2(inst, TreatAsReal{}));
+}
+
+void
+Core::subrl(const REGInstruction &inst) {
+    std::visit([this, &inst](auto src1, auto src2) {
+                   using K0 = std::decay_t<decltype(src1)>;
+                   using K1 = std::decay_t<decltype(src2)>;
+                   if constexpr (BothAreLongReal<K0, K1>) {
+                       fpassignment(inst, src2 - src1, TreatAsLongReal{});
+                   } else {
+                       // if they are different then it means mixed subtraction so we should always do 80-bit operations
+                       fpassignment(inst, src2 - src1, TreatAsExtendedReal{});
+                   }
+               },
+               unpackSrc1(inst, TreatAsLongReal{}),
+               unpackSrc2(inst, TreatAsLongReal{}));
+}
+
+void
+Core::divr(const REGInstruction &inst) {
+    std::visit([this, &inst](auto denominator, auto numerator) {
+                   using K0 = std::decay_t<decltype(numerator)>;
+                   using K1 = std::decay_t<decltype(denominator)>;
+                   if (denominator == 0.0) {
+                        floatingZeroDivideOperationFault();
+                   } else {
+                       if constexpr (BothAreReal<K0, K1>) {
+                           // if we get real/real then we assign as real, every other case mixed so treat them as long double/long double
+                           fpassignment(inst, numerator / denominator, TreatAsReal{});
+                       } else {
+                           fpassignment(inst, numerator / denominator, TreatAsExtendedReal{});
+                       }
+                   }
+               },
+               unpackSrc1(inst, TreatAsReal{}),
+               unpackSrc2(inst, TreatAsReal{}));
+}
+
+void
+Core::divrl(const REGInstruction &inst) {
+    std::visit([this, &inst](auto denominator, auto numerator) {
+                   using K0 = std::decay_t<decltype(numerator)>;
+                   using K1 = std::decay_t<decltype(denominator)>;
+                   if (denominator == 0.0) {
+                       floatingZeroDivideOperationFault();
+                   } else {
+                       if constexpr (BothAreLongReal<K0, K1>) {
+                           // if we get real/real then we assign as real, every other case mixed so treat them as long double/long double
+                           fpassignment(inst, numerator / denominator, TreatAsLongReal{});
+                       } else {
+                           fpassignment(inst, numerator / denominator, TreatAsExtendedReal{});
+                       }
+                   }
+               },
+               unpackSrc1(inst, TreatAsLongReal{}),
+               unpackSrc2(inst, TreatAsLongReal{}));
+}
+
+void
 Core::cmpor(const REGInstruction &inst) {
     cmpr(inst);
     if (!ac_.getConditionCode()) {
@@ -701,4 +776,43 @@ Core::cmprl(const REGInstruction &inst) noexcept {
                },
                unpackSrc1(inst, TreatAsLongReal{}),
                unpackSrc2(inst, TreatAsLongReal{}));
+}
+// dst <- real(src)
+void
+Core::cvtir(const REGInstruction &inst) {
+    // convert integer to real
+    unimplementedFault();
+}
+void
+Core::cvtilr(const REGInstruction &inst) {
+    //convert long integer to real
+    // not a long real!
+    // two instruction combination for converting integer to long real format
+    // cvtir g6, fp3
+    // movrl fp3, g8 # result stored in g8, g9
+    unimplementedFault();
+}
+
+void
+Core::cvtri(const REGInstruction &inst) {
+
+    unimplementedFault();
+}
+
+void
+Core::cvtril(const REGInstruction &inst) {
+
+    unimplementedFault();
+}
+
+void
+Core::cvtzri(const REGInstruction &inst) {
+
+    unimplementedFault();
+}
+
+void
+Core::cvtzril(const REGInstruction &inst) {
+
+    unimplementedFault();
 }
