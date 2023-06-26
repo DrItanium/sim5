@@ -275,6 +275,11 @@ struct FaultRecord {
     FaultRecord() = default;
     FaultRecord(Ordinal p, Ordinal a, Ordinal t, Address adr, bool mustSaveReturnAddress) : unused(0), overrideFaultData{0}, faultData{0}, overrideType(0), pc(p), ac(a), type(t), addr(adr), saveReturnAddress(mustSaveReturnAddress) { }
     [[nodiscard]] constexpr uint8_t getFaultFlags() const noexcept { return static_cast<uint8_t>(type >> 24); }
+    void setFaultFlags(uint8_t value) noexcept {
+        auto shifted = (static_cast<Ordinal>(value) << 24) & 0xFF00'0000;
+        auto masked = type & 0x00FFFFFF;
+        type = (shifted | masked);
+    }
     [[nodiscard]] constexpr uint8_t getFaultType() const noexcept { return static_cast<uint8_t>(type >> 16); }
     [[nodiscard]] constexpr uint8_t getFaultSubtype() const noexcept { return static_cast<uint8_t>(type); }
     [[nodiscard]] constexpr uint8_t getOverrideFlags() const noexcept { return static_cast<uint8_t>(overrideType >> 24); }

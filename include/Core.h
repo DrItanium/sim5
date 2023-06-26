@@ -34,6 +34,7 @@
 #include <iostream>
 #include <optional>
 #include <variant>
+#include <cfenv>
 constexpr uint8_t getDebugLoggingLevel() noexcept {
     return 0;
 }
@@ -1783,10 +1784,85 @@ private:
                 return 0.0;
         }
     }
+    template<typename T>
+    requires std::floating_point<T>
+    void handleUnderflowCondition(T value, FaultRecord& record) {
+        record.type |= FloatingPointUnderflowFault;
+    }
+    template<typename T>
+    requires std::floating_point<T>
+    void handleOverflowCondition(T value, FaultRecord& record) {
+        record.type |= FloatingPointOverflowFault;
+    }
+    template<typename T>
+    requires std::floating_point<T>
+    void handlePureInexactCondition(T value, FaultRecord& record) {
+    }
+    template<typename T>
+    requires std::floating_point<T>
+    void handleMixedInexactCondition(T value, FaultRecord& record) {
+    }
     /**
      * @brief Checks the error flags to see if a floating point exeception has taken place and generates one if allowed
      */
-    void serviceFloatingPointFault();
+    template<typename T>
+    requires std::floating_point<T>
+    T serviceFloatingPointFault(T value) {
+        if (std::fetestexcept(FE_DIVBYZERO)) {
+            std::feclearexcept(FE_ALL_EXCEPT);
+            floatingZeroDivideOperationFault();
+        }
+        if (std::fetestexcept(FE_INVALID)) {
+            std::feclearexcept(FE_ALL_EXCEPT);
+            floatingInvalidOperationFault();
+        }
+        FaultRecord record((Ordinal) pc_,
+                           (Ordinal) ac_,
+                           0,
+                           (Ordinal) ip_,
+                           true);
+        if (std::fetestexcept(FE_OVERFLOW)) {
+            if (ac_.arith.floatingOverflowMask == 0) {
+                handleOverflowCondition<T>(value, record);
+            } else {
+                ac_.arith.floatingOverflowFlag = 1;
+            }
+        }
+        if (std::fetestexcept(FE_UNDERFLOW)) {
+            if (ac_.arith.floatingUnderflowMask == 0) {
+                handleUnderflowCondition<T>(value, record);
+            } else {
+                ac_.arith.floatingUnderflowFlag= 1;
+            }
+        }
+        if (std::fetestexcept(FE_INEXACT)) {
+            if (ac_.arith.floatingInexactMask == 0) {
+                record.type |= FloatingPointInexactFault;
+                if (record.type != 0) {
+                    // If set, F0 indicates that the adjusted result has been rounded towards positive infinity
+                    // If clear, F0 indicates that the adjusted result has been rounded toward negative infinity
+                    handleMixedInexactCondition(value, record);
+                } else {
+                    handlePureInexactCondition(value, record);
+                }
+            } else {
+                ac_.arith.floatingInexactFlag = 1;
+            }
+        } else {
+            // SET F1 if the adjusted result has been bias adjusted because its exponent was outside the range of the extended-real format
+            if (record.type == FloatingPointUnderflowFault) {
+                handleUnderflowCondition<T>(value, record);
+            }
+            if (record.type == FloatingPointOverflowFault) {
+                handleOverflowCondition<T>(value, record);
+            }
+        }
+        std::feclearexcept(FE_ALL_EXCEPT);
+        if (record.type != 0) {
+            throw record;
+        }
+        return value;
+    }
     void updateRoundingMode();
     template<typename T>
     requires std::floating_point<T>
@@ -1811,7 +1887,6 @@ private:
     Register tc_;
     Register instruction_;
     Register ictl_;
-    ByteOrdinal advanceBy_;
     ByteOrdinal instructionLength_ = 0;
     bool advanceInstruction_ = false;
     Address breakpoint0_ = 0;

@@ -259,7 +259,8 @@ Core::cpysre(const REGInstruction &inst) {
 }
 
 void
-Core::fpassignment(const REGInstruction &inst, ExtendedReal result, TreatAsExtendedReal) {
+Core::fpassignment(const REGInstruction &inst, ExtendedReal val, TreatAsExtendedReal) {
+    auto result = serviceFloatingPointFault<ExtendedReal>(val);
     if(inst.getM3()) {
         // fp
         switch (inst.getSrcDest()) {
@@ -298,7 +299,8 @@ Core::fpassignment(const REGInstruction &inst, ExtendedReal result, TreatAsExten
 }
 
 void
-Core::fpassignment(const REGInstruction &inst, Real result, TreatAsReal) {
+Core::fpassignment(const REGInstruction &inst, Real val, TreatAsReal) {
+    auto result = serviceFloatingPointFault<Real>(val);
     if(inst.getM3()) {
         // fp
         switch (inst.getSrcDest()) {
@@ -337,7 +339,8 @@ Core::fpassignment(const REGInstruction &inst, Real result, TreatAsReal) {
 }
 
 void
-Core::fpassignment(const REGInstruction &inst, LongReal result, TreatAsLongReal) {
+Core::fpassignment(const REGInstruction &inst, LongReal val, TreatAsLongReal) {
+    auto result = serviceFloatingPointFault<LongReal>(val);
     if(inst.getM3()) {
         // fp
         switch (inst.getSrcDest()) {
@@ -853,58 +856,6 @@ Core::cvtzril(const REGInstruction &inst) {
     unimplementedFault();
 }
 
-void
-Core::serviceFloatingPointFault() {
-    if (std::fetestexcept(FE_DIVBYZERO)) {
-        std::feclearexcept(FE_ALL_EXCEPT);
-        floatingZeroDivideOperationFault();
-    }
-    if (std::fetestexcept(FE_INVALID)) {
-        std::feclearexcept(FE_ALL_EXCEPT);
-        floatingInvalidOperationFault();
-    }
-    Ordinal code = 0;
-    if (std::fetestexcept(FE_OVERFLOW)) {
-        if (ac_.arith.floatingOverflowMask == 0) {
-            code |= FloatingPointOverflowFault;
-        } else {
-            ac_.arith.floatingOverflowFlag = 1;
-        }
-    }
-    if (std::fetestexcept(FE_UNDERFLOW)) {
-        if (ac_.arith.floatingUnderflowMask == 0) {
-            code |= FloatingPointUnderflowFault;
-        } else {
-            ac_.arith.floatingUnderflowFlag= 1;
-        }
-    }
-    if (std::fetestexcept(FE_INEXACT)) {
-        if (ac_.arith.floatingInexactMask == 0) {
-            auto overflowOrUnderflow = code != 0;
-            code |= FloatingPointInexactFault;
-            if (overflowOrUnderflow) {
-                // If set, F0 indicates that the adjusted result has been rounded towards positive infinity
-                // If clear, F0 indicates that the adjusted result has been rounded toward negative infinity
-            }
-        } else {
-            ac_.arith.floatingInexactFlag = 1;
-        }
-    } else {
-        if (code != 0) {
-            // SET F1 if the adjusted result has been bias adjusted because its exponent was outside the range of the extended-real format
-        }
-    }
-    FaultRecord record ((Ordinal) pc_,
-                        (Ordinal) ac_,
-                        code,
-                        (Ordinal) ip_,
-                        true);
-    /// @todo handle the fault flags
-    std::feclearexcept(FE_ALL_EXCEPT);
-    if (code != 0) {
-        throw record;
-    }
-}
 void
 Core::updateRoundingMode() {
     switch (ac_.arith.floatingPointRoundingControl) {
