@@ -114,3 +114,94 @@ const Register&
 Core::getGPR(ByteOrdinal index) const noexcept {
     return getGPR(index, TreatAsRegister{});
 }
+void
+Core::LocalRegisterSet::relinquishOwnership() noexcept {
+    DEBUG_LOG_LEVEL(2) {
+        std::cout << __PRETTY_FUNCTION__ << ": {" << std::endl;
+        std::cout << __PRETTY_FUNCTION__ << ": &this: 0x" << std::hex << reinterpret_cast<uintptr_t>(this) << std::endl;
+    }
+    _valid = false;
+    synchronizeOwnership(0);
+    DEBUG_LOG_LEVEL(2) {
+        std::cout << __PRETTY_FUNCTION__ << ": }" << std::endl;
+    }
+    /// @todo zero out the frame?
+}
+void
+Core::LocalRegisterSet::relinquishOwnership(SaveRegistersFunction saveRegisters) {
+    if (_valid) {
+        DEBUG_LOG_LEVEL(2) {
+            std::cout << __PRETTY_FUNCTION__ << ": saving to 0x" << std::hex << _targetFramePointer << std::endl;
+        }
+        saveRegisters(_theFrame, _targetFramePointer);
+    }
+    relinquishOwnership();
+}
+void
+Core::LocalRegisterSet::takeOwnership(Address newFP, SaveRegistersFunction saveRegisters) {
+    DEBUG_ENTER_FUNCTION;
+    if (valid()) {
+        DEBUG_LOG_LEVEL(2) {
+            std::cout << __PRETTY_FUNCTION__ << ": saving to 0x" << std::hex << _targetFramePointer << std::endl;
+        }
+        saveRegisters(_theFrame, _targetFramePointer);
+    }
+    _valid = true;
+    synchronizeOwnership(newFP);
+    // don't clear out the registers
+    DEBUG_LEAVE_FUNCTION;
+}
+void
+Core::LocalRegisterSet::restoreOwnership(Address newFP,
+                 SaveRegistersFunction saveRegisters,
+                 RestoreRegistersFunction restoreRegisters) {
+    DEBUG_ENTER_FUNCTION;
+    DEBUG_LOG_LEVEL(2) {
+        std::cout << __PRETTY_FUNCTION__ << ": &this: 0x" << std::hex << reinterpret_cast<uintptr_t>(this) << std::endl;
+        std::cout << __PRETTY_FUNCTION__ << ": newFramePointer is 0x" << std::hex << newFP << std::endl;
+    }
+    if (valid()) {
+        DEBUG_LOG_LEVEL(2) {
+            std::cout << __PRETTY_FUNCTION__ << ": targetFramePointer currently 0x" << std::hex << _targetFramePointer << std::endl;
+            std::cout << __PRETTY_FUNCTION__ << ": Current frame is valid" << std::endl;
+        }
+        // okay we have something valid in there right now, so we need to determine if it is valid or not
+        if (newFP == _targetFramePointer) {
+            DEBUG_LOG_LEVEL(2) {
+                std::cout << __PRETTY_FUNCTION__ << ": match found!" << std::endl;
+            }
+            // okay so we got a match, great!
+            // just leave early
+            DEBUG_LEAVE_FUNCTION;
+            return;
+        }
+        DEBUG_LOG_LEVEL(2) {
+            std::cout << __PRETTY_FUNCTION__ << ": no match found!" << std::endl;
+            std::cout << __PRETTY_FUNCTION__ << ": saving to 0x" << std::hex << getAddress() << std::endl;
+        }
+        // got a mismatch, so spill this frame to memory first
+        saveRegisters(getUnderlyingFrame(), getAddress());
+    }
+    DEBUG_LOG_LEVEL(2) {
+        std::cout << __PRETTY_FUNCTION__ << ": Setting up frame!" << std::endl;
+    }
+    _valid = true;
+    synchronizeOwnership(newFP);
+    restoreRegisters(getUnderlyingFrame(), getAddress());
+    DEBUG_LEAVE_FUNCTION;
+}
+void
+Core::LocalRegisterSet::clear() noexcept {
+    _theFrame.clear();
+}
+/**
+ * Makes sure that this set has an up to date frame pointer
+ * @param fp The frame pointer to update the targetFramePointer field to
+ */
+void
+Core::LocalRegisterSet::synchronizeOwnership(Ordinal fp) noexcept {
+    DEBUG_LOG_LEVEL(2) {
+        std::cout << __PRETTY_FUNCTION__ << ": 0x" << std::hex << _targetFramePointer << " -> 0x" << fp << std::endl;
+    }
+    _targetFramePointer = fp;
+}
