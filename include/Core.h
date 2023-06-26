@@ -1771,7 +1771,8 @@ private:
     [[nodiscard]] MixedLongRealSourceArgument unpackSrc2(const REGInstruction& index, TreatAsLongReal) const;
     [[nodiscard]] ExtendedReal unpackSrc1(const REGInstruction& index, TreatAsExtendedReal) const;
     [[nodiscard]] ExtendedReal unpackSrc2(const REGInstruction& index, TreatAsExtendedReal) const;
-    [[nodiscard]] TripleRegister& getFloatingPointRegister(ByteOrdinal index);
+
+    [[maybe_unused]] [[nodiscard]] TripleRegister& getFloatingPointRegister(ByteOrdinal index);
     [[nodiscard]] const TripleRegister& getFloatingPointRegister(ByteOrdinal index) const;
 
     template<typename T>
@@ -1866,7 +1867,7 @@ private:
         }
         return value;
     }
-    void updateRoundingMode();
+    void updateRoundingMode() const;
     template<typename T>
     requires std::floating_point<T>
     T handleSubnormalCase(T input) const {

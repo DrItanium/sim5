@@ -23,7 +23,6 @@
 
 #include "Types.h"
 #include "Core.h"
-#include "BinaryOperations.h"
 #include <cmath>
 #include <cfenv>
 
@@ -59,6 +58,8 @@ Core::processFPInstruction(const REGInstruction &inst ) {
             X(movrl);
             X(mulr);
             X(mulrl);
+            X(remr);
+            X(remrl);
             X(roundr);
             X(roundrl);
             X(subr);
@@ -367,7 +368,8 @@ Core::getFloatingPointRegister(ByteOrdinal index) const {
             return bogus;
     }
 }
-TripleRegister&
+
+[[maybe_unused]] TripleRegister&
 Core::getFloatingPointRegister(ByteOrdinal index) {
     switch (index) {
         case 0b00000: // fp0
@@ -582,7 +584,7 @@ Core::scalerl(const REGInstruction &inst) {
                unpackSrc2(inst, TreatAsLongReal{}));
 }
 template<typename T0, typename T1, typename T2>
-constexpr bool BothAreSameAs = std::is_same_v<T0, T1> && std::is_same_v<T0, T2>;
+constexpr bool BothAreSameAs = std::is_same_v<T0, T2> && std::is_same_v<T1, T2>;
 template<typename T0, typename T1>
 constexpr bool BothAreReal = BothAreSameAs<T0, T1, Real>;
 template<typename T0, typename T1>
@@ -596,7 +598,7 @@ Core::addr(const REGInstruction &inst) {
                        // if we get real/real then we assign as real, every other case mixed so treat them as long double/long double
                        fpassignment(inst, src2 + src1, TreatAsReal{});
                    } else {
-                       // if they are different then it means mixed addition so we should always do 80-bit operations
+                       // if they are different then it means mixed addition, so we should always do 80-bit operations
                        fpassignment(inst, src2 + src1, TreatAsExtendedReal{});
                    }
                },
@@ -612,7 +614,7 @@ Core::addrl(const REGInstruction &inst) {
                    if constexpr (BothAreLongReal<K0, K1>) {
                        fpassignment(inst, src2 + src1, TreatAsLongReal{});
                    } else {
-                       // if they are different then it means mixed addition so we should always do 80-bit operations
+                       // if they are different then it means mixed addition, so we should always do 80-bit operations
                        fpassignment(inst, src2 + src1, TreatAsExtendedReal{});
                    }
                },
@@ -629,7 +631,7 @@ Core::subr(const REGInstruction &inst) {
                        // if we get real/real then we assign as real, every other case mixed so treat them as long double/long double
                        fpassignment(inst, src2 - src1, TreatAsReal{});
                    } else {
-                       // if they are different then it means mixed subtraction so we should always do 80-bit operations
+                       // if they are different then it means mixed subtraction, so we should always do 80-bit operations
                        fpassignment(inst, src2 - src1, TreatAsExtendedReal{});
                    }
                },
@@ -645,7 +647,7 @@ Core::subrl(const REGInstruction &inst) {
                    if constexpr (BothAreLongReal<K0, K1>) {
                        fpassignment(inst, src2 - src1, TreatAsLongReal{});
                    } else {
-                       // if they are different then it means mixed subtraction so we should always do 80-bit operations
+                       // if they are different then it means mixed subtraction, so we should always do 80-bit operations
                        fpassignment(inst, src2 - src1, TreatAsExtendedReal{});
                    }
                },
@@ -702,7 +704,7 @@ Core::cmporl(const REGInstruction &inst) {
 
 void
 Core::cmpr(const REGInstruction &inst) {
-    std::visit([this, &inst](auto src1, auto src2) {
+    std::visit([this](auto src1, auto src2) {
                    using K0 = std::decay_t<decltype(src1)>;
                    using K1 = std::decay_t<decltype(src2)>;
                    if constexpr (BothAreReal<K0, K1>) {
@@ -716,8 +718,8 @@ Core::cmpr(const REGInstruction &inst) {
 }
 
 void
-Core::cmprl(const REGInstruction &inst) {
-    std::visit([this, &inst](auto src1, auto src2) {
+Core::cmprl(const REGInstruction& inst) {
+    std::visit([this](auto src1, auto src2) {
                    using K0 = std::decay_t<decltype(src1)>;
                    using K1 = std::decay_t<decltype(src2)>;
                    if constexpr (BothAreLongReal<K0, K1>) {
@@ -731,12 +733,12 @@ Core::cmprl(const REGInstruction &inst) {
 }
 // dst <- real(src)
 void
-Core::cvtir(const REGInstruction &inst) {
+Core::cvtir(const REGInstruction& inst) {
     // convert integer to real
     unimplementedFault();
 }
 void
-Core::cvtilr(const REGInstruction &inst) {
+Core::cvtilr(const REGInstruction& inst) {
     //convert long integer to real
     // not a long real!
     // two instruction combination for converting integer to long real format
@@ -770,7 +772,7 @@ Core::cvtzril(const REGInstruction &inst) {
 }
 
 void
-Core::updateRoundingMode() {
+Core::updateRoundingMode() const {
     switch (ac_.arith.floatingPointRoundingControl) {
         case 0b00: // round to nearest (even)
             std::fesetround(FE_TONEAREST);
