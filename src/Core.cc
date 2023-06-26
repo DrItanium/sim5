@@ -1607,3 +1607,19 @@ void
 Core::divo(Register& dest, Ordinal src1, Ordinal src2) {
     divideOperation<Ordinal>(dest, src1, src2);
 }
+void
+Core::concmpo(Ordinal src1, Ordinal src2) noexcept {
+    concmpGeneric<Ordinal>(src1, src2);
+}
+void
+Core::concmpi(Integer src1, Integer src2) noexcept {
+    concmpGeneric<Integer>(src1, src2);
+}
+void
+Core::cmpobGeneric(uint8_t mask, Ordinal src1, Ordinal src2, int16_t displacement) noexcept {
+    cmpxbGeneric(mask, src1, src2, displacement, TreatAsOrdinal{});
+}
+void
+Core::cmpibGeneric(uint8_t mask, Integer src1, Integer src2, int16_t displacement) noexcept {
+    cmpxbGeneric(mask, src1, src2, displacement, TreatAsInteger{});
+}

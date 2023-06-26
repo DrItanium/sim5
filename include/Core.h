@@ -1166,12 +1166,8 @@ private:
             }
         }
     }
-    inline void cmpobGeneric(uint8_t mask, Ordinal src1, Ordinal src2, int16_t displacement) noexcept {
-        cmpxbGeneric(mask, src1, src2, displacement, TreatAsOrdinal{});
-    }
-    inline void cmpibGeneric(uint8_t mask, Integer src1, Integer src2, int16_t displacement) noexcept {
-        cmpxbGeneric(mask, src1, src2, displacement, TreatAsInteger{});
-    }
+    void cmpobGeneric(uint8_t mask, Ordinal src1, Ordinal src2, int16_t displacement) noexcept;
+    void cmpibGeneric(uint8_t mask, Integer src1, Integer src2, int16_t displacement) noexcept;
     void flushreg() ;
     void balx(ByteOrdinal linkRegister, Ordinal branchTo) ;
     void calls(Ordinal value) ;
@@ -1317,12 +1313,8 @@ private:
             ac_.arith.conditionCode = src1 <= src2 ? 0b010 : 0b001;
         }
     }
-    void concmpo(Ordinal src1, Ordinal src2) noexcept {
-        concmpGeneric<Ordinal>(src1, src2);
-    }
-    void concmpi(Integer src1, Integer src2) noexcept {
-        concmpGeneric<Integer>(src1, src2);
-    }
+    void concmpo(Ordinal src1, Ordinal src2) noexcept;
+    void concmpi(Integer src1, Integer src2) noexcept;
 private:
     bool performSelfTest() noexcept;
     void assertFailureState() noexcept;
