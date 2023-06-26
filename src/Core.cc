@@ -658,6 +658,8 @@ Core::processInstruction(const REGInstruction & inst) {
             break;
         case Opcodes::modac:
             modxc(ac_, regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
+            // update the rounding mode
+            updateRoundingMode();
             break;
         case Opcodes::modtc:
             modxc(tc_, regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));

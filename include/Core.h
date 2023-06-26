@@ -1782,6 +1782,11 @@ private:
                 return 0.0;
         }
     }
+    /**
+     * @brief Checks the error flags to see if a floating point exeception has taken place and generates one if allowed
+     */
+    void serviceFloatingPointFault();
+    void updateRoundingMode();
 private:
     Ordinal systemAddressTableBase_ = 0;
     Ordinal prcbAddress_ = 0;

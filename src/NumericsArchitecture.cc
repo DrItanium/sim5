@@ -25,6 +25,7 @@
 #include "Core.h"
 #include "BinaryOperations.h"
 #include <cmath>
+#include <cfenv>
 
 void
 Core::processFPInstruction(const REGInstruction &inst ) {
@@ -488,20 +489,20 @@ Core::unpackSrc2(const REGInstruction &inst, TreatAsExtendedReal) const {
 }
 template<typename T>
 requires std::floating_point<T>
-bool shouldRaiseFloatingInvalidOperationFault(T value) noexcept {
-    switch (std::fpclassify(value)) {
-        case FP_INFINITE:
-        case FP_NAN:
-            return true;
-        default:
-            return false;
-    }
+bool isSignalingNaN(T value) noexcept {
+    return issignaling(value);
+}
+
+template<typename T>
+requires std::floating_point<T>
+bool isInfinite(T value) noexcept {
+    return std::fpclassify(value) == FP_INFINITE;
 }
 void
 Core::cosr(const REGInstruction &inst) {
     std::visit([this, &inst](auto value) {
                    using K = std::decay_t<decltype(value)>;
-                   if (shouldRaiseFloatingInvalidOperationFault(value)) {
+                   if (isInfinite(value) || isSignalingNaN(value)) {
                        floatingInvalidOperationFault();
                    }
                    fpassignment(inst, std::cos(value), TreatAs<K>{});
@@ -513,7 +514,7 @@ void
 Core::cosrl(const REGInstruction &inst) {
     std::visit([this, &inst](auto value) {
                    using K = std::decay_t<decltype(value)>;
-                   if (shouldRaiseFloatingInvalidOperationFault(value)) {
+                   if (isInfinite(value) || isSignalingNaN(value)) {
                        floatingInvalidOperationFault();
                    }
                    fpassignment(inst, std::cos(value), TreatAs<K>{});
@@ -524,7 +525,7 @@ void
 Core::sinr(const REGInstruction &inst) {
     std::visit([this, &inst](auto value) {
                    using K = std::decay_t<decltype(value)>;
-                   if (shouldRaiseFloatingInvalidOperationFault(value)) {
+                   if (isInfinite(value) || isSignalingNaN(value)) {
                        floatingInvalidOperationFault();
                    }
                    fpassignment(inst, std::sin(value), TreatAs<K>{});
@@ -536,7 +537,7 @@ void
 Core::sinrl(const REGInstruction &inst) {
     std::visit([this, &inst](auto value) {
                    using K = std::decay_t<decltype(value)>;
-                   if (shouldRaiseFloatingInvalidOperationFault(value)) {
+                   if (isInfinite(value) || isSignalingNaN(value)) {
                        floatingInvalidOperationFault();
                    }
                    fpassignment(inst, std::sin(value), TreatAs<K>{});
@@ -547,7 +548,7 @@ void
 Core::tanr(const REGInstruction &inst) {
     std::visit([this, &inst](auto value) {
                    using K = std::decay_t<decltype(value)>;
-                   if (shouldRaiseFloatingInvalidOperationFault(value)) {
+                   if (isInfinite(value) || isSignalingNaN(value)) {
                        floatingInvalidOperationFault();
                    }
                    fpassignment(inst, std::tan(value), TreatAs<K>{});
@@ -559,7 +560,7 @@ void
 Core::tanrl(const REGInstruction &inst) {
     std::visit([this, &inst](auto value) {
                    using K = std::decay_t<decltype(value)>;
-                   if (shouldRaiseFloatingInvalidOperationFault(value)) {
+                   if (isInfinite(value) || isSignalingNaN(value)) {
                        floatingInvalidOperationFault();
                    }
                    fpassignment(inst, std::tan(value), TreatAs<K>{});
@@ -570,6 +571,9 @@ void
 Core::atanr(const REGInstruction &inst) {
     std::visit([this, &inst](auto value) {
                    using K = std::decay_t<decltype(value)>;
+                   if (isSignalingNaN(value)) {
+                       floatingInvalidOperationFault();
+                   }
                    fpassignment(inst, std::atan(value), TreatAs<K>{});
                },
                unpackSrc1(inst, TreatAsReal{}));
@@ -579,6 +583,9 @@ void
 Core::atanrl(const REGInstruction &inst) {
     std::visit([this, &inst](auto value) {
                    using K = std::decay_t<decltype(value)>;
+                   if (isSignalingNaN(value)) {
+                       floatingInvalidOperationFault();
+                   }
                    fpassignment(inst, std::atan(value), TreatAs<K>{});
                },
                unpackSrc1(inst, TreatAsLongReal{}));
@@ -587,6 +594,9 @@ void
 Core::sqrtr(const REGInstruction &inst) {
     std::visit([this, &inst](auto value) {
                    using K = std::decay_t<decltype(value)>;
+                   if (isSignalingNaN(value) || (value < -0.0)) {
+                       floatingInvalidOperationFault();
+                   }
                    fpassignment(inst, std::sqrt(value), TreatAs<K>{});
                },
                unpackSrc1(inst, TreatAsReal{}));
@@ -596,6 +606,9 @@ void
 Core::sqrtrl(const REGInstruction &inst) {
     std::visit([this, &inst](auto value) {
                    using K = std::decay_t<decltype(value)>;
+                   if (isSignalingNaN(value) || (value < -0.0)) {
+                       floatingInvalidOperationFault();
+                   }
                    fpassignment(inst, std::sqrt(value), TreatAs<K>{});
                },
                unpackSrc1(inst, TreatAsLongReal{}));
@@ -839,4 +852,65 @@ void
 Core::cvtzril(const REGInstruction &inst) {
 
     unimplementedFault();
+}
+
+void
+Core::serviceFloatingPointFault() {
+    if (std::fetestexcept(FE_DIVBYZERO)) {
+        std::feclearexcept(FE_ALL_EXCEPT);
+        floatingZeroDivideOperationFault();
+    }
+    if (std::fetestexcept(FE_INVALID)) {
+        std::feclearexcept(FE_ALL_EXCEPT);
+        floatingInvalidOperationFault();
+    }
+    Ordinal code = 0;
+    if (std::fetestexcept(FE_OVERFLOW)) {
+        if (ac_.arith.floatingOverflowMask == 0) {
+            code |= FloatingPointOverflowFault;
+        } else {
+            ac_.arith.floatingOverflowFlag = 1;
+        }
+    }
+    if (std::fetestexcept(FE_UNDERFLOW)) {
+        if (ac_.arith.floatingUnderflowMask == 0) {
+            code |= FloatingPointUnderflowFault;
+        } else {
+            ac_.arith.floatingUnderflowFlag= 1;
+        }
+    }
+    if (std::fetestexcept(FE_INEXACT)) {
+        if (ac_.arith.floatingInexactMask == 0) {
+            code |= FloatingPointInexactFault;
+        } else {
+            ac_.arith.floatingInexactFlag = 1;
+        }
+    }
+    FaultRecord record ((Ordinal) pc_,
+                        (Ordinal) ac_,
+                        code,
+                        (Ordinal) ip_,
+                        true);
+    /// @todo handle the fault flags
+    std::feclearexcept(FE_ALL_EXCEPT);
+    if (code != 0) {
+        throw record;
+    }
+}
+void
+Core::updateRoundingMode() {
+    switch (ac_.arith.floatingPointRoundingControl) {
+        case 0b00: // round to nearest (even)
+            std::fesetround(FE_TONEAREST);
+            break;
+        case 0b01: // round down (towards negative infinity)
+            std::fesetround(FE_DOWNWARD);
+            break;
+        case 0b10: // round up (towards positive infinity)
+            std::fesetround(FE_UPWARD);
+            break;
+        case 0b11: // truncate (round toward zero)
+            std::fesetround(FE_TOWARDZERO);
+            break;
+    }
 }
