@@ -509,16 +509,6 @@ private:
     QuadRegister backingStore_;
     ExtendedReal extendedReal_;
 };
-template<typename T>
-requires std::floating_point<T>
-constexpr T literalOne() noexcept {
-    return static_cast<T>(+1.0);
-}
-template<typename T>
-requires std::floating_point<T>
-constexpr T literalZero() noexcept {
-    return static_cast<T>(+0.0);
-}
 
 /**
  * @brief a 80-bit floating point register
