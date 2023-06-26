@@ -318,41 +318,62 @@ Core::invalidOperandFault() const {
 
 void
 Core::floatingInvalidOperationFault() {
-    throw FaultRecord((Ordinal)pc_,
-                       (Ordinal)ac_,
-                       FloatingPointInvalidOperationFault,
-                       (Ordinal)ip_,
-                       true);
+    if (ac_.arith.floatingInvalidOpMask == 0) {
+        throw FaultRecord((Ordinal) pc_,
+                          (Ordinal) ac_,
+                          FloatingPointInvalidOperationFault,
+                          (Ordinal) ip_,
+                          true);
+    } else {
+        ac_.arith.floatingInvalidOpFlag = 1;
+    }
 }
 void
 Core::floatingOverflowFault() {
-    throw FaultRecord((Ordinal)pc_,
-                      (Ordinal)ac_,
-                      FloatingPointOverflowFault,
-                      (Ordinal)ip_,
-                      true);
+    if (ac_.arith.floatingOverflowMask == 0) {
+        throw FaultRecord((Ordinal) pc_,
+                          (Ordinal) ac_,
+                          FloatingPointOverflowFault,
+                          (Ordinal) ip_,
+                          true);
+    } else {
+        ac_.arith.floatingOverflowFlag = 1;
+    }
 }
 void
 Core::floatingUnderflowFault() {
-    throw FaultRecord((Ordinal)pc_,
-                      (Ordinal)ac_,
-                      FloatingPointUnderflowFault,
-                      (Ordinal)ip_,
-                      true);
+    if (ac_.arith.floatingUnderflowMask == 0) {
+        throw FaultRecord((Ordinal) pc_,
+                          (Ordinal) ac_,
+                          FloatingPointUnderflowFault,
+                          (Ordinal) ip_,
+                          true);
+    } else {
+        ac_.arith.floatingUnderflowFlag = 1;
+    }
 }
 void
 Core::floatingZeroDivideOperationFault() {
+    if (ac_.arith.floatingZeroDivideMask == 0) {
+
     throw FaultRecord((Ordinal)pc_,
                       (Ordinal)ac_,
                       FloatingPointZeroDivideOperationFault,
                       (Ordinal)ip_,
                       true);
+    } else {
+        ac_.arith.floatingZeroDivideFlag = 1;
+    }
 }
 void
 Core::floatingInexactFault() {
-    throw FaultRecord((Ordinal)pc_,
-                      (Ordinal)ac_,
-                      FloatingPointInexactFault,
-                      (Ordinal)ip_,
-                      true);
+    if (ac_.arith.floatingInexactMask == 0) {
+        throw FaultRecord((Ordinal) pc_,
+                          (Ordinal) ac_,
+                          FloatingPointInexactFault,
+                          (Ordinal) ip_,
+                          true);
+    } else {
+        ac_.arith.floatingInexactFlag = 1;
+    }
 }

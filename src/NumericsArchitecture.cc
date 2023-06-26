@@ -375,19 +375,6 @@ Core::fpassignment(const REGInstruction &inst, LongReal result, TreatAsLongReal)
 }
 
 namespace {
-    ExtendedReal cosre(ExtendedReal input, TreatAsExtendedReal) {
-        return std::cos(input);
-    }
-    LongReal cosrl(LongReal input, TreatAsLongReal) {
-        return std::cos(input);
-    }
-    Real cosr(Real input, TreatAsReal) {
-        return std::cos(input);
-    }
-}
-
-
-namespace {
     TripleRegister bogus;
 }
 const TripleRegister&
@@ -499,11 +486,24 @@ Core::unpackSrc2(const REGInstruction &inst, TreatAsExtendedReal) const {
         return getGPR(inst.getSrc2(), TreatAsTripleRegister{}).getValue<ExtendedReal>();
     }
 }
-
+template<typename T>
+requires std::floating_point<T>
+bool shouldRaiseFloatingInvalidOperationFault(T value) noexcept {
+    switch (std::fpclassify(value)) {
+        case FP_INFINITE:
+        case FP_NAN:
+            return true;
+        default:
+            return false;
+    }
+}
 void
 Core::cosr(const REGInstruction &inst) {
     std::visit([this, &inst](auto value) {
                    using K = std::decay_t<decltype(value)>;
+                   if (shouldRaiseFloatingInvalidOperationFault(value)) {
+                       floatingInvalidOperationFault();
+                   }
                    fpassignment(inst, std::cos(value), TreatAs<K>{});
                },
                unpackSrc1(inst, TreatAsReal{}));
@@ -513,6 +513,9 @@ void
 Core::cosrl(const REGInstruction &inst) {
     std::visit([this, &inst](auto value) {
                    using K = std::decay_t<decltype(value)>;
+                   if (shouldRaiseFloatingInvalidOperationFault(value)) {
+                       floatingInvalidOperationFault();
+                   }
                    fpassignment(inst, std::cos(value), TreatAs<K>{});
                },
                unpackSrc1(inst, TreatAsLongReal{}));
@@ -521,6 +524,9 @@ void
 Core::sinr(const REGInstruction &inst) {
     std::visit([this, &inst](auto value) {
                    using K = std::decay_t<decltype(value)>;
+                   if (shouldRaiseFloatingInvalidOperationFault(value)) {
+                       floatingInvalidOperationFault();
+                   }
                    fpassignment(inst, std::sin(value), TreatAs<K>{});
                },
                unpackSrc1(inst, TreatAsReal{}));
@@ -530,6 +536,9 @@ void
 Core::sinrl(const REGInstruction &inst) {
     std::visit([this, &inst](auto value) {
                    using K = std::decay_t<decltype(value)>;
+                   if (shouldRaiseFloatingInvalidOperationFault(value)) {
+                       floatingInvalidOperationFault();
+                   }
                    fpassignment(inst, std::sin(value), TreatAs<K>{});
                },
                unpackSrc1(inst, TreatAsLongReal{}));
@@ -538,6 +547,9 @@ void
 Core::tanr(const REGInstruction &inst) {
     std::visit([this, &inst](auto value) {
                    using K = std::decay_t<decltype(value)>;
+                   if (shouldRaiseFloatingInvalidOperationFault(value)) {
+                       floatingInvalidOperationFault();
+                   }
                    fpassignment(inst, std::tan(value), TreatAs<K>{});
                },
                unpackSrc1(inst, TreatAsReal{}));
@@ -547,6 +559,9 @@ void
 Core::tanrl(const REGInstruction &inst) {
     std::visit([this, &inst](auto value) {
                    using K = std::decay_t<decltype(value)>;
+                   if (shouldRaiseFloatingInvalidOperationFault(value)) {
+                       floatingInvalidOperationFault();
+                   }
                    fpassignment(inst, std::tan(value), TreatAs<K>{});
                },
                unpackSrc1(inst, TreatAsLongReal{}));
