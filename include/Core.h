@@ -1259,112 +1259,49 @@ private:
     void mult(Register& destination, Q src1, Q src2, TreatAs<Q>) noexcept {
         destination.setValue<Q>(::multiplyOperation<Q>(src2, src1));
     }
-    void setbit(Register& destination, Ordinal src1, Ordinal src2) noexcept {
-        // setbit is src2 | computeBitPosition(src1o)
-        orOperation(destination, computeBitPosition(src1), src2);
-    }
+    void setbit(Register& destination, Ordinal src1, Ordinal src2) noexcept;
+    void nor(Register& destination, Ordinal src1, Ordinal src2) noexcept;
+    void nand(Register& destination, Ordinal src1, Ordinal src2) noexcept;
+    void xnor(Register& destination, Ordinal src1, Ordinal src2) noexcept;
+    void notbit(Register& destination, Ordinal src1, Ordinal src2) noexcept;
+    void ornot(Register& dest, Ordinal src1, Ordinal src2) noexcept;
+    void notor(Register& dest, Ordinal src1, Ordinal src2) noexcept;
+    void notOperation(Register& destination, Ordinal src) noexcept;
 
-    void nor(Register& destination, Ordinal src1, Ordinal src2) noexcept {
-        orOperation<true>(destination, src1, src2);
-    }
-    void nand(Register& destination, Ordinal src1, Ordinal src2) noexcept {
-        andOperation<true>(destination, src1, src2);
-    }
-    inline void xnor(Register& destination, Ordinal src1, Ordinal src2) noexcept {
-        xorOperation<true>(destination, src1, src2);
-    }
-    inline void notbit(Register& destination, Ordinal src1, Ordinal src2) noexcept {
-        // notbit is src2 ^ computeBitPosition(src1)
-        xorOperation(destination, computeBitPosition(src1), src2);
-    }
-    inline void ornot(Register& dest, Ordinal src1, Ordinal src2) noexcept {
-        orOperation(dest, ~src1, src2);
-    }
-    inline void notor(Register& dest, Ordinal src1, Ordinal src2) noexcept {
-        orOperation(dest, src1, ~src2);
-    }
-    inline void notOperation(Register& destination, Ordinal src) noexcept {
-        destination.setValue<Ordinal>(~src);
-    }
-
-    inline void andnot(Register& dest, Ordinal src1, Ordinal src2) noexcept {
-        andOperation(dest, ~src1, src2);
-    }
-    inline void notand(Register& dest, Ordinal src1, Ordinal src2) noexcept {
-        andOperation(dest, src1, ~src2);
-    }
-    inline void clrbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
-        // clrbit is src2 & ~computeBitPosition(src1)
-        // so lets use andnot
-        andnot(dest, computeBitPosition(src1), src2);
-    }
+    void andnot(Register& dest, Ordinal src1, Ordinal src2) noexcept;
+    void notand(Register& dest, Ordinal src1, Ordinal src2) noexcept;
+    void clrbit(Register& dest, Ordinal src1, Ordinal src2) noexcept;
     void modi(Register& dest, Integer src1, Integer src2);
-    inline void alterbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
-        if (auto s1 = computeBitPosition(src1); ac_.getConditionCode() & 0b010) {
-            orOperation(dest, s1, src2);
-        } else {
-            andnot(dest, s1, src2);
+    void alterbit(Register& dest, Ordinal src1, Ordinal src2) noexcept;
+    void addc(Register& dest, Ordinal src1, Ordinal src2);
+    void subc(Register& dest, Ordinal src1, Ordinal src2);
+    template<typename Q>
+    requires MustBeOrdinalOrInteger<Q>
+    void checkForZeroDivideFault(Q value) {
+        if (value == 0) {
+            zeroDivideFault();
         }
-    }
-    inline void addc(Register& dest, Ordinal src1, Ordinal src2) {
-        LongOrdinal result = static_cast<LongOrdinal>(src2) + static_cast<LongOrdinal>(src1);
-        result += (ac_.getCarryBit() ? 1 : 0);
-        dest.setValue<Ordinal>(result);
-        DEBUG_LOG_LEVEL(4) {
-            std::cout << "addc result: 0x" << std::hex << result << std::endl;
-        }
-        arithmeticWithCarryGeneric(static_cast<Ordinal>(result >> 32),
-                                   mostSignificantBit(src2),
-                                   mostSignificantBit(src1),
-                                   mostSignificantBit(dest.getValue<Ordinal>()));
-    }
-    inline void subc(Register& dest, Ordinal src1, Ordinal src2) {
-        LongOrdinal result = static_cast<LongOrdinal>(src2) - static_cast<LongOrdinal>(src1) - 1;
-        result += (ac_.getCarryBit() ? 1 : 0);
-        dest.setValue<Ordinal>(result);
-        arithmeticWithCarryGeneric(static_cast<Ordinal>(result >> 32),
-                                   mostSignificantBit(src2),
-                                   mostSignificantBit(src1),
-                                   mostSignificantBit(dest.getValue<Ordinal>()));
     }
     template<typename Q>
     requires MustBeOrdinalOrInteger<Q>
     void remainderOperation(Register& dest, Q src1, Q src2) {
-        if (src1 == 0) {
-            zeroDivideFault();
-        } else {
-            // taken from the i960Sx manual
-            //dest.setValue<Q>(src2 - ((src2 / src1) * src1));
-            dest.setValue<Q>(src2 % src1);
-            nextInstruction();
-        }
-    }
-    void remi(Register& dest, Integer src1, Integer src2) {
-        remainderOperation<Integer>(dest, src1, src2);
+        checkForZeroDivideFault(src1);
+        // taken from the i960Sx manual
+        //dest.setValue<Q>(src2 - ((src2 / src1) * src1));
+        dest.setValue<Q>(src2 % src1);
         nextInstruction();
-        faultOnOverflow(dest);
     }
-    void remo(Register& dest, Ordinal src1, Ordinal src2) {
-        remainderOperation<Ordinal>(dest, src1, src2);
-    }
+    void remi(Register& dest, Integer src1, Integer src2);
+    void remo(Register& dest, Ordinal src1, Ordinal src2);
     template<typename Q>
     requires MustBeOrdinalOrInteger<Q>
     void divideOperation(Register& dest, Q src1, Q src2) {
-        if (src1 == 0) {
-            /// @todo fix this
-            zeroDivideFault();
-        } else {
-            dest.setValue<Q>(src2 / src1);
-            nextInstruction();
-        }
+        checkForZeroDivideFault(src1);
+        dest.setValue<Q>(src2 / src1);
+        nextInstruction();
     }
-    void divi(Register& dest, Integer src1, Integer src2) {
-        divideOperation<Integer>(dest, src1, src2);
-        faultOnOverflow(dest);
-    }
-    void divo(Register& dest, Ordinal src1, Ordinal src2) {
-        divideOperation<Ordinal>(dest, src1, src2);
-    }
+    void divi(Register& dest, Integer src1, Integer src2);
+    void divo(Register& dest, Ordinal src1, Ordinal src2);
     void atadd(Register& dest, Ordinal src1, Ordinal src2);
     void atmod(Register& dest, Ordinal src1, Ordinal src2);
     void cmpo(Ordinal src1, Ordinal src2) noexcept;

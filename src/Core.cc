@@ -1507,3 +1507,103 @@ void
 Core::spanbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
     xbit<false>(dest, src1, src2);
 }
+void
+Core::setbit(Register& destination, Ordinal src1, Ordinal src2) noexcept {
+    // setbit is src2 | computeBitPosition(src1o)
+    orOperation(destination, computeBitPosition(src1), src2);
+}
+
+void
+Core::nor(Register& destination, Ordinal src1, Ordinal src2) noexcept {
+    orOperation<true>(destination, src1, src2);
+}
+void
+Core::nand(Register& destination, Ordinal src1, Ordinal src2) noexcept {
+    andOperation<true>(destination, src1, src2);
+}
+void
+Core::xnor(Register& destination, Ordinal src1, Ordinal src2) noexcept {
+    xorOperation<true>(destination, src1, src2);
+}
+void
+Core::notbit(Register& destination, Ordinal src1, Ordinal src2) noexcept {
+    // notbit is src2 ^ computeBitPosition(src1)
+    xorOperation(destination, computeBitPosition(src1), src2);
+}
+void
+Core::ornot(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+    orOperation(dest, ~src1, src2);
+}
+void
+Core::notor(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+    orOperation(dest, src1, ~src2);
+}
+void
+Core::notOperation(Register& destination, Ordinal src) noexcept {
+    destination.setValue<Ordinal>(~src);
+}
+
+void
+Core::andnot(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+    andOperation(dest, ~src1, src2);
+}
+void
+Core::notand(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+    andOperation(dest, src1, ~src2);
+}
+void
+Core::clrbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+    // clrbit is src2 & ~computeBitPosition(src1)
+    // so lets use andnot
+    andnot(dest, computeBitPosition(src1), src2);
+}
+void
+Core::alterbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+    if (auto s1 = computeBitPosition(src1); ac_.getConditionCode() & 0b010) {
+        orOperation(dest, s1, src2);
+    } else {
+        andnot(dest, s1, src2);
+    }
+}
+void
+Core::addc(Register& dest, Ordinal src1, Ordinal src2) {
+    LongOrdinal result = static_cast<LongOrdinal>(src2) + static_cast<LongOrdinal>(src1);
+    result += (ac_.getCarryBit() ? 1 : 0);
+    dest.setValue<Ordinal>(result);
+    DEBUG_LOG_LEVEL(4) {
+        std::cout << "addc result: 0x" << std::hex << result << std::endl;
+    }
+    arithmeticWithCarryGeneric(static_cast<Ordinal>(result >> 32),
+                               mostSignificantBit(src2),
+                               mostSignificantBit(src1),
+                               mostSignificantBit(dest.getValue<Ordinal>()));
+}
+void
+Core::subc(Register& dest, Ordinal src1, Ordinal src2) {
+    LongOrdinal result = static_cast<LongOrdinal>(src2) - static_cast<LongOrdinal>(src1) - 1;
+    result += (ac_.getCarryBit() ? 1 : 0);
+    dest.setValue<Ordinal>(result);
+    arithmeticWithCarryGeneric(static_cast<Ordinal>(result >> 32),
+                               mostSignificantBit(src2),
+                               mostSignificantBit(src1),
+                               mostSignificantBit(dest.getValue<Ordinal>()));
+}
+void
+Core::remi(Register& dest, Integer src1, Integer src2) {
+    remainderOperation<Integer>(dest, src1, src2);
+    nextInstruction();
+    faultOnOverflow(dest);
+}
+void
+Core::remo(Register& dest, Ordinal src1, Ordinal src2) {
+    remainderOperation<Ordinal>(dest, src1, src2);
+}
+void
+Core::divi(Register& dest, Integer src1, Integer src2) {
+    divideOperation<Integer>(dest, src1, src2);
+    faultOnOverflow(dest);
+}
+void
+Core::divo(Register& dest, Ordinal src1, Ordinal src2) {
+    divideOperation<Ordinal>(dest, src1, src2);
+}
