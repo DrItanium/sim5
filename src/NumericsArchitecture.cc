@@ -47,6 +47,7 @@ Core::processFPInstruction(const REGInstruction &inst ) {
             X(cmp);
             X(div);
             X(sub);
+            X(mul);
 #undef X
 #define X(name) case Opcodes:: name : name (inst); break
             X(movre);
@@ -856,4 +857,34 @@ Core::updateRoundingMode() {
             std::fesetround(FE_TOWARDZERO);
             break;
     }
+}
+
+void
+Core::mulr(const REGInstruction &inst) {
+    std::visit([this, &inst](auto src1, auto src2) {
+                   using K0 = std::decay_t<decltype(src1)>;
+                   using K1 = std::decay_t<decltype(src2)>;
+                   if constexpr (BothAreReal<K0, K1>) {
+                       fpassignment(inst, src2 * src1, TreatAsReal{});
+                   } else {
+                       fpassignment(inst, src2 * src1, TreatAsExtendedReal{});
+                   }
+               },
+               unpackSrc1(inst, TreatAsReal{}),
+               unpackSrc2(inst, TreatAsReal{}));
+}
+
+void
+Core::mulrl(const REGInstruction &inst) {
+    std::visit([this, &inst](auto src1, auto src2) {
+                   using K0 = std::decay_t<decltype(src1)>;
+                   using K1 = std::decay_t<decltype(src2)>;
+                   if constexpr (BothAreLongReal<K0, K1>) {
+                       fpassignment(inst, src2 * src1, TreatAsLongReal{});
+                   } else {
+                       fpassignment(inst, src2 * src1, TreatAsExtendedReal{});
+                   }
+               },
+               unpackSrc1(inst, TreatAsLongReal{}),
+               unpackSrc2(inst, TreatAsLongReal{}));
 }
