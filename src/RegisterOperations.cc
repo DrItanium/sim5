@@ -67,3 +67,29 @@ Register::modify(Ordinal mask, Ordinal src) noexcept {
     o = ::modify(mask, src, o);
     return tmp;
 }
+Core::LocalRegisterSet&
+Core::getNextPack() noexcept {
+    if constexpr (NumberOfLocalRegisterFrames > 1) {
+        // do these as separate operations, otherwise gcc generates garbage
+        uint8_t result = (localRegisterFrameIndex_ + 1);
+        result %= NumberOfLocalRegisterFrames;
+        return frames_[result];
+    } else {
+        return frames_[0];
+    }
+}
+
+Core::LocalRegisterSet&
+Core::getPreviousPack() noexcept {
+    if constexpr (NumberOfLocalRegisterFrames > 1) {
+        // do these as separate operations, otherwise gcc generates garbage
+        uint8_t result = (localRegisterFrameIndex_ - 1);
+        result %= NumberOfLocalRegisterFrames;
+        DEBUG_LOG_LEVEL(2) {
+            std::cout << __PRETTY_FUNCTION__ << ": 0x" << std::hex << static_cast<int>(result) << std::endl;
+        }
+        return frames_[result];
+    } else {
+        return frames_[0];
+    }
+}

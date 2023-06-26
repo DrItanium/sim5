@@ -1643,66 +1643,44 @@ private:
 private:
     void saveRegisterFrame(const RegisterFrame& theFrame, Address baseAddress);
     void restoreRegisterFrame(RegisterFrame& theFrame, Address baseAddress);
-    LocalRegisterSet& getNextPack() noexcept {
-        if constexpr (NumberOfLocalRegisterFrames > 1) {
-            // do these as separate operations, otherwise gcc generates garbage
-            uint8_t result = (localRegisterFrameIndex_ + 1);
-            result %= NumberOfLocalRegisterFrames;
-            return frames_[result];
-        } else {
-            return frames_[0];
-        }
-    }
-    LocalRegisterSet& getPreviousPack() noexcept {
-        if constexpr (NumberOfLocalRegisterFrames > 1) {
-            // do these as separate operations, otherwise gcc generates garbage
-            uint8_t result = (localRegisterFrameIndex_ - 1);
-            result %= NumberOfLocalRegisterFrames;
-            DEBUG_LOG_LEVEL(2) {
-                std::cout << __PRETTY_FUNCTION__ << ": 0x" << std::hex << static_cast<int>(result) << std::endl;
-            }
-            return frames_[result];
-        } else {
-            return frames_[0];
-        }
-    }
-    [[nodiscard]] LocalRegisterSet& getCurrentPack() noexcept { return frames_[localRegisterFrameIndex_]; }
+    LocalRegisterSet& getNextPack() noexcept;
+    LocalRegisterSet& getPreviousPack() noexcept;
+    [[nodiscard]] inline LocalRegisterSet& getCurrentPack() noexcept { return frames_[localRegisterFrameIndex_]; }
     void boot0(Address sat, Address pcb, Address startIP) noexcept;
 private:
     void bx(Address effectiveAddress);
     void bal(Integer displacement);
-private:
 private: // mmu
     template<uint8_t offset>
     requires (offset <= 232)
-    Ordinal loadFromProcessControlBlock() const noexcept {
+    [[nodiscard]] inline Ordinal loadFromProcessControlBlock() const noexcept {
         return load<Ordinal>(processControlBlockBaseAddress_.getValue<Ordinal>() + offset);
     }
-    Address translateToPhysicalAddress(Address virtualAddress) noexcept;
-    Register getProcessControls() const noexcept { return Register(loadFromProcessControlBlock<20>()); }
-    SegmentSelector getRegion0SegmentSelector() const noexcept { return loadFromProcessControlBlock<48>(); }
-    SegmentSelector getRegion1SegmentSelector() const noexcept { return loadFromProcessControlBlock<52>(); }
-    SegmentSelector getRegion2SegmentSelector() const noexcept { return loadFromProcessControlBlock<56>(); }
-    SegmentSelector getRegion3SegmentSelector() const noexcept { return getFromPRCB<32>(); }
-    Ordinal getProcessArithmeticControls() const noexcept { return getFromPRCB<60>();}
-    Ordinal getProcessTraceControls() const noexcept { return getFromPRCB<28>();}
-    Ordinal getProcessNextTimeSlice() const noexcept { return getFromPRCB<68>(); }
-    ByteOrdinal getProcessLock() const noexcept { return static_cast<ByteOrdinal>(loadFromProcessControlBlock<24>()); }
-    Ordinal getProcessNotice() const noexcept { return (loadFromProcessControlBlock<24>() >> 8); }
-    Ordinal getProcessResidualTimeSlice() const noexcept { return loadFromProcessControlBlock<16>(); }
-    LongOrdinal getProcessExecutionTime()  const noexcept { return load<LongOrdinal>(processControlBlockBaseAddress_.getValue<Address>() + 72); }
-    LongOrdinal getProcessQueueRecord()  const noexcept { return load<LongOrdinal>(processControlBlockBaseAddress_.getValue<Address>()); }
-    Ordinal getProcessReceiveMessage() const noexcept { return loadFromProcessControlBlock<8>(); }
-    SegmentSelector getDispatchPortSS() const noexcept { return loadFromProcessControlBlock<12>(); }
-    Ordinal getResidualTimeSlice() const noexcept { return residualTimeSlice_.getValue<Ordinal>(); }
-    bool inVirtualMemoryMode() const noexcept { return getProcessControls().inVirtualAddressingMode(); }
-    ByteOrdinal getProcessPriority() const noexcept { return getProcessControls().processControls.priority; }
-    bool processIsBlocked() const noexcept { return getProcessControls().processControls.state == 0; }
-    bool processIsExecuting() const noexcept { return getProcessControls().processControls.state == 0; }
-    bool processIsReady() const noexcept { return getProcessControls().processControls.state == 0; }
-    bool processIsInterrupted() const noexcept { return getProcessControls().processControls.state == 0b01; }
-    bool processIsInUserMode() const noexcept { return getProcessControls().processControls.executionMode == 0; }
-    bool processIsInSupervisorMode() const noexcept { return getProcessControls().processControls.executionMode != 0; }
+    [[nodiscard]] Address translateToPhysicalAddress(Address virtualAddress) noexcept;
+    [[nodiscard]] inline Register getProcessControls() const noexcept { return Register(loadFromProcessControlBlock<20>()); }
+    [[nodiscard]] inline SegmentSelector getRegion0SegmentSelector() const noexcept { return loadFromProcessControlBlock<48>(); }
+    [[nodiscard]] inline SegmentSelector getRegion1SegmentSelector() const noexcept { return loadFromProcessControlBlock<52>(); }
+    [[nodiscard]] inline SegmentSelector getRegion2SegmentSelector() const noexcept { return loadFromProcessControlBlock<56>(); }
+    [[nodiscard]] inline SegmentSelector getRegion3SegmentSelector() const noexcept { return getFromPRCB<32>(); }
+    [[nodiscard]] inline Ordinal getProcessArithmeticControls() const noexcept { return getFromPRCB<60>();}
+    [[nodiscard]] inline Ordinal getProcessTraceControls() const noexcept { return getFromPRCB<28>();}
+    [[nodiscard]] inline Ordinal getProcessNextTimeSlice() const noexcept { return getFromPRCB<68>(); }
+    [[nodiscard]] inline ByteOrdinal getProcessLock() const noexcept { return static_cast<ByteOrdinal>(loadFromProcessControlBlock<24>()); }
+    [[nodiscard]] inline Ordinal getProcessNotice() const noexcept { return (loadFromProcessControlBlock<24>() >> 8); }
+    [[nodiscard]] inline Ordinal getProcessResidualTimeSlice() const noexcept { return loadFromProcessControlBlock<16>(); }
+    [[nodiscard]] inline LongOrdinal getProcessExecutionTime()  const noexcept { return load<LongOrdinal>(processControlBlockBaseAddress_.getValue<Address>() + 72); }
+    [[nodiscard]] inline LongOrdinal getProcessQueueRecord()  const noexcept { return load<LongOrdinal>(processControlBlockBaseAddress_.getValue<Address>()); }
+    [[nodiscard]] inline Ordinal getProcessReceiveMessage() const noexcept { return loadFromProcessControlBlock<8>(); }
+    [[nodiscard]] inline SegmentSelector getDispatchPortSS() const noexcept { return loadFromProcessControlBlock<12>(); }
+    [[nodiscard]] inline Ordinal getResidualTimeSlice() const noexcept { return residualTimeSlice_.getValue<Ordinal>(); }
+    [[nodiscard]] inline bool inVirtualMemoryMode() const noexcept { return getProcessControls().inVirtualAddressingMode(); }
+    [[nodiscard]] inline ByteOrdinal getProcessPriority() const noexcept { return getProcessControls().processControls.priority; }
+    [[nodiscard]] inline bool processIsBlocked() const noexcept { return getProcessControls().processControls.state == 0; }
+    [[nodiscard]] inline bool processIsExecuting() const noexcept { return getProcessControls().processControls.state == 0; }
+    [[nodiscard]] inline bool processIsReady() const noexcept { return getProcessControls().processControls.state == 0; }
+    [[nodiscard]] inline bool processIsInterrupted() const noexcept { return getProcessControls().processControls.state == 0b01; }
+    [[nodiscard]] inline bool processIsInUserMode() const noexcept { return getProcessControls().processControls.executionMode == 0; }
+    [[nodiscard]] inline bool processIsInSupervisorMode() const noexcept { return getProcessControls().processControls.executionMode != 0; }
     void saveGlobalsAndFloatingPointRegsToPCB();
 private:
     void stib(Integer value, Address address);
