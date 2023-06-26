@@ -415,50 +415,49 @@ Core::MixedLongRealSourceArgument
 Core::unpackSrc1(const REGInstruction& inst, TreatAsLongReal) const {
     if (inst.getM1()) {
         if (inst.src1IsFPLiteral()) {
-            return getFloatingPointLiteral<LongReal>(inst.getSrc1());
+            return handleSubnormalCase(getFloatingPointLiteral<LongReal>(inst.getSrc1()));
         } else {
-            return getFloatingPointRegister(inst.getSrc1()).getValue<ExtendedReal >();
+            return handleSubnormalCase(getFloatingPointRegister(inst.getSrc1()).getValue<ExtendedReal >());
         }
     } else {
-        return getGPR(inst.getSrc1(), TreatAsLongRegister{}).getValue<LongReal>();
+        return handleSubnormalCase(getGPR(inst.getSrc1(), TreatAsLongRegister{}).getValue<LongReal>());
     }
 }
 Core::MixedLongRealSourceArgument
 Core::unpackSrc2(const REGInstruction& inst, TreatAsLongReal) const {
     if (inst.getM2()) {
         if (inst.src2IsFPLiteral()) {
-            return getFloatingPointLiteral<LongReal>(inst.getSrc2());
+            return handleSubnormalCase(getFloatingPointLiteral<LongReal>(inst.getSrc2()));
         } else {
-            return getFloatingPointRegister(inst.getSrc2()).getValue<ExtendedReal >();
+            return handleSubnormalCase(getFloatingPointRegister(inst.getSrc2()).getValue<ExtendedReal >());
         }
     } else {
-        return getGPR(inst.getSrc2(), TreatAsLongRegister{}).getValue<LongReal>();
+        return handleSubnormalCase(getGPR(inst.getSrc2(), TreatAsLongRegister{}).getValue<LongReal>());
     }
 }
 
 Core::MixedRealSourceArgument
-Core::unpackSrc1(const REGInstruction &inst, TreatAsReal) const {
+Core::unpackSrc1(const REGInstruction& inst, TreatAsReal) const {
     if (inst.getM1()) {
         if (inst.src1IsFPLiteral()) {
-            return getFloatingPointLiteral<Real>(inst.getSrc1());
+            return handleSubnormalCase(getFloatingPointLiteral<Real>(inst.getSrc1()));
         } else {
-            return getFloatingPointRegister(inst.getSrc1()).getValue<ExtendedReal >();
+            return handleSubnormalCase(getFloatingPointRegister(inst.getSrc1()).getValue<ExtendedReal >());
         }
     } else {
-        return getGPR(inst.getSrc1()).getValue<Real>();
+        return handleSubnormalCase(getGPR(inst.getSrc1()).getValue<Real>());
     }
 }
-
 Core::MixedRealSourceArgument
-Core::unpackSrc2(const REGInstruction &inst, TreatAsReal) const {
+Core::unpackSrc2(const REGInstruction& inst, TreatAsReal) const {
     if (inst.getM2()) {
         if (inst.src2IsFPLiteral()) {
-            return getFloatingPointLiteral<Real>(inst.getSrc2());
+            return handleSubnormalCase(getFloatingPointLiteral<Real>(inst.getSrc2()));
         } else {
-            return getFloatingPointRegister(inst.getSrc2()).getValue<ExtendedReal >();
+            return handleSubnormalCase(getFloatingPointRegister(inst.getSrc2()).getValue<ExtendedReal >());
         }
     } else {
-        return getGPR(inst.getSrc2()).getValue<Real>();
+        return handleSubnormalCase(getGPR(inst.getSrc2()).getValue<Real>());
     }
 }
 
@@ -466,12 +465,12 @@ ExtendedReal
 Core::unpackSrc1(const REGInstruction &inst, TreatAsExtendedReal) const {
     if (inst.getM1()) {
         if (inst.src1IsFPLiteral()) {
-            return getFloatingPointLiteral<ExtendedReal>(inst.getSrc1());
+            return handleSubnormalCase(getFloatingPointLiteral<ExtendedReal>(inst.getSrc1()));
         } else {
-            return getFloatingPointRegister(inst.getSrc1()).getValue<ExtendedReal >();
+            return handleSubnormalCase(getFloatingPointRegister(inst.getSrc1()).getValue<ExtendedReal >());
         }
     } else {
-        return getGPR(inst.getSrc1(), TreatAsTripleRegister{}).getValue<ExtendedReal>();
+        return handleSubnormalCase(getGPR(inst.getSrc1(), TreatAsTripleRegister{}).getValue<ExtendedReal>());
     }
 }
 
@@ -479,12 +478,12 @@ ExtendedReal
 Core::unpackSrc2(const REGInstruction &inst, TreatAsExtendedReal) const {
     if (inst.getM2()) {
         if (inst.src2IsFPLiteral()) {
-            return getFloatingPointLiteral<ExtendedReal>(inst.getSrc2());
+            return handleSubnormalCase(getFloatingPointLiteral<ExtendedReal>(inst.getSrc2()));
         } else {
-            return getFloatingPointRegister(inst.getSrc2()).getValue<ExtendedReal>();
+            return handleSubnormalCase(getFloatingPointRegister(inst.getSrc2()).getValue<ExtendedReal>());
         }
     } else {
-        return getGPR(inst.getSrc2(), TreatAsTripleRegister{}).getValue<ExtendedReal>();
+        return handleSubnormalCase(getGPR(inst.getSrc2(), TreatAsTripleRegister{}).getValue<ExtendedReal>());
     }
 }
 template<typename T>
@@ -881,9 +880,18 @@ Core::serviceFloatingPointFault() {
     }
     if (std::fetestexcept(FE_INEXACT)) {
         if (ac_.arith.floatingInexactMask == 0) {
+            auto overflowOrUnderflow = code != 0;
             code |= FloatingPointInexactFault;
+            if (overflowOrUnderflow) {
+                // If set, F0 indicates that the adjusted result has been rounded towards positive infinity
+                // If clear, F0 indicates that the adjusted result has been rounded toward negative infinity
+            }
         } else {
             ac_.arith.floatingInexactFlag = 1;
+        }
+    } else {
+        if (code != 0) {
+            // SET F1 if the adjusted result has been bias adjusted because its exponent was outside the range of the extended-real format
         }
     }
     FaultRecord record ((Ordinal) pc_,

@@ -1471,7 +1471,7 @@ private:
     void floatingOverflowFault();
     void floatingUnderflowFault();
     void floatingInexactFault();
-    void floatingReservedEncodingFault();
+    void floatingReservedEncodingFault() const;
     void generateFault(const FaultRecord& record) ;
     void addi(Register& dest, Integer src1, Integer src2);
     void addo(Register& dest, Ordinal src1, Ordinal src2);
@@ -1769,6 +1769,7 @@ private:
     [[nodiscard]] ExtendedReal unpackSrc2(const REGInstruction& index, TreatAsExtendedReal) const;
     [[nodiscard]] TripleRegister& getFloatingPointRegister(ByteOrdinal index);
     [[nodiscard]] const TripleRegister& getFloatingPointRegister(ByteOrdinal index) const;
+
     template<typename T>
     requires std::floating_point<T>
     T getFloatingPointLiteral(ByteOrdinal index) const {
@@ -1787,6 +1788,14 @@ private:
      */
     void serviceFloatingPointFault();
     void updateRoundingMode();
+    template<typename T>
+    requires std::floating_point<T>
+    T handleSubnormalCase(T input) const {
+        if (std::fpclassify(input) == FP_SUBNORMAL) {
+            floatingReservedEncodingFault();
+        }
+        return input;
+    }
 private:
     Ordinal systemAddressTableBase_ = 0;
     Ordinal prcbAddress_ = 0;

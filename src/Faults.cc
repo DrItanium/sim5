@@ -377,3 +377,14 @@ Core::floatingInexactFault() {
         ac_.arith.floatingInexactFlag = 1;
     }
 }
+
+void
+Core::floatingReservedEncodingFault() const {
+    if (ac_.arith.floatingPointNormalizingMode == 0) {
+        throw FaultRecord((Ordinal) pc_,
+                          (Ordinal) ac_,
+                          FloatingPointReservedEncodingFault,
+                          (Ordinal) ip_,
+                          true);
+    }
+}
