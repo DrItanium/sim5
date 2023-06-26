@@ -893,11 +893,38 @@ Core::logbnrl(const REGInstruction &inst) {
 }
 void
 Core::logr(const REGInstruction &inst) {
-    unimplementedFault();
+    std::visit([this, &inst](auto src1, auto src2) {
+                   using K0 = std::decay_t<decltype(src1)>;
+                   using K1 = std::decay_t<decltype(src2)>;
+                   if constexpr (BothAreReal<K0, K1>) {
+                       auto result = serviceFloatingPointFault<Real>(std::log2f(src1));
+
+                       // assign the quad bits to the arithmetic status register
+                       fpassignment(inst, src2 * result, TreatAsLongReal{});
+                   } else {
+                       auto result = serviceFloatingPointFault<ExtendedReal>(std::log2l(src1));
+                       // assign the quad bits to the arithmetic status register
+                       fpassignment(inst, src2 * result, TreatAsExtendedReal{});
+                   }
+               },
+               unpackSrc1(inst, TreatAsReal{}),
+               unpackSrc2(inst, TreatAsReal{}));
 }
 void
 Core::logrl(const REGInstruction &inst) {
-    unimplementedFault();
+    std::visit([this, &inst](auto src1, auto src2) {
+                   using K0 = std::decay_t<decltype(src1)>;
+                   using K1 = std::decay_t<decltype(src2)>;
+                   if constexpr (BothAreLongReal<K0, K1>) {
+                       auto result = serviceFloatingPointFault<Real>(std::log2(src1));
+                       fpassignment(inst, src2 * result, TreatAsLongReal{});
+                   } else {
+                       auto result = serviceFloatingPointFault<ExtendedReal>(std::log2l(src1));
+                       fpassignment(inst, src2 * result, TreatAsExtendedReal{});
+                   }
+               },
+               unpackSrc1(inst, TreatAsReal{}),
+               unpackSrc2(inst, TreatAsReal{}));
 }
 
 void
