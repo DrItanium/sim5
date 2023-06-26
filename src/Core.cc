@@ -1483,3 +1483,19 @@ Core::cmpdeci(Register& dest, Integer src1, Integer src2) noexcept {
     cmpGeneric(src1, src2);
     dest.setValue<Integer>(src2 - 1);
 }
+void
+Core::bbc(uint8_t bitpos, const Register& against, int16_t displacement) {
+    return branchIfBitGeneric<true>(computeBitPosition(bitpos), against, displacement);
+}
+void
+Core::bbc(const Register& bitpos, const Register& against, int16_t displacement) {
+    return branchIfBitGeneric<true>(bitpos.asBitPosition(), against, displacement);
+}
+void
+Core::bbs(uint8_t bitpos, const Register& against, int16_t displacement) {
+    return branchIfBitGeneric<false>(computeBitPosition(bitpos), against, displacement);
+}
+void
+Core::bbs(const Register& bitpos, const Register& against, int16_t displacement) {
+    return branchIfBitGeneric<false>(bitpos.asBitPosition(), against, displacement);
+}

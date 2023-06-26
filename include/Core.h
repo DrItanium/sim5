@@ -1129,18 +1129,10 @@ private:
             ac_.arith.conditionCode = checkClear ? 0b010 : 0b000;
         }
     }
-    inline void bbc(uint8_t bitpos, const Register& against, int16_t displacement) {
-        return branchIfBitGeneric<true>(computeBitPosition(bitpos), against, displacement);
-    }
-    inline void bbc(const Register& bitpos, const Register& against, int16_t displacement) {
-        return branchIfBitGeneric<true>(bitpos.asBitPosition(), against, displacement);
-    }
-    inline void bbs(uint8_t bitpos, const Register& against, int16_t displacement) {
-        return branchIfBitGeneric<false>(computeBitPosition(bitpos), against, displacement);
-    }
-    inline void bbs(const Register& bitpos, const Register& against, int16_t displacement) {
-        return branchIfBitGeneric<false>(bitpos.asBitPosition(), against, displacement);
-    }
+    void bbc(uint8_t bitpos, const Register& against, int16_t displacement);
+    void bbc(const Register& bitpos, const Register& against, int16_t displacement);
+    void bbs(uint8_t bitpos, const Register& against, int16_t displacement);
+    void bbs(const Register& bitpos, const Register& against, int16_t displacement);
     template<typename Q>
     requires Is960Comparable<Q>
     void cmpGeneric(Q src1, Q src2) noexcept {
