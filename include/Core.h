@@ -461,6 +461,10 @@ public:
         setValue<Ordinal>(2, other.getValue<Ordinal>(2));
         return *this;
     }
+    TripleRegister& operator=(ExtendedReal value) noexcept {
+        setValue(value, TreatAsExtendedReal{});
+        return *this;
+    }
     template<typename T>
     void setValue(ByteOrdinal index, T value) noexcept {
         get(index). setValue<T>(value);
@@ -500,6 +504,7 @@ public:
     constexpr T getValue() const noexcept {
         return getValue(TreatAs<T>{});
     }
+
 private:
     QuadRegister backingStore_;
     ExtendedReal extendedReal_;
