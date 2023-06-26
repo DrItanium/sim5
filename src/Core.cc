@@ -1423,3 +1423,8 @@ Core::modi(Register& dest, Integer src1, Integer src2) {
         /// @todo implement fault checks
     }
 }
+void
+Core::advanceCOBRDisplacement(Integer displacement) noexcept {
+    ip_.i += displacement;
+    advanceInstruction_ = false;
+}

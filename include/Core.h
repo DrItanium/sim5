@@ -1106,14 +1106,11 @@ private:
     void emul(const REGInstruction& inst, LongRegister& dest, Ordinal src1, Ordinal src2) ;
     void ediv(const REGInstruction& inst, LongRegister& dest, Ordinal src1, const LongRegister& src2) ;
     void arithmeticWithCarryGeneric(Ordinal result, bool src2MSB, bool src1MSB, bool destMSB) ;
-    inline void advanceCOBRDisplacement(Integer displacement) noexcept {
-        ip_.i += displacement;
-        advanceInstruction_ = false;
-    }
+    void advanceCOBRDisplacement(Integer displacement) noexcept;
     template<bool checkClear>
     void
     branchIfBitGeneric(Ordinal bitpos, const Register& src2 , int16_t displacement) {
-        Ordinal against = src2.getValue<Ordinal>();
+        auto against = src2.getValue<Ordinal>();
         DEBUG_LOG_LEVEL(1) {
             std::cout << __PRETTY_FUNCTION__ << ": bitpos: 0x" << std::hex << bitpos
                       << ", src2: 0x" << std::hex << against << std::endl;
@@ -1377,11 +1374,11 @@ private:
             nextInstruction();
         }
     }
-    void divi(Register& dest, Integer src1, Integer src2) noexcept {
+    void divi(Register& dest, Integer src1, Integer src2) {
         divideOperation<Integer>(dest, src1, src2);
         faultOnOverflow(dest);
     }
-    void divo(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+    void divo(Register& dest, Ordinal src1, Ordinal src2) {
         divideOperation<Ordinal>(dest, src1, src2);
     }
     void atadd(Register& dest, Ordinal src1, Ordinal src2) {
