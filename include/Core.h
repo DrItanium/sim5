@@ -1590,14 +1590,14 @@ private: // protected extensions instructions
     void movqstr(Ordinal destAddress, Ordinal srcAddress, Ordinal len) noexcept;
     void fill(Ordinal dest, Ordinal value, Ordinal len) noexcept;
 private: // interrupt related
-    Address getInterruptTableBaseAddress() const;
+    [[nodiscard]] Address getInterruptTableBaseAddress() const;
     void postInterrupt(InterruptVector vector);
-    Ordinal getInterruptPendingPriorities() const { return load<Ordinal>(getInterruptTablePointer()); }
+    inline Ordinal getInterruptPendingPriorities() const { return load<Ordinal>(getInterruptTablePointer()); }
     void setInterruptPendingPriorities(Ordinal value) { store<Ordinal>(getInterruptTablePointer(), value); }
-    Ordinal getPendingInterruptWord(uint8_t index) const {
+    [[nodiscard]] inline Ordinal getPendingInterruptWord(uint8_t index) const {
         return load<Ordinal>(getInterruptTableBaseAddress() + 4 + (sizeof(Ordinal) * (index & 0b111)));
     }
-    Ordinal getPendingInterruptWord(InterruptVector vector) const {
+    [[nodiscard]] inline Ordinal getPendingInterruptWord(InterruptVector vector) const {
         return getPendingInterruptWord(computeInterruptWordIndex(vector));
     }
     void setPendingInterruptWord(uint8_t index, Ordinal value) {
@@ -1607,24 +1607,24 @@ private: // interrupt related
         setPendingInterruptWord(computeInterruptWordIndex(vector), value);
     }
 
-    Address getInterruptVectorAddress(uint8_t vector) const;
-    Address getInterruptVectorAddress(InterruptVector vector) const { return getInterruptVectorAddress(static_cast<uint8_t>(vector)); }
+    [[nodiscard]] Address getInterruptVectorAddress(uint8_t vector) const;
+    [[nodiscard]] inline Address getInterruptVectorAddress(InterruptVector vector) const { return getInterruptVectorAddress(static_cast<uint8_t>(vector)); }
     void receiveInterrupt(InterruptVector vector);
     void setPendingPriorityBit(uint8_t priority);
     void setPendingPriorityBit(InterruptVector vector) { setPendingPriorityBit(computeInterruptPriority(vector)); }
     void clearPendingPriorityBit(uint8_t priority);
     void clearPendingPriorityBit(InterruptVector vector) { clearPendingPriorityBit(computeInterruptPriority(vector)); }
-    bool getPendingPriorityBit(uint8_t priority) const;
-    bool getPendingPriorityBit(InterruptVector vector) const { return getPendingPriorityBit(computeInterruptPriority(vector)); }
-    bool getPendingInterruptBit(InterruptVector vector) const;
+    [[nodiscard]] bool getPendingPriorityBit(uint8_t priority) const;
+    [[nodiscard]] inline bool getPendingPriorityBit(InterruptVector vector) const { return getPendingPriorityBit(computeInterruptPriority(vector)); }
+    [[nodiscard]] bool getPendingInterruptBit(InterruptVector vector) const;
     void setPendingInterruptBit(InterruptVector vector);
     void clearPendingInterruptBit(InterruptVector vector);
     void obtainedPendingVector(InterruptVector vector);
-    bool pendingInterruptPriorityClear(InterruptVector vector) const;
-    ByteOrdinal getPendingInterruptBitsForPriority(uint8_t priority) const;
-    ByteOrdinal getHighestPostedInterruptVectorForPriority(uint8_t priority) const;
-    InterruptVector highestPostedInterruptVector() const;
-    InterruptVector serviceNextInterrupt();
+    [[nodiscard]] bool pendingInterruptPriorityClear(InterruptVector vector) const;
+    [[nodiscard]] ByteOrdinal getPendingInterruptBitsForPriority(uint8_t priority) const;
+    [[nodiscard]] ByteOrdinal getHighestPostedInterruptVectorForPriority(uint8_t priority) const;
+    [[nodiscard]] InterruptVector highestPostedInterruptVector() const;
+    [[nodiscard]] InterruptVector serviceNextInterrupt();
     void serviceInterrupt(InterruptVector vector);
     void checkForPendingInterrupts();
 private:
