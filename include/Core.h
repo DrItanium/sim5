@@ -989,27 +989,6 @@ private:
     void synmov(const Register& dest, Ordinal src) ;
     void synmovl(const Register& dest, Ordinal src) ;
     void synmovq(const Register& dest, Ordinal src) ;
-    template<bool doScan>
-    inline void
-    xbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
-        for (Ordinal index = 0; index < 32; ++index) {
-            if ((src1 & computeBitPosition(31 - index)) != 0) {
-                if constexpr (doScan) {
-                    dest.o = (31 - index);
-                    ac_.arith.conditionCode = 0b010;
-                    return;
-                }
-            } else {
-                if constexpr (!doScan) {
-                    dest.o = (31 - index);
-                    ac_.arith.conditionCode = 0b010;
-                    return;
-                }
-            }
-        }
-        dest.o = 0xFFFF'FFFF;
-        ac_.arith.conditionCode = 0;
-    }
     void scanbit(Register& dest, Ordinal src1, Ordinal src2) noexcept;
     void spanbit(Register& dest, Ordinal src1, Ordinal src2) noexcept;
     void branch(Integer displacement) noexcept;
