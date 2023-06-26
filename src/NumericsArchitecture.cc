@@ -888,6 +888,11 @@ Core::mulrl(const REGInstruction &inst) {
                unpackSrc1(inst, TreatAsLongReal{}),
                unpackSrc2(inst, TreatAsLongReal{}));
 }
+// arithmetic status bits for remainder operations
+// bit 6: Q1, the next-to-last quotient bit
+// bit 5: Q0, the last quotient bit
+// bit 4: QR, the value the next quotient bit would have if one more reduction were performed (the "round" bit of the quotient)
+// bit 3: QS, set if the remainder after the QR reductionw ould be nonzero (the "sticky" bit of the quotient)
 void
 Core::remr(const REGInstruction &inst) {
     std::visit([this, &inst](auto src1, auto src2) {
