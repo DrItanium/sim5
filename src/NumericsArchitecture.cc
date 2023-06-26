@@ -728,14 +728,6 @@ Core::divr(const REGInstruction &inst) {
     std::visit([this, &inst](auto denominator, auto numerator) {
                    using K0 = std::decay_t<decltype(numerator)>;
                    using K1 = std::decay_t<decltype(denominator)>;
-                   if (denominator == 0.0) {
-                       if (std::fpclassify(numerator) == FP_NORMAL) {
-                           floatingZeroDivideOperationFault();
-                       } else {
-                           floatingInvalidOperationFault();
-                       }
-                   }
-                   /// @todo add the other fault handlers as well
                    if constexpr (BothAreReal<K0, K1>) {
                        // if we get real/real then we assign as real, every other case mixed so treat them as long double/long double
                        fpassignment(inst, numerator / denominator, TreatAsReal{});
@@ -752,14 +744,6 @@ Core::divrl(const REGInstruction &inst) {
     std::visit([this, &inst](auto denominator, auto numerator) {
                    using K0 = std::decay_t<decltype(numerator)>;
                    using K1 = std::decay_t<decltype(denominator)>;
-                   if (denominator == 0.0) {
-                       if (std::fpclassify(numerator) == FP_NORMAL) {
-                           floatingZeroDivideOperationFault();
-                       } else {
-                           floatingInvalidOperationFault();
-                       }
-                   }
-                   /// @todo add the other fault handlers as well
                    if constexpr (BothAreLongReal<K0, K1>) {
                        // if we get real/real then we assign as real, every other case mixed so treat them as long double/long double
                        fpassignment(inst, numerator / denominator, TreatAsLongReal{});
@@ -788,7 +772,7 @@ Core::cmporl(const REGInstruction &inst) {
 }
 
 void
-Core::cmpr(const REGInstruction &inst) noexcept {
+Core::cmpr(const REGInstruction &inst) {
     std::visit([this, &inst](auto src1, auto src2) {
                    using K0 = std::decay_t<decltype(src1)>;
                    using K1 = std::decay_t<decltype(src2)>;
@@ -803,7 +787,7 @@ Core::cmpr(const REGInstruction &inst) noexcept {
 }
 
 void
-Core::cmprl(const REGInstruction &inst) noexcept {
+Core::cmprl(const REGInstruction &inst) {
     std::visit([this, &inst](auto src1, auto src2) {
                    using K0 = std::decay_t<decltype(src1)>;
                    using K1 = std::decay_t<decltype(src2)>;
