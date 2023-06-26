@@ -1564,7 +1564,7 @@ private:
     [[nodiscard]] Address getSystemProcedureTableSegmentSelector() const noexcept { return getFromPRCB<36>(); }
     [[nodiscard]] Address getFaultTableBaseAddress() const noexcept { return getFromPRCB<40>(); }
 private: // system address table / system procedure table
-    SegmentDescriptor loadSegmentDescriptor(SegmentSelector offset) const noexcept;
+    [[nodiscard]] SegmentDescriptor loadSegmentDescriptor(SegmentSelector offset) const noexcept;
 public:
     void checksumFail();
     void selfTestFailure();
