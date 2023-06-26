@@ -1428,3 +1428,58 @@ Core::advanceCOBRDisplacement(Integer displacement) noexcept {
     ip_.i += displacement;
     advanceInstruction_ = false;
 }
+void
+Core::atadd(Register& dest, Ordinal src1, Ordinal src2) {
+    syncf();
+    lockBus();
+    auto addr = maskValue<decltype(src1), 0xFFFF'FFFC>(src1) ;
+    auto temp = load<Ordinal>(addr);
+    // adds the src (src2 internally) value to the value in memory location specified with the addr (src1 in this case) operand.
+    // The initial value from memory is stored in dst (internally src/dst).
+    Ordinal result = temp + src2;
+    store<Ordinal>(addr, result);
+    dest.setValue<Ordinal>(temp);
+    unlockBus();
+}
+void
+Core::atmod(Register& dest, Ordinal src1, Ordinal src2) {
+    syncf();
+    lockBus();
+    auto addr = maskValue<decltype(src1), 0xFFFF'FFFC>(src1) ;
+    auto temp = load<Ordinal>(addr);
+    // copies the src/dest value (logical version) into the memory location specifeid by src1.
+    // The bits set in the mask (src2) operand select the bits to be modified in memory. The initial
+    // value from memory is stored in src/dest
+    Ordinal result = ::modify(src2, dest.getValue<Ordinal>(), temp);
+    store<Ordinal>(addr, result);
+    dest.setValue<Ordinal>(temp);
+    unlockBus();
+}
+void
+Core::cmpo(Ordinal src1, Ordinal src2) noexcept {
+    cmpGeneric(src1, src2);
+}
+void
+Core::cmpinco(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+    cmpGeneric(src1, src2);
+    dest.setValue<Ordinal>(src2 + 1);
+}
+void
+Core::cmpdeco(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+    cmpGeneric(src1, src2);
+    dest.setValue<Ordinal>(src2 - 1);
+}
+void
+Core::cmpi(Integer src1, Integer src2) noexcept {
+    cmpGeneric(src1, src2);
+}
+void
+Core::cmpinci(Register& dest, Integer src1, Integer src2) noexcept {
+    cmpGeneric(src1, src2);
+    dest.setValue<Integer>(src2 + 1);
+}
+void
+Core::cmpdeci(Register& dest, Integer src1, Integer src2) noexcept {
+    cmpGeneric(src1, src2);
+    dest.setValue<Integer>(src2 - 1);
+}

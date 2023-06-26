@@ -1381,53 +1381,14 @@ private:
     void divo(Register& dest, Ordinal src1, Ordinal src2) {
         divideOperation<Ordinal>(dest, src1, src2);
     }
-    void atadd(Register& dest, Ordinal src1, Ordinal src2) {
-        syncf();
-        lockBus();
-        auto addr = maskValue<decltype(src1), 0xFFFF'FFFC>(src1) ;
-        auto temp = load<Ordinal>(addr);
-        // adds the src (src2 internally) value to the value in memory location specified with the addr (src1 in this case) operand.
-        // The initial value from memory is stored in dst (internally src/dst).
-        Ordinal result = temp + src2;
-        store<Ordinal>(addr, result);
-        dest.setValue<Ordinal>(temp);
-        unlockBus();
-    }
-    void atmod(Register& dest, Ordinal src1, Ordinal src2) {
-        syncf();
-        lockBus();
-        auto addr = maskValue<decltype(src1), 0xFFFF'FFFC>(src1) ;
-        auto temp = load<Ordinal>(addr);
-        // copies the src/dest value (logical version) into the memory location specifeid by src1.
-        // The bits set in the mask (src2) operand select the bits to be modified in memory. The initial
-        // value from memory is stored in src/dest
-        Ordinal result = ::modify(src2, dest.getValue<Ordinal>(), temp);
-        store<Ordinal>(addr, result);
-        dest.setValue<Ordinal>(temp);
-        unlockBus();
-    }
-    void cmpo(Ordinal src1, Ordinal src2) noexcept {
-        cmpGeneric(src1, src2);
-    }
-    void cmpinco(Register& dest, Ordinal src1, Ordinal src2) noexcept {
-        cmpGeneric(src1, src2);
-        dest.setValue<Ordinal>(src2 + 1);
-    }
-    void cmpdeco(Register& dest, Ordinal src1, Ordinal src2) noexcept {
-        cmpGeneric(src1, src2);
-        dest.setValue<Ordinal>(src2 - 1);
-    }
-    void cmpi(Integer src1, Integer src2) noexcept {
-        cmpGeneric(src1, src2);
-    }
-    void cmpinci(Register& dest, Integer src1, Integer src2) noexcept {
-        cmpGeneric(src1, src2);
-        dest.setValue<Integer>(src2 + 1);
-    }
-    void cmpdeci(Register& dest, Integer src1, Integer src2) noexcept {
-        cmpGeneric(src1, src2);
-        dest.setValue<Integer>(src2 - 1);
-    }
+    void atadd(Register& dest, Ordinal src1, Ordinal src2);
+    void atmod(Register& dest, Ordinal src1, Ordinal src2);
+    void cmpo(Ordinal src1, Ordinal src2) noexcept;
+    void cmpinco(Register& dest, Ordinal src1, Ordinal src2) noexcept;
+    void cmpdeco(Register& dest, Ordinal src1, Ordinal src2) noexcept;
+    void cmpi(Integer src1, Integer src2) noexcept;
+    void cmpinci(Register& dest, Integer src1, Integer src2) noexcept;
+    void cmpdeci(Register& dest, Integer src1, Integer src2) noexcept;
     template<typename Q>
     requires MustBeOrdinalOrInteger<Q>
     void concmpGeneric(Q src1, Q src2) noexcept {
@@ -1471,8 +1432,8 @@ private:
     void saveReturnAddress(ByteOrdinal registerIndex) noexcept;
     void saveReturnAddress(Register& linkRegister) noexcept;
     void setupNewFrameInternals(Ordinal fp, Ordinal temp) noexcept;
-    Ordinal getStackPointer() const noexcept;
-    Ordinal getNextFrameBase() const noexcept;
+    [[nodiscard]] Ordinal getStackPointer() const noexcept;
+    [[nodiscard]] Ordinal getNextFrameBase() const noexcept;
     void setStackPointer(Ordinal value, TreatAsOrdinal) noexcept;
     /**
      * @brief Advance ip by instruction length and then prevent further
@@ -1551,15 +1512,15 @@ private:
     void supervisorProcedureTableEntry_FaultCall(const FaultRecord& record, Address procedureAddress, Address tableBaseAddress) noexcept;
 private:
     template<uint8_t offset>
-    requires (offset <= 172) && ((offset & 0b11) == 0) // the PRCB is 176 bytes in size and is aligned to four byte boundaries
-    [[nodiscard]] Ordinal getFromPRCB() const noexcept { return load<Ordinal>(prcbAddress_ + offset); }
-    [[nodiscard]] Ordinal getProcessorControls() const noexcept { return getFromPRCB<4>(); }
-    [[nodiscard]] Ordinal getCurrentProcessSegmentSelector() const noexcept { return getFromPRCB<12>(); }
-    [[nodiscard]] Ordinal getDispatchPortSegmentSelector() const noexcept { return getFromPRCB<16>(); }
-    [[nodiscard]] Address getInterruptTablePointer() const noexcept { return getFromPRCB<20>(); }
-    [[nodiscard]] Address getInterruptStackAddress() const noexcept { return getFromPRCB<24>(); }
-    [[nodiscard]] Address getSystemProcedureTableSegmentSelector() const noexcept { return getFromPRCB<36>(); }
-    [[nodiscard]] Address getFaultTableBaseAddress() const noexcept { return getFromPRCB<40>(); }
+    requires ((offset <= 172) && ((offset & 0b11) == 0)) // the PRCB is 176 bytes in size and is aligned to four byte boundaries
+    [[nodiscard]] inline Ordinal getFromPRCB() const noexcept { return load<Ordinal>(prcbAddress_ + offset); }
+    [[nodiscard]] inline Ordinal getProcessorControls() const noexcept { return getFromPRCB<4>(); }
+    [[nodiscard]] inline Ordinal getCurrentProcessSegmentSelector() const noexcept { return getFromPRCB<12>(); }
+    [[nodiscard]] inline Ordinal getDispatchPortSegmentSelector() const noexcept { return getFromPRCB<16>(); }
+    [[nodiscard]] inline Address getInterruptTablePointer() const noexcept { return getFromPRCB<20>(); }
+    [[nodiscard]] inline Address getInterruptStackAddress() const noexcept { return getFromPRCB<24>(); }
+    [[nodiscard]] inline Address getSystemProcedureTableSegmentSelector() const noexcept { return getFromPRCB<36>(); }
+    [[nodiscard]] inline Address getFaultTableBaseAddress() const noexcept { return getFromPRCB<40>(); }
 private: // system address table / system procedure table
     [[nodiscard]] SegmentDescriptor loadSegmentDescriptor(SegmentSelector offset) const noexcept;
 public:
@@ -1762,19 +1723,23 @@ private:
     requires std::floating_point<T>
     void handleUnderflowCondition(T value, FaultRecord& record) {
         record.type |= FloatingPointUnderflowFault;
+        /// @todo fully implement
     }
     template<typename T>
     requires std::floating_point<T>
     void handleOverflowCondition(T value, FaultRecord& record) {
         record.type |= FloatingPointOverflowFault;
+        /// @todo fully implement
     }
     template<typename T>
     requires std::floating_point<T>
     void handlePureInexactCondition(T value, FaultRecord& record) {
+        /// @todo fully implement
     }
     template<typename T>
     requires std::floating_point<T>
     void handleMixedInexactCondition(T value, FaultRecord& record) {
+        /// @todo fully implement
     }
     /**
      * @brief Checks the error flags to see if a floating point exeception has taken place and generates one if allowed
@@ -1895,6 +1860,7 @@ private:
     Register ictl_;
     ByteOrdinal instructionLength_ = 0;
     bool advanceInstruction_ = false;
+    /// @todo implement breakpoint support
     Address breakpoint0_ = 0;
     bool breakpoint0Active_ = false;
     Address breakpoint1_ = 0;
