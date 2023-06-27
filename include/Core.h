@@ -1684,6 +1684,10 @@ private:
      * @brief A 64-bit counter of the number of instructions executed since startup; Used as a pseudo random number source as well
      */
     LongOrdinal pseudoRandomSource_ = 0;
+    /**
+     * @brief A series of internal scratch registers described by the blue book; has no defined purpose but could assist in the design overall
+     */
+    Register scratchRegisters[34];
 };
 
 static_assert(computeNextFrame<Core::C, Core::NotC>(0xFDED'0000) == 0xFDED'0000);
