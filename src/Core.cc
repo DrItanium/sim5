@@ -962,6 +962,9 @@ Core::cycle() noexcept {
         std::cout << "}" << std::endl;
     }
     DEBUG_LEAVE_FUNCTION;
+    // according to the blue book they use a counter modulo 8 as a pseudo-random source
+    // let's add it in ours as well for whatever we want!
+    ++pseudoRandomSource_;
 }
 
 

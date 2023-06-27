@@ -1680,6 +1680,10 @@ private:
     // protected architecture extensions
     Register processControlBlockBaseAddress_;
     Register residualTimeSlice_;
+    /**
+     * @brief A 64-bit counter of the number of instructions executed since startup; Used as a pseudo random number source as well
+     */
+    LongOrdinal pseudoRandomSource_ = 0;
 };
 
 static_assert(computeNextFrame<Core::C, Core::NotC>(0xFDED'0000) == 0xFDED'0000);
