@@ -247,8 +247,3 @@ void
 Core::dispatchInterrupt(uint8_t vector) noexcept {
     receiveInterrupt(static_cast<InterruptVector>(vector));
 }
-
-void
-Core::faultOnOverflow(Register& dest) {
-    /// @todo implement
-}

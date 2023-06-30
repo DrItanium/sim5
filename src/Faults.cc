@@ -388,3 +388,9 @@ Core::floatingReservedEncodingFault() const {
                           true);
     }
 }
+
+
+void
+Core::faultOnOverflow(Register& dest) {
+    /// @todo implement
+}
