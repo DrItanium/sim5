@@ -65,10 +65,10 @@ Core::reinitializeProcessor(Ordinal satBase, Ordinal prcbBase, Ordinal startIP) 
 void
 Core::setBreakpointRegister(Ordinal breakpointIp0, Ordinal breakpointIp1) noexcept {
     /// @todo do something with the breakpoint data
-    breakpoint0_ = breakpointIp0 & 0xFFFFFFFC;
-    breakpoint0Active_ = (breakpointIp0 & 0b10) != 0;
-    breakpoint1_ = breakpointIp1 & 0xFFFFFFFC;
-    breakpoint1Active_ = (breakpointIp1 & 0b10) != 0;
+    //breakpoint0_ = breakpointIp0 & 0xFFFFFFFC;
+    //breakpoint0Active_ = (breakpointIp0 & 0b10) != 0;
+    //breakpoint1_ = breakpointIp1 & 0xFFFFFFFC;
+    //breakpoint1Active_ = (breakpointIp1 & 0b10) != 0;
 }
 
 void

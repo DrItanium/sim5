@@ -1445,7 +1445,6 @@ private: // mmu
     [[nodiscard]] inline LongOrdinal getProcessQueueRecord()  const noexcept { return load<LongOrdinal>(processControlBlockBaseAddress_.getValue<Address>()); }
     [[nodiscard]] inline Ordinal getProcessReceiveMessage() const noexcept { return loadFromProcessControlBlock<8>(); }
     [[nodiscard]] inline SegmentSelector getDispatchPortSS() const noexcept { return loadFromProcessControlBlock<12>(); }
-    [[nodiscard]] inline Ordinal getResidualTimeSlice() const noexcept { return residualTimeSlice_.getValue<Ordinal>(); }
     [[nodiscard]] inline bool inVirtualMemoryMode() const noexcept { return getProcessControls().inVirtualAddressingMode(); }
     [[nodiscard]] inline ByteOrdinal getProcessPriority() const noexcept { return getProcessControls().processControls.priority; }
     [[nodiscard]] inline bool processIsBlocked() const noexcept { return getProcessControls().processControls.state == 0; }
@@ -1673,13 +1672,9 @@ private:
     ByteOrdinal instructionLength_ = 0;
     bool advanceInstruction_ = false;
     /// @todo implement breakpoint support
-    Address breakpoint0_ = 0;
-    bool breakpoint0Active_ = false;
-    Address breakpoint1_ = 0;
-    bool breakpoint1Active_ = false;
+    /// @todo implement backing structures for the protected architecture
     // protected architecture extensions
     Register processControlBlockBaseAddress_;
-    Register residualTimeSlice_;
     /**
      * @brief A 64-bit counter of the number of instructions executed since startup; Used as a pseudo random number source as well
      */

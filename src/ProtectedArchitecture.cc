@@ -101,7 +101,7 @@ Core::fill(Ordinal dest, Ordinal value, Ordinal len) noexcept {
 }
 void
 Core::ldtime(LongRegister &dest) {
-    dest.setValue(getProcessExecutionTime() - getResidualTimeSlice());
+    unimplementedFault();
 }
 
 void
