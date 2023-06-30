@@ -1652,8 +1652,7 @@ private:
     void logrl(const REGInstruction& inst);
     void logepr(const REGInstruction& inst);
     void logeprl(const REGInstruction& inst);
-    void expr(const REGInstruction& inst);
-    void exprl(const REGInstruction& inst);
+    /// @todo figure out what operations have not yet been implemented
 private:
     Ordinal systemAddressTableBase_ = 0;
     Ordinal prcbAddress_ = 0;

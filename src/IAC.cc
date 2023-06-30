@@ -73,8 +73,8 @@ Core::setBreakpointRegister(Ordinal breakpointIp0, Ordinal breakpointIp1) noexce
 
 void
 Core::storeSystemBase(Ordinal destinationAddress) noexcept {
-    store(destinationAddress, systemAddressTableBase_, TreatAsOrdinal{});
-    store(destinationAddress+4, prcbAddress_, TreatAsOrdinal{});
+    store<Ordinal>(destinationAddress, systemAddressTableBase_);
+    store<Ordinal>(destinationAddress+4, prcbAddress_);
 }
 
 void
