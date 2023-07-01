@@ -601,4 +601,43 @@ union TaggedWord {
 [[nodiscard]] constexpr bool isMEMFormat(Ordinal o) noexcept { return o >= 0x8000'0000; }
 [[nodiscard]] constexpr auto isREGFormat(Ordinal o) noexcept { return o >= 0x4000'0000 && o < 0x8000'0000; }
 
+struct MMUAddress {
+    explicit constexpr MMUAddress(Address value) : full(value) { }
+    constexpr auto getFullAddress() const noexcept { return full; }
+    constexpr auto getPageOffset() const noexcept { return offset; }
+    constexpr auto getRegion() const noexcept { return region; }
+    constexpr auto getPageTableOffset() const noexcept { return pageTableOffset; }
+    constexpr auto getPageTableDirectoryOffset() const noexcept { return pageTableDirectoryOffset; }
+    constexpr auto isSimpleRegion() const noexcept { return simpleRegionView.unused == 0; }
+    constexpr auto isPagedRegion(Address size) const noexcept {
+        return pagedRegionView.pageTableOffset < size;
+    }
+    constexpr auto isValidBipagedRegion(Address size) const noexcept {
+        return pageTableDirectoryOffset < size;
+    }
+    union {
+        Address full;
+        struct {
+            Address offset: 12;
+            Address pageTableOffset: 10;
+            Address pageTableDirectoryOffset: 8;
+            Address region: 2;
+        };
+        struct {
+            Address offset : 12;
+            Address unused : 18;
+            Address region : 2;
+        } simpleRegionView;
+        struct {
+            Address offset : 12;
+            Address pageTableOffset : 10;
+            Address unused : 8;
+            Address region : 2;
+        } pagedRegionView;
+        struct {
+           Address offset : 12;
+           Address baseAddress : 20;
+        } virtualAddress;
+    };
+};
 #endif // end SIM5_TYPES_H__
