@@ -609,12 +609,13 @@ struct MMUAddress {
     constexpr auto getPageTableOffset() const noexcept { return pageTableOffset; }
     constexpr auto getPageTableDirectoryOffset() const noexcept { return pageTableDirectoryOffset; }
     constexpr auto isSimpleRegion() const noexcept { return simpleRegionView.unused == 0; }
-    constexpr auto isPagedRegion(Address size) const noexcept {
+    constexpr auto isValidPagedRegion(Address size) const noexcept {
         return pagedRegionView.pageTableOffset < size;
     }
     constexpr auto isValidBipagedRegion(Address size) const noexcept {
         return pageTableDirectoryOffset < size;
     }
+    constexpr auto isPagedRegion() const noexcept { return pagedRegionView.unused == 0; }
     union {
         Address full;
         struct {
