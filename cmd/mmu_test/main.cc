@@ -141,9 +141,37 @@ union SegmentDescriptor {
         uint32_t type : 4;
     } semaphore;
 
-    constexpr bool valid() const noexcept { return (words[3] & 0b111) != 0; }
+    [[nodiscard]] constexpr bool valid() const noexcept { return (words[3] & 0b111) != 0; }
 };
 static_assert(sizeof(SegmentDescriptor) == (sizeof(uint32_t) * 4));
+union TableEntry {
+    uint32_t whole;
+    struct {
+       uint32_t valid : 1;
+       uint32_t pageRights : 2;
+       uint32_t preserved : 9;
+       uint32_t pageTableBaseAddress : 20;
+    } pageTableDirectory;
+    struct {
+        uint32_t valid : 1;
+        uint32_t pageRights : 2;
+        uint32_t accessed : 1;
+        uint32_t altered : 1;
+        uint32_t reserved : 1;
+        uint32_t cacheable : 1;
+        uint32_t fixedOne : 1;
+        uint32_t preserved : 4;
+        uint32_t pageBaseAddress : 20;
+    } pageTable;
+    struct {
+        uint32_t valid : 1;
+        uint32_t pageRights : 2;
+        uint32_t rest : 29;
+    } generic;
+    [[nodiscard]] constexpr bool valid() const noexcept { return generic.valid != 0; }
+    [[nodiscard]] constexpr auto getPageAccessRights() const noexcept { return generic.pageRights; }
+};
+static_assert(sizeof(TableEntry) == (sizeof(uint32_t)));
 struct MMUAddress {
     explicit constexpr MMUAddress(Address value) : full(value) { }
     constexpr auto getFullAddress() const noexcept { return full; }
