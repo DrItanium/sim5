@@ -28,28 +28,120 @@
 #include <random>
 #include <chrono>
 using Address = uint32_t;
-struct SegmentDescriptor {
-    uint32_t unused[2];
-    union {
-        uint32_t full;
-        struct {
-            uint32_t offset : 6;
-            uint32_t baseAddress : 26;
-        } generic;
+union SegmentDescriptor {
+    uint32_t words[4];
+    struct {
+        uint32_t unused0[2];
+        uint32_t offset : 6;
+        uint32_t baseAddress : 26;
+        uint32_t valid : 1;
+        uint32_t pagingMethod : 2;
+        uint32_t accessStatus : 5;
+        uint32_t unused1 : 10;
+        uint32_t size : 6;
+        uint32_t unused2 : 4;
+        uint32_t type : 4;
+    } generic;
+    struct {
+        uint32_t unused0[2];
+        uint32_t mask : 12;
+        uint32_t baseAddress : 20;
+        uint32_t valid : 1;
+        uint32_t pagingMethod : 2;
+        uint32_t accessed : 1;
+        uint32_t altered : 1;
+        uint32_t expectedOne_0 : 1;
+        uint32_t cacheable : 1;
+        uint32_t expectedOne_1 : 1;
+        uint32_t unused1 : 10;
+        uint32_t size : 6;
+        uint32_t unused2 : 8;
+    } simpleRegion;
+    struct {
+        uint32_t unused0[2];
+        uint32_t mask : 6;
+        uint32_t pageTableAddress : 26;
+        uint32_t valid : 1;
+        uint32_t pagingMethod : 2;
+        uint32_t unused1 : 15;
+        uint32_t size : 6;
+        uint32_t unused2 : 8;
+    } pagedRegion;
+    struct {
+        uint32_t unused0[2];
+        uint32_t mask : 6;
+        uint32_t pageTableDirectoryAddress : 26;
+        uint32_t valid : 1;
+        uint32_t pagingMethod : 2;
+        uint32_t unused1 : 15;
+        uint32_t size : 6;
+        uint32_t unused2 : 8;
+    } bipagedRegion;
+    struct {
+        uint32_t unused0[2];
+        uint32_t mask : 6;
+        uint32_t address : 26;
+        uint32_t controlBits0 : 6;
+        uint32_t cacheable : 1;
+        uint32_t controlBits1 : 1;
+        uint32_t unused1 : 10;
+        uint32_t size : 6;
+        uint32_t unused2 : 4;
+        uint32_t type : 4;
+    } processControlBlock;
+    struct {
+        uint32_t unused0[2];
+        uint32_t mask : 6;
+        uint32_t portAddress : 26;
+        uint32_t controlBits0 : 6;
+        uint32_t cacheable : 1;
+        uint32_t controlBits1 : 1;
+        uint32_t unused1 : 10;
+        uint32_t size : 6;
+        uint32_t unused2 : 4;
+        uint32_t type : 4;
+    } port;
+    struct {
+        uint32_t unused0[2];
+        uint32_t mask : 6;
+        uint32_t procedureTableAddress : 26;
+        uint32_t controlBits0 : 6;
+        uint32_t cacheable : 1;
+        uint32_t controlBits1 : 1;
+        uint32_t unused1 : 10;
+        uint32_t size : 6;
+        uint32_t unused2 : 4;
+        uint32_t type : 4;
+    } procedureTable;
+    struct {
+        uint32_t unused0[2];
+        uint32_t mask : 12;
+        uint32_t segmentTableAddress : 20;
+        uint32_t controlBits0 : 6;
+        uint32_t cacheable : 1;
+        uint32_t controlBits1 : 1;
+        uint32_t unused1 : 10;
+        uint32_t size : 6;
+        uint32_t unused2 : 4;
+        uint32_t type : 4;
+    } smallSegmentTable;
+    struct {
+        uint32_t unused0[2];
+        uint32_t mask : 12;
+        uint32_t pageTableAddress : 20;
+        uint32_t controlBits0 : 3;
+        uint32_t unused1 : 14;
+        uint32_t size : 6;
+        uint32_t unused2 : 8;
+    } largeSegmentTable;
+    struct {
+        uint32_t dataStructure[3];
+        uint32_t tag : 3;
+        uint32_t reserved0 : 25;
+        uint32_t type : 4;
+    } semaphore;
 
-    } address;
-    union {
-        uint32_t full;
-        struct {
-            uint32_t valid : 1;
-            uint32_t pagingMethod : 2;
-            uint32_t accessStatus : 5;
-            uint32_t unused0 : 10;
-            uint32_t size : 6;
-            uint32_t unused1 : 4;
-            uint32_t type : 4;
-        } generic;
-    } info;
+    constexpr bool valid() const noexcept { return (words[3] & 0b111) != 0; }
 };
 static_assert(sizeof(SegmentDescriptor) == (sizeof(uint32_t) * 4));
 struct MMUAddress {
