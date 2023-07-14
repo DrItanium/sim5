@@ -64,9 +64,9 @@
     // So the least significant bit of the major opcode denotes a virtual
     // memory operation if the lower part is 0,1,2,3 or 8,9,a,b
     // loads are always 0,1, 8, or 9  and stores are always  2, 3, a, or b
-    Operation(ldob, 0x80, Extended, MEM)
+    Operation(ldob, 0x80, Core, MEM)
     Operation(ldvob, 0x81, Extended, MEM)
-    Operation(stob, 0x82, Extended, MEM)
+    Operation(stob, 0x82, Core, MEM)
     Operation(stvob, 0x83, Extended, MEM)
     Operation(bx, 0x84, Core, MEM)
     Operation(balx, 0x85, Core, MEM)
