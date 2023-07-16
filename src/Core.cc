@@ -875,20 +875,38 @@ Core::cmpdeci(Register& dest, Integer src1, Integer src2) noexcept {
     dest.setValue<Integer>(src2 - 1);
 }
 void
+Core::bbc(Ordinal bitpos, Ordinal against, int16_t displacement) {
+    if ((against & bitpos) == 0) {
+        ac_.setConditionCode(0b010);
+        advanceCOBRDisplacement(displacement);
+    } else {
+        ac_.setConditionCode(0b000);
+    }
+}
+void
+Core::bbs(Ordinal bitpos, Ordinal against, int16_t displacement) {
+    if ((against & bitpos) != 0) {
+        ac_.setConditionCode(0b010);
+        advanceCOBRDisplacement(displacement);
+    } else {
+        ac_.setConditionCode(0b000);
+    }
+}
+void
 Core::bbc(uint8_t bitpos, const Register& against, int16_t displacement) {
-    return branchIfBitGeneric<true>(computeBitPosition(bitpos), against, displacement);
+    bbc(computeBitPosition(bitpos), static_cast<Ordinal>(against), displacement);
 }
 void
 Core::bbc(const Register& bitpos, const Register& against, int16_t displacement) {
-    return branchIfBitGeneric<true>(bitpos.asBitPosition(), against, displacement);
+    bbc(bitpos.asBitPosition(), static_cast<Ordinal>(against), displacement);
 }
 void
 Core::bbs(uint8_t bitpos, const Register& against, int16_t displacement) {
-    return branchIfBitGeneric<false>(computeBitPosition(bitpos), against, displacement);
+    bbs(computeBitPosition(bitpos), static_cast<Ordinal>(against), displacement);
 }
 void
 Core::bbs(const Register& bitpos, const Register& against, int16_t displacement) {
-    return branchIfBitGeneric<false>(bitpos.asBitPosition(), against, displacement);
+    bbs(bitpos.asBitPosition(), static_cast<Ordinal>(against), displacement);
 }
 void
 Core::scanbit(Register& dest, Ordinal src1) noexcept {

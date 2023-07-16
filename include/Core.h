@@ -1002,30 +1002,10 @@ private:
     void ediv(const REGInstruction& inst, LongRegister& dest, Ordinal src1, const LongRegister& src2) ;
     void arithmeticWithCarryGeneric(Ordinal result, bool src2MSB, bool src1MSB, bool destMSB) ;
     void advanceCOBRDisplacement(Integer displacement) noexcept;
-    template<bool checkClear>
-    void
-    branchIfBitGeneric(Ordinal bitpos, const Register& src2 , int16_t displacement) {
-        auto against = src2.getValue<Ordinal>();
-        DEBUG_LOG_LEVEL(1) {
-            std::cout << __PRETTY_FUNCTION__ << ": bitpos: 0x" << std::hex << bitpos
-                      << ", src2: 0x" << std::hex << against << std::endl;
-        }
-        bool condition = false;
-        // Branch if bit set
-        if constexpr (checkClear) {
-            condition = (bitpos & against) == 0;
-        } else {
-            condition = (bitpos & against) != 0;
-        }
-        if (condition) {
-            ac_.arith.conditionCode = checkClear ? 0b000 : 0b010;
-            advanceCOBRDisplacement(displacement);
-        } else {
-            ac_.arith.conditionCode = checkClear ? 0b010 : 0b000;
-        }
-    }
+    void bbc(Ordinal bitpos, Ordinal against, int16_t displacement);
     void bbc(uint8_t bitpos, const Register& against, int16_t displacement);
     void bbc(const Register& bitpos, const Register& against, int16_t displacement);
+    void bbs(Ordinal bitpos, Ordinal against, int16_t displacement);
     void bbs(uint8_t bitpos, const Register& against, int16_t displacement);
     void bbs(const Register& bitpos, const Register& against, int16_t displacement);
     template<typename Q>
