@@ -930,11 +930,6 @@ Core::spanbit(Register& dest, Ordinal src1) noexcept {
         }
     }
 }
-void
-Core::setbit(Register& destination, Ordinal src1, Ordinal src2) noexcept {
-    // setbit is src2 | computeBitPosition(src1o)
-    orOperation(destination, computeBitPosition(src1), src2);
-}
 
 void
 Core::nor(Register& dest, Ordinal src1, Ordinal src2) noexcept {
@@ -949,21 +944,17 @@ Core::xnor(Register& dest, Ordinal src1, Ordinal src2) noexcept {
     microcodedBitwiseOperation<{BinaryBitwiseOperation::Xor, true, false, false}>(dest, src1, src2);
 }
 void
-Core::notbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
-    // notbit is src2 ^ computeBitPosition(src1)
-    microcodedBitwiseOperation<{BinaryBitwiseOperation::Xor, false, false, false}>(dest, computeBitPosition(src1), src2);
-}
-void
 Core::ornot(Register& dest, Ordinal src1, Ordinal src2) noexcept {
-    dest.setValue<Ordinal>(src2 | (~src1));
+    microcodedBitwiseOperation<{BinaryBitwiseOperation::Or, false, true, false}>(dest, src1, src2);
 }
 void
 Core::notor(Register& dest, Ordinal src1, Ordinal src2) noexcept {
-    dest.setValue<Ordinal>((~src2) | src1);
+    microcodedBitwiseOperation<{BinaryBitwiseOperation::Or, false, false, true}>(dest, src1, src2);
 }
 void
-Core::notOperation(Register& destination, Ordinal src) noexcept {
-    destination.setValue<Ordinal>(~src);
+Core::notOperation(Register& dest, Ordinal src) noexcept {
+    // dest = ~src is the same as dest = (0 ornot src)
+    microcodedBitwiseOperation<{BinaryBitwiseOperation::Or, false, true, false}>(dest, src, 0);
 }
 
 void
@@ -973,6 +964,16 @@ Core::andnot(Register& dest, Ordinal src1, Ordinal src2) noexcept {
 void
 Core::notand(Register& dest, Ordinal src1, Ordinal src2) noexcept {
     microcodedBitwiseOperation<{BinaryBitwiseOperation::And, false, false, true}>(dest, src1, src2);
+}
+void
+Core::notbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+    // notbit is src2 ^ computeBitPosition(src1)
+    microcodedBitwiseOperation<{BinaryBitwiseOperation::Xor, false, false, false}>(dest, computeBitPosition(src1), src2);
+}
+void
+Core::setbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+    // setbit is src2 | computeBitPosition(src1o)
+    microcodedBitwiseOperation<{BinaryBitwiseOperation::Or, false, false, false}>(dest, computeBitPosition(src1), src2);
 }
 void
 Core::clrbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
