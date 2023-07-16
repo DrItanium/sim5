@@ -955,11 +955,11 @@ Core::notbit(Register& destination, Ordinal src1, Ordinal src2) noexcept {
 }
 void
 Core::ornot(Register& dest, Ordinal src1, Ordinal src2) noexcept {
-    orOperation(dest, ~src1, src2);
+    dest.setValue<Ordinal>(src2 | (~src1));
 }
 void
 Core::notor(Register& dest, Ordinal src1, Ordinal src2) noexcept {
-    orOperation(dest, src1, ~src2);
+    dest.setValue<Ordinal>((~src2) | src1);
 }
 void
 Core::notOperation(Register& destination, Ordinal src) noexcept {
@@ -968,11 +968,11 @@ Core::notOperation(Register& destination, Ordinal src) noexcept {
 
 void
 Core::andnot(Register& dest, Ordinal src1, Ordinal src2) noexcept {
-    andOperation(dest, ~src1, src2);
+    dest.setValue<Ordinal>(src2 & (~src1));
 }
 void
 Core::notand(Register& dest, Ordinal src1, Ordinal src2) noexcept {
-    andOperation(dest, src1, ~src2);
+    dest.setValue<Ordinal>((~src2) & src1);
 }
 void
 Core::clrbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
