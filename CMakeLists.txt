@@ -26,7 +26,9 @@ add_library(core960
 		src/RegisterOperations.cc
 		include/Disassembly.h
 		src/Disasembly.cc
-		include/Platform.h)
+		include/Platform.h
+		src/Interpreter.cc
+	)
 add_library(nativecore
 		src/NativeCore.cc)
 
