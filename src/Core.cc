@@ -937,21 +937,21 @@ Core::setbit(Register& destination, Ordinal src1, Ordinal src2) noexcept {
 }
 
 void
-Core::nor(Register& destination, Ordinal src1, Ordinal src2) noexcept {
-    orOperation<true>(destination, src1, src2);
+Core::nor(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+    microcodedBitwiseOperation<{BinaryBitwiseOperation::Or, true, false, false}>(dest, src1, src2);
 }
 void
-Core::nand(Register& destination, Ordinal src1, Ordinal src2) noexcept {
-    andOperation<true>(destination, src1, src2);
+Core::nand(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+    microcodedBitwiseOperation<{BinaryBitwiseOperation::And, true, false, false}>(dest, src1, src2);
 }
 void
-Core::xnor(Register& destination, Ordinal src1, Ordinal src2) noexcept {
-    xorOperation<true>(destination, src1, src2);
+Core::xnor(Register& dest, Ordinal src1, Ordinal src2) noexcept {
+    microcodedBitwiseOperation<{BinaryBitwiseOperation::Xor, true, false, false}>(dest, src1, src2);
 }
 void
-Core::notbit(Register& destination, Ordinal src1, Ordinal src2) noexcept {
+Core::notbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
     // notbit is src2 ^ computeBitPosition(src1)
-    xorOperation(destination, computeBitPosition(src1), src2);
+    microcodedBitwiseOperation<{BinaryBitwiseOperation::Xor, false, false, false}>(dest, computeBitPosition(src1), src2);
 }
 void
 Core::ornot(Register& dest, Ordinal src1, Ordinal src2) noexcept {
@@ -968,11 +968,11 @@ Core::notOperation(Register& destination, Ordinal src) noexcept {
 
 void
 Core::andnot(Register& dest, Ordinal src1, Ordinal src2) noexcept {
-    dest.setValue<Ordinal>(src2 & (~src1));
+    microcodedBitwiseOperation<{BinaryBitwiseOperation::And, false, true, false}>(dest, src1, src2);
 }
 void
 Core::notand(Register& dest, Ordinal src1, Ordinal src2) noexcept {
-    dest.setValue<Ordinal>((~src2) & src1);
+    microcodedBitwiseOperation<{BinaryBitwiseOperation::And, false, false, true}>(dest, src1, src2);
 }
 void
 Core::clrbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {

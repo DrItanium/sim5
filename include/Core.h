@@ -1119,7 +1119,6 @@ private:
         [[nodiscard]] constexpr bool invertSrc1() const noexcept { return invSrc1_; }
         [[nodiscard]] constexpr bool invertSrc2() const noexcept { return invSrc2_; }
         [[nodiscard]] constexpr auto getOperation() const noexcept { return op_; }
-        private:
         BinaryBitwiseOperation op_;
         bool invDest_;
         bool invSrc1_; 

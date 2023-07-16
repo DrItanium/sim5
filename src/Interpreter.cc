@@ -86,7 +86,10 @@ Core::processInstruction(const REGInstruction & inst) {
             notbit(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
             break;
         case Opcodes::andOperation:
-            andOperation(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
+            microcodedBitwiseOperation<{BinaryBitwiseOperation::And, false, false, false}>(
+                    regDest,
+                    static_cast<Ordinal>(src1), 
+                    static_cast<Ordinal>(src2));
             break;
         case Opcodes::andnot:
             andnot(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
@@ -98,10 +101,16 @@ Core::processInstruction(const REGInstruction & inst) {
             notand(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
             break;
         case Opcodes::xorOperation:
-            xorOperation(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
+            microcodedBitwiseOperation<{BinaryBitwiseOperation::Xor, false, false, false}>(
+                    regDest,
+                    static_cast<Ordinal>(src1), 
+                    static_cast<Ordinal>(src2));
             break;
         case Opcodes::orOperation: // or
-            orOperation(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
+            microcodedBitwiseOperation<{BinaryBitwiseOperation::Or, false, false, false}>(
+                    regDest,
+                    static_cast<Ordinal>(src1), 
+                    static_cast<Ordinal>(src2));
             break;
         case Opcodes::nor: // nor
             nor(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
