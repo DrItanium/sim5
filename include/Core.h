@@ -841,30 +841,46 @@ enum class BinaryBitwiseOperation : uint8_t {
 };
 static_assert(static_cast<uint8_t>(BinaryBitwiseOperation::Count) == 4);
 enum class BitwiseMicrocodeArgumentFlags : uint8_t {
-    Passthrough,
-    Invert,
-    BitPosition,
-    BitPositionThenInvert,
-    Count,
+    Passthrough = 0b0000,
+    Invert = 0b0010,
+    BitPosition = 0b0010,
+    Increment = 0b0100,
+    Decrement = 0b1000,
+    BitPositionThenInvert = BitPosition | Invert,
 };
-
-constexpr bool invertField(BitwiseMicrocodeArgumentFlags flags) noexcept {
-    switch (flags) {
-        case BitwiseMicrocodeArgumentFlags::Invert:
-        case BitwiseMicrocodeArgumentFlags::BitPositionThenInvert:
-            return true;
-        default:
-            return false;
-    }
+constexpr BitwiseMicrocodeArgumentFlags operator|(BitwiseMicrocodeArgumentFlags l, BitwiseMicrocodeArgumentFlags r) noexcept {
+    using K = std::underlying_type_t<BitwiseMicrocodeArgumentFlags>;
+    return BitwiseMicrocodeArgumentFlags(static_cast<K>(l) | static_cast<K>(r));
 }
+constexpr BitwiseMicrocodeArgumentFlags operator&(BitwiseMicrocodeArgumentFlags l, BitwiseMicrocodeArgumentFlags r) noexcept {
+    using K = std::underlying_type_t<BitwiseMicrocodeArgumentFlags>;
+    return BitwiseMicrocodeArgumentFlags(static_cast<K>(l) & static_cast<K>(r));
+}
+constexpr BitwiseMicrocodeArgumentFlags operator^(BitwiseMicrocodeArgumentFlags l, BitwiseMicrocodeArgumentFlags r) noexcept {
+    using K = std::underlying_type_t<BitwiseMicrocodeArgumentFlags>;
+    return BitwiseMicrocodeArgumentFlags(static_cast<K>(l) ^ static_cast<K>(r));
+}
+template<BitwiseMicrocodeArgumentFlags field>
+constexpr bool fieldSet(BitwiseMicrocodeArgumentFlags flags) noexcept {
+    using K = std::underlying_type_t<decltype(field)>;
+    return (static_cast<K>(flags) & static_cast<K>(field)) != 0;
+}
+constexpr bool invertField(BitwiseMicrocodeArgumentFlags flags) noexcept {
+    return fieldSet<BitwiseMicrocodeArgumentFlags::Invert>(flags);
+}
+static_assert(invertField(BitwiseMicrocodeArgumentFlags::Invert));
+static_assert(invertField(BitwiseMicrocodeArgumentFlags::Invert | BitwiseMicrocodeArgumentFlags::BitPosition));
+static_assert(invertField(BitwiseMicrocodeArgumentFlags::Invert | BitwiseMicrocodeArgumentFlags::BitPosition | BitwiseMicrocodeArgumentFlags::Increment));
+static_assert(invertField(BitwiseMicrocodeArgumentFlags::Invert | BitwiseMicrocodeArgumentFlags::Increment));
+static_assert(!invertField(BitwiseMicrocodeArgumentFlags::Increment));
 constexpr bool computeBitPositionOnField(BitwiseMicrocodeArgumentFlags flags) noexcept {
-    switch (flags) {
-        case BitwiseMicrocodeArgumentFlags::BitPosition:
-        case BitwiseMicrocodeArgumentFlags::BitPositionThenInvert:
-            return true;
-        default:
-            return false;
-    }
+    return fieldSet<BitwiseMicrocodeArgumentFlags::BitPosition>(flags);
+}
+constexpr bool performIncrement(BitwiseMicrocodeArgumentFlags flags) noexcept {
+    return fieldSet<BitwiseMicrocodeArgumentFlags::Increment>(flags);
+}
+constexpr bool performDecrement(BitwiseMicrocodeArgumentFlags flags) noexcept {
+    return fieldSet<BitwiseMicrocodeArgumentFlags::Decrement>(flags);
 }
 struct BitwiseMicrocodeFlags {
     consteval BitwiseMicrocodeFlags(BinaryBitwiseOperation op, 
