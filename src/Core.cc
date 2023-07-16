@@ -1068,3 +1068,57 @@ void
 Core::cmpibGeneric(uint8_t mask, Integer src1, Integer src2, int16_t displacement) noexcept {
     cmpxbGeneric(mask, src1, src2, displacement, TreatAsInteger{});
 }
+template<uint8_t mask>
+constexpr bool aligned(uint8_t value) noexcept {
+    return (value & mask) == 0;
+}
+void
+Core::movl(const REGInstruction& inst) {
+    if ((!aligned<0b1>(inst.getSrcDest())) || (!aligned<0b1>(inst.getSrc1()))) {
+        // don't corrupt anything as we can't recover if we do!
+        nextInstruction();
+        invalidOpcodeFault();
+    } else if (inst.src1IsLiteral()) {
+        setGPR(inst.getSrcDest(), inst.getSrc1(), TreatAsOrdinal{});
+        setGPR(inst.getSrcDest(), 1, 0, TreatAsOrdinal{});
+    } else {
+        moveGPR(inst.getSrcDest(), inst.getSrc1(), TreatAsOrdinal{});
+        moveGPR(inst.getSrcDest(), 1, inst.getSrc1(), 1, TreatAsOrdinal{});
+    }
+}
+
+void
+Core::movt(const REGInstruction& inst) {
+    if ((!aligned<0b11>(inst.getSrcDest())) || (!aligned<0b11>(inst.getSrc1()))) {
+        // don't corrupt anything as we can't recover if we do!
+        nextInstruction();
+        invalidOpcodeFault();
+    } else if (inst.src1IsLiteral()) {
+        setGPR(inst.getSrcDest(), inst.getSrc1(), TreatAsOrdinal{});
+        setGPR(inst.getSrcDest(), 1, 0, TreatAsOrdinal{});
+        setGPR(inst.getSrcDest(), 2, 0, TreatAsOrdinal{});
+    } else {
+        moveGPR(inst.getSrcDest(), inst.getSrc1(), TreatAsOrdinal{});
+        moveGPR(inst.getSrcDest(), 1, inst.getSrc1(), 1, TreatAsOrdinal{});
+        moveGPR(inst.getSrcDest(), 2, inst.getSrc1(), 2, TreatAsOrdinal{});
+    }
+}
+
+void
+Core::movq(const REGInstruction& inst) {
+    if ((!aligned<0b11>(inst.getSrcDest())) || (!aligned<0b11>(inst.getSrc1()))) {
+        // don't corrupt anything as we can't recover if we do!
+        nextInstruction();
+        invalidOpcodeFault();
+    } else if (inst.src1IsLiteral()) {
+        setGPR(inst.getSrcDest(), inst.getSrc1(), TreatAsOrdinal{});
+        setGPR(inst.getSrcDest(), 1, 0, TreatAsOrdinal{});
+        setGPR(inst.getSrcDest(), 2, 0, TreatAsOrdinal{});
+        setGPR(inst.getSrcDest(), 3, 0, TreatAsOrdinal{});
+    } else {
+        moveGPR(inst.getSrcDest(), inst.getSrc1(), TreatAsOrdinal{});
+        moveGPR(inst.getSrcDest(), 1, inst.getSrc1(), 1, TreatAsOrdinal{});
+        moveGPR(inst.getSrcDest(), 2, inst.getSrc1(), 2, TreatAsOrdinal{});
+        moveGPR(inst.getSrcDest(), 3, inst.getSrc1(), 3, TreatAsOrdinal{});
+    }
+}

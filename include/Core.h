@@ -623,6 +623,8 @@ public:
     [[nodiscard]] constexpr ByteOrdinal getSrc1() const noexcept { return src1; }
     [[nodiscard]] constexpr ByteOrdinal getSrcDest() const noexcept { return srcDest; }
     [[nodiscard]] constexpr ByteOrdinal getMask() const noexcept { return opcode & 0b111; }
+    [[nodiscard]] constexpr bool src1IsLiteral() const noexcept { return getM1(); }
+    [[nodiscard]] constexpr bool src2IsLiteral() const noexcept { return getM2(); }
     [[nodiscard]] constexpr bool src1IsFPLiteral() const noexcept {
         if (getM1()) {
             switch (src1) {
@@ -1786,6 +1788,10 @@ private:
     void logepr(const REGInstruction& inst);
     void logeprl(const REGInstruction& inst);
     /// @todo figure out what operations have not yet been implemented
+private:
+    void movl(const REGInstruction& inst);
+    void movt(const REGInstruction& inst);
+    void movq(const REGInstruction& inst);
 private:
     Ordinal systemAddressTableBase_ = 0;
     Ordinal prcbAddress_ = 0;

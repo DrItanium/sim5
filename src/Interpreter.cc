@@ -203,13 +203,16 @@ Core::processInstruction(const REGInstruction & inst) {
             regDest.setValue<Ordinal>(static_cast<Ordinal>(src1));
             break;
         case Opcodes::movl:
-            performRegisterTransfer(inst, 0b1, 2);
+            movl(inst);
+            //performRegisterTransfer(inst, 0b1, 2);
             break;
         case Opcodes::movt:
-            performRegisterTransfer(inst, 0b11, 3);
+            movt(inst);
+            //performRegisterTransfer(inst, 0b11, 3);
             break;
         case Opcodes::movq:
-            performRegisterTransfer(inst, 0b11, 4);
+            movq(inst);
+            //performRegisterTransfer(inst, 0b11, 4);
             break;
         case Opcodes::syncf:
             syncf();
