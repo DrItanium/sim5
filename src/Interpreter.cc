@@ -599,3 +599,46 @@ Core::processInstruction(const COBRInstruction& cobr) {
         }
     }
 }
+
+void
+Core::processInstruction(const CTRLInstruction &instruction) {
+    switch (instruction.getOpcode()) {
+        case Opcodes::bal: // bal
+            bal(instruction.getDisplacement());
+            break;
+        case Opcodes::b: // b
+            branch(instruction.getDisplacement());
+            break;
+        case Opcodes::call: // call
+            call(instruction.getDisplacement());
+            break;
+        case Opcodes::ret: // ret
+            ret();
+            break;
+        case Opcodes::bno:
+        case Opcodes::be:
+        case Opcodes::bne:
+        case Opcodes::bl:
+        case Opcodes::ble:
+        case Opcodes::bg:
+        case Opcodes::bge:
+        case Opcodes::bo:
+            // the branch instructions have the mask encoded into the opcode
+            // itself so we can just use it and save a ton of space overall
+            branchConditional(fullConditionCodeCheck(), instruction.getDisplacement());
+            break;
+        case Opcodes::faultno:
+        case Opcodes::faulte:
+        case Opcodes::faultne:
+        case Opcodes::faultl:
+        case Opcodes::faultle:
+        case Opcodes::faultg:
+        case Opcodes::faultge:
+        case Opcodes::faulto:
+            faultGeneric();
+            break;
+        default:
+            unimplementedFault();
+            break;
+    }
+}
