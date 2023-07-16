@@ -836,10 +836,18 @@ enum class BinaryBitwiseOperation : uint8_t {
     And,
     Or,
     Xor,
-    Undefined,
-    Count,
 };
-static_assert(static_cast<uint8_t>(BinaryBitwiseOperation::Count) == 4);
+constexpr bool isValid(BinaryBitwiseOperation op) noexcept {
+    using K = BinaryBitwiseOperation;
+    switch (op) {
+        case K::And:
+        case K::Or:
+        case K::Xor:
+            return true;
+        default:
+            return false;
+    }
+}
 enum class BitwiseMicrocodeArgumentFlags : uint8_t {
     Passthrough = 0b0000,
     Invert = 0b0010,
@@ -882,31 +890,25 @@ constexpr bool performIncrement(BitwiseMicrocodeArgumentFlags flags) noexcept {
 constexpr bool performDecrement(BitwiseMicrocodeArgumentFlags flags) noexcept {
     return fieldSet<BitwiseMicrocodeArgumentFlags::Decrement>(flags);
 }
-struct BitwiseMicrocodeFlags {
-    consteval BitwiseMicrocodeFlags(BinaryBitwiseOperation op, 
+struct BinaryOperationMicrocodeFlags {
+    consteval BinaryOperationMicrocodeFlags(BinaryBitwiseOperation op, 
             BitwiseMicrocodeArgumentFlags dest,
             BitwiseMicrocodeArgumentFlags src1,
             BitwiseMicrocodeArgumentFlags src2) : op_(op), dest_(dest), src1_(src1), src2_(src2)
     {
 
     } 
-    [[nodiscard]] consteval bool invertDestination() const noexcept { return invertField(dest_); }
-    [[nodiscard]] consteval bool invertSrc1() const noexcept { return invertField(src1_); }
-    [[nodiscard]] consteval bool invertSrc2() const noexcept { return invertField(src2_); }
-    [[nodiscard]] consteval bool computeBitPositionOnDestination() const noexcept { return computeBitPositionOnField(dest_); }
-    [[nodiscard]] consteval bool computeBitPositionOnSrc1() const noexcept { return computeBitPositionOnField(src1_); }
-    [[nodiscard]] consteval bool computeBitPositionOnSrc2() const noexcept { return computeBitPositionOnField(src2_); }
+#define X(prefix, function) \
+    [[nodiscard]] consteval bool prefix ## Destination() const noexcept { return function (dest_); } \
+    [[nodiscard]] consteval bool prefix ## Src1() const noexcept { return function (src1_); } \
+    [[nodiscard]] consteval bool prefix ## Src2() const noexcept { return function (src2_); }
+    X(invert, invertField);
+    X(computeBitPositionOn, computeBitPositionOnField);
+    X(increment, performIncrement);
+    X(decrement, performDecrement);
+#undef X
     [[nodiscard]] consteval auto getOperation() const noexcept { return op_; }
-    [[nodiscard]] consteval auto valid() const noexcept {
-        switch (op_) {
-            case BinaryBitwiseOperation::And:
-            case BinaryBitwiseOperation::Or:
-            case BinaryBitwiseOperation::Xor:
-                return true;
-            default:
-                return false;
-        }
-    }
+    [[nodiscard]] consteval auto valid() const noexcept { return isValid(op_); }
     BinaryBitwiseOperation op_;
     BitwiseMicrocodeArgumentFlags dest_;
     BitwiseMicrocodeArgumentFlags src1_; 
@@ -915,15 +917,15 @@ struct BitwiseMicrocodeFlags {
 template<BitwiseMicrocodeArgumentFlags dest = BitwiseMicrocodeArgumentFlags::Passthrough,
     BitwiseMicrocodeArgumentFlags src1 = BitwiseMicrocodeArgumentFlags::Passthrough,
     BitwiseMicrocodeArgumentFlags src2 = BitwiseMicrocodeArgumentFlags::Passthrough>
-constexpr BitwiseMicrocodeFlags GenericOrOperation { BinaryBitwiseOperation::Or, dest, src1, src2 };
+constexpr BinaryOperationMicrocodeFlags GenericOrOperation { BinaryBitwiseOperation::Or, dest, src1, src2 };
 template<BitwiseMicrocodeArgumentFlags dest = BitwiseMicrocodeArgumentFlags::Passthrough,
     BitwiseMicrocodeArgumentFlags src1 = BitwiseMicrocodeArgumentFlags::Passthrough,
     BitwiseMicrocodeArgumentFlags src2 = BitwiseMicrocodeArgumentFlags::Passthrough>
-constexpr BitwiseMicrocodeFlags GenericAndOperation { BinaryBitwiseOperation::And, dest, src1, src2 };
+constexpr BinaryOperationMicrocodeFlags GenericAndOperation { BinaryBitwiseOperation::And, dest, src1, src2 };
 template<BitwiseMicrocodeArgumentFlags dest = BitwiseMicrocodeArgumentFlags::Passthrough,
     BitwiseMicrocodeArgumentFlags src1 = BitwiseMicrocodeArgumentFlags::Passthrough,
     BitwiseMicrocodeArgumentFlags src2 = BitwiseMicrocodeArgumentFlags::Passthrough>
-constexpr BitwiseMicrocodeFlags GenericXorOperation { BinaryBitwiseOperation::Xor, dest, src1, src2 };
+constexpr BinaryOperationMicrocodeFlags GenericXorOperation { BinaryBitwiseOperation::Xor, dest, src1, src2 };
 
 constexpr auto OrOperation = GenericOrOperation<>;
 constexpr auto AndOperation = GenericAndOperation<>;
@@ -1197,7 +1199,7 @@ protected:
         store(address, value, TreatAs<T>{});
     }
 private:
-    template<BitwiseMicrocodeFlags flags>
+    template<BinaryOperationMicrocodeFlags flags>
     inline void microcodedBitwiseOperation(Register& destination, Ordinal src1, Ordinal src2) {
         static_assert(flags.valid(), "Illegal bitwise microcode operation kind!");
         Ordinal s1 = src1;
@@ -1205,14 +1207,26 @@ private:
         if constexpr (flags.computeBitPositionOnSrc1()) {
             s1 = computeBitPosition(s1);
         }
+        if constexpr (flags.invertSrc1()) {
+            s1 = ~s1;
+        }
+        if constexpr (flags.incrementSrc1()) {
+            ++s1;
+        }
+        if constexpr (flags.decrementSrc1()) {
+            --s1;
+        }
         if constexpr (flags.computeBitPositionOnSrc2()) {
             s2 = computeBitPosition(s2);
         }
         if constexpr (flags.invertSrc2()) {
             s2 = ~s2;
         }
-        if constexpr (flags.invertSrc1()) {
-            s1 = ~s1;
+        if constexpr (flags.incrementSrc2()) {
+            ++s2;
+        }
+        if constexpr (flags.decrementSrc2()) {
+            --s2;
         }
         Ordinal result = 0;
         switch (flags.getOperation()) {
@@ -1226,7 +1240,16 @@ private:
                 result = s2 ^ s1;
                 break;
         }
-        destination.setValue<Ordinal>(flags.invertDestination() ? ~result : result);
+        if constexpr (flags.invertDestination()) {
+            result = ~result;
+        }
+        if constexpr (flags.incrementDestination()) {
+            ++result;
+        }
+        if constexpr (flags.decrementDestination()) {
+            --result;
+        }
+        destination.setValue<Ordinal>(result);
     }
     template<typename Q>
     requires MustBeOrdinalOrInteger<Q>
