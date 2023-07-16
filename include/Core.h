@@ -348,6 +348,10 @@ union Register {
         o = value;
         return *this;
     }
+    Register& operator=(Integer value) noexcept {
+        i = value;
+        return *this;
+    }
     constexpr bool operator==(const Register& other) const noexcept {
         return other.o == o;
     }
@@ -989,8 +993,8 @@ private:
     void synmov(const Register& dest, Ordinal src) ;
     void synmovl(const Register& dest, Ordinal src) ;
     void synmovq(const Register& dest, Ordinal src) ;
-    void scanbit(Register& dest, Ordinal src1, Ordinal src2) noexcept;
-    void spanbit(Register& dest, Ordinal src1, Ordinal src2) noexcept;
+    void scanbit(Register& dest, Ordinal src) noexcept;
+    void spanbit(Register& dest, Ordinal src) noexcept;
     void branch(Integer displacement) noexcept;
     void branchConditional(bool condition, Integer displacement) noexcept;
     void scanbyte(Ordinal src1, Ordinal src2) ;

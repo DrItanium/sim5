@@ -890,35 +890,27 @@ void
 Core::bbs(const Register& bitpos, const Register& against, int16_t displacement) {
     return branchIfBitGeneric<false>(bitpos.asBitPosition(), against, displacement);
 }
-namespace {
-    template<bool doScan>
-    ByteOrdinal
-    xbit(Register &dest, Ordinal src1, Ordinal src2) noexcept {
-        for (Ordinal index = 0; index < 32; ++index) {
-            if ((src1 & computeBitPosition(31 - index)) != 0) {
-                if constexpr (doScan) {
-                    dest.o = (31 - index);
-                    return 0b010;
-                }
-            } else {
-                if constexpr (!doScan) {
-                    dest.o = (31 - index);
-                    return 0b010;
-                }
-            }
+void
+Core::scanbit(Register& dest, Ordinal src1) noexcept {
+    dest.setValue<Ordinal>(0xFFFF'FFFF);
+    ac_.setConditionCode(0b000);
+    for (int i = 31; i >= 0; --i) {
+        if ((src1 & computeBitPosition(i)) != 0) {
+            dest.setValue<Ordinal>(i);
+            ac_.setConditionCode(0b010);
         }
-        dest.o = 0xFFFF'FFFF;
-        //ac_.arith.conditionCode = 0;
-        return 0;
     }
 }
 void
-Core::scanbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
-    ac_.setConditionCode(xbit<true>(dest, src1, src2));
-}
-void
-Core::spanbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
-    ac_.setConditionCode(xbit<false>(dest, src1, src2));
+Core::spanbit(Register& dest, Ordinal src1) noexcept {
+    dest.setValue<Ordinal>(0xFFFF'FFFF);
+    ac_.setConditionCode(0b000);
+    for (int i = 31; i >= 0; --i) {
+        if ((src1 & computeBitPosition(i)) == 0) {
+            dest.setValue<Ordinal>(i);
+            ac_.setConditionCode(0b010);
+        }
+    }
 }
 void
 Core::setbit(Register& destination, Ordinal src1, Ordinal src2) noexcept {

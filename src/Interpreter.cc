@@ -280,10 +280,10 @@ Core::processInstruction(const REGInstruction & inst) {
             calls(static_cast<Ordinal>(src1));
             break;
         case Opcodes::spanbit:
-            spanbit(regDest, static_cast<Ordinal>(src2), static_cast<Ordinal>(src1));
+            spanbit(regDest, static_cast<Ordinal>(src1));
             break;
         case Opcodes::scanbit:
-            scanbit(regDest, static_cast<Ordinal>(src2), static_cast<Ordinal>(src1));
+            scanbit(regDest, static_cast<Ordinal>(src1));
             break;
         case Opcodes::synld:
             synld(regDest, static_cast<Ordinal>(src1));
