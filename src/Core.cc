@@ -932,6 +932,11 @@ Core::spanbit(Register& dest, Ordinal src1) noexcept {
 }
 
 void
+Core::notOperation(Register& dest, Ordinal src) noexcept {
+    dest.setValue<Ordinal>(~src);
+}
+
+void
 Core::nor(Register& dest, Ordinal src1, Ordinal src2) noexcept {
     microcodedBitwiseOperation<{BinaryBitwiseOperation::Or, true, false, false}>(dest, src1, src2);
 }
@@ -951,11 +956,6 @@ void
 Core::notor(Register& dest, Ordinal src1, Ordinal src2) noexcept {
     microcodedBitwiseOperation<{BinaryBitwiseOperation::Or, false, false, true}>(dest, src1, src2);
 }
-void
-Core::notOperation(Register& dest, Ordinal src) noexcept {
-    // dest = ~src is the same as dest = (0 ornot src)
-    microcodedBitwiseOperation<{BinaryBitwiseOperation::Or, false, true, false}>(dest, src, 0);
-}
 
 void
 Core::andnot(Register& dest, Ordinal src1, Ordinal src2) noexcept {
@@ -968,23 +968,23 @@ Core::notand(Register& dest, Ordinal src1, Ordinal src2) noexcept {
 void
 Core::notbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
     // notbit is src2 ^ computeBitPosition(src1)
-    microcodedBitwiseOperation<{BinaryBitwiseOperation::Xor, false, false, false}>(dest, computeBitPosition(src1), src2);
+    microcodedBitwiseOperation<XorOperation>(dest, computeBitPosition(src1), src2);
 }
 void
 Core::setbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
     // setbit is src2 | computeBitPosition(src1o)
-    microcodedBitwiseOperation<{BinaryBitwiseOperation::Or, false, false, false}>(dest, computeBitPosition(src1), src2);
+    microcodedBitwiseOperation<OrOperation>(dest, computeBitPosition(src1), src2);
 }
 void
 Core::clrbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
     // clrbit is src2 & ~computeBitPosition(src1)
-    // so lets use andnot
+    // so lets use andnot to reduce duplication effort
     andnot(dest, computeBitPosition(src1), src2);
 }
 void
 Core::alterbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
     if (auto s1 = computeBitPosition(src1); ac_.getConditionCode() & 0b010) {
-        orOperation(dest, s1, src2);
+        microcodedBitwiseOperation<OrOperation>(dest, s1, src2);
     } else {
         andnot(dest, s1, src2);
     }

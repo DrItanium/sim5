@@ -829,6 +829,42 @@ constexpr Ordinal getSALIGNParameter() noexcept {
     return DEFAULT_SALIGN;
 #endif
 }
+/**
+ * @brief the base bitwise operation itself
+ */
+enum class BinaryBitwiseOperation : uint8_t {
+    And,
+    Or,
+    Xor,
+    Undefined,
+    Count,
+};
+static_assert(static_cast<uint8_t>(BinaryBitwiseOperation::Count) == 4);
+struct BitwiseMicrocodeFlags {
+    consteval BitwiseMicrocodeFlags(BinaryBitwiseOperation op, bool invertDestination, bool invertSrc1, bool invertSrc2) noexcept : op_(op), invDest_(invertDestination), invSrc1_(invertSrc1), invSrc2_(invertSrc2) { }
+    [[nodiscard]] consteval bool invertDestination() const noexcept { return invDest_; }
+    [[nodiscard]] consteval bool invertSrc1() const noexcept { return invSrc1_; }
+    [[nodiscard]] consteval bool invertSrc2() const noexcept { return invSrc2_; }
+    [[nodiscard]] consteval auto getOperation() const noexcept { return op_; }
+    [[nodiscard]] consteval auto valid() const noexcept {
+        switch (op_) {
+            case BinaryBitwiseOperation::And:
+            case BinaryBitwiseOperation::Or:
+            case BinaryBitwiseOperation::Xor:
+                return true;
+            default:
+                return false;
+        }
+    }
+    BinaryBitwiseOperation op_;
+    bool invDest_;
+    bool invSrc1_; 
+    bool invSrc2_;
+};
+
+constexpr BitwiseMicrocodeFlags OrOperation { BinaryBitwiseOperation::Or, false, false, false };
+constexpr BitwiseMicrocodeFlags AndOperation { BinaryBitwiseOperation::And, false, false, false };
+constexpr BitwiseMicrocodeFlags XorOperation { BinaryBitwiseOperation::Xor, false, false, false };
 
 
 class Core {
@@ -1095,38 +1131,9 @@ protected:
         store(address, value, TreatAs<T>{});
     }
 private:
-    /**
-     * @brief the base bitwise operation itself
-     */
-    enum class BinaryBitwiseOperation {
-        And,
-        Or,
-        Xor,
-    };
-    static constexpr bool isValid(BinaryBitwiseOperation op) noexcept {
-        switch (op) {
-            case BinaryBitwiseOperation::And:
-            case BinaryBitwiseOperation::Or:
-            case BinaryBitwiseOperation::Xor:
-                return true;
-            default:
-                return false;
-        }
-    }
-    struct BitwiseMicrocodeFlags {
-        constexpr BitwiseMicrocodeFlags(BinaryBitwiseOperation op, bool invertDestination, bool invertSrc1, bool invertSrc2) noexcept : op_(op), invDest_(invertDestination), invSrc1_(invertSrc1), invSrc2_(invertSrc2) { }
-        [[nodiscard]] constexpr bool invertDestination() const noexcept { return invDest_; }
-        [[nodiscard]] constexpr bool invertSrc1() const noexcept { return invSrc1_; }
-        [[nodiscard]] constexpr bool invertSrc2() const noexcept { return invSrc2_; }
-        [[nodiscard]] constexpr auto getOperation() const noexcept { return op_; }
-        BinaryBitwiseOperation op_;
-        bool invDest_;
-        bool invSrc1_; 
-        bool invSrc2_;
-    };
     template<BitwiseMicrocodeFlags flags>
     inline void microcodedBitwiseOperation(Register& destination, Ordinal src1, Ordinal src2) {
-        static_assert(isValid(flags.getOperation()), "Illegal bitwise microcode operation kind!");
+        static_assert(flags.valid(), "Illegal bitwise microcode operation kind!");
         Ordinal s1 = flags.invertSrc1() ? ~src1 : src1;
         Ordinal s2 = flags.invertSrc2() ? ~src2 : src2;
         Ordinal result = 0;
@@ -1142,18 +1149,6 @@ private:
                 break;
         }
         destination.setValue<Ordinal>(flags.invertDestination() ? ~result : result);
-    }
-    template<bool invert = false>
-    inline void orOperation(Register& destination, Ordinal src1, Ordinal src2) noexcept {
-        destination.setValue<Ordinal>(::orOperation<Ordinal, invert>(src1, src2));
-    }
-    template<bool invert = false>
-    inline void andOperation(Register& destination, Ordinal src1, Ordinal src2) noexcept {
-        destination.setValue<Ordinal>(::andOperation<Ordinal, invert>(src1, src2));
-    }
-    template<bool invert = false>
-    inline void xorOperation(Register& destination, Ordinal src1, Ordinal src2) noexcept {
-        destination.setValue<Ordinal>(::xorOperation<Ordinal, invert>(src1, src2));
     }
     template<typename Q>
     requires MustBeOrdinalOrInteger<Q>
