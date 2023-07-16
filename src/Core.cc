@@ -1004,10 +1004,10 @@ Core::clrbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
 }
 void
 Core::alterbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
-    if (auto s1 = computeBitPosition(src1); ac_.getConditionCode() & 0b010) {
-        microcodedBitwiseOperation<OrOperation>(dest, s1, src2);
+    if (ac_.getConditionCode() & 0b010) {
+        setbit(dest, src1, src2);
     } else {
-        andnot(dest, s1, src2);
+        clrbit(dest, src1, src2);
     }
 }
 void
