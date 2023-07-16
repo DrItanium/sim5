@@ -840,11 +840,46 @@ enum class BinaryBitwiseOperation : uint8_t {
     Count,
 };
 static_assert(static_cast<uint8_t>(BinaryBitwiseOperation::Count) == 4);
+enum class BitwiseMicrocodeArgumentFlags : uint8_t {
+    Passthrough,
+    Invert,
+    BitPosition,
+    BitPositionThenInvert,
+    Count,
+};
+
+constexpr bool invertField(BitwiseMicrocodeArgumentFlags flags) noexcept {
+    switch (flags) {
+        case BitwiseMicrocodeArgumentFlags::Invert:
+        case BitwiseMicrocodeArgumentFlags::BitPositionThenInvert:
+            return true;
+        default:
+            return false;
+    }
+}
+constexpr bool computeBitPositionOnField(BitwiseMicrocodeArgumentFlags flags) noexcept {
+    switch (flags) {
+        case BitwiseMicrocodeArgumentFlags::BitPosition:
+        case BitwiseMicrocodeArgumentFlags::BitPositionThenInvert:
+            return true;
+        default:
+            return false;
+    }
+}
 struct BitwiseMicrocodeFlags {
-    consteval BitwiseMicrocodeFlags(BinaryBitwiseOperation op, bool invertDestination, bool invertSrc1, bool invertSrc2) noexcept : op_(op), invDest_(invertDestination), invSrc1_(invertSrc1), invSrc2_(invertSrc2) { }
-    [[nodiscard]] consteval bool invertDestination() const noexcept { return invDest_; }
-    [[nodiscard]] consteval bool invertSrc1() const noexcept { return invSrc1_; }
-    [[nodiscard]] consteval bool invertSrc2() const noexcept { return invSrc2_; }
+    consteval BitwiseMicrocodeFlags(BinaryBitwiseOperation op, 
+            BitwiseMicrocodeArgumentFlags dest,
+            BitwiseMicrocodeArgumentFlags src1,
+            BitwiseMicrocodeArgumentFlags src2) : op_(op), dest_(dest), src1_(src1), src2_(src2)
+    {
+
+    } 
+    [[nodiscard]] consteval bool invertDestination() const noexcept { return invertField(dest_); }
+    [[nodiscard]] consteval bool invertSrc1() const noexcept { return invertField(src1_); }
+    [[nodiscard]] consteval bool invertSrc2() const noexcept { return invertField(src2_); }
+    [[nodiscard]] consteval bool computeBitPositionOnDestination() const noexcept { return computeBitPositionOnField(dest_); }
+    [[nodiscard]] consteval bool computeBitPositionOnSrc1() const noexcept { return computeBitPositionOnField(src1_); }
+    [[nodiscard]] consteval bool computeBitPositionOnSrc2() const noexcept { return computeBitPositionOnField(src2_); }
     [[nodiscard]] consteval auto getOperation() const noexcept { return op_; }
     [[nodiscard]] consteval auto valid() const noexcept {
         switch (op_) {
@@ -857,14 +892,29 @@ struct BitwiseMicrocodeFlags {
         }
     }
     BinaryBitwiseOperation op_;
-    bool invDest_;
-    bool invSrc1_; 
-    bool invSrc2_;
+    BitwiseMicrocodeArgumentFlags dest_;
+    BitwiseMicrocodeArgumentFlags src1_; 
+    BitwiseMicrocodeArgumentFlags src2_;
 };
+template<BitwiseMicrocodeArgumentFlags dest = BitwiseMicrocodeArgumentFlags::Passthrough,
+    BitwiseMicrocodeArgumentFlags src1 = BitwiseMicrocodeArgumentFlags::Passthrough,
+    BitwiseMicrocodeArgumentFlags src2 = BitwiseMicrocodeArgumentFlags::Passthrough>
+constexpr BitwiseMicrocodeFlags GenericOrOperation { BinaryBitwiseOperation::Or, dest, src1, src2 };
+template<BitwiseMicrocodeArgumentFlags dest = BitwiseMicrocodeArgumentFlags::Passthrough,
+    BitwiseMicrocodeArgumentFlags src1 = BitwiseMicrocodeArgumentFlags::Passthrough,
+    BitwiseMicrocodeArgumentFlags src2 = BitwiseMicrocodeArgumentFlags::Passthrough>
+constexpr BitwiseMicrocodeFlags GenericAndOperation { BinaryBitwiseOperation::And, dest, src1, src2 };
+template<BitwiseMicrocodeArgumentFlags dest = BitwiseMicrocodeArgumentFlags::Passthrough,
+    BitwiseMicrocodeArgumentFlags src1 = BitwiseMicrocodeArgumentFlags::Passthrough,
+    BitwiseMicrocodeArgumentFlags src2 = BitwiseMicrocodeArgumentFlags::Passthrough>
+constexpr BitwiseMicrocodeFlags GenericXorOperation { BinaryBitwiseOperation::Xor, dest, src1, src2 };
 
-constexpr BitwiseMicrocodeFlags OrOperation { BinaryBitwiseOperation::Or, false, false, false };
-constexpr BitwiseMicrocodeFlags AndOperation { BinaryBitwiseOperation::And, false, false, false };
-constexpr BitwiseMicrocodeFlags XorOperation { BinaryBitwiseOperation::Xor, false, false, false };
+constexpr auto OrOperation = GenericOrOperation<>;
+constexpr auto AndOperation = GenericAndOperation<>;
+constexpr auto XorOperation = GenericXorOperation<>;
+constexpr auto NorOperation = GenericOrOperation<BitwiseMicrocodeArgumentFlags::Invert>;
+constexpr auto NandOperation = GenericAndOperation<BitwiseMicrocodeArgumentFlags::Invert>;
+constexpr auto XnorOperation = GenericXorOperation<BitwiseMicrocodeArgumentFlags::Invert>;
 
 
 class Core {
@@ -1134,8 +1184,20 @@ private:
     template<BitwiseMicrocodeFlags flags>
     inline void microcodedBitwiseOperation(Register& destination, Ordinal src1, Ordinal src2) {
         static_assert(flags.valid(), "Illegal bitwise microcode operation kind!");
-        Ordinal s1 = flags.invertSrc1() ? ~src1 : src1;
-        Ordinal s2 = flags.invertSrc2() ? ~src2 : src2;
+        Ordinal s1 = src1;
+        Ordinal s2 = src2;
+        if constexpr (flags.computeBitPositionOnSrc1()) {
+            s1 = computeBitPosition(s1);
+        }
+        if constexpr (flags.computeBitPositionOnSrc2()) {
+            s2 = computeBitPosition(s2);
+        }
+        if constexpr (flags.invertSrc2()) {
+            s2 = ~s2;
+        }
+        if constexpr (flags.invertSrc1()) {
+            s1 = ~s1;
+        }
         Ordinal result = 0;
         switch (flags.getOperation()) {
             case BinaryBitwiseOperation::And:
