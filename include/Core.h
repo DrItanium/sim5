@@ -850,10 +850,10 @@ constexpr bool isValid(BinaryBitwiseOperation op) noexcept {
 }
 enum class BitwiseMicrocodeArgumentFlags : uint8_t {
     Passthrough = 0b0000,
-    Invert = 0b0010,
+    Invert      = 0b0001,
     BitPosition = 0b0010,
-    Increment = 0b0100,
-    Decrement = 0b1000,
+    Increment   = 0b0100,
+    Decrement   = 0b1000,
     BitPositionThenInvert = BitPosition | Invert,
 };
 constexpr BitwiseMicrocodeArgumentFlags operator|(BitwiseMicrocodeArgumentFlags l, BitwiseMicrocodeArgumentFlags r) noexcept {
@@ -884,6 +884,11 @@ static_assert(!invertField(BitwiseMicrocodeArgumentFlags::Increment));
 constexpr bool computeBitPositionOnField(BitwiseMicrocodeArgumentFlags flags) noexcept {
     return fieldSet<BitwiseMicrocodeArgumentFlags::BitPosition>(flags);
 }
+static_assert(!computeBitPositionOnField(BitwiseMicrocodeArgumentFlags::Invert));
+static_assert(computeBitPositionOnField(BitwiseMicrocodeArgumentFlags::Invert | BitwiseMicrocodeArgumentFlags::BitPosition));
+static_assert(computeBitPositionOnField(BitwiseMicrocodeArgumentFlags::Invert | BitwiseMicrocodeArgumentFlags::BitPosition | BitwiseMicrocodeArgumentFlags::Increment));
+static_assert(!computeBitPositionOnField(BitwiseMicrocodeArgumentFlags::Invert | BitwiseMicrocodeArgumentFlags::Increment));
+static_assert(!computeBitPositionOnField(BitwiseMicrocodeArgumentFlags::Increment));
 constexpr bool performIncrement(BitwiseMicrocodeArgumentFlags flags) noexcept {
     return fieldSet<BitwiseMicrocodeArgumentFlags::Increment>(flags);
 }

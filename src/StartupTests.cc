@@ -26,6 +26,7 @@
 #include "Types.h"
 #include "Core.h"
 #include "BinaryOperations.h"
+#include <stdexcept>
 
 bool
 Core::performSelfTest() noexcept {
@@ -149,7 +150,7 @@ Core::performSelfTest() noexcept {
 
     };
     auto makeGenericOperation = [this](auto maker, auto doIt, auto converter, auto name, auto genSrc1, auto genSrc2) {
-        return [this, maker, doIt, converter, genSrc1, genSrc2](ByteOrdinal gpr0 = random() & 0b11111,
+        return [this, maker, doIt, converter, genSrc1, genSrc2, name](ByteOrdinal gpr0 = random() & 0b11111,
                                                                 ByteOrdinal gpr1 = random() & 0b11111,
                                                                 ByteOrdinal gpr2 = random() & 0b11111) -> bool {
             auto rs0 = converter(genSrc1());
@@ -162,7 +163,7 @@ Core::performSelfTest() noexcept {
             auto rs2 = maker(converter(src1), converter(src2), converter(dest));
             doIt(dest, converter(src1), converter(src2));
             if (converter(dest) != rs2) {
-                return false;
+                throw std::runtime_error(name);
             }
             return true;
         };
