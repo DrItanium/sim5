@@ -205,3 +205,18 @@ Core::LocalRegisterSet::synchronizeOwnership(Ordinal fp) noexcept {
     }
     _targetFramePointer = fp;
 }
+
+LongOrdinal
+Core::unpackSrc1(const REGInstruction& inst, TreatAsLongOrdinal) const {
+    return getGPR(inst.getSrc1(), TreatAsLongRegister{}).getValue<LongOrdinal>();
+}
+
+LongInteger
+Core::unpackSrc1(const REGInstruction& inst, TreatAsLongInteger) const {
+    return getGPR(inst.getSrc1(), TreatAsLongRegister{}).getValue<LongInteger>();
+}
+
+Integer
+Core::unpackSrc1(const REGInstruction& inst, TreatAsInteger) const {
+    return static_cast<Integer>(getGPR(inst.getSrc1(), TreatAsRegister{}));
+}

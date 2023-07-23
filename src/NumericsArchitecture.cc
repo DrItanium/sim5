@@ -732,44 +732,6 @@ Core::cmprl(const REGInstruction& inst) {
                unpackSrc2(inst, TreatAsLongReal{}));
 }
 // dst <- real(src)
-void
-Core::cvtir(const REGInstruction& inst) {
-    // convert integer to real
-    unimplementedFault();
-}
-void
-Core::cvtilr(const REGInstruction& inst) {
-    //convert long integer to real
-    // not a long real!
-    // two instruction combination for converting integer to long real format
-    // cvtir g6, fp3
-    // movrl fp3, g8 # result stored in g8, g9
-    unimplementedFault();
-}
-
-void
-Core::cvtri(const REGInstruction &inst) {
-
-    unimplementedFault();
-}
-
-void
-Core::cvtril(const REGInstruction &inst) {
-
-    unimplementedFault();
-}
-
-void
-Core::cvtzri(const REGInstruction &inst) {
-
-    unimplementedFault();
-}
-
-void
-Core::cvtzril(const REGInstruction &inst) {
-
-    unimplementedFault();
-}
 
 void
 Core::updateRoundingMode() const {
@@ -923,15 +885,15 @@ Core::logrl(const REGInstruction &inst) {
                    using K0 = std::decay_t<decltype(src1)>;
                    using K1 = std::decay_t<decltype(src2)>;
                    if constexpr (BothAreLongReal<K0, K1>) {
-                       auto result = serviceFloatingPointFault<Real>(std::log2(src1));
+                       auto result = serviceFloatingPointFault<LongReal>(std::log2(src1));
                        fpassignment(inst, src2 * result, TreatAsLongReal{});
                    } else {
                        auto result = serviceFloatingPointFault<ExtendedReal>(std::log2l(src1));
                        fpassignment(inst, src2 * result, TreatAsExtendedReal{});
                    }
                },
-               unpackSrc1(inst, TreatAsReal{}),
-               unpackSrc2(inst, TreatAsReal{}));
+               unpackSrc1(inst, TreatAsLongReal{}),
+               unpackSrc2(inst, TreatAsLongReal{}));
 }
 
 void
@@ -940,5 +902,44 @@ Core::logepr(const REGInstruction &inst) {
 }
 void
 Core::logeprl(const REGInstruction &inst) {
+    unimplementedFault();
+}
+
+void
+Core::cvtir(const REGInstruction& inst) {
+    // convert integer to real
+    fpassignment(inst, serviceFloatingPointFault<Real>(unpackSrc1(inst, TreatAsInteger{})), TreatAsReal{});
+}
+void
+Core::cvtilr(const REGInstruction& inst) {
+    //convert long integer to real
+    // not a long real!
+    // two instruction combination for converting integer to long real format
+    // cvtir g6, fp3
+    // movrl fp3, g8 # result stored in g8, g9
+    fpassignment(inst, serviceFloatingPointFault<LongReal>(unpackSrc1(inst, TreatAsLongInteger{})), TreatAsLongReal{});
+}
+
+void
+Core::cvtri(const REGInstruction &inst) {
+
+    unimplementedFault();
+}
+
+void
+Core::cvtril(const REGInstruction &inst) {
+
+    unimplementedFault();
+}
+
+void
+Core::cvtzri(const REGInstruction &inst) {
+
+    unimplementedFault();
+}
+
+void
+Core::cvtzril(const REGInstruction &inst) {
+
     unimplementedFault();
 }

@@ -1648,6 +1648,9 @@ private:
     [[nodiscard]] MixedLongRealSourceArgument unpackSrc2(const REGInstruction& index, TreatAsLongReal) const;
     [[nodiscard]] ExtendedReal unpackSrc1(const REGInstruction& index, TreatAsExtendedReal) const;
     [[nodiscard]] ExtendedReal unpackSrc2(const REGInstruction& index, TreatAsExtendedReal) const;
+    [[nodiscard]] LongOrdinal unpackSrc1(const REGInstruction& index, TreatAsLongOrdinal) const;
+    [[nodiscard]] LongInteger unpackSrc1(const REGInstruction& index, TreatAsLongInteger) const;
+    [[nodiscard]] Integer unpackSrc1(const REGInstruction& index, TreatAsInteger) const;
 
     [[maybe_unused]] [[nodiscard]] TripleRegister& getFloatingPointRegister(ByteOrdinal index);
     [[nodiscard]] const TripleRegister& getFloatingPointRegister(ByteOrdinal index) const;
