@@ -286,10 +286,10 @@
     FloatOperation(movr, 0x6c9, Numerics, REG)
 
     FloatOperation(movrl, 0x6d9, Numerics, REG)
-
+    // the manuals are plain wrong! it is 0x6e1 not 0x6e9 which is interesting
+    FloatOperation(movre, 0x6e1, Numerics, REG)
     FloatOperation(cpysre, 0x6e2, Numerics, REG)
     FloatOperation(cpyrsre, 0x6e3, Numerics, REG)
-    FloatOperation(movre, 0x6e9, Numerics, REG)
 
     Operation(mulo, 0x701, Core, REG)
     Operation(remo, 0x708, Core, REG)

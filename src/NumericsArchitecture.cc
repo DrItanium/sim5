@@ -28,8 +28,8 @@
 
 void
 Core::processFPInstruction(const REGInstruction &inst ) {
-    if (isFloatingPointInstruction(inst.getOpcode())) {
-        switch (inst.getOpcode()) {
+    if (auto opcode = inst.getOpcode(); isFloatingPointInstruction(opcode)) {
+        switch (opcode) {
 #define X(name) case Opcodes:: name : name (inst); break
             X(addr);
             X(addrl);
