@@ -390,7 +390,12 @@ Core::MixedLongRealSourceArgument
 Core::unpackSrc1(const REGInstruction& inst, TreatAsLongReal) const {
     if (inst.getM1()) {
         if (inst.src1IsFPLiteral()) {
-            return handleSubnormalCase(getFloatingPointLiteral<LongReal>(inst.getSrc1()));
+            auto result = getFloatingPointLiteral<LongReal>(inst.getSrc1());
+            if (result) {
+                return handleSubnormalCase(result.value);
+            } else {
+                return std::nullopt;
+            }
         } else {
             return handleSubnormalCase(getFloatingPointRegister(inst.getSrc1()).getValue<ExtendedReal >());
         }

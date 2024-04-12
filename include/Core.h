@@ -83,6 +83,7 @@ constexpr Ordinal IACFault = 0x0009'0003;
 
 constexpr Ordinal TypeMismatchFault = 0x000a'0001;
 constexpr Ordinal ContentsFault = 0x000a'0002;
+constexpr auto TypeContentsFault = ContentsFault;
 constexpr Ordinal TimeSliceFault = 0x000c'0001;
 constexpr Ordinal InvalidDescriptorFault = 0x000d'0001;
 constexpr Ordinal EventNoticeFault = 0x000e'0001;
@@ -1353,28 +1354,54 @@ private:
     bool performSelfTest() noexcept;
     void assertFailureState() noexcept;
     void deassertFailureState() noexcept;
-    void zeroDivideFault() ;
-    void integerOverflowFault() ;
-    void constraintRangeFault() ;
-    void invalidSSFault() ;
-    void unimplementedFault();
-    void typeMismatchFault();
-    void typeContentsFault();
-    void markTraceFault();
-    void invalidOpcodeFault();
-    void invalidOperandFault();
-    void protectionLengthFault();
-    void invalidDescriptorFault(SegmentSelector selector);
-    void eventNoticeFault();
-    void floatingInvalidOperationFault();
-    void floatingZeroDivideOperationFault();
-    void floatingOverflowFault();
-    void floatingUnderflowFault();
-    void floatingInexactFault();
-    void floatingReservedEncodingFault();
+    template<Ordinal faultCode, bool saveReturnAddress>
+    [[nodiscard]] FaultRecord constructFault() const noexcept {
+        return FaultRecord{static_cast<Ordinal>(pc_),
+                           static_cast<Ordinal>(ac_),
+                           faultCode,
+                           static_cast<Ordinal>(ip_),
+                           saveReturnAddress
+        };
+    }
+    using OptionalFaultRecord = std::optional<FaultRecord>;
+    [[nodiscard]] FaultRecord zeroDivideFault() const noexcept { return constructFault<ZeroDivideFault, true>(); }
+    [[nodiscard]] OptionalFaultRecord integerOverflowFault()  noexcept {
+        if (ac_.arith.integerOverflowMask == 0) {
+            return constructFault<IntegerOverflowFault, true>();
+            // saved ip will be the next instruction
+        } else {
+            ac_.arith.integerOverflowFlag = 1;
+            return std::nullopt;
+        }
+    }
+
+#define X(prefixName, kind, save) [[nodiscard]] FaultRecord prefixName ## Fault () const noexcept { return constructFault < kind ## Fault , save > () ; }
+    X(constraintRange, ConstraintRange, false);
+    X(invalidSS, InvalidSS, false);
+    X(unimplemented, Unimplemented, false);
+    X(invalidOperand, InvalidOperand, false);
+    X(markTrace, MarkTrace, false);
+    X(invalidOpcode, InvalidOpcode, false);
+    X(eventNotice, EventNotice, true);
+    X(protectionLength, SegmentLength, false);
+    X(typeMismatch, TypeMismatch, false);
+    X(typeContents, TypeContents, false); // @todo figure this out
+#undef X
+    [[nodiscard]]
+    FaultRecord
+    invalidDescriptorFault(SegmentSelector selector) noexcept {
+        FaultRecord record = constructFault< InvalidDescriptorFault, false> ();
+        record.faultData[1] = (selector & ~0b11111);
+        setGPR(RIPIndex, static_cast<Ordinal>(ip_), TreatAsOrdinal{});
+        return record;
+    }
+    [[nodiscard]] FaultRecord floatingInvalidOperationFault() const;
+    [[nodiscard]] FaultRecord floatingZeroDivideOperationFault() const;
+    [[nodiscard]] FaultRecord floatingOverflowFault() const;
+    [[nodiscard]] FaultRecord floatingUnderflowFault() const;
+    [[nodiscard]] FaultRecord floatingInexactFault() const;
+    [[nodiscard]] FaultRecord floatingReservedEncodingFault();
     void generateFault(const FaultRecord& record) ;
-    void generateFault(Ordinal pc, Ordinal ac, Ordinal faultCode, Ordinal ip, bool saveReturnAddress);
-    void generateFault(Ordinal faultCode, bool saveReturnAddress);
     void addi(Register& dest, Integer src1, Integer src2);
     void addo(Register& dest, Ordinal src1, Ordinal src2);
     void saveReturnAddress(ByteOrdinal registerIndex) noexcept;
@@ -1641,6 +1668,8 @@ private:
     void fpassignment(const REGInstruction& inst, ExtendedReal value, TreatAsExtendedReal);
     void fpassignment(const REGInstruction& inst, Real value, TreatAsReal);
     void fpassignment(const REGInstruction& inst, LongReal value, TreatAsLongReal);
+    template<typename ... T>
+    using VariantWithFaultRecord = std::variant<FaultRecord, T...>;
     using MixedRealSourceArgument = std::variant<Real, ExtendedReal>;
     using MixedLongRealSourceArgument = std::variant<LongReal, ExtendedReal>;
     [[nodiscard]] MixedRealSourceArgument unpackSrc1(const REGInstruction& index, TreatAsReal) const;
@@ -1658,15 +1687,16 @@ private:
 
     template<typename T>
     requires std::floating_point<T>
-    T getFloatingPointLiteral(ByteOrdinal index) const {
+    VariantWithFaultRecord<T> getFloatingPointLiteral(ByteOrdinal index) const {
         switch (index) {
             case 0b10000: // +0.0
                 return static_cast<T>(+0.0);
             case 0b10110: // +1.0
                 return static_cast<T>(+1.0);
             default:
-                invalidOpcodeFault();
-                return 0.0;
+                return std::nullopt;
+                //invalidOpcodeFault();
+                //return 0.0;
         }
     }
     template<typename T>

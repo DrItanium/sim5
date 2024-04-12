@@ -124,96 +124,10 @@ Core::generateFault(const FaultRecord& record) {
         badFault(record);
     }
 }
-void
-Core::generateFault(Ordinal pc, Ordinal ac, Ordinal faultCode, Ordinal ip, bool saveReturnAddress) {
-    generateFault(FaultRecord{
-            pc,
-            ac,
-            faultCode,
-            ip,
-            saveReturnAddress}
-    );
-}
 
-void
-Core::generateFault(Ordinal faultCode, bool saveReturnAddress) {
-    generateFault(static_cast<Ordinal>(pc_),
-                  static_cast<Ordinal>(ac_),
-                  faultCode,
-                  static_cast<Ordinal>(ip_),
-                  saveReturnAddress);
-}
-void
-Core::zeroDivideFault() {
-    generateFault(ZeroDivideFault, true);
-}
 
-void
-Core::integerOverflowFault() {
-    if (ac_.arith.integerOverflowMask == 0) {
-        generateFault(IntegerOverflowFault, true);
-        // saved ip will be the next instruction
-    } else {
-        ac_.arith.integerOverflowFlag = 1;
-    }
-}
 
-void
-Core::constraintRangeFault() {
-    generateFault(ConstraintRangeFault, false);
-}
 
-void
-Core::invalidSSFault() {
-    generateFault(InvalidSSFault, false);
-}
-
-void
-Core::markTraceFault() {
-    // saved ip isn't used
-    generateFault(MarkTraceFault, false);
-}
-
-void
-Core::unimplementedFault() {
-    // saved ip isn't used
-    generateFault(UnimplementedFault, false);
-}
-
-void
-Core::invalidOpcodeFault() {
-    generateFault(InvalidOpcodeFault, false);
-}
-
-void
-Core::invalidOperandFault() {
-    generateFault(InvalidOperandFault, false);
-}
-
-void
-Core::protectionLengthFault() {
-    generateFault(SegmentLengthFault, false);
-}
-void
-Core::typeMismatchFault() {
-    generateFault(TypeMismatchFault, false);
-}
-
-void
-Core::invalidDescriptorFault(SegmentSelector ss) {
-    FaultRecord record((Ordinal)pc_,
-                       (Ordinal)ac_,
-                       InvalidDescriptorFault,
-                       (Ordinal)ip_,
-                       false);
-    record.faultData[1] = (ss & ~0b11111);
-    setGPR(RIPIndex, (Ordinal)ip_, TreatAsOrdinal{});
-    generateFault(record);
-}
-void
-Core::eventNoticeFault() {
-    generateFault(EventNoticeFault, true);
-}
 void
 Core::procedureTableEntry_FaultCall(const FaultRecord& record, const FaultTableEntry& entry) noexcept {
     // okay, so we can go down different paths here
