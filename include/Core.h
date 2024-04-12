@@ -1363,7 +1363,6 @@ private:
                            saveReturnAddress
         };
     }
-    using OptionalFaultRecord = std::optional<FaultRecord>;
     [[nodiscard]] FaultRecord zeroDivideFault() const noexcept { return constructFault<ZeroDivideFault, true>(); }
     [[nodiscard]] OptionalFaultRecord integerOverflowFault()  noexcept {
         if (ac_.arith.integerOverflowMask == 0) {
@@ -1413,7 +1412,7 @@ private:
     }
     [[nodiscard]] OptionalFaultRecord floatingZeroDivideOperationFault() noexcept {
         if (ac_.arith.floatingZeroDivideMask == 0) {
-            return constructFault<FloatingPointZeroDivideOperationFault, true>());
+            return constructFault<FloatingPointZeroDivideOperationFault, true>();
         } else {
             ac_.arith.floatingZeroDivideFlag = 1;
             return std::nullopt;
@@ -1459,13 +1458,13 @@ private:
     void setIP(Ordinal value) noexcept;
     void subo(Register& dest, Ordinal src1, Ordinal src2);
     void subi(Register& dest, Integer src1, Integer src2);
-    void faultGeneric();
+    OptionalFaultRecord  faultGeneric();
     void balx(Register& linkRegister, Address ordinal);
-    void processInstruction(const COBRInstruction& instruction);
-    void processInstruction(const MEMInstruction&);
-    void processInstruction(const REGInstruction&);
-    void processInstruction(const CTRLInstruction&);
-    void processFPInstruction(const REGInstruction&);
+    OptionalFaultRecord processInstruction(const COBRInstruction& instruction);
+    OptionalFaultRecord processInstruction(const MEMInstruction&);
+    OptionalFaultRecord processInstruction(const REGInstruction&);
+    OptionalFaultRecord processInstruction(const CTRLInstruction&);
+    OptionalFaultRecord processFPInstruction(const REGInstruction&);
 private:
     void modpc(Register& dest, Ordinal src1o, Ordinal src2o);
     void modxc(Register& control, Register& dest, Ordinal src1, Ordinal src2);
@@ -1709,8 +1708,8 @@ private:
     void fpassignment(const REGInstruction& inst, ExtendedReal value, TreatAsExtendedReal);
     void fpassignment(const REGInstruction& inst, Real value, TreatAsReal);
     void fpassignment(const REGInstruction& inst, LongReal value, TreatAsLongReal);
-    using MixedRealSourceArgument = std::variant<Real, ExtendedReal>;
-    using MixedLongRealSourceArgument = std::variant<LongReal, ExtendedReal>;
+    using MixedRealSourceArgument = VariantWithFaultRecord<Real, ExtendedReal>;
+    using MixedLongRealSourceArgument = VariantWithFaultRecord<LongReal, ExtendedReal>;
     [[nodiscard]] MixedRealSourceArgument unpackSrc1(const REGInstruction& index, TreatAsReal) const;
     [[nodiscard]] MixedRealSourceArgument unpackSrc2(const REGInstruction& index, TreatAsReal) const;
     [[nodiscard]] MixedLongRealSourceArgument unpackSrc1(const REGInstruction& index, TreatAsLongReal) const;
@@ -1822,15 +1821,22 @@ private:
     void updateRoundingMode() const;
     template<typename T>
     requires std::floating_point<T>
-    T handleSubnormalCase(T input) const {
+    VariantWithFaultRecord<T> handleSubnormalCase(T input) const {
         if (std::fpclassify(input) == FP_SUBNORMAL) {
-            floatingReservedEncodingFault();
+            auto result = floatingReservedEncodingFault();
+            if (result) {
+                return *result;
+            }
         }
         return input;
     }
+    OptionalFaultRecord performClassification(FaultRecord&& record) noexcept {
+        return record;
+    }
     template<typename T>
     requires std::floating_point<T>
-    void performClassification(T value) {
+    OptionalFaultRecord
+    performClassification(T value) {
         switch(std::fpclassify(value)) {
             case FP_ZERO:
                 ac_.arith.arithmeticStatus = 0;
@@ -1851,6 +1857,7 @@ private:
                 ac_.arith.arithmeticStatus = 0b110;
                 break;
         }
+        return std::nullopt;
     }
     void logbnr(const REGInstruction& inst);
     void logbnrl(const REGInstruction& inst);

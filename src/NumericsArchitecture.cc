@@ -26,7 +26,7 @@
 #include <cmath>
 #include <cfenv>
 
-void
+OptionalFaultRecord
 Core::processFPInstruction(const REGInstruction &inst ) {
     if (auto opcode = inst.getOpcode(); isFloatingPointInstruction(opcode)) {
         switch (opcode) {
@@ -81,11 +81,10 @@ Core::processFPInstruction(const REGInstruction &inst ) {
 
 #undef X
             default:
-                unimplementedFault();
-                break;
+                return unimplementedFault();
         }
     } else {
-        unimplementedFault();
+        return unimplementedFault();
     }
 }
 void
@@ -97,11 +96,11 @@ Core::dmovt(Register& dest, Ordinal src) noexcept {
 
 void
 Core::classr(const REGInstruction& inst) {
-    std::visit([this](auto value) { performClassification(value); }, unpackSrc1(inst, TreatAsReal{}));
+    return std::visit([this](auto value) { performClassification(value); }, unpackSrc1(inst, TreatAsReal{}));
 }
 void
 Core::classrl(const REGInstruction& inst) {
-    std::visit([this](auto value) { performClassification(value); }, unpackSrc1(inst, TreatAsLongReal{}));
+    return std::visit([this](auto value) { performClassification(value); }, unpackSrc1(inst, TreatAsLongReal{}));
 }
 
 void

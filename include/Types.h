@@ -29,6 +29,7 @@
 #include <concepts>
 #include <bitset>
 #include <variant>
+#include <optional>
 #include "Platform.h"
 
 using Address = uint32_t;
@@ -301,6 +302,7 @@ struct FaultRecord {
 
 template<typename ... T>
 using VariantWithFaultRecord = std::variant<FaultRecord, T...>;
+using OptionalFaultRecord = std::optional<FaultRecord>;
 
 
 struct FaultTableEntry {

@@ -76,7 +76,7 @@ Core::cycle() noexcept {
     ++pseudoRandomSource_;
 }
 
-void
+OptionalFaultRecord
 Core::processInstruction(const REGInstruction & inst) {
     auto& regDest = getGPR(inst.getSrcDest());
     const auto& src1 = getSrc1Register(inst);
@@ -407,11 +407,12 @@ Core::processInstruction(const REGInstruction & inst) {
             receive(static_cast<SegmentSelector>(src1), regDest);
             break;
         default:
-            processFPInstruction(inst);
-            break;
+            return processFPInstruction(inst);
     }
+    /// @todo temporary
+    return std::nullopt;
 }
-void
+OptionalFaultRecord
 Core::processInstruction(const MEMInstruction & inst) {
     if (auto eao = computeAddress(inst); eao) {
         Register &srcDest= getGPR(inst.getSrcDest());
@@ -478,12 +479,13 @@ Core::processInstruction(const MEMInstruction & inst) {
                 srcDest.setValue<Ordinal>(effectiveAddress);
                 break;
             default:
-                unimplementedFault();
-                break;
+                return unimplementedFault();
         }
     } else {
-        invalidOpcodeFault();
+        return invalidOpcodeFault();
     }
+    /// @todo temporary
+    return std::nullopt;
 }
 
 void

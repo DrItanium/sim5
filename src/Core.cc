@@ -377,11 +377,13 @@ Core::fullConditionCodeCheck(uint8_t mask) noexcept {
     return getMaskedConditionCode(mask) || conditionCodeEqualsMask(mask);
 }
 
-void
+OptionalFaultRecord
 Core::faultGeneric() {
     nextInstruction();
     if (fullConditionCodeCheck()) {
-        constraintRangeFault();
+        return constraintRangeFault();
+    } else {
+        return std::nullopt;
     }
 }
 Register&
