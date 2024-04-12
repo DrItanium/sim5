@@ -194,32 +194,6 @@ Core::supervisorProcedureTableEntry_FaultCall(const FaultRecord& record, Address
     faultCallGeneric(record, procedureAddress, temp);
 }
 
-void
-Core::floatingUnderflowFault() {
-    if (ac_.arith.floatingUnderflowMask == 0) {
-        generateFault(FloatingPointUnderflowFault, true);
-    } else {
-        ac_.arith.floatingUnderflowFlag = 1;
-    }
-}
-void
-Core::floatingZeroDivideOperationFault() {
-    if (ac_.arith.floatingZeroDivideMask == 0) {
-        generateFault(FloatingPointZeroDivideOperationFault, true);
-    } else {
-        ac_.arith.floatingZeroDivideFlag = 1;
-    }
-}
-void
-Core::floatingInexactFault() {
-    if (ac_.arith.floatingInexactMask == 0) {
-        generateFault(FloatingPointInexactFault, true);
-    } else {
-        ac_.arith.floatingInexactFlag = 1;
-    }
-}
-
-
 
 void
 Core::faultOnOverflow(Register& dest) {

@@ -1403,7 +1403,7 @@ private:
             return std::nullopt;
         }
     }
-    [[nodiscard]] OptionalFaultRecord floatingZeroDivideOperationFault() noexcept {
+    [[nodiscard]] OptionalFaultRecord floatingOverflowFault() noexcept {
         if (ac_.arith.floatingOverflowMask == 0)  {
             return constructFault<FloatingPointOverflowFault, true>();
         } else {
@@ -1411,11 +1411,30 @@ private:
             return std::nullopt;
         }
     }
-    [[nodiscard]] OptionalFaultRecord floatingOverflowFault() const {
-
+    [[nodiscard]] OptionalFaultRecord floatingZeroDivideOperationFault() noexcept {
+        if (ac_.arith.floatingZeroDivideMask == 0) {
+            return constructFault<FloatingPointZeroDivideOperationFault, true>());
+        } else {
+            ac_.arith.floatingZeroDivideFlag = 1;
+            return std::nullopt;
+        }
     }
-    [[nodiscard]] FaultRecord floatingUnderflowFault() const;
-    [[nodiscard]] FaultRecord floatingInexactFault() const;
+    [[nodiscard]] OptionalFaultRecord floatingUnderflowFault() noexcept {
+        if (ac_.arith.floatingUnderflowMask == 0) {
+            return constructFault<FloatingPointUnderflowFault, true>();
+        } else {
+            ac_.arith.floatingUnderflowFlag = 1;
+            return std::nullopt;
+        }
+    }
+    [[nodiscard]] OptionalFaultRecord floatingInexactFault() noexcept {
+        if (ac_.arith.floatingZeroDivideMask == 0) {
+            return constructFault<FloatingPointZeroDivideOperationFault, true>();
+        } else {
+            ac_.arith.floatingZeroDivideFlag = 1;
+            return std::nullopt;
+        }
+    }
     [[nodiscard]] OptionalFaultRecord floatingReservedEncodingFault() const noexcept {
         if (ac_.arith.floatingPointNormalizingMode == 0)  {
             return constructFault<FloatingPointReservedEncodingFault, true>();
@@ -1690,8 +1709,6 @@ private:
     void fpassignment(const REGInstruction& inst, ExtendedReal value, TreatAsExtendedReal);
     void fpassignment(const REGInstruction& inst, Real value, TreatAsReal);
     void fpassignment(const REGInstruction& inst, LongReal value, TreatAsLongReal);
-    template<typename ... T>
-    using VariantWithFaultRecord = std::variant<FaultRecord, T...>;
     using MixedRealSourceArgument = std::variant<Real, ExtendedReal>;
     using MixedLongRealSourceArgument = std::variant<LongReal, ExtendedReal>;
     [[nodiscard]] MixedRealSourceArgument unpackSrc1(const REGInstruction& index, TreatAsReal) const;
