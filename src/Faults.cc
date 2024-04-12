@@ -195,22 +195,6 @@ Core::supervisorProcedureTableEntry_FaultCall(const FaultRecord& record, Address
 }
 
 void
-Core::floatingInvalidOperationFault() {
-    if (ac_.arith.floatingInvalidOpMask == 0) {
-        generateFault(FloatingPointInvalidOperationFault, true);
-    } else {
-        ac_.arith.floatingInvalidOpFlag = 1;
-    }
-}
-void
-Core::floatingOverflowFault() {
-    if (ac_.arith.floatingOverflowMask == 0) {
-        generateFault(FloatingPointOverflowFault, true);
-    } else {
-        ac_.arith.floatingOverflowFlag = 1;
-    }
-}
-void
 Core::floatingUnderflowFault() {
     if (ac_.arith.floatingUnderflowMask == 0) {
         generateFault(FloatingPointUnderflowFault, true);
@@ -235,12 +219,6 @@ Core::floatingInexactFault() {
     }
 }
 
-void
-Core::floatingReservedEncodingFault() {
-    if (ac_.arith.floatingPointNormalizingMode == 0) {
-        generateFault(FloatingPointReservedEncodingFault, true);
-    }
-}
 
 
 void

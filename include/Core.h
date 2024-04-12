@@ -1395,12 +1395,34 @@ private:
         setGPR(RIPIndex, static_cast<Ordinal>(ip_), TreatAsOrdinal{});
         return record;
     }
-    [[nodiscard]] FaultRecord floatingInvalidOperationFault() const;
-    [[nodiscard]] FaultRecord floatingZeroDivideOperationFault() const;
-    [[nodiscard]] FaultRecord floatingOverflowFault() const;
+    [[nodiscard]] OptionalFaultRecord floatingInvalidOperationFault() noexcept {
+        if (ac_.arith.floatingInvalidOpMask == 0) {
+            return constructFault<FloatingPointInvalidOperationFault, true>();
+        } else {
+            ac_.arith.floatingInvalidOpFlag = 1;
+            return std::nullopt;
+        }
+    }
+    [[nodiscard]] OptionalFaultRecord floatingZeroDivideOperationFault() noexcept {
+        if (ac_.arith.floatingOverflowMask == 0)  {
+            return constructFault<FloatingPointOverflowFault, true>();
+        } else {
+            ac_.arith.floatingOverflowFlag = 1;
+            return std::nullopt;
+        }
+    }
+    [[nodiscard]] OptionalFaultRecord floatingOverflowFault() const {
+
+    }
     [[nodiscard]] FaultRecord floatingUnderflowFault() const;
     [[nodiscard]] FaultRecord floatingInexactFault() const;
-    [[nodiscard]] FaultRecord floatingReservedEncodingFault();
+    [[nodiscard]] OptionalFaultRecord floatingReservedEncodingFault() const noexcept {
+        if (ac_.arith.floatingPointNormalizingMode == 0)  {
+            return constructFault<FloatingPointReservedEncodingFault, true>();
+        } else {
+            return std::nullopt;
+        }
+    }
     void generateFault(const FaultRecord& record) ;
     void addi(Register& dest, Integer src1, Integer src2);
     void addo(Register& dest, Ordinal src1, Ordinal src2);
@@ -1694,9 +1716,7 @@ private:
             case 0b10110: // +1.0
                 return static_cast<T>(+1.0);
             default:
-                return std::nullopt;
-                //invalidOpcodeFault();
-                //return 0.0;
+                return invalidOpcodeFault();
         }
     }
     template<typename T>
