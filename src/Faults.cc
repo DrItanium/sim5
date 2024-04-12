@@ -107,6 +107,9 @@ Core::faultCallGeneric(const FaultRecord& record, Address address, Address stack
 
 void
 Core::generateFault(const FaultRecord& record) {
+    if (record.saveReturnAddress) {
+        saveReturnAddress(RIPIndex);
+    }
     auto faultType = record.getFaultType();
     auto entry = getFaultEntry(faultType);
     // override faults are generated inside of this method
@@ -121,24 +124,34 @@ Core::generateFault(const FaultRecord& record) {
         badFault(record);
     }
 }
+void
+Core::generateFault(Ordinal pc, Ordinal ac, Ordinal faultCode, Ordinal ip, bool saveReturnAddress) {
+    generateFault(FaultRecord{
+            pc,
+            ac,
+            faultCode,
+            ip,
+            saveReturnAddress}
+    );
+}
 
 void
+Core::generateFault(Ordinal faultCode, bool saveReturnAddress) {
+    generateFault(static_cast<Ordinal>(pc_),
+                  static_cast<Ordinal>(ac_),
+                  faultCode,
+                  static_cast<Ordinal>(ip_),
+                  saveReturnAddress);
+}
+void
 Core::zeroDivideFault() {
-    throw FaultRecord ((Ordinal)pc_,
-                       (Ordinal)ac_,
-                       ZeroDivideFault,
-                       (Ordinal)ip_,
-                       true);
+    generateFault(ZeroDivideFault, true);
 }
 
 void
 Core::integerOverflowFault() {
     if (ac_.arith.integerOverflowMask == 0) {
-        throw FaultRecord ((Ordinal) pc_,
-                           (Ordinal) ac_,
-                           IntegerOverflowFault,
-                           (Ordinal) ip_,
-                           true);
+        generateFault(IntegerOverflowFault, true);
         // saved ip will be the next instruction
     } else {
         ac_.arith.integerOverflowFlag = 1;
@@ -147,78 +160,43 @@ Core::integerOverflowFault() {
 
 void
 Core::constraintRangeFault() {
-    throw FaultRecord ((Ordinal)pc_,
-                       (Ordinal)ac_,
-                       ConstraintRangeFault,
-                       (Ordinal)ip_,
-                       false);
+    generateFault(ConstraintRangeFault, false);
 }
 
 void
 Core::invalidSSFault() {
-    throw FaultRecord ((Ordinal)pc_,
-                       (Ordinal)ac_,
-                       InvalidSSFault,
-                       (Ordinal)ip_,
-                       false);
+    generateFault(InvalidSSFault, false);
 }
 
 void
 Core::markTraceFault() {
-    throw FaultRecord ((Ordinal)pc_,
-                       (Ordinal)ac_,
-                       MarkTraceFault,
-                       (Ordinal)ip_,
-                       false);
     // saved ip isn't used
-    //generateFault(record);
+    generateFault(MarkTraceFault, false);
 }
 
 void
 Core::unimplementedFault() {
-    throw FaultRecord ((Ordinal)pc_,
-                       (Ordinal)ac_,
-                       UnimplementedFault,
-                       (Ordinal)ip_,
-                       false);
     // saved ip isn't used
-    //generateFault(record);
-    //throw std::logic_error("unimplemented");
+    generateFault(UnimplementedFault, false);
 }
 
 void
-Core::invalidOpcodeFault() const {
-    throw FaultRecord ((Ordinal)pc_,
-                       (Ordinal)ac_,
-                       InvalidOpcodeFault,
-                       (Ordinal)ip_,
-                       false);
+Core::invalidOpcodeFault() {
+    generateFault(InvalidOpcodeFault, false);
 }
 
 void
 Core::invalidOperandFault() {
-    throw FaultRecord ((Ordinal)pc_,
-                       (Ordinal)ac_,
-                       InvalidOperandFault,
-                       (Ordinal)ip_,
-                       false);
+    generateFault(InvalidOperandFault, false);
 }
 
 void
 Core::protectionLengthFault() {
-    throw FaultRecord((Ordinal)pc_,
-                       (Ordinal)ac_,
-                       SegmentLengthFault,
-                       (Ordinal)ip_,
-                       false);
+    generateFault(SegmentLengthFault, false);
 }
 void
 Core::typeMismatchFault() {
-    throw FaultRecord ((Ordinal)pc_,
-                       (Ordinal)ac_,
-                       TypeMismatchFault,
-                       (Ordinal)ip_,
-                       false);
+    generateFault(TypeMismatchFault, false);
 }
 
 void
@@ -230,16 +208,11 @@ Core::invalidDescriptorFault(SegmentSelector ss) {
                        false);
     record.faultData[1] = (ss & ~0b11111);
     setGPR(RIPIndex, (Ordinal)ip_, TreatAsOrdinal{});
-    throw record;
+    generateFault(record);
 }
 void
 Core::eventNoticeFault() {
-    throw FaultRecord ((Ordinal)pc_,
-                       (Ordinal)ac_,
-                       EventNoticeFault,
-                       (Ordinal)ip_,
-                       true);
-
+    generateFault(EventNoticeFault, true);
 }
 void
 Core::procedureTableEntry_FaultCall(const FaultRecord& record, const FaultTableEntry& entry) noexcept {
@@ -308,22 +281,9 @@ Core::supervisorProcedureTableEntry_FaultCall(const FaultRecord& record, Address
 }
 
 void
-Core::invalidOperandFault() const {
-    throw FaultRecord ((Ordinal)pc_,
-                       (Ordinal)ac_,
-                       InvalidOperandFault,
-                       (Ordinal)ip_,
-                       false);
-}
-
-void
 Core::floatingInvalidOperationFault() {
     if (ac_.arith.floatingInvalidOpMask == 0) {
-        throw FaultRecord((Ordinal) pc_,
-                          (Ordinal) ac_,
-                          FloatingPointInvalidOperationFault,
-                          (Ordinal) ip_,
-                          true);
+        generateFault(FloatingPointInvalidOperationFault, true);
     } else {
         ac_.arith.floatingInvalidOpFlag = 1;
     }
@@ -331,11 +291,7 @@ Core::floatingInvalidOperationFault() {
 void
 Core::floatingOverflowFault() {
     if (ac_.arith.floatingOverflowMask == 0) {
-        throw FaultRecord((Ordinal) pc_,
-                          (Ordinal) ac_,
-                          FloatingPointOverflowFault,
-                          (Ordinal) ip_,
-                          true);
+        generateFault(FloatingPointOverflowFault, true);
     } else {
         ac_.arith.floatingOverflowFlag = 1;
     }
@@ -343,11 +299,7 @@ Core::floatingOverflowFault() {
 void
 Core::floatingUnderflowFault() {
     if (ac_.arith.floatingUnderflowMask == 0) {
-        throw FaultRecord((Ordinal) pc_,
-                          (Ordinal) ac_,
-                          FloatingPointUnderflowFault,
-                          (Ordinal) ip_,
-                          true);
+        generateFault(FloatingPointUnderflowFault, true);
     } else {
         ac_.arith.floatingUnderflowFlag = 1;
     }
@@ -355,12 +307,7 @@ Core::floatingUnderflowFault() {
 void
 Core::floatingZeroDivideOperationFault() {
     if (ac_.arith.floatingZeroDivideMask == 0) {
-
-    throw FaultRecord((Ordinal)pc_,
-                      (Ordinal)ac_,
-                      FloatingPointZeroDivideOperationFault,
-                      (Ordinal)ip_,
-                      true);
+        generateFault(FloatingPointZeroDivideOperationFault, true);
     } else {
         ac_.arith.floatingZeroDivideFlag = 1;
     }
@@ -368,24 +315,16 @@ Core::floatingZeroDivideOperationFault() {
 void
 Core::floatingInexactFault() {
     if (ac_.arith.floatingInexactMask == 0) {
-        throw FaultRecord((Ordinal) pc_,
-                          (Ordinal) ac_,
-                          FloatingPointInexactFault,
-                          (Ordinal) ip_,
-                          true);
+        generateFault(FloatingPointInexactFault, true);
     } else {
         ac_.arith.floatingInexactFlag = 1;
     }
 }
 
 void
-Core::floatingReservedEncodingFault() const {
+Core::floatingReservedEncodingFault() {
     if (ac_.arith.floatingPointNormalizingMode == 0) {
-        throw FaultRecord((Ordinal) pc_,
-                          (Ordinal) ac_,
-                          FloatingPointReservedEncodingFault,
-                          (Ordinal) ip_,
-                          true);
+        generateFault(FloatingPointReservedEncodingFault, true);
     }
 }
 

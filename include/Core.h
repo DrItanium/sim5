@@ -1361,10 +1361,9 @@ private:
     void typeMismatchFault();
     void typeContentsFault();
     void markTraceFault();
-    void invalidOpcodeFault() const;
-    void invalidOperandFault() const;
-    void protectionLengthFault();
+    void invalidOpcodeFault();
     void invalidOperandFault();
+    void protectionLengthFault();
     void invalidDescriptorFault(SegmentSelector selector);
     void eventNoticeFault();
     void floatingInvalidOperationFault();
@@ -1372,8 +1371,10 @@ private:
     void floatingOverflowFault();
     void floatingUnderflowFault();
     void floatingInexactFault();
-    void floatingReservedEncodingFault() const;
+    void floatingReservedEncodingFault();
     void generateFault(const FaultRecord& record) ;
+    void generateFault(Ordinal pc, Ordinal ac, Ordinal faultCode, Ordinal ip, bool saveReturnAddress);
+    void generateFault(Ordinal faultCode, bool saveReturnAddress);
     void addi(Register& dest, Integer src1, Integer src2);
     void addo(Register& dest, Ordinal src1, Ordinal src2);
     void saveReturnAddress(ByteOrdinal registerIndex) noexcept;
