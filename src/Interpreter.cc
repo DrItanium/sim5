@@ -27,6 +27,21 @@
 #include "Disassembly.h"
 #include <iostream>
 
+OptionalFaultRecord
+Core::doDispatchInternal() noexcept {
+    if (instruction_.isCTRL()) {
+        return processInstruction(CTRLInstruction{instruction_});
+    } else if (instruction_.isCOBR()) {
+        return processInstruction(COBRInstruction{instruction_});
+    } else if (instruction_.isMEMFormat()) {
+        // always load the next word for simplicity
+        return processInstruction(MEMInstruction{instruction_, load(ip_.o + 4, TreatAsInteger{})});
+    } else if (instruction_.isREGFormat()) {
+        return processInstruction(REGInstruction{instruction_});
+    } else {
+        return unimplementedFault();
+    }
+}
 void
 Core::cycle() noexcept {
     DEBUG_ENTER_FUNCTION;
@@ -39,25 +54,8 @@ Core::cycle() noexcept {
     DEBUG_LOG_LEVEL(1) {
         std::cout << "\t\t" << __PRETTY_FUNCTION__  << ": " << disassembleInstruction(ip_.getValue<Ordinal>(), instruction_) << std::endl;
     }
-    try {
-        if (instruction_.isCTRL()) {
-            processInstruction(CTRLInstruction{instruction_});
-        } else if (instruction_.isCOBR()) {
-            processInstruction(COBRInstruction{instruction_});
-        } else if (instruction_.isMEMFormat()) {
-            // always load the next word for simplicity
-            processInstruction(MEMInstruction{instruction_, load(ip_.o + 4, TreatAsInteger{})});
-        } else if (instruction_.isREGFormat()) {
-            processInstruction(REGInstruction{instruction_});
-        } else {
-            unimplementedFault();
-        }
-    } catch (const FaultRecord& record) {
-        /// @todo support nested fault records
-        if (record.saveReturnAddress) {
-            saveReturnAddress(RIPIndex);
-        }
-        generateFault(record);
+    if (auto result = doDispatchInternal(); result) {
+        generateFault(*result);
     }
     if (advanceInstruction_) {
         nextInstruction();
@@ -488,7 +486,7 @@ Core::processInstruction(const MEMInstruction & inst) {
     return std::nullopt;
 }
 
-void
+OptionalFaultRecord
 Core::processInstruction(const COBRInstruction& cobr) {
     auto opcode = cobr.getOpcode();
     auto displacement = static_cast<ShortInteger>(cobr.getDisplacement());
@@ -527,8 +525,7 @@ Core::processInstruction(const COBRInstruction& cobr) {
             default:
                 // test instructions perform modifications to src1 so we must error out
                 // in this case!
-                unimplementedFault();
-                break;
+                return unimplementedFault();
         }
     } else {
         auto& src1 = getSrc1Register(cobr);
@@ -569,13 +566,13 @@ Core::processInstruction(const COBRInstruction& cobr) {
                 cmpibGeneric(mask, static_cast<Integer>(src1), static_cast<Integer>(src2), displacement);
                 break;
             default:
-                unimplementedFault();
-                break;
+                return unimplementedFault();
         }
     }
+    return std::nullopt;
 }
 
-void
+OptionalFaultRecord
 Core::processInstruction(const CTRLInstruction &instruction) {
     switch (instruction.getOpcode()) {
         case Opcodes::bal: // bal
@@ -613,7 +610,7 @@ Core::processInstruction(const CTRLInstruction &instruction) {
             faultGeneric();
             break;
         default:
-            unimplementedFault();
-            break;
+            return unimplementedFault();
     }
+    return std::nullopt;
 }

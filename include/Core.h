@@ -981,6 +981,7 @@ public:
     BootResult start() noexcept;
     void cycle() noexcept;
 private:
+    OptionalFaultRecord doDispatchInternal() noexcept;
     void lockBus() noexcept;
     void unlockBus() noexcept;
     /// @todo insert iac dispatch here
