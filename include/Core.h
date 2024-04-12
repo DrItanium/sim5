@@ -1670,8 +1670,8 @@ private:
     void movr(const REGInstruction& inst);
     void cpyrsre(const REGInstruction& inst);
     void cpysre(const REGInstruction& inst);
-    void classr(const REGInstruction& inst);
-    void classrl(const REGInstruction& inst);
+    OptionalFaultRecord classr(const REGInstruction& inst);
+    OptionalFaultRecord classrl(const REGInstruction& inst);
     void cosr(const REGInstruction& inst);
     void cosrl(const REGInstruction& inst);
     void sinr(const REGInstruction& inst);
@@ -1706,9 +1706,10 @@ private:
     void cvtril(const REGInstruction& inst);
     void cvtzri(const REGInstruction& inst);
     void cvtzril(const REGInstruction& inst);
-    void fpassignment(const REGInstruction& inst, ExtendedReal value, TreatAsExtendedReal);
-    void fpassignment(const REGInstruction& inst, Real value, TreatAsReal);
-    void fpassignment(const REGInstruction& inst, LongReal value, TreatAsLongReal);
+    OptionalFaultRecord fpassignment(const REGInstruction& inst, FaultRecord& record, TreatAs<FaultRecord>);
+    OptionalFaultRecord fpassignment(const REGInstruction& inst, ExtendedReal value, TreatAsExtendedReal);
+    OptionalFaultRecord fpassignment(const REGInstruction& inst, Real value, TreatAsReal);
+    OptionalFaultRecord fpassignment(const REGInstruction& inst, LongReal value, TreatAsLongReal);
     using MixedRealSourceArgument = VariantWithFaultRecord<Real, ExtendedReal>;
     using MixedLongRealSourceArgument = VariantWithFaultRecord<LongReal, ExtendedReal>;
     [[nodiscard]] MixedRealSourceArgument unpackSrc1(const REGInstruction& index, TreatAsReal) const;
@@ -1721,8 +1722,8 @@ private:
     [[nodiscard]] LongInteger unpackSrc1(const REGInstruction& index, TreatAsLongInteger) const;
     [[nodiscard]] Integer unpackSrc1(const REGInstruction& index, TreatAsInteger) const;
 
-    [[maybe_unused]] [[nodiscard]] TripleRegister& getFloatingPointRegister(ByteOrdinal index);
-    [[nodiscard]] const TripleRegister& getFloatingPointRegister(ByteOrdinal index) const;
+    [[maybe_unused]] [[nodiscard]] VariantWithFaultRecord<std::reference_wrapper<TripleRegister>> getFloatingPointRegister(ByteOrdinal index);
+    [[nodiscard]] VariantWithFaultRecord<std::reference_wrapper<const TripleRegister>> getFloatingPointRegister(ByteOrdinal index) const;
 
     template<typename T>
     requires std::floating_point<T>
@@ -1831,7 +1832,7 @@ private:
         }
         return input;
     }
-    OptionalFaultRecord performClassification(FaultRecord&& record) noexcept {
+    OptionalFaultRecord performClassification(FaultRecord& record) noexcept {
         return record;
     }
     template<typename T>

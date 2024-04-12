@@ -94,13 +94,13 @@ Core::dmovt(Register& dest, Ordinal src) noexcept {
     ac_.setConditionResult(decimal >= 0b00110000 && decimal <= 0b00111001);
 }
 
-void
+OptionalFaultRecord
 Core::classr(const REGInstruction& inst) {
-    return std::visit([this](auto value) { performClassification(value); }, unpackSrc1(inst, TreatAsReal{}));
+    return std::visit([this](auto value) { return performClassification(value); }, unpackSrc1(inst, TreatAsReal{}));
 }
-void
+OptionalFaultRecord
 Core::classrl(const REGInstruction& inst) {
-    return std::visit([this](auto value) { performClassification(value); }, unpackSrc1(inst, TreatAsLongReal{}));
+    return std::visit([this](auto value) { return performClassification(value); }, unpackSrc1(inst, TreatAsLongReal{}));
 }
 
 void
@@ -228,7 +228,7 @@ Core::cpysre(const REGInstruction &inst) {
     fpassignment(inst, std::signbit(src2) == 0 ? std::fabs(src1) : -std::fabs(src1), TreatAsExtendedReal{});
 }
 
-void
+OptionalFaultRecord
 Core::fpassignment(const REGInstruction &inst, ExtendedReal val, TreatAsExtendedReal) {
     auto result = serviceFloatingPointFault<ExtendedReal>(val);
     if(inst.getM3()) {
@@ -259,16 +259,16 @@ Core::fpassignment(const REGInstruction &inst, ExtendedReal val, TreatAsExtended
                 break;
             }
             default:
-                invalidOpcodeFault();
-                break;
+                return invalidOpcodeFault();
         }
     } else {
         // gpr
         getGPR(inst.getSrcDest(), TreatAsTripleRegister {}).setValue(result, TreatAsExtendedReal {});
     }
+    return std::nullopt;
 }
 
-void
+OptionalFaultRecord
 Core::fpassignment(const REGInstruction &inst, Real val, TreatAsReal) {
     auto result = serviceFloatingPointFault<Real>(val);
     if(inst.getM3()) {
@@ -299,16 +299,16 @@ Core::fpassignment(const REGInstruction &inst, Real val, TreatAsReal) {
                 break;
             }
             default:
-                invalidOpcodeFault();
-                break;
+                return invalidOpcodeFault();
         }
     } else {
         // gpr
         getGPR(inst.getSrcDest()).setValue(result, TreatAsReal{});
     }
+    return std::nullopt;
 }
 
-void
+OptionalFaultRecord
 Core::fpassignment(const REGInstruction &inst, LongReal val, TreatAsLongReal) {
     auto result = serviceFloatingPointFault<LongReal>(val);
     if(inst.getM3()) {
@@ -339,19 +339,19 @@ Core::fpassignment(const REGInstruction &inst, LongReal val, TreatAsLongReal) {
                 break;
             }
             default:
-                invalidOpcodeFault();
-                break;
+                return invalidOpcodeFault();
         }
     } else {
         // gpr
         getGPR(inst.getSrcDest(), TreatAsLongRegister{}).setValue(result, TreatAsLongReal{});
     }
+    return std::nullopt;
 }
 
 namespace {
     TripleRegister bogus;
 }
-const TripleRegister&
+VariantWithFaultRecord<std::reference_wrapper<const TripleRegister>>
 Core::getFloatingPointRegister(ByteOrdinal index) const {
     switch (index) {
         case 0b00000: // fp0
@@ -363,12 +363,11 @@ Core::getFloatingPointRegister(ByteOrdinal index) const {
         case 0b00011: // fp3
             return fp.get(12, TreatAsTripleRegister{});
         default:
-            invalidOpcodeFault();
-            return bogus;
+            return invalidOpcodeFault();
     }
 }
 
-[[maybe_unused]] TripleRegister&
+[[maybe_unused]] VariantWithFaultRecord<std::reference_wrapper<TripleRegister>>
 Core::getFloatingPointRegister(ByteOrdinal index) {
     switch (index) {
         case 0b00000: // fp0
@@ -946,4 +945,8 @@ void
 Core::cvtzril(const REGInstruction &inst) {
 
     unimplementedFault();
+}
+OptionalFaultRecord
+Core::fpassignment(const REGInstruction&, FaultRecord& record, TreatAs<FaultRecord>) {
+    return record;
 }
