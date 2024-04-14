@@ -30,7 +30,7 @@ OptionalFaultRecord
 Core::processFPInstruction(const REGInstruction &inst ) {
     if (auto opcode = inst.getOpcode(); isFloatingPointInstruction(opcode)) {
         switch (opcode) {
-#define X(name) case Opcodes:: name : return name (inst)
+#define X(name) case Opcodes:: name : name (inst); break
             X(addr);
             X(addrl);
             X(atanr);

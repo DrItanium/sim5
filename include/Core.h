@@ -1166,16 +1166,16 @@ private:
     void cmpibGeneric(uint8_t mask, Integer src1, Integer src2, int16_t displacement) noexcept;
     void flushreg() ;
     void balx(ByteOrdinal linkRegister, Ordinal branchTo) ;
-    void calls(Ordinal value) ;
+    OptionalFaultRecord calls(Ordinal value) ;
     void ldl(const MEMInstruction&, Address address, LongRegister& destination) ;
     void ldq(const MEMInstruction&, Address address, QuadRegister& destination) ;
     void ldt(const MEMInstruction&, Address address, TripleRegister& destination) ;
     void stq(const MEMInstruction&, Address address, const QuadRegister& src) ;
     void stt(const MEMInstruction&, Address address, const TripleRegister& src) ;
     void stl(const MEMInstruction&, Address address, const LongRegister& src) ;
-    void ret() ;
-    void call(Integer displacement) ;
-    void callx(Address effectiveAddress) ;
+    OptionalFaultRecord ret() ;
+    OptionalFaultRecord call(Integer displacement) ;
+    OptionalFaultRecord callx(Address effectiveAddress) ;
 private:
     void enterCall(Ordinal fp);
     void leaveCall();

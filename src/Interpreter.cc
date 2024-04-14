@@ -278,8 +278,7 @@ Core::processInstruction(const REGInstruction & inst) {
                  getGPR(inst.getSrc2(), TreatAsLongRegister{}));
             break;
         case Opcodes::calls:
-            calls(static_cast<Ordinal>(src1));
-            break;
+            return calls(static_cast<Ordinal>(src1));
         case Opcodes::spanbit:
             spanbit(regDest, static_cast<Ordinal>(src1));
             break;
@@ -585,8 +584,7 @@ Core::processInstruction(const CTRLInstruction &instruction) {
             call(instruction.getDisplacement());
             break;
         case Opcodes::ret: // ret
-            ret();
-            break;
+            return ret();
         case Opcodes::bno:
         case Opcodes::be:
         case Opcodes::bne:
@@ -607,8 +605,7 @@ Core::processInstruction(const CTRLInstruction &instruction) {
         case Opcodes::faultg:
         case Opcodes::faultge:
         case Opcodes::faulto:
-            faultGeneric();
-            break;
+            return faultGeneric();
         default:
             return unimplementedFault();
     }

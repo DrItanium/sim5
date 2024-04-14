@@ -86,7 +86,7 @@ Core::setupNewFrameInternals(Ordinal fp, Ordinal temp) noexcept {
 }
 
 
-void
+OptionalFaultRecord
 Core::callx(Address effectiveAddress) {
     DEBUG_ENTER_FUNCTION;
     // wait for any uncompleted instructions to finish
@@ -127,10 +127,11 @@ Core::callx(Address effectiveAddress) {
     enterCall(fp);
     setupNewFrameInternals(fp, temp);
     DEBUG_LEAVE_FUNCTION;
+    return std::nullopt;
 }
 
 
-void
+OptionalFaultRecord
 Core::call(Integer displacement) {
     DEBUG_ENTER_FUNCTION;
     // wait for any uncompleted instructions to finish
@@ -171,12 +172,13 @@ Core::call(Integer displacement) {
     setupNewFrameInternals(fp, temp);
     branch(displacement);
     DEBUG_LEAVE_FUNCTION;
+    return std::nullopt;
 }
 
-void
+OptionalFaultRecord
 Core::calls(Ordinal src1) {
     if (auto targ = src1; targ > 259) {
-        protectionLengthFault();
+        return protectionLengthFault();
     } else {
         syncf();
         auto tempPE = load<Ordinal>(getSystemProcedureTableBase() + 48 + (4 * targ));
@@ -224,6 +226,7 @@ Core::calls(Ordinal src1) {
                       ")" << std::endl;
         }
     }
+    return std::nullopt;
 }
 void
 Core::localReturn() {
@@ -277,7 +280,7 @@ Core::interruptReturn() {
         checkForPendingInterrupts();
     }
 }
-void
+OptionalFaultRecord
 Core::ret() {
     DEBUG_ENTER_FUNCTION;
     syncf();
@@ -305,10 +308,10 @@ Core::ret() {
             break;
         default:
             // undefined!
-            unimplementedFault();
-            break;
+            return unimplementedFault();
     }
     DEBUG_LEAVE_FUNCTION;
+    return std::nullopt;
 }
 
 
