@@ -86,7 +86,7 @@ Core::arithmeticWithCarryGeneric(Ordinal result, bool src2MSB, bool src1MSB, boo
 
 
 
-void
+OptionalFaultRecord
 Core::emul(const REGInstruction& inst, LongRegister& dest, Ordinal src1, Ordinal src2) {
     if (!aligned(inst.getSrcDest(), TreatAsLongRegister{})) {
         /// Since this is unaligned and the destination will always be aligned,
@@ -96,14 +96,15 @@ Core::emul(const REGInstruction& inst, LongRegister& dest, Ordinal src1, Ordinal
         auto& upper = getGPR(inst.getSrcDest() + 1);
         lower.template setValue<Ordinal>(0xFFFF'FFFF);
         upper.template setValue<Ordinal>(0xFFFF'FFFF);
-        invalidOpcodeFault();
+        return invalidOpcodeFault();
     }  else {
         dest.template setValue<LongOrdinal>(static_cast<LongOrdinal>(src2) * static_cast<LongOrdinal>(src1));
+        return std::nullopt;
     }
 }
 
 
-void
+OptionalFaultRecord
 Core::ediv(const REGInstruction& inst, LongRegister& dest, Ordinal src1, const LongRegister& src2) {
     if (!aligned(inst.getSrcDest(), TreatAsLongRegister{}) || !aligned(inst.getSrc2(), TreatAsLongRegister{})) {
         /// Since this is unaligned and the destination will always be aligned,
@@ -113,15 +114,16 @@ Core::ediv(const REGInstruction& inst, LongRegister& dest, Ordinal src1, const L
         auto& upper = getGPR(inst.getSrcDest() + 1);
         lower.template setValue<Ordinal>(0xFFFF'FFFF);
         upper.template setValue<Ordinal>(0xFFFF'FFFF);
-        invalidOpcodeFault();
+        return invalidOpcodeFault();
     } else if (src1 == 0) {
         // divide by zero
-        zeroDivideFault();
+        return zeroDivideFault();
     } else {
         //src2.parts[1] = getGPRValue(instruction_.reg.src2, 1, TreatAsOrdinal{});
         auto sl2 = src2.getValue<LongOrdinal>();
         dest.template setValue<Ordinal>(1, sl2 / src1); // quotient
         dest.template setValue<Ordinal>(0, static_cast<Ordinal>(sl2 - (sl2 / src1) * src1)); // remainder
+        return std::nullopt;
     }
 }
 
@@ -152,21 +154,25 @@ Core::getSFR(ByteOrdinal index) const noexcept {
     return sfrs_.get(index);
 }
 
-void
+OptionalFaultRecord
 Core::mark() {
     nextInstruction();
     if (pc_.processControls.traceEnable && tc_.trace.breakpointTraceMode) {
-        markTraceFault();
+        return markTraceFault();
+    } else {
+        return std::nullopt;
     }
 }
 
-void
+OptionalFaultRecord
 Core::fmark() {
     // advance first so that our return value will always be correct
     nextInstruction();
     if (pc_.processControls.traceEnable) {
-        markTraceFault();
+        return markTraceFault();
         //generateFault(MarkTraceFault);
+    } else {
+        return std::nullopt;
     }
 }
 
@@ -207,92 +213,93 @@ Core::computeAddress(const MEMInstruction& inst) noexcept {
     return std::nullopt;
 }
 
-void
+OptionalFaultRecord
 Core::ldl(const MEMInstruction& inst, Address effectiveAddress, LongRegister& destination) {
     if (!aligned(inst.getSrcDest(), TreatAsLongRegister{})) {
-        invalidOperandFault();
+        return invalidOperandFault();
         /// @todo perform an unaligned load into registers
     } else {
         destination.setValue<LongOrdinal>(load(effectiveAddress, TreatAsLongOrdinal{}));
         // support unaligned accesses
+        return std::nullopt;
     }
     // the instruction is invalid so we should complete after we are done
 }
 
 
-void
+OptionalFaultRecord
 Core::stl(const MEMInstruction& inst, Address effectiveAddress, const LongRegister& source) {
     if (!aligned(inst.getSrcDest(), TreatAsLongRegister{})) {
-        invalidOperandFault();
+        return invalidOperandFault();
         /// @todo perform an unaligned load into registers
     } else {
         // support unaligned accesses
         store(effectiveAddress, source.getValue<LongOrdinal>(), TreatAsLongOrdinal{});
+        return std::nullopt;
     }
     // the instruction is invalid so we should complete after we are done
 }
 
-void
+OptionalFaultRecord
 Core::ldt(const MEMInstruction& inst, Address effectiveAddress, TripleRegister& destination) {
     if (!aligned(inst.getSrcDest(), TreatAsTripleRegister{})) {
-        invalidOperandFault();
+        return invalidOperandFault();
         /// @todo perform an unaligned load into registers
     } else {
         destination[0] = load(effectiveAddress + 0, TreatAsOrdinal{});
         destination[1] = load(effectiveAddress + 4, TreatAsOrdinal{});
         destination[2] = load(effectiveAddress + 8, TreatAsOrdinal{});
-        // support unaligned accesses
+        return std::nullopt;
     }
     // the instruction is invalid so we should complete after we are done
 }
 
-
-void
+OptionalFaultRecord
 Core::stt(const MEMInstruction& inst, Address effectiveAddress, const TripleRegister& source) {
     if (!aligned(inst.getSrcDest(), TreatAsTripleRegister{})) {
-        invalidOperandFault();
+        return invalidOperandFault();
     } else {
         // support unaligned accesses
         store(effectiveAddress + 0,  static_cast<Ordinal>(source[0]), TreatAsOrdinal{});
         store(effectiveAddress + 4,  static_cast<Ordinal>(source[1]), TreatAsOrdinal{});
         store(effectiveAddress + 8,  static_cast<Ordinal>(source[2]), TreatAsOrdinal{});
+        return std::nullopt;
     }
     // the instruction is invalid so we should complete after we are done
 }
 
 
-void
+OptionalFaultRecord
 Core::ldq(const MEMInstruction& inst, Address effectiveAddress, QuadRegister& destination) {
     DEBUG_ENTER_FUNCTION;
     if (!aligned(inst.getSrcDest(), TreatAsQuadRegister{})) {
-        invalidOperandFault();
-        /// @todo perform an unaligned load into registers
+        return invalidOperandFault();
     } else {
         destination.setValue(load(effectiveAddress, TreatAsQuadOrdinal{}), TreatAsQuadOrdinal{});
-        // support unaligned accesses
     }
     DEBUG_LEAVE_FUNCTION;
     // the instruction is invalid so we should complete after we are done
+    return std::nullopt;
 }
 
 
-void
+OptionalFaultRecord
 Core::stq(const MEMInstruction& inst, Address effectiveAddress, const QuadRegister& source) {
     DEBUG_ENTER_FUNCTION;
     if (!aligned(inst.getSrcDest(), TreatAsQuadRegister{})) {
-        invalidOperandFault();
+        return invalidOperandFault();
     } else {
         store(effectiveAddress, source.getValue(TreatAsQuadOrdinal{}), TreatAsQuadOrdinal{});
-        // support unaligned accesses
     }
     DEBUG_LEAVE_FUNCTION;
+    return std::nullopt;
     // the instruction is invalid so we should complete after we are done
 }
 
 
 
 
-void
+OptionalFaultRecord
 Core::performRegisterTransfer(const REGInstruction& inst, ByteOrdinal mask, ByteOrdinal count) {
     // perform the register transfer first and then check to see if we were
     // offset at all
@@ -301,8 +308,9 @@ Core::performRegisterTransfer(const REGInstruction& inst, ByteOrdinal mask, Byte
     }
     if (((inst.getSrcDest() & mask) != 0) || ((inst.getSrc1() & mask) != 0)) {
         nextInstruction();
-        invalidOpcodeFault();
+        return invalidOpcodeFault();
     }
+    return std::nullopt;
 }
 
 
@@ -668,11 +676,11 @@ Core::setIP(Ordinal value) noexcept {
     advanceInstruction_ = false;
 }
 
-void
+OptionalFaultRecord
 Core::subi(Register& dest, Integer src1, Integer src2) {
     sub<Integer>(dest, src1, src2, TreatAsInteger{});
     nextInstruction();
-    faultOnOverflow(dest);
+    return faultOnOverflow(dest);
 }
 
 
@@ -682,11 +690,11 @@ Core::subo(Register& dest, Ordinal src1, Ordinal src2) {
 }
 
 
-void
+OptionalFaultRecord
 Core::modpc(Register& regDest, Ordinal src1o, Ordinal src2o) {
     if (auto mask = src1o; mask != 0) {
         if (!pc_.inSupervisorMode()) {
-            typeMismatchFault();
+            return typeMismatchFault();
         } else {
             regDest.setValue<Ordinal>(pc_.modify(mask, src2o));
             if (regDest.getPriority() > pc_.getPriority()) {
@@ -696,6 +704,7 @@ Core::modpc(Register& regDest, Ordinal src1o, Ordinal src2o) {
     } else {
         regDest.setValue<Ordinal>(pc_.getValue<Ordinal>());
     }
+    return std::nullopt;
 }
 
 void

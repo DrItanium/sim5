@@ -195,7 +195,8 @@ Core::supervisorProcedureTableEntry_FaultCall(const FaultRecord& record, Address
 }
 
 
-void
+OptionalFaultRecord
 Core::faultOnOverflow(Register& dest) {
     /// @todo implement
+    return std::nullopt;
 }

@@ -1068,7 +1068,7 @@ private:
     bool fullConditionCodeCheck() noexcept;
     bool fullConditionCodeCheck(uint8_t mask) noexcept;
     std::optional<Ordinal> computeAddress(const MEMInstruction&) noexcept;
-    void performRegisterTransfer(const REGInstruction&, ByteOrdinal mask, ByteOrdinal count) ;
+    OptionalFaultRecord performRegisterTransfer(const REGInstruction&, ByteOrdinal mask, ByteOrdinal count) ;
 private:
     void sendIAC(const iac::Message& msg) noexcept;
     void dispatchInterrupt(uint8_t vector) noexcept;
@@ -1100,8 +1100,8 @@ private:
 private:
     // instructions
     void syncf() ;
-    void mark() ;
-    void fmark() ;
+    OptionalFaultRecord mark() ;
+    OptionalFaultRecord fmark() ;
     void synld(Register& dest, Ordinal src) ;
     void synmov(const Register& dest, Ordinal src) ;
     void synmovl(const Register& dest, Ordinal src) ;
@@ -1111,8 +1111,8 @@ private:
     void branch(Integer displacement) noexcept;
     void branchConditional(bool condition, Integer displacement) noexcept;
     void scanbyte(Ordinal src1, Ordinal src2) ;
-    void emul(const REGInstruction& inst, LongRegister& dest, Ordinal src1, Ordinal src2) ;
-    void ediv(const REGInstruction& inst, LongRegister& dest, Ordinal src1, const LongRegister& src2) ;
+    OptionalFaultRecord emul(const REGInstruction& inst, LongRegister& dest, Ordinal src1, Ordinal src2) ;
+    OptionalFaultRecord ediv(const REGInstruction& inst, LongRegister& dest, Ordinal src1, const LongRegister& src2) ;
     void arithmeticWithCarryGeneric(Ordinal result, bool src2MSB, bool src1MSB, bool destMSB) ;
     void advanceCOBRDisplacement(Integer displacement) noexcept;
     void bbc(Ordinal bitpos, Ordinal against, int16_t displacement);
@@ -1167,12 +1167,12 @@ private:
     void flushreg() ;
     void balx(ByteOrdinal linkRegister, Ordinal branchTo) ;
     OptionalFaultRecord calls(Ordinal value) ;
-    void ldl(const MEMInstruction&, Address address, LongRegister& destination) ;
-    void ldq(const MEMInstruction&, Address address, QuadRegister& destination) ;
-    void ldt(const MEMInstruction&, Address address, TripleRegister& destination) ;
-    void stq(const MEMInstruction&, Address address, const QuadRegister& src) ;
-    void stt(const MEMInstruction&, Address address, const TripleRegister& src) ;
-    void stl(const MEMInstruction&, Address address, const LongRegister& src) ;
+    OptionalFaultRecord ldl(const MEMInstruction&, Address address, LongRegister& destination) ;
+    OptionalFaultRecord ldq(const MEMInstruction&, Address address, QuadRegister& destination) ;
+    OptionalFaultRecord ldt(const MEMInstruction&, Address address, TripleRegister& destination) ;
+    OptionalFaultRecord stq(const MEMInstruction&, Address address, const QuadRegister& src) ;
+    OptionalFaultRecord stt(const MEMInstruction&, Address address, const TripleRegister& src) ;
+    OptionalFaultRecord stl(const MEMInstruction&, Address address, const LongRegister& src) ;
     OptionalFaultRecord ret() ;
     OptionalFaultRecord call(Integer displacement) ;
     OptionalFaultRecord callx(Address effectiveAddress) ;
@@ -1458,8 +1458,8 @@ private:
     void nextInstruction() noexcept;
     void setIP(Ordinal value) noexcept;
     void subo(Register& dest, Ordinal src1, Ordinal src2);
-    void subi(Register& dest, Integer src1, Integer src2);
-    OptionalFaultRecord  faultGeneric();
+    OptionalFaultRecord subi(Register& dest, Integer src1, Integer src2);
+    OptionalFaultRecord faultGeneric();
     void balx(Register& linkRegister, Address ordinal);
     OptionalFaultRecord processInstruction(const COBRInstruction& instruction);
     OptionalFaultRecord processInstruction(const MEMInstruction&);
@@ -1467,7 +1467,7 @@ private:
     OptionalFaultRecord processInstruction(const CTRLInstruction&);
     OptionalFaultRecord processFPInstruction(const REGInstruction&);
 private:
-    void modpc(Register& dest, Ordinal src1o, Ordinal src2o);
+    OptionalFaultRecord modpc(Register& dest, Ordinal src1o, Ordinal src2o);
     void modxc(Register& control, Register& dest, Ordinal src1, Ordinal src2);
     void shlo(Register& srcDest, Ordinal src1, Ordinal src2) ;
     void shli(Register& srcDest, Integer src1, Integer src2) ;
@@ -1610,7 +1610,7 @@ private:
     void interruptReturn();
     void supervisorReturn(bool traceModeSetting);
 private:
-    void faultOnOverflow(Register& dest);
+    OptionalFaultRecord faultOnOverflow(Register& dest);
     [[nodiscard]] Ordinal getFramePointerAddress() const { return getGPRValue<Ordinal>(FPIndex); }
     [[nodiscard]] Ordinal getRIPContents() const { return getGPRValue<Ordinal>(RIPIndex); }
     void restoreRIPToIP();
