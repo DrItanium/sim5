@@ -30,7 +30,7 @@ OptionalFaultRecord
 Core::processFPInstruction(const REGInstruction &inst ) {
     if (auto opcode = inst.getOpcode(); isFloatingPointInstruction(opcode)) {
         switch (opcode) {
-#define X(name) case Opcodes:: name : name (inst); break
+#define X(name) case Opcodes:: name : return name (inst)
             X(addr);
             X(addrl);
             X(atanr);
@@ -105,17 +105,17 @@ Core::classrl(const REGInstruction& inst) {
 
 void
 Core::movr(const REGInstruction &inst) {
-    std::visit([this, &inst](auto value) { fpassignment(inst, value, TreatAs<std::decay_t<decltype(value)>>{}); }, unpackSrc1(inst, TreatAsReal{}));
+    return std::visit([this, &inst](auto value) { return fpassignment(inst, value, TreatAs<std::decay_t<decltype(value)>>{}); }, unpackSrc1(inst, TreatAsReal{}));
     /// @todo implement floating point faults
 }
 
 void
 Core::movrl(const REGInstruction &inst) {
-    std::visit([this, &inst](auto value) { fpassignment(inst, value, TreatAs<std::decay_t<decltype(value)>>{}); }, unpackSrc1(inst, TreatAsLongReal{}));
+    return std::visit([this, &inst](auto value) { return fpassignment(inst, value, TreatAs<std::decay_t<decltype(value)>>{}); }, unpackSrc1(inst, TreatAsLongReal{}));
     /// @todo implement floating point faults
 }
 
-void
+OptionalFaultRecord
 Core::movre(const REGInstruction &inst) {
     // this instruction does no modification but instead just acts as a transfer of bits
     FloatingPointRegister src;
@@ -142,8 +142,7 @@ Core::movre(const REGInstruction &inst) {
                 src.floatValue = +1.0;
                 break;
             default:
-                invalidOpcodeFault();
-                return;
+                return invalidOpcodeFault();
         }
     } else {
         // okay so it is a GPR
@@ -189,8 +188,7 @@ Core::movre(const REGInstruction &inst) {
                 break;
             }
             default:
-                invalidOpcodeFault();
-                return;
+                return invalidOpcodeFault();
         }
     } else {
         // gpr
@@ -199,9 +197,10 @@ Core::movre(const REGInstruction &inst) {
         tgt.setValue<Ordinal>(1, src.components[1]);
         tgt.setValue<Ordinal>(2, src.components[2] & 0x0000'FFFF);
     }
+    return std::nullopt;
 }
 
-void
+OptionalFaultRecord
 Core::cpyrsre(const REGInstruction &inst) {
 
     /*
@@ -210,23 +209,42 @@ Core::cpyrsre(const REGInstruction &inst) {
      * else dst <- -abs(src1);
      * endif
      */
-    auto src2 = unpackSrc2(inst, TreatAsExtendedReal{});
-    auto src1 = unpackSrc1(inst, TreatAsExtendedReal{});
-    fpassignment(inst, std::signbit(src2) != 0 ? std::fabs(src1) : -std::fabs(src1), TreatAsExtendedReal{});
+    return std::visit(
+            Overload {
+                [this, &inst](ExtendedReal src2, ExtendedReal src1) {
+                    return fpassignment(inst, std::signbit(src2) != 0 ? std::fabs(src1) : -std::fabs(src1), TreatAsExtendedReal{});
+                },
+                [](FaultRecord src2, FaultRecord) { return src2; },
+                [](FaultRecord src2, ExtendedReal) { return src2; },
+                [](ExtendedReal, FaultRecord src1) { return src1; }
+            },
+            unpackSrc2(inst, TreatAsExtendedReal{}),
+            unpackSrc1(inst, TreatAsExtendedReal{})
+            );
 }
-
-void
+OptionalFaultRecord
 Core::cpysre(const REGInstruction &inst) {
+
     /*
      * we transfer the sign bit from src2 into it
-     * If src2 is positive then dst <- abs(src1)
+     * If src2 is negative then dst <- abs(src1)
      * else dst <- -abs(src1);
      * endif
      */
-    auto src2 = unpackSrc2(inst, TreatAsExtendedReal{});
-    auto src1 = unpackSrc1(inst, TreatAsExtendedReal{});
-    fpassignment(inst, std::signbit(src2) == 0 ? std::fabs(src1) : -std::fabs(src1), TreatAsExtendedReal{});
+    return std::visit(
+            Overload {
+                    [this, &inst](ExtendedReal src2, ExtendedReal src1) {
+                        return fpassignment(inst, std::signbit(src2) == 0 ? std::fabs(src1) : -std::fabs(src1), TreatAsExtendedReal{});
+                    },
+                    [](FaultRecord src2, FaultRecord) { return src2; },
+                    [](FaultRecord src2, ExtendedReal) { return src2; },
+                    [](ExtendedReal, FaultRecord src1) { return src1; }
+            },
+            unpackSrc2(inst, TreatAsExtendedReal{}),
+            unpackSrc1(inst, TreatAsExtendedReal{})
+    );
 }
+
 
 OptionalFaultRecord
 Core::fpassignment(const REGInstruction &inst, ExtendedReal val, TreatAsExtendedReal) {
@@ -348,9 +366,6 @@ Core::fpassignment(const REGInstruction &inst, LongReal val, TreatAsLongReal) {
     return std::nullopt;
 }
 
-namespace {
-    TripleRegister bogus;
-}
 VariantWithFaultRecord<std::reference_wrapper<const TripleRegister>>
 Core::getFloatingPointRegister(ByteOrdinal index) const {
     switch (index) {
@@ -412,60 +427,70 @@ Core::unpackSrc2(const REGInstruction& inst, TreatAsLongReal) const {
 
 Core::MixedRealSourceArgument
 Core::unpackSrc1(const REGInstruction& inst, TreatAsReal) const {
+    auto src1Index = inst.getSrc1();
     if (inst.getM1()) {
         if (inst.src1IsFPLiteral()) {
-            return handleSubnormalCase(getFloatingPointLiteral<Real>(inst.getSrc1()));
+            return std::visit([this](auto value) { return handleSubnormalCase(value); }, getFloatingPointLiteral<Real>(src1Index));
         } else {
-            return handleSubnormalCase(getFloatingPointRegister(inst.getSrc1()).getValue<ExtendedReal >());
+            return std::visit([this](auto value) { return handleSubnormalCase(value); }, getFloatingPointRegister(src1Index));
         }
     } else {
-        return handleSubnormalCase(getGPR(inst.getSrc1()).getValue<Real>());
+        return std::visit([](auto value) { return value; }, handleSubnormalCase(getGPR(src1Index).getValue<Real>()));
     }
 }
 Core::MixedRealSourceArgument
 Core::unpackSrc2(const REGInstruction& inst, TreatAsReal) const {
+    auto index = inst.getSrc2();
     if (inst.getM2()) {
         if (inst.src2IsFPLiteral()) {
-            return handleSubnormalCase(getFloatingPointLiteral<Real>(inst.getSrc2()));
+            return std::visit([this](auto value) { return handleSubnormalCase(value); }, getFloatingPointLiteral<Real>(index));
         } else {
-            return handleSubnormalCase(getFloatingPointRegister(inst.getSrc2()).getValue<ExtendedReal >());
+            return std::visit([this](auto value) { return handleSubnormalCase(value); }, getFloatingPointRegister(index));
         }
     } else {
-        return handleSubnormalCase(getGPR(inst.getSrc2()).getValue<Real>());
+        return std::visit([](auto value) { return value; }, handleSubnormalCase(getGPR(index).getValue<Real>()));
     }
 }
 
-ExtendedReal
+VariantWithFaultRecord<ExtendedReal>
 Core::unpackSrc1(const REGInstruction &inst, TreatAsExtendedReal) const {
+    auto index = inst.getSrc1();
     if (inst.getM1()) {
         if (inst.src1IsFPLiteral()) {
-            return handleSubnormalCase(getFloatingPointLiteral<ExtendedReal>(inst.getSrc1()));
+            return std::visit([this](auto value) { return handleSubnormalCase(value); }, getFloatingPointLiteral<ExtendedReal>(index));
         } else {
-            return handleSubnormalCase(getFloatingPointRegister(inst.getSrc1()).getValue<ExtendedReal >());
+            return std::visit([this](auto value) { return handleSubnormalCase(value); }, getFloatingPointRegister(index));
         }
     } else {
-        return handleSubnormalCase(getGPR(inst.getSrc1(), TreatAsTripleRegister{}).getValue<ExtendedReal>());
+        return std::visit([](auto value) { return value; }, handleSubnormalCase(getGPR(index, TreatAsTripleRegister{}).getValue<ExtendedReal>()));
     }
 }
 
-ExtendedReal
+VariantWithFaultRecord<ExtendedReal>
 Core::unpackSrc2(const REGInstruction &inst, TreatAsExtendedReal) const {
+    auto index = inst.getSrc2();
     if (inst.getM2()) {
         if (inst.src2IsFPLiteral()) {
-            return handleSubnormalCase(getFloatingPointLiteral<ExtendedReal>(inst.getSrc2()));
+            return std::visit([this](auto value) { return handleSubnormalCase(value); }, getFloatingPointLiteral<ExtendedReal>(index));
         } else {
-            return handleSubnormalCase(getFloatingPointRegister(inst.getSrc2()).getValue<ExtendedReal>());
+            return std::visit([this](auto value) { return handleSubnormalCase(value); }, getFloatingPointRegister(index));
         }
     } else {
-        return handleSubnormalCase(getGPR(inst.getSrc2(), TreatAsTripleRegister{}).getValue<ExtendedReal>());
+        return std::visit([](auto value) { return value; }, handleSubnormalCase(getGPR(index, TreatAsTripleRegister{}).getValue<ExtendedReal>()));
     }
 }
-void
+
+OptionalFaultRecord
 Core::cosr(const REGInstruction &inst) {
-    std::visit([this, &inst](auto value) {
-                   using K = std::decay_t<decltype(value)>;
-                   fpassignment(inst, std::cos(value), TreatAs<K>{});
-               },
+    return std::visit(Overload {
+        [](FaultRecord&& value) {
+            return value;
+        },
+        [this, &inst](auto value) {
+            using K = std::decay_t<decltype(value)>;
+            fpassignment(inst, std::cos(value), TreatAs<K>{});
+        }
+        },
                unpackSrc1(inst, TreatAsReal{}));
 }
 
@@ -904,43 +929,43 @@ Core::logeprl(const REGInstruction &inst) {
     unimplementedFault();
 }
 
-void
+OptionalFaultRecord
 Core::cvtir(const REGInstruction& inst) {
     // convert integer to real
-    fpassignment(inst, serviceFloatingPointFault<Real>(unpackSrc1(inst, TreatAsInteger{})), TreatAsReal{});
+    return fpassignment(inst, serviceFloatingPointFault<Real>(unpackSrc1(inst, TreatAsInteger{})), TreatAsReal{});
 }
-void
+OptionalFaultRecord
 Core::cvtilr(const REGInstruction& inst) {
     //convert long integer to real
     // not a long real!
     // two instruction combination for converting integer to long real format
     // cvtir g6, fp3
     // movrl fp3, g8 # result stored in g8, g9
-    fpassignment(inst, serviceFloatingPointFault<LongReal>(unpackSrc1(inst, TreatAsLongInteger{})), TreatAsLongReal{});
+    return fpassignment(inst, serviceFloatingPointFault<LongReal>(unpackSrc1(inst, TreatAsLongInteger{})), TreatAsLongReal{});
 }
 
-void
+OptionalFaultRecord
 Core::cvtri(const REGInstruction &inst) {
 
-    unimplementedFault();
+    return unimplementedFault();
 }
 
-void
+OptionalFaultRecord
 Core::cvtril(const REGInstruction &inst) {
 
-    unimplementedFault();
+    return unimplementedFault();
 }
 
-void
+OptionalFaultRecord
 Core::cvtzri(const REGInstruction &inst) {
 
-    unimplementedFault();
+    return unimplementedFault();
 }
 
-void
+OptionalFaultRecord
 Core::cvtzril(const REGInstruction &inst) {
 
-    unimplementedFault();
+    return unimplementedFault();
 }
 OptionalFaultRecord
 Core::fpassignment(const REGInstruction&, FaultRecord& record, TreatAs<FaultRecord>) {

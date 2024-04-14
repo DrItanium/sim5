@@ -608,4 +608,11 @@ union TaggedWord {
 [[nodiscard]] constexpr bool isMEMFormat(Ordinal o) noexcept { return o >= 0x8000'0000; }
 [[nodiscard]] constexpr auto isREGFormat(Ordinal o) noexcept { return o >= 0x4000'0000 && o < 0x8000'0000; }
 
+// taken from https://www.modernescpp.com/index.php/visiting-a-std-variant-with-the-overload-pattern/
+template<typename ... Ts>
+struct Overload : Ts... {
+    using Ts::operator() ...;
+};
+
+template<typename... Ts> Overload(Ts...) -> Overload<Ts...>;
 #endif // end SIM5_TYPES_H__

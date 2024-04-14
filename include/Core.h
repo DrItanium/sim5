@@ -1665,14 +1665,14 @@ private:
     void ldis(Address address, Register& dest);
 private:
 
-    void movre(const REGInstruction& inst);
-    void movrl(const REGInstruction& inst);
-    void movr(const REGInstruction& inst);
-    void cpyrsre(const REGInstruction& inst);
-    void cpysre(const REGInstruction& inst);
+    OptionalFaultRecord movre(const REGInstruction& inst);
+    OptionalFaultRecord movrl(const REGInstruction& inst);
+    OptionalFaultRecord movr(const REGInstruction& inst);
+    OptionalFaultRecord cpyrsre(const REGInstruction& inst);
+    OptionalFaultRecord cpysre(const REGInstruction& inst);
     OptionalFaultRecord classr(const REGInstruction& inst);
     OptionalFaultRecord classrl(const REGInstruction& inst);
-    void cosr(const REGInstruction& inst);
+    OptionalFaultRecord cosr(const REGInstruction& inst);
     void cosrl(const REGInstruction& inst);
     void sinr(const REGInstruction& inst);
     void sinrl(const REGInstruction& inst);
@@ -1700,12 +1700,12 @@ private:
     void cmprl(const REGInstruction& inst) ;
     void cmpor(const REGInstruction& inst);
     void cmporl(const REGInstruction& inst);
-    void cvtilr(const REGInstruction& inst);
-    void cvtir(const REGInstruction& inst);
-    void cvtri(const REGInstruction& inst);
-    void cvtril(const REGInstruction& inst);
-    void cvtzri(const REGInstruction& inst);
-    void cvtzril(const REGInstruction& inst);
+    OptionalFaultRecord cvtilr(const REGInstruction& inst);
+    OptionalFaultRecord cvtir(const REGInstruction& inst);
+    OptionalFaultRecord cvtri(const REGInstruction& inst);
+    OptionalFaultRecord cvtril(const REGInstruction& inst);
+    OptionalFaultRecord cvtzri(const REGInstruction& inst);
+    OptionalFaultRecord cvtzril(const REGInstruction& inst);
     OptionalFaultRecord fpassignment(const REGInstruction& inst, FaultRecord& record, TreatAs<FaultRecord>);
     OptionalFaultRecord fpassignment(const REGInstruction& inst, ExtendedReal value, TreatAsExtendedReal);
     OptionalFaultRecord fpassignment(const REGInstruction& inst, Real value, TreatAsReal);
@@ -1716,8 +1716,8 @@ private:
     [[nodiscard]] MixedRealSourceArgument unpackSrc2(const REGInstruction& index, TreatAsReal) const;
     [[nodiscard]] MixedLongRealSourceArgument unpackSrc1(const REGInstruction& index, TreatAsLongReal) const;
     [[nodiscard]] MixedLongRealSourceArgument unpackSrc2(const REGInstruction& index, TreatAsLongReal) const;
-    [[nodiscard]] ExtendedReal unpackSrc1(const REGInstruction& index, TreatAsExtendedReal) const;
-    [[nodiscard]] ExtendedReal unpackSrc2(const REGInstruction& index, TreatAsExtendedReal) const;
+    [[nodiscard]] VariantWithFaultRecord<ExtendedReal> unpackSrc1(const REGInstruction& index, TreatAsExtendedReal) const;
+    [[nodiscard]] VariantWithFaultRecord<ExtendedReal> unpackSrc2(const REGInstruction& index, TreatAsExtendedReal) const;
     [[nodiscard]] LongOrdinal unpackSrc1(const REGInstruction& index, TreatAsLongOrdinal) const;
     [[nodiscard]] LongInteger unpackSrc1(const REGInstruction& index, TreatAsLongInteger) const;
     [[nodiscard]] Integer unpackSrc1(const REGInstruction& index, TreatAsInteger) const;
