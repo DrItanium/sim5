@@ -767,21 +767,22 @@ Core::shro(Register &dest, Ordinal src1, Ordinal src2) {
     dest.setValue<Ordinal>((static_cast<Ordinal>(src1) < 32) ? static_cast<Ordinal>(src2) >> static_cast<Ordinal>(src1) : 0);
 }
 
-void
+OptionalFaultRecord
 Core::stib(Integer value, Address address) {
     if (auto maskedValue = address & 0xFFFF'FF00; maskedValue != 0 && maskedValue != 0xFFFF'FF00) {
         store(address, static_cast<ByteInteger>(value), TreatAsByteInteger{});
         if (ac_.arith.integerOverflowMask == 1) {
             ac_.arith.integerOverflowFlag = 1;
         } else {
-            integerOverflowFault();
+            return integerOverflowFault();
         }
     } else {
         store(address, static_cast<ByteInteger>(value), TreatAsByteInteger{});
     }
+    return std::nullopt;
 }
 
-void
+OptionalFaultRecord
 Core::stis(Integer value, Address address) {
     // If the register data is too large to be stored as a byte or
     // short word, the value is truncated and the integer overflow
@@ -791,11 +792,12 @@ Core::stis(Integer value, Address address) {
         if (ac_.arith.integerOverflowMask == 1) {
             ac_.arith.integerOverflowFlag = 1;
         } else {
-            integerOverflowFault();
+            return integerOverflowFault();
         }
     } else {
         store(address, static_cast<ShortInteger>(value), TreatAsShortInteger{});
     }
+    return std::nullopt;
 }
 
 void
@@ -808,12 +810,12 @@ Core::ldis(Address address, Register &dest) {
     dest.setValue<Integer>(load(address, TreatAsShortInteger{}));
 }
 
-void
+OptionalFaultRecord
 Core::modi(Register& dest, Integer src1, Integer src2) {
     if (auto denominator = src1; denominator == 0) {
         // dest becomes an undefined value
         dest.setValue<Ordinal>(0);
-        zeroDivideFault();
+        return zeroDivideFault();
     } else {
         auto numerator = src2;
         auto result = numerator - ((numerator / denominator) * denominator);
@@ -824,6 +826,7 @@ Core::modi(Register& dest, Integer src1, Integer src2) {
         nextInstruction();
         /// @todo implement fault checks
     }
+    return std::nullopt;
 }
 void
 Core::advanceCOBRDisplacement(Integer displacement) noexcept {
@@ -1083,12 +1086,13 @@ template<uint8_t mask>
 constexpr bool aligned(uint8_t value) noexcept {
     return (value & mask) == 0;
 }
-void
+
+OptionalFaultRecord
 Core::movl(const REGInstruction& inst) {
     if ((!aligned<0b1>(inst.getSrcDest())) || (!aligned<0b1>(inst.getSrc1()))) {
         // don't corrupt anything as we can't recover if we do!
         nextInstruction();
-        invalidOpcodeFault();
+        return invalidOpcodeFault();
     } else if (inst.src1IsLiteral()) {
         setGPR(inst.getSrcDest(), inst.getSrc1(), TreatAsOrdinal{});
         setGPR(inst.getSrcDest(), 1, 0, TreatAsOrdinal{});
@@ -1096,14 +1100,15 @@ Core::movl(const REGInstruction& inst) {
         moveGPR(inst.getSrcDest(), inst.getSrc1(), TreatAsOrdinal{});
         moveGPR(inst.getSrcDest(), 1, inst.getSrc1(), 1, TreatAsOrdinal{});
     }
+    return std::nullopt;
 }
 
-void
+OptionalFaultRecord
 Core::movt(const REGInstruction& inst) {
     if ((!aligned<0b11>(inst.getSrcDest())) || (!aligned<0b11>(inst.getSrc1()))) {
         // don't corrupt anything as we can't recover if we do!
         nextInstruction();
-        invalidOpcodeFault();
+        return invalidOpcodeFault();
     } else if (inst.src1IsLiteral()) {
         setGPR(inst.getSrcDest(), inst.getSrc1(), TreatAsOrdinal{});
         setGPR(inst.getSrcDest(), 1, 0, TreatAsOrdinal{});
@@ -1113,14 +1118,15 @@ Core::movt(const REGInstruction& inst) {
         moveGPR(inst.getSrcDest(), 1, inst.getSrc1(), 1, TreatAsOrdinal{});
         moveGPR(inst.getSrcDest(), 2, inst.getSrc1(), 2, TreatAsOrdinal{});
     }
+    return std::nullopt;
 }
 
-void
+OptionalFaultRecord
 Core::movq(const REGInstruction& inst) {
     if ((!aligned<0b11>(inst.getSrcDest())) || (!aligned<0b11>(inst.getSrc1()))) {
         // don't corrupt anything as we can't recover if we do!
         nextInstruction();
-        invalidOpcodeFault();
+        return invalidOpcodeFault();
     } else if (inst.src1IsLiteral()) {
         setGPR(inst.getSrcDest(), inst.getSrc1(), TreatAsOrdinal{});
         setGPR(inst.getSrcDest(), 1, 0, TreatAsOrdinal{});
@@ -1132,4 +1138,5 @@ Core::movq(const REGInstruction& inst) {
         moveGPR(inst.getSrcDest(), 2, inst.getSrc1(), 2, TreatAsOrdinal{});
         moveGPR(inst.getSrcDest(), 3, inst.getSrc1(), 3, TreatAsOrdinal{});
     }
+    return std::nullopt;
 }

@@ -1303,7 +1303,7 @@ private:
     void andnot(Register& dest, Ordinal src1, Ordinal src2) noexcept;
     void notand(Register& dest, Ordinal src1, Ordinal src2) noexcept;
     void clrbit(Register& dest, Ordinal src1, Ordinal src2) noexcept;
-    void modi(Register& dest, Integer src1, Integer src2);
+    OptionalFaultRecord modi(Register& dest, Integer src1, Integer src2);
     void alterbit(Register& dest, Ordinal src1, Ordinal src2) noexcept;
     void addc(Register& dest, Ordinal src1, Ordinal src2);
     void subc(Register& dest, Ordinal src1, Ordinal src2);
@@ -1659,8 +1659,8 @@ private: // mmu
     [[nodiscard]] inline bool processIsInSupervisorMode() const noexcept { return getProcessControls().processControls.executionMode != 0; }
     void saveGlobalsAndFloatingPointRegsToPCB();
 private:
-    void stib(Integer value, Address address);
-    void stis(Integer value, Address address);
+    OptionalFaultRecord stib(Integer value, Address address);
+    OptionalFaultRecord stis(Integer value, Address address);
     void ldib(Address address, Register& dest);
     void ldis(Address address, Register& dest);
 private:
@@ -1878,9 +1878,9 @@ private:
     void logeprl(const REGInstruction& inst);
     /// @todo figure out what operations have not yet been implemented
 private:
-    void movl(const REGInstruction& inst);
-    void movt(const REGInstruction& inst);
-    void movq(const REGInstruction& inst);
+    OptionalFaultRecord movl(const REGInstruction& inst);
+    OptionalFaultRecord movt(const REGInstruction& inst);
+    OptionalFaultRecord movq(const REGInstruction& inst);
 private:
     Ordinal systemAddressTableBase_ = 0;
     Ordinal prcbAddress_ = 0;
