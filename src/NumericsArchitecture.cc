@@ -379,38 +379,34 @@ Core::getFloatingPointRegister(ByteOrdinal index) {
         case 0b00011: // fp3
             return fp.get(12, TreatAsTripleRegister{});
         default:
-            invalidOpcodeFault();
-            return bogus;
+            return invalidOpcodeFault();
     }
 }
 
 Core::MixedLongRealSourceArgument
 Core::unpackSrc1(const REGInstruction& inst, TreatAsLongReal) const {
+    auto src1Index = inst.getSrc1();
     if (inst.getM1()) {
         if (inst.src1IsFPLiteral()) {
-            auto result = getFloatingPointLiteral<LongReal>(inst.getSrc1());
-            if (result) {
-                return handleSubnormalCase(result.value);
-            } else {
-                return std::nullopt;
-            }
+            return std::visit([this](auto value) { return handleSubnormalCase(value); }, getFloatingPointLiteral<LongReal>(src1Index));
         } else {
-            return handleSubnormalCase(getFloatingPointRegister(inst.getSrc1()).getValue<ExtendedReal >());
+            return std::visit([this](auto value) { return handleSubnormalCase(value); }, getFloatingPointRegister(src1Index));
         }
     } else {
-        return handleSubnormalCase(getGPR(inst.getSrc1(), TreatAsLongRegister{}).getValue<LongReal>());
+        return std::visit([](auto value) { return value; }, handleSubnormalCase(getGPR(src1Index, TreatAsLongRegister{}).getValue<LongReal>()));
     }
 }
 Core::MixedLongRealSourceArgument
 Core::unpackSrc2(const REGInstruction& inst, TreatAsLongReal) const {
+    auto index = inst.getSrc2();
     if (inst.getM2()) {
         if (inst.src2IsFPLiteral()) {
-            return handleSubnormalCase(getFloatingPointLiteral<LongReal>(inst.getSrc2()));
+            return std::visit([this](auto value) { return handleSubnormalCase(value); }, getFloatingPointLiteral<LongReal>(index));
         } else {
-            return handleSubnormalCase(getFloatingPointRegister(inst.getSrc2()).getValue<ExtendedReal >());
+            return std::visit([this](auto value) { return handleSubnormalCase(value); }, getFloatingPointRegister(index));
         }
     } else {
-        return handleSubnormalCase(getGPR(inst.getSrc2(), TreatAsLongRegister{}).getValue<LongReal>());
+        return std::visit([](auto value) { return value; }, handleSubnormalCase(getGPR(index, TreatAsLongRegister{}).getValue<LongReal>()));
     }
 }
 

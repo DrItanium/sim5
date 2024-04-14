@@ -1823,7 +1823,7 @@ private:
     void updateRoundingMode() const;
     template<typename T>
     requires std::floating_point<T>
-    VariantWithFaultRecord<T> handleSubnormalCase(T input) const {
+    [[nodiscard]] VariantWithFaultRecord<T> handleSubnormalCase(T input) const {
         if (std::fpclassify(input) == FP_SUBNORMAL) {
             auto result = floatingReservedEncodingFault();
             if (result) {
@@ -1831,6 +1831,15 @@ private:
             }
         }
         return input;
+    }
+    FaultRecord handleSubnormalCase(const FaultRecord& input) const {
+        return input;
+    }
+    decltype(auto) handleSubnormalCase(std::reference_wrapper<const TripleRegister> value) const noexcept {
+        return  handleSubnormalCase(value.get().getValue<ExtendedReal >());
+    }
+    decltype(auto) handleSubnormalCase(std::reference_wrapper<TripleRegister> value) const noexcept {
+        return  handleSubnormalCase(value.get().getValue<ExtendedReal >());
     }
     OptionalFaultRecord performClassification(FaultRecord& record) noexcept {
         return record;
