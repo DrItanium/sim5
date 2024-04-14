@@ -1673,7 +1673,7 @@ private:
     OptionalFaultRecord classr(const REGInstruction& inst);
     OptionalFaultRecord classrl(const REGInstruction& inst);
     OptionalFaultRecord cosr(const REGInstruction& inst);
-    void cosrl(const REGInstruction& inst);
+    OptionalFaultRecord cosrl(const REGInstruction& inst);
     void sinr(const REGInstruction& inst);
     void sinrl(const REGInstruction& inst);
     void tanr(const REGInstruction& inst);
@@ -1764,14 +1764,14 @@ private:
      */
     template<typename T>
     requires std::floating_point<T>
-    T serviceFloatingPointFault(T value) {
+    VariantWithFaultRecord<T> serviceFloatingPointFault(T value) {
         if (std::fetestexcept(FE_DIVBYZERO)) {
             std::feclearexcept(FE_ALL_EXCEPT);
-            floatingZeroDivideOperationFault();
+            return floatingZeroDivideOperationFault();
         }
         if (std::fetestexcept(FE_INVALID)) {
             std::feclearexcept(FE_ALL_EXCEPT);
-            floatingInvalidOperationFault();
+            return floatingInvalidOperationFault();
         }
         FaultRecord record((Ordinal) pc_,
                            (Ordinal) ac_,
@@ -1816,9 +1816,10 @@ private:
         }
         std::feclearexcept(FE_ALL_EXCEPT);
         if (record.type != 0) {
-            throw record;
+            return record;
+        } else {
+            return value;
         }
-        return value;
     }
     void updateRoundingMode() const;
     template<typename T>

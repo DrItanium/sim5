@@ -103,13 +103,13 @@ Core::classrl(const REGInstruction& inst) {
     return std::visit([this](auto value) { return performClassification(value); }, unpackSrc1(inst, TreatAsLongReal{}));
 }
 
-void
+OptionalFaultRecord
 Core::movr(const REGInstruction &inst) {
     return std::visit([this, &inst](auto value) { return fpassignment(inst, value, TreatAs<std::decay_t<decltype(value)>>{}); }, unpackSrc1(inst, TreatAsReal{}));
     /// @todo implement floating point faults
 }
 
-void
+OptionalFaultRecord
 Core::movrl(const REGInstruction &inst) {
     return std::visit([this, &inst](auto value) { return fpassignment(inst, value, TreatAs<std::decay_t<decltype(value)>>{}); }, unpackSrc1(inst, TreatAsLongReal{}));
     /// @todo implement floating point faults
@@ -248,7 +248,11 @@ Core::cpysre(const REGInstruction &inst) {
 
 OptionalFaultRecord
 Core::fpassignment(const REGInstruction &inst, ExtendedReal val, TreatAsExtendedReal) {
-    auto result = serviceFloatingPointFault<ExtendedReal>(val);
+    auto container= serviceFloatingPointFault<ExtendedReal>(val);
+    if (std::holds_alternative<FaultRecord>(container)) {
+        return std::make_optional(std::get<FaultRecord>(container));
+    }
+    ExtendedReal result = std::get<ExtendedReal>(container);
     if(inst.getM3()) {
         // fp
         switch (inst.getSrcDest()) {
@@ -288,7 +292,11 @@ Core::fpassignment(const REGInstruction &inst, ExtendedReal val, TreatAsExtended
 
 OptionalFaultRecord
 Core::fpassignment(const REGInstruction &inst, Real val, TreatAsReal) {
-    auto result = serviceFloatingPointFault<Real>(val);
+    auto container = serviceFloatingPointFault<Real>(val);
+    if (std::holds_alternative<FaultRecord>(container)) {
+        return std::make_optional(std::get<FaultRecord>(container));
+    }
+    auto result = std::get<Real>(container);
     if(inst.getM3()) {
         // fp
         switch (inst.getSrcDest()) {
@@ -328,7 +336,11 @@ Core::fpassignment(const REGInstruction &inst, Real val, TreatAsReal) {
 
 OptionalFaultRecord
 Core::fpassignment(const REGInstruction &inst, LongReal val, TreatAsLongReal) {
-    auto result = serviceFloatingPointFault<LongReal>(val);
+    auto container = serviceFloatingPointFault<LongReal>(val);
+    if (std::holds_alternative<FaultRecord>(container)) {
+        return std::make_optional(std::get<FaultRecord>(container));
+    }
+    auto result = std::get<LongReal>(container);
     if(inst.getM3()) {
         // fp
         switch (inst.getSrcDest()) {
@@ -479,13 +491,11 @@ Core::unpackSrc2(const REGInstruction &inst, TreatAsExtendedReal) const {
         return std::visit([](auto value) { return value; }, handleSubnormalCase(getGPR(index, TreatAsTripleRegister{}).getValue<ExtendedReal>()));
     }
 }
-
+auto faultIdentity = [](FaultRecord&& value) { return value; };
 OptionalFaultRecord
 Core::cosr(const REGInstruction &inst) {
     return std::visit(Overload {
-        [](FaultRecord&& value) {
-            return value;
-        },
+        faultIdentity,
         [this, &inst](auto value) {
             using K = std::decay_t<decltype(value)>;
             fpassignment(inst, std::cos(value), TreatAs<K>{});
@@ -494,11 +504,14 @@ Core::cosr(const REGInstruction &inst) {
                unpackSrc1(inst, TreatAsReal{}));
 }
 
-void
+OptionalFaultRecord
 Core::cosrl(const REGInstruction &inst) {
-    std::visit([this, &inst](auto value) {
-                   using K = std::decay_t<decltype(value)>;
-                   fpassignment(inst, std::cos(value), TreatAs<K>{});
+    return std::visit(Overload{
+                       faultIdentity,
+                       [this, &inst](auto value) {
+                           using K = std::decay_t<decltype(value)>;
+                           return fpassignment(inst, std::cos(value), TreatAs<K>{});
+                       }
                },
                unpackSrc1(inst, TreatAsLongReal{}));
 }
