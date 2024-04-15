@@ -31,20 +31,20 @@ Core::processFPInstruction(const REGInstruction &inst ) {
     if (auto opcode = inst.getOpcode(); isFloatingPointInstruction(opcode)) {
         switch (opcode) {
 #define X(name) case Opcodes:: name : return name (inst)
-            X(cosr);
             //X(addr);
             //X(addrl);
             //X(atanr);
             //X(atanrl);
-            //X(classr);
-            //X(classrl);
+            X(classr);
+            X(classrl);
             //X(cmpr);
             //X(cmprl);
             //X(cmpor);
             //X(cmporl);
-            //X(cosrl);
-            //X(cpyrsre);
-            //X(cpysre);
+            X(cosr);
+            X(cosrl);
+            X(cpyrsre);
+            X(cpysre);
             //X(cvtri);
             //X(cvtril);
             //X(cvtzri);
@@ -54,7 +54,7 @@ Core::processFPInstruction(const REGInstruction &inst ) {
             //X(divr);
             //X(divrl);
             //X(movr);
-            //X(movre);
+            X(movre);
             //X(movrl);
             //X(mulr);
             //X(mulrl);
@@ -96,11 +96,11 @@ Core::dmovt(Register& dest, Ordinal src) noexcept {
 
 OptionalFaultRecord
 Core::classr(const REGInstruction& inst) {
-    return std::visit([this](auto value) { return performClassification(value); }, unpackSrc1(inst, TreatAsReal{}));
+    return classifyGeneric<Real>(inst);
 }
 OptionalFaultRecord
 Core::classrl(const REGInstruction& inst) {
-    return std::visit([this](auto value) { return performClassification(value); }, unpackSrc1(inst, TreatAsLongReal{}));
+    return classifyGeneric<LongReal>(inst);
 }
 #if 0
 OptionalFaultRecord
@@ -517,14 +517,13 @@ OptionalFaultRecord
 Core::cosr(const REGInstruction &inst) {
     return std::visit(Overload {
         faultIdentity,
-        [this, &inst](Real value) {
+        [this, &inst](auto value) {
             using K = std::decay_t<decltype(value)>;
             return fpassignment(inst, std::cos(value), TreatAs<K>{});
         }
         },
                unpackSrc1(inst, TreatAsReal{}));
 }
-#if 0
 OptionalFaultRecord
 Core::cosrl(const REGInstruction &inst) {
     return std::visit(Overload{
@@ -536,6 +535,7 @@ Core::cosrl(const REGInstruction &inst) {
                },
                unpackSrc1(inst, TreatAsLongReal{}));
 }
+#if 0
 void
 Core::sinr(const REGInstruction &inst) {
     std::visit([this, &inst](auto value) {

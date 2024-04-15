@@ -1842,10 +1842,7 @@ private:
             return handleSubnormalCase<T>(std::get<T>(input));
         }
     }
-    decltype(auto) handleSubnormalCase(std::reference_wrapper<TripleRegister> value) const noexcept {
-        return  handleSubnormalCase(value.get().getValue<ExtendedReal >());
-    }
-    OptionalFaultRecord performClassification(FaultRecord& record) noexcept {
+    OptionalFaultRecord performClassification(const FaultRecord& record) noexcept {
         return record;
     }
     template<typename T>
@@ -1873,6 +1870,11 @@ private:
                 break;
         }
         return std::nullopt;
+    }
+    template<typename T>
+    requires std::floating_point<T>
+    OptionalFaultRecord classifyGeneric(const REGInstruction& inst) noexcept {
+        return std::visit([this](auto value) { return performClassification(value); }, unpackSrc1(inst, TreatAs<T>{}));
     }
     void logbnr(const REGInstruction& inst);
     void logbnrl(const REGInstruction& inst);
