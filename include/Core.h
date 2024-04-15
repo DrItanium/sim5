@@ -1068,7 +1068,6 @@ private:
     bool fullConditionCodeCheck() noexcept;
     bool fullConditionCodeCheck(uint8_t mask) noexcept;
     std::optional<Ordinal> computeAddress(const MEMInstruction&) noexcept;
-    OptionalFaultRecord performRegisterTransfer(const REGInstruction&, ByteOrdinal mask, ByteOrdinal count) ;
 private:
     void sendIAC(const iac::Message& msg) noexcept;
     void dispatchInterrupt(uint8_t vector) noexcept;
@@ -1298,7 +1297,7 @@ private:
     void notbit(Register& destination, Ordinal src1, Ordinal src2) noexcept;
     void ornot(Register& dest, Ordinal src1, Ordinal src2) noexcept;
     void notor(Register& dest, Ordinal src1, Ordinal src2) noexcept;
-    void notOperation(Register& destination, Ordinal src) noexcept;
+    static void notOperation(Register& destination, Ordinal src) noexcept;
 
     void andnot(Register& dest, Ordinal src1, Ordinal src2) noexcept;
     void notand(Register& dest, Ordinal src1, Ordinal src2) noexcept;
@@ -1477,16 +1476,16 @@ private:
     OptionalFaultRecord processFPInstruction(const REGInstruction&);
 private:
     OptionalFaultRecord modpc(Register& dest, Ordinal src1o, Ordinal src2o);
-    void modxc(Register& control, Register& dest, Ordinal src1, Ordinal src2);
-    void shlo(Register& srcDest, Ordinal src1, Ordinal src2) ;
-    void shli(Register& srcDest, Integer src1, Integer src2) ;
-    void rotate(Register& dest, Ordinal src1, Ordinal src2) ;
-    void shri(Register& dest, Integer src1, Integer src2) ;
-    void shro(Register& dest, Ordinal src1, Ordinal src2) ;
+    static void modxc(Register& control, Register& dest, Ordinal src1, Ordinal src2);
+    static void shlo(Register& srcDest, Ordinal src1, Ordinal src2) ;
+    static void shli(Register& srcDest, Integer src1, Integer src2) ;
+    static void rotate(Register& dest, Ordinal src1, Ordinal src2) ;
+    static void shri(Register& dest, Integer src1, Integer src2) ;
+    static void shro(Register& dest, Ordinal src1, Ordinal src2) ;
     void mulo(Register& dest, Ordinal src1, Ordinal src2) ;
     void muli(Register& dest, Integer src1, Integer src2) ;
-    void modify(Register& dest, Ordinal src1, Ordinal src2) ;
-    void extract(Register& dest, Ordinal src1, Ordinal src2) ;
+    static void modify(Register& dest, Ordinal src1, Ordinal src2) ;
+    static void extract(Register& dest, Ordinal src1, Ordinal src2) ;
 protected:
     static decltype(auto) doRandom() {
         return rand();

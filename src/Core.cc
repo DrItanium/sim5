@@ -179,7 +179,6 @@ Core::fmark() {
 std::optional<Ordinal>
 Core::computeAddress(const MEMInstruction& inst) noexcept {
     DEBUG_ENTER_FUNCTION;
-    Ordinal result = 0;
     if (inst.usesOptionalDisplacement()) {
         instructionLength_ = 8;
     }
@@ -223,7 +222,7 @@ Core::ldl(const MEMInstruction& inst, Address effectiveAddress, LongRegister& de
         // support unaligned accesses
         return std::nullopt;
     }
-    // the instruction is invalid so we should complete after we are done
+    // the instruction is invalid, so we should complete after we are done
 }
 
 
@@ -237,7 +236,7 @@ Core::stl(const MEMInstruction& inst, Address effectiveAddress, const LongRegist
         store(effectiveAddress, source.getValue<LongOrdinal>(), TreatAsLongOrdinal{});
         return std::nullopt;
     }
-    // the instruction is invalid so we should complete after we are done
+    // the instruction is invalid, so we should complete after we are done
 }
 
 OptionalFaultRecord
@@ -251,7 +250,7 @@ Core::ldt(const MEMInstruction& inst, Address effectiveAddress, TripleRegister& 
         destination[2] = load(effectiveAddress + 8, TreatAsOrdinal{});
         return std::nullopt;
     }
-    // the instruction is invalid so we should complete after we are done
+    // the instruction is invalid, so we should complete after we are done
 }
 
 OptionalFaultRecord
@@ -265,7 +264,7 @@ Core::stt(const MEMInstruction& inst, Address effectiveAddress, const TripleRegi
         store(effectiveAddress + 8,  static_cast<Ordinal>(source[2]), TreatAsOrdinal{});
         return std::nullopt;
     }
-    // the instruction is invalid so we should complete after we are done
+    // the instruction is invalid, so we should complete after we are done
 }
 
 
@@ -278,7 +277,7 @@ Core::ldq(const MEMInstruction& inst, Address effectiveAddress, QuadRegister& de
         destination.setValue(load(effectiveAddress, TreatAsQuadOrdinal{}), TreatAsQuadOrdinal{});
     }
     DEBUG_LEAVE_FUNCTION;
-    // the instruction is invalid so we should complete after we are done
+    // the instruction is invalid, so we should complete after we are done
     return std::nullopt;
 }
 
@@ -293,25 +292,10 @@ Core::stq(const MEMInstruction& inst, Address effectiveAddress, const QuadRegist
     }
     DEBUG_LEAVE_FUNCTION;
     return std::nullopt;
-    // the instruction is invalid so we should complete after we are done
+    // the instruction is invalid, so we should complete after we are done
 }
 
 
-
-
-OptionalFaultRecord
-Core::performRegisterTransfer(const REGInstruction& inst, ByteOrdinal mask, ByteOrdinal count) {
-    // perform the register transfer first and then check to see if we were
-    // offset at all
-    for (ByteOrdinal i = 0; i < count; ++i) {
-        setGPR(inst.getSrcDest(), i, unpackSrc1(inst, i, TreatAsOrdinal{}), TreatAsOrdinal{});
-    }
-    if (((inst.getSrcDest() & mask) != 0) || ((inst.getSrc1() & mask) != 0)) {
-        nextInstruction();
-        return invalidOpcodeFault();
-    }
-    return std::nullopt;
-}
 
 
 void
@@ -381,7 +365,7 @@ Core::fullConditionCodeCheck(uint8_t mask) noexcept {
     // that the condition code is zero and the mask is the unordered kind then
     // return true :). In all other cases, the second check will either fail
     // (because the condition code is zero) or it will never fire because the
-    // masked condition code will be non zero.
+    // masked condition code will be non-zero.
     return getMaskedConditionCode(mask) || conditionCodeEqualsMask(mask);
 }
 
