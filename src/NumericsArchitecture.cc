@@ -489,12 +489,12 @@ Core::unpackSrc1(const REGInstruction &inst, TreatAsExtendedReal) const {
     auto index = inst.getSrc1();
     if (inst.getM1()) {
         if (inst.src1IsFPLiteral()) {
-            return std::visit([this](auto value) { return handleSubnormalCase(value); }, getFloatingPointLiteral<ExtendedReal>(index));
+            return handleSubnormalCase<ExtendedReal>( getFloatingPointLiteral<ExtendedReal>(index));
         } else {
-            return std::visit([this](auto value) { return handleSubnormalCase(value); }, getFloatingPointRegister(index));
+            return handleSubnormalCase<ExtendedReal>(getFloatingPointRegisterValue(index));
         }
     } else {
-        return std::visit([](auto value) { return value; }, handleSubnormalCase(getGPR(index, TreatAsTripleRegister{}).getValue<ExtendedReal>()));
+        return handleSubnormalCase(getGPR(index, TreatAsTripleRegister{}).getValue<ExtendedReal>());
     }
 }
 
@@ -503,12 +503,12 @@ Core::unpackSrc2(const REGInstruction &inst, TreatAsExtendedReal) const {
     auto index = inst.getSrc2();
     if (inst.getM2()) {
         if (inst.src2IsFPLiteral()) {
-            return std::visit([this](auto value) { return handleSubnormalCase(value); }, getFloatingPointLiteral<ExtendedReal>(index));
+            return handleSubnormalCase<ExtendedReal>( getFloatingPointLiteral<ExtendedReal>(index));
         } else {
-            return std::visit([this](auto value) { return handleSubnormalCase(value); }, getFloatingPointRegister(index));
+            return handleSubnormalCase<ExtendedReal>(getFloatingPointRegisterValue(index));
         }
     } else {
-        return std::visit([](auto value) { return value; }, handleSubnormalCase(getGPR(index, TreatAsTripleRegister{}).getValue<ExtendedReal>()));
+        return handleSubnormalCase(getGPR(index, TreatAsTripleRegister{}).getValue<ExtendedReal>());
     }
 }
 auto faultIdentity = [](FaultRecord&& value) { return value; };
