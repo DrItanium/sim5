@@ -1674,8 +1674,8 @@ private:
     OptionalFaultRecord classrl(const REGInstruction& inst);
     OptionalFaultRecord cosr(const REGInstruction& inst);
     OptionalFaultRecord cosrl(const REGInstruction& inst);
-    void sinr(const REGInstruction& inst);
-    void sinrl(const REGInstruction& inst);
+    OptionalFaultRecord sinr(const REGInstruction& inst);
+    OptionalFaultRecord sinrl(const REGInstruction& inst);
     void tanr(const REGInstruction& inst);
     void tanrl(const REGInstruction& inst);
     void atanr(const REGInstruction& inst);

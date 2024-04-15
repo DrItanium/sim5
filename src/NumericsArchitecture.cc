@@ -66,8 +66,8 @@ Core::processFPInstruction(const REGInstruction &inst ) {
             //X(subrl);
             //X(scaler);
             //X(scalerl);
-            //X(sinr);
-            //X(sinrl);
+            X(sinr);
+            X(sinrl);
             //X(sqrtr);
             //X(sqrtrl);
             //X(tanr);
@@ -535,24 +535,29 @@ Core::cosrl(const REGInstruction &inst) {
                },
                unpackSrc1(inst, TreatAsLongReal{}));
 }
-#if 0
-void
+OptionalFaultRecord
 Core::sinr(const REGInstruction &inst) {
-    std::visit([this, &inst](auto value) {
-                   using K = std::decay_t<decltype(value)>;
-                   fpassignment(inst, std::sin(value), TreatAs<K>{});
-               },
-               unpackSrc1(inst, TreatAsReal{}));
+    return std::visit(Overload {
+                              faultIdentity,
+                              [this, &inst](auto value) {
+                                  using K = std::decay_t<decltype(value)>;
+                                  return fpassignment(inst, std::sin(value), TreatAs<K>{});
+                              }
+                      },
+                      unpackSrc1(inst, TreatAsReal{}));
 }
-
-void
+OptionalFaultRecord
 Core::sinrl(const REGInstruction &inst) {
-    std::visit([this, &inst](auto value) {
-                   using K = std::decay_t<decltype(value)>;
-                   fpassignment(inst, std::sin(value), TreatAs<K>{});
-               },
-               unpackSrc1(inst, TreatAsLongReal{}));
+    return std::visit(Overload{
+                              faultIdentity,
+                              [this, &inst](auto value) {
+                                  using K = std::decay_t<decltype(value)>;
+                                  return fpassignment(inst, std::sin(value), TreatAs<K>{});
+                              }
+                      },
+                      unpackSrc1(inst, TreatAsLongReal{}));
 }
+#if 0
 void
 Core::tanr(const REGInstruction &inst) {
     std::visit([this, &inst](auto value) {
