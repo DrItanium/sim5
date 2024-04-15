@@ -60,16 +60,16 @@ Core::processFPInstruction(const REGInstruction &inst ) {
             //X(mulrl);
             //X(remr);
             //X(remrl);
-            //X(roundr);
-            //X(roundrl);
+            X(roundr);
+            X(roundrl);
             //X(subr);
             //X(subrl);
             //X(scaler);
             //X(scalerl);
             X(sinr);
             X(sinrl);
-            //X(sqrtr);
-            //X(sqrtrl);
+            X(sqrtr);
+            X(sqrtrl);
             X(tanr);
             X(tanrl);
             //X(logeprl);
@@ -513,131 +513,32 @@ Core::unpackSrc2(const REGInstruction &inst, TreatAsExtendedReal) const {
     }
 }
 auto faultIdentity = [](FaultRecord&& value) { return std::make_optional(value); };
-OptionalFaultRecord
-Core::cosr(const REGInstruction &inst) {
-    return std::visit(Overload {
-        faultIdentity,
-        [this, &inst](auto value) {
-            using K = std::decay_t<decltype(value)>;
-            return fpassignment(inst, std::cos(value), TreatAs<K>{});
-        }
-        },
-               unpackSrc1(inst, TreatAsReal{}));
-}
-OptionalFaultRecord
-Core::cosrl(const REGInstruction &inst) {
-    return std::visit(Overload{
-                       faultIdentity,
-                       [this, &inst](auto value) {
-                           using K = std::decay_t<decltype(value)>;
-                           return fpassignment(inst, std::cos(value), TreatAs<K>{});
-                       }
-               },
-               unpackSrc1(inst, TreatAsLongReal{}));
-}
-OptionalFaultRecord
-Core::sinr(const REGInstruction &inst) {
-    return std::visit(Overload {
-                              faultIdentity,
-                              [this, &inst](auto value) {
-                                  using K = std::decay_t<decltype(value)>;
-                                  return fpassignment(inst, std::sin(value), TreatAs<K>{});
-                              }
-                      },
-                      unpackSrc1(inst, TreatAsReal{}));
-}
-OptionalFaultRecord
-Core::sinrl(const REGInstruction &inst) {
-    return std::visit(Overload{
-                              faultIdentity,
-                              [this, &inst](auto value) {
-                                  using K = std::decay_t<decltype(value)>;
-                                  return fpassignment(inst, std::sin(value), TreatAs<K>{});
-                              }
-                      },
-                      unpackSrc1(inst, TreatAsLongReal{}));
-}
-OptionalFaultRecord
-Core::tanr(const REGInstruction &inst) {
-    return std::visit(Overload {
-                              faultIdentity,
-                              [this, &inst](auto value) {
-                                  using K = std::decay_t<decltype(value)>;
-                                  return fpassignment(inst, std::tan(value), TreatAs<K>{});
-                              },
-                      },
-                      unpackSrc1(inst, TreatAsReal{}));
-}
+#define X(name, routine, kind) \
+OptionalFaultRecord      \
+Core:: name (const REGInstruction& inst) { \
+                         return std::visit(Overload {               \
+                         faultIdentity,                             \
+                         [this, &inst](auto value) {                \
+                            using K = std::decay_t<decltype(value)>;\
+                            return fpassignment(inst, routine ( value ) , TreatAs<K>{});\
+                         }},   \
+                         unpackSrc1(inst, TreatAs< kind > { }));\
+                         }
+    X(cosr, std::cos , Real);
+    X(cosrl, std::cos, LongReal);
+X(sinr, std::sin , Real);
+X(sinrl, std::sin, LongReal);
+X(tanr, std::tan , Real);
+X(tanrl, std::tan, LongReal);
+X(atanr, std::atan , Real);
+X(atanrl, std::atan, LongReal);
+X(sqrtr, std::sqrt, Real);
+X(sqrtrl, std::sqrt, LongReal);
+X(roundr, std::round, Real);
+X(roundrl, std::round, LongReal);
+#undef X
 
-OptionalFaultRecord
-Core::tanrl(const REGInstruction &inst) {
-    return std::visit(Overload{
-                              faultIdentity,
-                              [this, &inst](auto value) {
-                                  using K = std::decay_t<decltype(value)>;
-                                  return fpassignment(inst, std::tan(value), TreatAs<K>{});
-                              }
-                      },
-                      unpackSrc1(inst, TreatAsLongReal{}));
-}
-OptionalFaultRecord
-Core::atanr(const REGInstruction &inst) {
-    return std::visit(Overload{
-                              faultIdentity,
-                              [this, &inst](auto value) {
-                                  using K = std::decay_t<decltype(value)>;
-                                  return fpassignment(inst, std::atan(value), TreatAs<K>{});
-                              }
-                      },
-                      unpackSrc1(inst, TreatAsReal{}));
-}
-
-OptionalFaultRecord
-Core::atanrl(const REGInstruction &inst) {
-    return std::visit(Overload {
-                              faultIdentity,
-                              [this, &inst](auto value) {
-                                  using K = std::decay_t<decltype(value)>;
-                                  return fpassignment(inst, std::atan(value), TreatAs<K>{});
-                              }
-                      },
-                      unpackSrc1(inst, TreatAsLongReal{}));
-}
 #if 0
-void
-Core::sqrtr(const REGInstruction &inst) {
-    std::visit([this, &inst](auto value) {
-                   using K = std::decay_t<decltype(value)>;
-                   fpassignment(inst, std::sqrt(value), TreatAs<K>{});
-               },
-               unpackSrc1(inst, TreatAsReal{}));
-}
-
-void
-Core::sqrtrl(const REGInstruction &inst) {
-    std::visit([this, &inst](auto value) {
-                   using K = std::decay_t<decltype(value)>;
-                   fpassignment(inst, std::sqrt(value), TreatAs<K>{});
-               },
-               unpackSrc1(inst, TreatAsLongReal{}));
-}
-void
-Core::roundr(const REGInstruction &inst) {
-    std::visit([this, &inst](auto value) {
-                   using K = std::decay_t<decltype(value)>;
-                   fpassignment(inst, std::round(value), TreatAs<K>{});
-               },
-               unpackSrc1(inst, TreatAsReal{}));
-}
-
-void
-Core::roundrl(const REGInstruction &inst) {
-    std::visit([this, &inst](auto value) {
-                   using K = std::decay_t<decltype(value)>;
-                   fpassignment(inst, std::round(value), TreatAs<K>{});
-               },
-               unpackSrc1(inst, TreatAsLongReal{}));
-}
 
 void
 Core::scaler(const REGInstruction &inst) {

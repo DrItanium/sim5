@@ -1689,10 +1689,10 @@ private:
     OptionalFaultRecord tanrl(const REGInstruction& inst);
     OptionalFaultRecord atanr(const REGInstruction& inst);
     OptionalFaultRecord atanrl(const REGInstruction& inst);
-    void sqrtr(const REGInstruction& inst);
-    void sqrtrl(const REGInstruction& inst);
-    void roundr(const REGInstruction& inst);
-    void roundrl(const REGInstruction& inst);
+    OptionalFaultRecord sqrtr(const REGInstruction& inst);
+    OptionalFaultRecord sqrtrl(const REGInstruction& inst);
+    OptionalFaultRecord roundr(const REGInstruction& inst);
+    OptionalFaultRecord roundrl(const REGInstruction& inst);
     void scaler(const REGInstruction& inst);
     void scalerl(const REGInstruction& inst);
     void addr(const REGInstruction& inst);
