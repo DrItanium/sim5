@@ -1724,6 +1724,7 @@ private:
 
     [[maybe_unused]] [[nodiscard]] VariantWithFaultRecord<std::reference_wrapper<TripleRegister>> getFloatingPointRegister(ByteOrdinal index);
     [[nodiscard]] VariantWithFaultRecord<std::reference_wrapper<const TripleRegister>> getFloatingPointRegister(ByteOrdinal index) const;
+    [[nodiscard]] VariantWithFaultRecord<ExtendedReal> getFloatingPointRegisterValue(ByteOrdinal index) const noexcept;
 
     template<typename T>
     requires std::floating_point<T>
@@ -1764,7 +1765,7 @@ private:
      */
     template<typename T>
     requires std::floating_point<T>
-    VariantWithFaultRecord<T> serviceFloatingPointFault(T value) {
+    std::variant<OptionalFaultRecord, T> serviceFloatingPointFault(T value) {
         if (std::fetestexcept(FE_DIVBYZERO)) {
             std::feclearexcept(FE_ALL_EXCEPT);
             return floatingZeroDivideOperationFault();
@@ -1833,11 +1834,13 @@ private:
         }
         return input;
     }
-    FaultRecord handleSubnormalCase(const FaultRecord& input) const {
-        return input;
-    }
-    decltype(auto) handleSubnormalCase(std::reference_wrapper<const TripleRegister> value) const noexcept {
-        return  handleSubnormalCase(value.get().getValue<ExtendedReal >());
+    template<typename T>
+    [[nodiscard]] VariantWithFaultRecord<T> handleSubnormalCase(const VariantWithFaultRecord<T>& input) const {
+        if (std::holds_alternative<FaultRecord>(input)) {
+            return input;
+        } else {
+            return handleSubnormalCase<T>(std::get<T>(input));
+        }
     }
     decltype(auto) handleSubnormalCase(std::reference_wrapper<TripleRegister> value) const noexcept {
         return  handleSubnormalCase(value.get().getValue<ExtendedReal >());
