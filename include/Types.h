@@ -615,4 +615,11 @@ struct Overload : Ts... {
 };
 
 template<typename... Ts> Overload(Ts...) -> Overload<Ts...>;
+
+template<typename T0, typename T1, typename T2>
+constexpr bool BothAreSameAs = std::is_same_v<T0, T2> && std::is_same_v<T1, T2>;
+template<typename T0, typename T1>
+constexpr bool BothAreReal = BothAreSameAs<T0, T1, Real>;
+template<typename T0, typename T1>
+constexpr bool BothAreLongReal = BothAreSameAs<T0, T1, LongReal>;
 #endif // end SIM5_TYPES_H__

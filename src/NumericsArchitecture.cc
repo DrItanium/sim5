@@ -26,6 +26,7 @@
 #include <cmath>
 #include <cfenv>
 
+
 OptionalFaultRecord
 Core::processFPInstruction(const REGInstruction &inst ) {
     if (auto opcode = inst.getOpcode(); isFloatingPointInstruction(opcode)) {
@@ -559,12 +560,6 @@ Core::scalerl(const REGInstruction &inst) {
                },
                unpackSrc2(inst, TreatAsLongReal{}));
 }
-template<typename T0, typename T1, typename T2>
-constexpr bool BothAreSameAs = std::is_same_v<T0, T2> && std::is_same_v<T1, T2>;
-template<typename T0, typename T1>
-constexpr bool BothAreReal = BothAreSameAs<T0, T1, Real>;
-template<typename T0, typename T1>
-constexpr bool BothAreLongReal = BothAreSameAs<T0, T1, LongReal>;
 void
 Core::addr(const REGInstruction &inst) {
     std::visit([this, &inst](auto src1, auto src2) {
