@@ -30,54 +30,54 @@ OptionalFaultRecord
 Core::processFPInstruction(const REGInstruction &inst ) {
     if (auto opcode = inst.getOpcode(); isFloatingPointInstruction(opcode)) {
         switch (opcode) {
-#define X(name) case Opcodes:: name : name (inst); break
-            X(addr);
-            X(addrl);
-            X(atanr);
-            X(atanrl);
-            X(classr);
-            X(classrl);
-            X(cmpr);
-            X(cmprl);
-            X(cmpor);
-            X(cmporl);
+#define X(name) case Opcodes:: name : return name (inst)
             X(cosr);
-            X(cosrl);
-            X(cpyrsre);
-            X(cpysre);
-            X(cvtri);
-            X(cvtril);
-            X(cvtzri);
-            X(cvtzril);
-            X(cvtilr);
-            X(cvtir);
-            X(divr);
-            X(divrl);
-            X(movr);
-            X(movre);
-            X(movrl);
-            X(mulr);
-            X(mulrl);
-            X(remr);
-            X(remrl);
-            X(roundr);
-            X(roundrl);
-            X(subr);
-            X(subrl);
-            X(scaler);
-            X(scalerl);
-            X(sinr);
-            X(sinrl);
-            X(sqrtr);
-            X(sqrtrl);
-            X(tanr);
-            X(tanrl);
-            X(logeprl);
-            X(logepr);
-            X(logbnrl);
-            X(logbnr);
-            X(logr);
-            X(logrl);
+            //X(addr);
+            //X(addrl);
+            //X(atanr);
+            //X(atanrl);
+            //X(classr);
+            //X(classrl);
+            //X(cmpr);
+            //X(cmprl);
+            //X(cmpor);
+            //X(cmporl);
+            //X(cosrl);
+            //X(cpyrsre);
+            //X(cpysre);
+            //X(cvtri);
+            //X(cvtril);
+            //X(cvtzri);
+            //X(cvtzril);
+            //X(cvtilr);
+            //X(cvtir);
+            //X(divr);
+            //X(divrl);
+            //X(movr);
+            //X(movre);
+            //X(movrl);
+            //X(mulr);
+            //X(mulrl);
+            //X(remr);
+            //X(remrl);
+            //X(roundr);
+            //X(roundrl);
+            //X(subr);
+            //X(subrl);
+            //X(scaler);
+            //X(scalerl);
+            //X(sinr);
+            //X(sinrl);
+            //X(sqrtr);
+            //X(sqrtrl);
+            //X(tanr);
+            //X(tanrl);
+            //X(logeprl);
+            //X(logepr);
+            //X(logbnrl);
+            //X(logbnr);
+            //X(logr);
+            //X(logrl);
 
 #undef X
             default:
@@ -102,7 +102,7 @@ OptionalFaultRecord
 Core::classrl(const REGInstruction& inst) {
     return std::visit([this](auto value) { return performClassification(value); }, unpackSrc1(inst, TreatAsLongReal{}));
 }
-
+#if 0
 OptionalFaultRecord
 Core::movr(const REGInstruction &inst) {
     return std::visit([this, &inst](auto value) { return fpassignment(inst, value, TreatAs<std::decay_t<decltype(value)>>{}); }, unpackSrc1(inst, TreatAsReal{}));
@@ -114,6 +114,7 @@ Core::movrl(const REGInstruction &inst) {
     return std::visit([this, &inst](auto value) { return fpassignment(inst, value, TreatAs<std::decay_t<decltype(value)>>{}); }, unpackSrc1(inst, TreatAsLongReal{}));
     /// @todo implement floating point faults
 }
+#endif
 
 OptionalFaultRecord
 Core::movre(const REGInstruction &inst) {
@@ -511,14 +512,14 @@ Core::unpackSrc2(const REGInstruction &inst, TreatAsExtendedReal) const {
         return handleSubnormalCase(getGPR(index, TreatAsTripleRegister{}).getValue<ExtendedReal>());
     }
 }
-auto faultIdentity = [](FaultRecord&& value) { return value; };
+auto faultIdentity = [](FaultRecord&& value) { return std::make_optional(value); };
 OptionalFaultRecord
 Core::cosr(const REGInstruction &inst) {
     return std::visit(Overload {
         faultIdentity,
-        [this, &inst](auto value) {
+        [this, &inst](Real value) {
             using K = std::decay_t<decltype(value)>;
-            fpassignment(inst, std::cos(value), TreatAs<K>{});
+            return fpassignment(inst, std::cos(value), TreatAs<K>{});
         }
         },
                unpackSrc1(inst, TreatAsReal{}));
@@ -1005,3 +1006,8 @@ Core::fpassignment(const REGInstruction&, FaultRecord& record, TreatAs<FaultReco
     return record;
 }
 #endif
+
+void
+Core::updateRoundingMode() const {
+
+}
