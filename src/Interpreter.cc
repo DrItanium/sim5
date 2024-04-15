@@ -44,31 +44,15 @@ Core::doDispatchInternal() noexcept {
 }
 void
 Core::cycle() noexcept {
-    DEBUG_ENTER_FUNCTION;
-    DEBUG_LOG_LEVEL(1) {
-        std::cout << "{" << std::endl;
-    }
     instruction_.setValue(load(ip_.a, TreatAsOrdinal{}), TreatAsOrdinal{});
     instructionLength_ = 4;
     advanceInstruction_ = true;
-    DEBUG_LOG_LEVEL(1) {
-        std::cout << "\t\t" << __PRETTY_FUNCTION__  << ": " << disassembleInstruction(ip_.getValue<Ordinal>(), instruction_) << std::endl;
-    }
     if (auto result = doDispatchInternal(); result) {
         generateFault(*result);
     }
     if (advanceInstruction_) {
         nextInstruction();
     }
-    DEBUG_LOG_LEVEL(1) {
-        if (alignTo4ByteBoundaries<Ordinal>(ip_.o, TreatAsOrdinal{}) != ip_.o) {
-            std::cout << __PRETTY_FUNCTION__ << ": alignment fault: 0x" << ip_.o << std::endl;
-        }
-    }
-    DEBUG_LOG_LEVEL(1) {
-        std::cout << "}" << std::endl;
-    }
-    DEBUG_LEAVE_FUNCTION;
     // according to the blue book they use a counter modulo 8 as a pseudo-random source
     // let's add it in ours as well for whatever we want!
     ++pseudoRandomSource_;
