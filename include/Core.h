@@ -1685,10 +1685,10 @@ private:
     OptionalFaultRecord cosrl(const REGInstruction& inst);
     OptionalFaultRecord sinr(const REGInstruction& inst);
     OptionalFaultRecord sinrl(const REGInstruction& inst);
-    void tanr(const REGInstruction& inst);
-    void tanrl(const REGInstruction& inst);
-    void atanr(const REGInstruction& inst);
-    void atanrl(const REGInstruction& inst);
+    OptionalFaultRecord tanr(const REGInstruction& inst);
+    OptionalFaultRecord tanrl(const REGInstruction& inst);
+    OptionalFaultRecord atanr(const REGInstruction& inst);
+    OptionalFaultRecord atanrl(const REGInstruction& inst);
     void sqrtr(const REGInstruction& inst);
     void sqrtrl(const REGInstruction& inst);
     void roundr(const REGInstruction& inst);

@@ -33,8 +33,8 @@ Core::processFPInstruction(const REGInstruction &inst ) {
 #define X(name) case Opcodes:: name : return name (inst)
             //X(addr);
             //X(addrl);
-            //X(atanr);
-            //X(atanrl);
+            X(atanr);
+            X(atanrl);
             X(classr);
             X(classrl);
             //X(cmpr);
@@ -70,8 +70,8 @@ Core::processFPInstruction(const REGInstruction &inst ) {
             X(sinrl);
             //X(sqrtr);
             //X(sqrtrl);
-            //X(tanr);
-            //X(tanrl);
+            X(tanr);
+            X(tanrl);
             //X(logeprl);
             //X(logepr);
             //X(logbnrl);
@@ -557,41 +557,53 @@ Core::sinrl(const REGInstruction &inst) {
                       },
                       unpackSrc1(inst, TreatAsLongReal{}));
 }
-#if 0
-void
+OptionalFaultRecord
 Core::tanr(const REGInstruction &inst) {
-    std::visit([this, &inst](auto value) {
-                   using K = std::decay_t<decltype(value)>;
-                   fpassignment(inst, std::tan(value), TreatAs<K>{});
-               },
-               unpackSrc1(inst, TreatAsReal{}));
+    return std::visit(Overload {
+                              faultIdentity,
+                              [this, &inst](auto value) {
+                                  using K = std::decay_t<decltype(value)>;
+                                  return fpassignment(inst, std::tan(value), TreatAs<K>{});
+                              },
+                      },
+                      unpackSrc1(inst, TreatAsReal{}));
 }
 
-void
+OptionalFaultRecord
 Core::tanrl(const REGInstruction &inst) {
-    std::visit([this, &inst](auto value) {
-                   using K = std::decay_t<decltype(value)>;
-                   fpassignment(inst, std::tan(value), TreatAs<K>{});
-               },
-               unpackSrc1(inst, TreatAsLongReal{}));
+    return std::visit(Overload{
+                              faultIdentity,
+                              [this, &inst](auto value) {
+                                  using K = std::decay_t<decltype(value)>;
+                                  return fpassignment(inst, std::tan(value), TreatAs<K>{});
+                              }
+                      },
+                      unpackSrc1(inst, TreatAsLongReal{}));
 }
-void
+OptionalFaultRecord
 Core::atanr(const REGInstruction &inst) {
-    std::visit([this, &inst](auto value) {
-                   using K = std::decay_t<decltype(value)>;
-                   fpassignment(inst, std::atan(value), TreatAs<K>{});
-               },
-               unpackSrc1(inst, TreatAsReal{}));
+    return std::visit(Overload{
+                              faultIdentity,
+                              [this, &inst](auto value) {
+                                  using K = std::decay_t<decltype(value)>;
+                                  return fpassignment(inst, std::atan(value), TreatAs<K>{});
+                              }
+                      },
+                      unpackSrc1(inst, TreatAsReal{}));
 }
 
-void
+OptionalFaultRecord
 Core::atanrl(const REGInstruction &inst) {
-    std::visit([this, &inst](auto value) {
-                   using K = std::decay_t<decltype(value)>;
-                   fpassignment(inst, std::atan(value), TreatAs<K>{});
-               },
-               unpackSrc1(inst, TreatAsLongReal{}));
+    return std::visit(Overload {
+                              faultIdentity,
+                              [this, &inst](auto value) {
+                                  using K = std::decay_t<decltype(value)>;
+                                  return fpassignment(inst, std::atan(value), TreatAs<K>{});
+                              }
+                      },
+                      unpackSrc1(inst, TreatAsLongReal{}));
 }
+#if 0
 void
 Core::sqrtr(const REGInstruction &inst) {
     std::visit([this, &inst](auto value) {
@@ -795,25 +807,9 @@ Core::cmprl(const REGInstruction& inst) {
                unpackSrc2(inst, TreatAsLongReal{}));
 }
 // dst <- real(src)
+#endif
 
-void
-Core::updateRoundingMode() const {
-    switch (ac_.arith.floatingPointRoundingControl) {
-        case 0b00: // round to nearest (even)
-            std::fesetround(FE_TONEAREST);
-            break;
-        case 0b01: // round down (towards negative infinity)
-            std::fesetround(FE_DOWNWARD);
-            break;
-        case 0b10: // round up (towards positive infinity)
-            std::fesetround(FE_UPWARD);
-            break;
-        case 0b11: // truncate (round toward zero)
-            std::fesetround(FE_TOWARDZERO);
-            break;
-    }
-}
-
+#if 0
 void
 Core::mulr(const REGInstruction &inst) {
     std::visit([this, &inst](auto src1, auto src2) {
@@ -959,15 +955,6 @@ Core::logrl(const REGInstruction &inst) {
                unpackSrc2(inst, TreatAsLongReal{}));
 }
 
-void
-Core::logepr(const REGInstruction &inst) {
-   unimplementedFault();
-}
-void
-Core::logeprl(const REGInstruction &inst) {
-    unimplementedFault();
-}
-
 OptionalFaultRecord
 Core::cvtir(const REGInstruction& inst) {
     // convert integer to real
@@ -982,30 +969,6 @@ Core::cvtilr(const REGInstruction& inst) {
     // movrl fp3, g8 # result stored in g8, g9
     return fpassignment(inst, serviceFloatingPointFault<LongReal>(unpackSrc1(inst, TreatAsLongInteger{})), TreatAsLongReal{});
 }
-
-OptionalFaultRecord
-Core::cvtri(const REGInstruction &inst) {
-
-    return unimplementedFault();
-}
-
-OptionalFaultRecord
-Core::cvtril(const REGInstruction &inst) {
-
-    return unimplementedFault();
-}
-
-OptionalFaultRecord
-Core::cvtzri(const REGInstruction &inst) {
-
-    return unimplementedFault();
-}
-
-OptionalFaultRecord
-Core::cvtzril(const REGInstruction &inst) {
-
-    return unimplementedFault();
-}
 OptionalFaultRecord
 Core::fpassignment(const REGInstruction&, FaultRecord& record, TreatAs<FaultRecord>) {
     return record;
@@ -1014,5 +977,18 @@ Core::fpassignment(const REGInstruction&, FaultRecord& record, TreatAs<FaultReco
 
 void
 Core::updateRoundingMode() const {
-
+    switch (ac_.arith.floatingPointRoundingControl) {
+        case 0b00: // round to nearest (even)
+            std::fesetround(FE_TONEAREST);
+            break;
+        case 0b01: // round down (towards negative infinity)
+            std::fesetround(FE_DOWNWARD);
+            break;
+        case 0b10: // round up (towards positive infinity)
+            std::fesetround(FE_UPWARD);
+            break;
+        case 0b11: // truncate (round toward zero)
+            std::fesetround(FE_TOWARDZERO);
+            break;
+    }
 }
