@@ -99,15 +99,23 @@ constexpr auto FloatingPointInvalidOperationFault  = FloatingPointFaultSubType<0
 constexpr auto FloatingPointZeroDivideOperationFault = FloatingPointFaultSubType<0b0000'1000>;
 constexpr auto FloatingPointInexactFault = FloatingPointFaultSubType<0b0001'0000>;
 constexpr auto FloatingPointReservedEncodingFault = FloatingPointFaultSubType<0b0010'0000>;
-
+constexpr
+uint16_t
+constructOpcode(uint8_t major, uint8_t minor) noexcept {
+    if ((major >= 0x40) && (major < 0x80)) {
+        return (static_cast<uint16_t>(major) << 4) | static_cast<uint16_t>(minor);
+    } else {
+        return static_cast<uint16_t>(major);
+    }
+}
 enum class Opcodes : uint16_t {
-#define X(name, opcode, str, level, privileged, fmt, flt) name = opcode ,
+#define X(name, opcode, str, level, privileged, fmt, flt, minor) name = constructOpcode(opcode, minor),
 #include "Opcodes.def"
 #undef X
 };
 constexpr bool isPrivileged(Opcodes code) noexcept {
     switch (code)  {
-#define X(name, opcode, str, level, privileged, fmt, flt) case Opcodes:: name : return privileged;
+#define X(name, opcode, str, level, privileged, fmt, flt, minor) case Opcodes:: name : return privileged;
 #include "Opcodes.def"
 #undef X
         default:
@@ -121,7 +129,7 @@ static_assert(!IsPrivileged<Opcodes::addi>);
 
 constexpr ArchitectureLevel getArchitectureLevel(Opcodes code) noexcept {
     switch (code) {
-#define X(name, opcode, str, level, privileged, fmt, flt) case Opcodes :: name : return ArchitectureLevel :: level ;
+#define X(name, opcode, str, level, privileged, fmt, flt, minor) case Opcodes :: name : return ArchitectureLevel :: level ;
 #include "Opcodes.def"
 #undef X
         default:
@@ -134,7 +142,7 @@ static_assert(ArchitectureLevel_v<Opcodes::b> == ArchitectureLevel::Core);
 
 constexpr bool isFloatingPointInstruction(Opcodes code) noexcept {
     switch (code) {
-#define X(name, opcode, str, level, privileged, fmt, flt) case Opcodes :: name : return flt ;
+#define X(name, opcode, str, level, privileged, fmt, flt, minor) case Opcodes :: name : return flt ;
 #include "Opcodes.def"
 #undef X
         default:
