@@ -26,10 +26,6 @@
 #include "BinaryOperations.h"
 #include <cstring>
 
-void
-Core::saveprcs() {
-    unimplementedFault();
-}
 
 void
 Core::cmpstr(Ordinal src1Address, Ordinal src2Address, Ordinal len) noexcept {
@@ -100,59 +96,8 @@ Core::fill(Ordinal dest, Ordinal value, Ordinal len) noexcept {
 
 }
 void
-Core::ldtime(LongRegister &dest) {
-    unimplementedFault();
-}
-
-void
-Core::condwait(SegmentSelector src) {
-    /// @todo implement
-    unimplementedFault();
-}
-
-void
-Core::inspacc(Ordinal src, Register &dest) {
-    /// @todo implement
-    unimplementedFault();
-}
-void
 Core::ldphy(Address address, Register& dest) {
     dest.setValue<Ordinal>(translateToPhysicalAddress(address));
-}
-void
-Core::wait(SegmentSelector src) {
-    unimplementedFault();
-}
-
-void
-Core::condrec(SegmentSelector src, Register &dest) {
-    unimplementedFault();
-}
-void
-Core::resumprcs(SegmentSelector src) {
-    unimplementedFault();
-}
-void
-Core::signal(SegmentSelector sel) {
-    unimplementedFault();
-}
-
-void
-Core::send(SegmentSelector target, Ordinal src1, SegmentSelector src2) {
-    unimplementedFault();
-}
-void
-Core::sendserv(SegmentSelector src) {
-    unimplementedFault();
-}
-void
-Core::schedprcs(SegmentSelector src) {
-    unimplementedFault();
-}
-
-void
-Core::receive(SegmentSelector src, Register &dest) {
-    unimplementedFault();
 }
 
 /// MMU related stuff
@@ -175,7 +120,6 @@ Core::translateToPhysicalAddress(Address virtualAddress) noexcept {
                 break;
         }
         /// @todo eventually improve this!
-
         return loadSegmentDescriptor(currentSelector).computePhysicalAddress(virtualAddress);
     } else {
         // physical address mode

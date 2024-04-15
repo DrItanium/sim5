@@ -1047,24 +1047,33 @@ Core::subc(Register& dest, Ordinal src1, Ordinal src2) {
                                mostSignificantBit(src1),
                                mostSignificantBit(dest.getValue<Ordinal>()));
 }
-void
+OptionalFaultRecord
 Core::remi(Register& dest, Integer src1, Integer src2) {
-    remainderOperation<Integer>(dest, src1, src2);
-    nextInstruction();
-    faultOnOverflow(dest);
+    auto result = remainderOperation<Integer>(dest, src1, src2);
+    if (result) {
+        return result;
+    } else {
+        nextInstruction();
+        return faultOnOverflow(dest);
+    }
 }
-void
+OptionalFaultRecord
 Core::remo(Register& dest, Ordinal src1, Ordinal src2) {
-    remainderOperation<Ordinal>(dest, src1, src2);
+    return remainderOperation<Ordinal>(dest, src1, src2);
 }
-void
+OptionalFaultRecord
 Core::divi(Register& dest, Integer src1, Integer src2) {
-    divideOperation<Integer>(dest, src1, src2);
-    faultOnOverflow(dest);
+    auto result = divideOperation<Integer>(dest, src1, src2);
+    if (result) {
+        return result;
+    } else {
+        nextInstruction();
+        return faultOnOverflow(dest);
+    }
 }
-void
+OptionalFaultRecord
 Core::divo(Register& dest, Ordinal src1, Ordinal src2) {
-    divideOperation<Ordinal>(dest, src1, src2);
+    return divideOperation<Ordinal>(dest, src1, src2);
 }
 void
 Core::concmpo(Ordinal src1, Ordinal src2) noexcept {

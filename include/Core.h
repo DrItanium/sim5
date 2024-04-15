@@ -1309,31 +1309,40 @@ private:
     void subc(Register& dest, Ordinal src1, Ordinal src2);
     template<typename Q>
     requires MustBeOrdinalOrInteger<Q>
-    void checkForZeroDivideFault(Q value) {
+    OptionalFaultRecord  checkForZeroDivideFault(Q value) {
         if (value == 0) {
-            zeroDivideFault();
+            return zeroDivideFault();
+        } else {
+            return std::nullopt;
         }
     }
     template<typename Q>
     requires MustBeOrdinalOrInteger<Q>
-    void remainderOperation(Register& dest, Q src1, Q src2) {
-        checkForZeroDivideFault(src1);
-        // taken from the i960Sx manual
-        //dest.setValue<Q>(src2 - ((src2 / src1) * src1));
-        dest.setValue<Q>(src2 % src1);
-        nextInstruction();
+    OptionalFaultRecord remainderOperation(Register& dest, Q src1, Q src2) {
+        auto result = checkForZeroDivideFault(src1);
+        if (result) {
+            return result;
+        } else {
+            // taken from the i960Sx manual
+            dest.setValue<Q>(src2 % src1);
+            return std::nullopt;
+        }
     }
-    void remi(Register& dest, Integer src1, Integer src2);
-    void remo(Register& dest, Ordinal src1, Ordinal src2);
+    OptionalFaultRecord remi(Register& dest, Integer src1, Integer src2);
+    OptionalFaultRecord remo(Register& dest, Ordinal src1, Ordinal src2);
     template<typename Q>
     requires MustBeOrdinalOrInteger<Q>
-    void divideOperation(Register& dest, Q src1, Q src2) {
-        checkForZeroDivideFault(src1);
-        dest.setValue<Q>(src2 / src1);
-        nextInstruction();
+    OptionalFaultRecord divideOperation(Register& dest, Q src1, Q src2) {
+        auto result = checkForZeroDivideFault(src1);
+        if (result) {
+            return result;
+        } else {
+            dest.setValue<Q>(src2 / src1);
+            return std::nullopt;
+        }
     }
-    void divi(Register& dest, Integer src1, Integer src2);
-    void divo(Register& dest, Ordinal src1, Ordinal src2);
+    OptionalFaultRecord divi(Register& dest, Integer src1, Integer src2);
+    OptionalFaultRecord divo(Register& dest, Ordinal src1, Ordinal src2);
     void atadd(Register& dest, Ordinal src1, Ordinal src2);
     void atmod(Register& dest, Ordinal src1, Ordinal src2);
     void cmpo(Ordinal src1, Ordinal src2) noexcept;

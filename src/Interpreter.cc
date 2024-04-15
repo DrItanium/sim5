@@ -364,6 +364,10 @@ Core::processInstruction(const REGInstruction & inst) {
         case Opcodes::fill:
             fill(static_cast<Ordinal>(src1), static_cast<Ordinal>(src2), static_cast<Ordinal>(regDest));
             break;
+        case Opcodes::ldphy:
+            ldphy(static_cast<Address>(src1), regDest);
+            break;
+#if 0
         case Opcodes::ldtime:
             ldtime(getGPR(inst.getSrcDest(), TreatAsLongRegister{}));
             break;
@@ -375,9 +379,6 @@ Core::processInstruction(const REGInstruction & inst) {
             break;
         case Opcodes::wait:
             wait(static_cast<SegmentSelector>(src1));
-            break;
-        case Opcodes::ldphy:
-            ldphy(static_cast<Address>(src1), regDest);
             break;
         case Opcodes::condrec:
             condrec(static_cast<Address>(src1), regDest );
@@ -403,6 +404,7 @@ Core::processInstruction(const REGInstruction & inst) {
         case Opcodes::receive:
             receive(static_cast<SegmentSelector>(src1), regDest);
             break;
+#endif
         default:
             return processFPInstruction(inst);
     }
