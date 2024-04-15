@@ -435,12 +435,7 @@ Core::unpackSrc1(const REGInstruction& inst, TreatAsLongReal) const {
     auto index = inst.getSrc1();
     if (inst.getM1()) {
         if (inst.src1IsFPLiteral()) {
-            auto fpl = getFloatingPointLiteral<LongReal>(index);
-            if (std::holds_alternative<FaultRecord>(fpl)) {
-                return std::get<FaultRecord>(fpl) ;
-            } else {
-                return convertVariants<LongReal, Core::MixedLongRealSourceArgument>( handleSubnormalCase<LongReal>(std::get<LongReal>(fpl)));
-            }
+            return convertVariants<LongReal, Core::MixedLongRealSourceArgument>( handleSubnormalCase<LongReal>(getFloatingPointLiteral<LongReal>(index)));
         } else {
             return convertVariants<ExtendedReal, Core::MixedLongRealSourceArgument>(handleSubnormalCase(getFloatingPointRegisterValue(index)));
         }
@@ -453,12 +448,7 @@ Core::unpackSrc2(const REGInstruction& inst, TreatAsLongReal) const {
     auto index = inst.getSrc2();
     if (inst.getM2()) {
         if (inst.src2IsFPLiteral()) {
-            auto fpl = getFloatingPointLiteral<LongReal>(index);
-            if (std::holds_alternative<FaultRecord>(fpl)) {
-                return std::get<FaultRecord>(fpl) ;
-            } else {
-                return convertVariants<LongReal, Core::MixedLongRealSourceArgument>( handleSubnormalCase<LongReal>(std::get<LongReal>(fpl)));
-            }
+            return convertVariants<LongReal, Core::MixedLongRealSourceArgument>( handleSubnormalCase<LongReal>( getFloatingPointLiteral<LongReal>(index)));
         } else {
             return convertVariants<ExtendedReal, Core::MixedLongRealSourceArgument>(handleSubnormalCase(getFloatingPointRegisterValue(index)));
         }
@@ -472,17 +462,12 @@ Core::unpackSrc1(const REGInstruction& inst, TreatAsReal) const {
     auto index = inst.getSrc1();
     if (inst.getM1()) {
         if (inst.src1IsFPLiteral()) {
-            auto fpl = getFloatingPointLiteral<Real>(index);
-            if (std::holds_alternative<FaultRecord>(fpl)) {
-                return std::get<FaultRecord>(fpl) ;
-            } else {
-                return convertVariants<Real, Core::MixedRealSourceArgument>( handleSubnormalCase<Real>(std::get<Real>(fpl)));
-            }
+            return convertVariants<Real, Core::MixedRealSourceArgument>( handleSubnormalCase(getFloatingPointLiteral<Real>(index)));
         } else {
             return convertVariants<ExtendedReal, Core::MixedRealSourceArgument>(handleSubnormalCase(getFloatingPointRegisterValue(index)));
         }
     } else {
-        return convertVariants<Real, Core::MixedRealSourceArgument>(handleSubnormalCase(getGPR(index, TreatAsLongRegister{}).getValue<Real>()));
+        return convertVariants<Real, Core::MixedRealSourceArgument>(handleSubnormalCase(getGPR(index).getValue<Real>()));
     }
 }
 Core::MixedRealSourceArgument
@@ -490,13 +475,12 @@ Core::unpackSrc2(const REGInstruction& inst, TreatAsReal) const {
     auto index = inst.getSrc2();
     if (inst.getM2()) {
         if (inst.src2IsFPLiteral()) {
-            auto fpl = getFloatingPointLiteral<Real>(index);
-            return convertVariants<Real, Core::MixedRealSourceArgument>( handleSubnormalCase<Real>(fpl));
+            return convertVariants<Real, Core::MixedRealSourceArgument>( handleSubnormalCase<Real>(getFloatingPointLiteral<Real>(index)));
         } else {
             return convertVariants<ExtendedReal, Core::MixedRealSourceArgument>(handleSubnormalCase(getFloatingPointRegisterValue(index)));
         }
     } else {
-        return convertVariants<Real, Core::MixedRealSourceArgument>(handleSubnormalCase(getGPR(index, TreatAsLongRegister{}).getValue<Real>()));
+        return convertVariants<Real, Core::MixedRealSourceArgument>(handleSubnormalCase(getGPR(index).getValue<Real>()));
     }
 }
 
