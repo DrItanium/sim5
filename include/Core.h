@@ -99,6 +99,7 @@ constexpr auto FloatingPointInvalidOperationFault  = FloatingPointFaultSubType<0
 constexpr auto FloatingPointZeroDivideOperationFault = FloatingPointFaultSubType<0b0000'1000>;
 constexpr auto FloatingPointInexactFault = FloatingPointFaultSubType<0b0001'0000>;
 constexpr auto FloatingPointReservedEncodingFault = FloatingPointFaultSubType<0b0010'0000>;
+
 constexpr bool isREGFormatOpcode(uint8_t value) noexcept {
     return (value >= 0x40) && (value < 0x80);
 }
@@ -111,6 +112,24 @@ constexpr bool isCOBRFormatOpcode(uint8_t value) noexcept {
 constexpr bool isCTRLFormatOpcode(uint8_t value) noexcept {
     return (value < 0x20);
 }
+
+constexpr uint32_t constructInplaceMask(uint8_t major, uint8_t minor) noexcept {
+    auto full = static_cast<uint32_t>(major) << 24;
+    if (isREGFormatOpcode(major)) {
+        return full | static_cast<uint32_t>(static_cast<uint32_t>(minor) << 7);
+    } else {
+        return full;
+    }
+}
+
+enum class RawOpcodes : uint32_t {
+#define X(name, opcode, str, level, privileged, fmt, flt, minor) name = constructInplaceMask(opcode, minor),
+#include "Opcodes.def"
+#undef X
+};
+static_assert(static_cast<uint32_t>(RawOpcodes::b) == 0x0800'0000);
+static_assert(static_cast<uint32_t>(RawOpcodes::andnot) == static_cast<uint32_t>(0b0101'1000'00000'00000'000'0010'00'00000));
+
 constexpr uint16_t constructOpcode(uint8_t major, uint8_t minor) noexcept {
     return isREGFormatOpcode(major) ? ((static_cast<uint16_t>(major) << 4) | static_cast<uint16_t>(minor)) : static_cast<uint16_t>(major);
 }
