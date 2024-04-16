@@ -113,6 +113,8 @@ enum class Opcodes : uint16_t {
 #include "Opcodes.def"
 #undef X
 };
+// sanity checking
+static_assert(static_cast<uint16_t>(Opcodes::rotate) == 0x59d);
 constexpr bool isPrivileged(Opcodes code) noexcept {
     switch (code)  {
 #define X(name, opcode, str, level, privileged, fmt, flt, minor) case Opcodes:: name : return privileged;
