@@ -126,7 +126,6 @@ template<Opcodes code>
 constexpr bool IsPrivileged = isPrivileged(code);
 static_assert(IsPrivileged<Opcodes::send>);
 static_assert(!IsPrivileged<Opcodes::addi>);
-
 constexpr ArchitectureLevel getArchitectureLevel(Opcodes code) noexcept {
     switch (code) {
 #define X(name, opcode, str, level, privileged, fmt, flt, minor) case Opcodes :: name : return ArchitectureLevel :: level ;

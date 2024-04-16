@@ -128,7 +128,7 @@
     // They have an extra 4 bits of opcode used to expand the instruction space
     // to kinda 12-bit, the range in the major opcode is 0x58->0x7F
     #define REGOperation(name, code, level) NewGeneralOperation(name, (static_cast<uint8_t>(code >> 4)), #name, level, Unprivileged, REG, false, (static_cast<uint8_t>(code & 0x0F)))
-    #define REGPrivilegedOperation(name, code, level) NewGeneralOperation(name, (static_cast<uint8_t>(code >> 4)), #name, level, Unprivileged, REG, false, (static_cast<uint8_t>(code & 0x0F)))
+    #define REGPrivilegedOperation(name, code, level) NewGeneralOperation(name, (static_cast<uint8_t>(code >> 4)), #name, level, Privileged, REG, false, (static_cast<uint8_t>(code & 0x0F)))
     #define FloatOperation(name, code) NewGeneralOperation(name, (static_cast<uint8_t>(code >> 4)), #name, Numerics, Unprivileged, REG, true, (static_cast<uint8_t>(code & 0x0F)))
     REGOperation(notbit, 0x580, Core)
     NewGeneralOperation(andOperation, 0x58, "and", Core, Unprivileged, REG, false, 0x1)
@@ -206,11 +206,11 @@
     REGOperation(dmovt, 0x644, Numerics)
     REGOperation(modac, 0x645, Core)
     NewGeneralOperation(condrec, 0x64, "condrec", Protected, Privileged, REG, false, 0x6)
-    REGOperation(cread, 0x648, Extended, REG)
-    REGOperation(ldtypedef, 0x649, Extended, REG)
-    REGOperation(ldglobals, 0x64a, Extended, REG)
-    REGOperation(modify, 0x650, Core, REG)
-    REGOperation(extract, 0x651, Core, REG)
+    REGOperation(cread, 0x648, Extended)
+    REGOperation(ldtypedef, 0x649, Extended)
+    REGOperation(ldglobals, 0x64a, Extended)
+    REGOperation(modify, 0x650, Core)
+    REGOperation(extract, 0x651, Core)
     NewGeneralOperation(restrictOperation, 0x65, "restrict", Extended, Unprivileged, REG, false, 0x2) // unsure if this is privileged or not, part of extended architecture
     REGOperation(amplify, 0x653, Extended) // part of extended architecture
     REGOperation(modtc, 0x654, Core)
