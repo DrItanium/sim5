@@ -99,14 +99,20 @@ constexpr auto FloatingPointInvalidOperationFault  = FloatingPointFaultSubType<0
 constexpr auto FloatingPointZeroDivideOperationFault = FloatingPointFaultSubType<0b0000'1000>;
 constexpr auto FloatingPointInexactFault = FloatingPointFaultSubType<0b0001'0000>;
 constexpr auto FloatingPointReservedEncodingFault = FloatingPointFaultSubType<0b0010'0000>;
-constexpr
-uint16_t
-constructOpcode(uint8_t major, uint8_t minor) noexcept {
-    if ((major >= 0x40) && (major < 0x80)) {
-        return (static_cast<uint16_t>(major) << 4) | static_cast<uint16_t>(minor);
-    } else {
-        return static_cast<uint16_t>(major);
-    }
+constexpr bool isREGFormatOpcode(uint8_t value) noexcept {
+    return (value >= 0x40) && (value < 0x80);
+}
+constexpr bool isMEMFormatOpcode(uint8_t value) noexcept {
+    return (value >= 0x80);
+}
+constexpr bool isCOBRFormatOpcode(uint8_t value) noexcept {
+    return (value >= 0x20) && (value < 0x40);
+}
+constexpr bool isCTRLFormatOpcode(uint8_t value) noexcept {
+    return (value < 0x20);
+}
+constexpr uint16_t constructOpcode(uint8_t major, uint8_t minor) noexcept {
+    return isREGFormatOpcode(major) ? ((static_cast<uint16_t>(major) << 4) | static_cast<uint16_t>(minor)) : static_cast<uint16_t>(major);
 }
 enum class Opcodes : uint16_t {
 #define X(name, opcode, str, level, privileged, fmt, flt, minor) name = constructOpcode(opcode, minor),
@@ -153,15 +159,12 @@ constexpr bool isFloatingPointInstruction(Opcodes code) noexcept {
 template<Opcodes code>
 constexpr auto IsFloatingPointInstruction_v = isFloatingPointInstruction(code);
 static_assert(IsFloatingPointInstruction_v<Opcodes::cpyrsre>);
+static_assert(IsFloatingPointInstruction_v<Opcodes::movre>);
 enum class BootResult : uint8_t {
     Success,
     SelfTestFailure,
     ChecksumFail,
 };
-struct TreatAsREG { };
-struct TreatAsCOBR { };
-struct TreatAsCTRL { };
-struct TreatAsMEM { };
 using BackingUnionType = Ordinal;
 union Register {
     constexpr explicit Register(Ordinal value) : o(value) { }
