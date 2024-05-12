@@ -71,16 +71,14 @@ void
 Core::arithmeticWithCarryGeneric(Ordinal result, bool src2MSB, bool src1MSB, bool destMSB) {
     // since we are clearing the conditionCode we should just do an assignment
     ac_.clearConditionCode();
+    uint8_t cc = 0b000;
     // set the overflow bit
     if ((src2MSB == src1MSB) && (src2MSB != destMSB)) {
-        ac_.arith.conditionCode |= 0b001;
+        cc |= 0b001;
     }
-    if (result != 0) {
-        DEBUG_LOG_LEVEL(4) {
-            std::cout << "carry bit set" << std::endl;
-        }
-        ac_.arith.conditionCode |= 0b010;
-    }
+    cc |= ((result & 0b1) ? 0b010 : 0b000);
+    std::cout << "condition code: 0x" << std::hex << static_cast<int>(cc) << std::endl;
+    ac_.arith.conditionCode = cc;
 }
 
 
@@ -563,42 +561,15 @@ Core::start() noexcept {
             x[i] = load(j, TreatAsOrdinal{});
             DEBUG_LOG_LEVEL(4) std::cout << "x[" << i << "]: 0x" << std::hex << x[i] << std::endl;
         }
-
+        
 
         ac_.clearConditionCode();
-        Register temp_{0};
-        addc(temp_, 0xFFFF'FFFF, x[0]);
-        DEBUG_LOG_LEVEL(3) {
-            std::cout << "checksum p0: 0x" << std::hex << temp_.getValue<Ordinal>() << std::endl;
+        Register temp_{0xFFFF'FFFF};
+        for (int i = 0; i < 8; ++i) {
+            addc(temp_, temp_.getValue<Ordinal>(), x[i]);
         }
-        addc(temp_, temp_.getValue<Ordinal>(), x[1]);
-        DEBUG_LOG_LEVEL(3) {
-            std::cout << "checksum p1: 0x" << std::hex << temp_.getValue<Ordinal>() << std::endl;
-        }
-        addc(temp_, temp_.getValue<Ordinal>(), x[2]);
-        DEBUG_LOG_LEVEL(3) {
-            std::cout << "checksum p2: 0x" << std::hex << temp_.getValue<Ordinal>() << std::endl;
-        }
-        addc(temp_, temp_.getValue<Ordinal>(), x[3]);
-        DEBUG_LOG_LEVEL(3) {
-            std::cout << "checksum p3: 0x" << std::hex << temp_.getValue<Ordinal>() << std::endl;
-        }
-        addc(temp_, temp_.getValue<Ordinal>(), x[4]);
-        DEBUG_LOG_LEVEL(3) {
-            std::cout << "checksum p4: 0x" << std::hex << temp_.getValue<Ordinal>() << std::endl;
-        }
-        addc(temp_, temp_.getValue<Ordinal>(), x[5]);
-
-        DEBUG_LOG_LEVEL(3) {
-            std::cout << "checksum p5: 0x" << std::hex << temp_.getValue<Ordinal>() << std::endl;
-        }
-        addc(temp_, temp_.getValue<Ordinal>(), x[6]);
-        DEBUG_LOG_LEVEL(3) {
-            std::cout << "checksum p6: 0x" << std::hex << temp_.getValue<Ordinal>() << std::endl;
-        }
-        addc(temp_, temp_.getValue<Ordinal>(), x[7]);
-        DEBUG_LOG_LEVEL(3) {
-            std::cout << "checksum p7: 0x" << std::hex << temp_.getValue<Ordinal>() << std::endl;
+        DEBUG_LOG_LEVEL(2) {
+            std::cout << "final checksum: 0x" << std::hex << temp_.getValue<Ordinal>() << std::endl;
         }
         if (temp_.getValue(TreatAsOrdinal{}) != 0) {
             assertFailureState();
@@ -1010,12 +981,13 @@ Core::alterbit(Register& dest, Ordinal src1, Ordinal src2) noexcept {
 }
 void
 Core::addc(Register& dest, Ordinal src1, Ordinal src2) {
-    LongOrdinal result = static_cast<LongOrdinal>(src2) + static_cast<LongOrdinal>(src1);
-    result += (ac_.getCarryBit() ? 1 : 0);
-    dest.setValue<Ordinal>(result);
-    DEBUG_LOG_LEVEL(4) {
-        std::cout << "addc result: 0x" << std::hex << result << std::endl;
+    auto carry = ac_.getCarryBit() ? 1 : 0;
+    LongOrdinal result = static_cast<LongOrdinal>(src2) + static_cast<LongOrdinal>(src1) + carry;
+    //result += (ac_.getCarryBit() ? 1 : 0);
+    DEBUG_LOG_LEVEL(3) {
+        std::cout << "\t(addc->addo 0x" << std::hex << src2 << " 0x" << std::hex << src1 << " 0x" << std::hex << carry << ") => 0x" << std::hex << result << std::endl;
     }
+    dest.setValue<Ordinal>(result);
     arithmeticWithCarryGeneric(static_cast<Ordinal>(result >> 32),
                                mostSignificantBit(src2),
                                mostSignificantBit(src1),
