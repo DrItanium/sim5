@@ -31,6 +31,7 @@
 #include <fstream>
 #include <elfio/elfio.hpp>
 
+
 int
 main(int argc, char** argv) {
     Core core;
@@ -61,15 +62,23 @@ main(int argc, char** argv) {
             }
 
             // okay so we know it is a valid file and not a directory
-            std::ifstream inputStream;
-            inputStream.open(path, std::ios::binary | std::ios::in);
-            if (inputStream.is_open()) {
-                installToMainMemory(inputStream, 0);
+            ELFIO::elfio reader;
+            if (reader.load(path)) {
+                // we need to read each section and look for the important
+                // parts to install into memory
+                // there are three sections we absolutely need
+                // they are .boot_words, .text, and .bss
+
+                for (const auto& section : reader.sections) {
+                    std::cout << "section: " << section->get_name() << std::endl;
+                }
+                return 0;
+
             } else {
                 std::cout << "could not open " << path << std::endl;
                 return 1;
             }
-            inputStream.close();
+            //inputStream.close();
 
         } else {
             std::cout << "No bootloader provided! Running with memory completely empty!" << std::endl;
