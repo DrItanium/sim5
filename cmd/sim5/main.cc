@@ -64,6 +64,10 @@ main(int argc, char** argv) {
             // okay so we know it is a valid file and not a directory
             ELFIO::elfio reader;
             if (reader.load(path)) {
+                if (reader.get_machine() != ELFIO::EM_960) {
+                    std::cout << "elf is of the wrong kind!" << std::endl;
+                    return 1;
+                } 
                 // we need to read each section and look for the important
                 // parts to install into memory
                 // there are three sections we absolutely need
@@ -75,6 +79,7 @@ main(int argc, char** argv) {
                     std::cout << "section: " << name<< std::endl;
                     std::cout << "\tbase address: 0x" << std::hex << baseAddress << std::endl;
                     std::cout << "\tsize: 0x" << std::hex << size << std::endl;
+                    std::cout << "\tstream_size: 0x" << std::hex << section->get_stream_size() << std::endl;
                     if (name == ".boot_words" || name == ".text" || name == ".data" || name == ".bss") {
                         std::cout << "\tinstalling to memory!" << std::endl;
                         installToMainMemory(baseAddress, section->get_data(), size);
