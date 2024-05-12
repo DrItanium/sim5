@@ -443,6 +443,12 @@ installToMainMemory(std::istream& stream, Address baseAddress) {
         ++baseAddress;
     }
 }
+void
+installToMainMemory(Address baseAddress, const char* data, Address size) {
+    for (auto addr = 0; addr < size; ++addr) {
+        store8(baseAddress + addr, data[addr], TreatAsByteOrdinal{});
+    }
+}
 namespace {
     constexpr bool isAligned(Address address, TreatAsLongOrdinal) noexcept {
         return (address & 0b111) == 0;

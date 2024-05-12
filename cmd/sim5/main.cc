@@ -68,12 +68,18 @@ main(int argc, char** argv) {
                 // parts to install into memory
                 // there are three sections we absolutely need
                 // they are .boot_words, .text, and .bss
-
                 for (const auto& section : reader.sections) {
-                    std::cout << "section: " << section->get_name() << std::endl;
+                    std::string name{section->get_name()};
+                    auto baseAddress = section->get_address();
+                    auto size = section->get_size();
+                    std::cout << "section: " << name<< std::endl;
+                    std::cout << "\tbase address: 0x" << std::hex << baseAddress << std::endl;
+                    std::cout << "\tsize: 0x" << std::hex << size << std::endl;
+                    if (name == ".boot_words" || name == ".text" || name == ".data" || name == ".bss") {
+                        std::cout << "\tinstalling to memory!" << std::endl;
+                        installToMainMemory(baseAddress, section->get_data(), size);
+                    }
                 }
-                return 0;
-
             } else {
                 std::cout << "could not open " << path << std::endl;
                 return 1;

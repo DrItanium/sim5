@@ -1959,6 +1959,7 @@ static_assert(computeNextFrame<Core::C*3, Core::NotC>(0xFDED'0000) == 0xFDED'008
 static_assert(computeNextFrame<Core::C*4, Core::NotC>(0xFDED'0000) == 0xFDED'00C0);
 
 void installToMainMemory(std::istream& stream, Address baseAddress);
+void installToMainMemory(Address baseAddress, const char* data, Address size);
 constexpr auto
 Register::getOpcode() const noexcept {
     if (isREGFormat()) {
