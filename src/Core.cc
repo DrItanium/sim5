@@ -77,7 +77,9 @@ Core::arithmeticWithCarryGeneric(Ordinal result, bool src2MSB, bool src1MSB, boo
         cc |= 0b001;
     }
     cc |= ((result & 0b1) ? 0b010 : 0b000);
-    std::cout << "condition code: 0x" << std::hex << static_cast<int>(cc) << std::endl;
+    DEBUG_LOG_LEVEL(2) {
+        std::cout << "condition code: 0x" << std::hex << static_cast<int>(cc) << std::endl;
+    }
     ac_.arith.conditionCode = cc;
 }
 
@@ -567,6 +569,9 @@ Core::start() noexcept {
         Register temp_{0xFFFF'FFFF};
         for (int i = 0; i < 8; ++i) {
             addc(temp_, temp_.getValue<Ordinal>(), x[i]);
+            DEBUG_LOG_LEVEL(3) {
+                std::cout << "checksum stage " << std::dec << i << ": 0x" << std::hex << temp_.getValue<Ordinal>() << std::endl;
+            }
         }
         DEBUG_LOG_LEVEL(2) {
             std::cout << "final checksum: 0x" << std::hex << temp_.getValue<Ordinal>() << std::endl;
@@ -576,6 +581,11 @@ Core::start() noexcept {
             DEBUG_LEAVE_FUNCTION;
             return BootResult::ChecksumFail;
         } else {
+            DEBUG_LOG_LEVEL(2) {
+                std::cout << "sat: 0x" << std::hex << x[0] << std::endl;
+                std::cout << "prcb: 0x" << std::hex << x[1] << std::endl;
+                std::cout << "ip: 0x" << std::hex << x[3] << std::endl;
+            }
             boot0(x[0], x[1], x[3]);
             DEBUG_LEAVE_FUNCTION;
             return BootResult::Success;
