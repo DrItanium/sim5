@@ -29,6 +29,7 @@
 #include <boost/program_options.hpp>
 #include <filesystem>
 #include <fstream>
+#include <elfio/elfio.hpp>
 
 int
 main(int argc, char** argv) {
