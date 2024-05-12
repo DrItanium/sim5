@@ -568,36 +568,36 @@ Core::start() noexcept {
         ac_.clearConditionCode();
         Register temp_{0};
         addc(temp_, 0xFFFF'FFFF, x[0]);
-        DEBUG_LOG_LEVEL(4) {
+        DEBUG_LOG_LEVEL(3) {
             std::cout << "checksum p0: 0x" << std::hex << temp_.getValue<Ordinal>() << std::endl;
         }
         addc(temp_, temp_.getValue<Ordinal>(), x[1]);
-        DEBUG_LOG_LEVEL(4) {
+        DEBUG_LOG_LEVEL(3) {
             std::cout << "checksum p1: 0x" << std::hex << temp_.getValue<Ordinal>() << std::endl;
         }
         addc(temp_, temp_.getValue<Ordinal>(), x[2]);
-        DEBUG_LOG_LEVEL(4) {
+        DEBUG_LOG_LEVEL(3) {
             std::cout << "checksum p2: 0x" << std::hex << temp_.getValue<Ordinal>() << std::endl;
         }
         addc(temp_, temp_.getValue<Ordinal>(), x[3]);
-        DEBUG_LOG_LEVEL(4) {
+        DEBUG_LOG_LEVEL(3) {
             std::cout << "checksum p3: 0x" << std::hex << temp_.getValue<Ordinal>() << std::endl;
         }
         addc(temp_, temp_.getValue<Ordinal>(), x[4]);
-        DEBUG_LOG_LEVEL(4) {
+        DEBUG_LOG_LEVEL(3) {
             std::cout << "checksum p4: 0x" << std::hex << temp_.getValue<Ordinal>() << std::endl;
         }
         addc(temp_, temp_.getValue<Ordinal>(), x[5]);
 
-        DEBUG_LOG_LEVEL(4) {
+        DEBUG_LOG_LEVEL(3) {
             std::cout << "checksum p5: 0x" << std::hex << temp_.getValue<Ordinal>() << std::endl;
         }
         addc(temp_, temp_.getValue<Ordinal>(), x[6]);
-        DEBUG_LOG_LEVEL(4) {
+        DEBUG_LOG_LEVEL(3) {
             std::cout << "checksum p6: 0x" << std::hex << temp_.getValue<Ordinal>() << std::endl;
         }
         addc(temp_, temp_.getValue<Ordinal>(), x[7]);
-        DEBUG_LOG_LEVEL(4) {
+        DEBUG_LOG_LEVEL(3) {
             std::cout << "checksum p7: 0x" << std::hex << temp_.getValue<Ordinal>() << std::endl;
         }
         if (temp_.getValue(TreatAsOrdinal{}) != 0) {
