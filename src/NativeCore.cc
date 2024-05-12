@@ -116,11 +116,19 @@ namespace {
         DEBUG_LOG_LEVEL(1) {
             std::cout << __PRETTY_FUNCTION__ << "(0x" << std::hex << offset << ")" << std::endl;
         }
-        switch (offset & 0xFF'FFFF) {
-            case 0x00'0000: return static_cast<T>(10 * 1024 * 1024);
-            case 0x00'0004: return static_cast<T>(20 * 1024 * 1024);
-            case 0x00'0008: return static_cast<T>(std::cin.get());
-            default: return 0;
+        if (auto target = offset & 0xFF'FFFF; target >= 0x10'0000) {
+            return getCell(offset).getValue(offset, TreatAs<T>{});
+        } else {
+            switch (target) {
+                case 0x00'0000:
+                    return static_cast<T>(10 * 1024 * 1024);
+                case 0x00'0004:
+                    return static_cast<T>(20 * 1024 * 1024);
+                case 0x00'0008:
+                    return static_cast<T>(std::cin.get());
+                default:
+                    return 0;
+            }
         }
     }
     template<typename T>
@@ -128,13 +136,19 @@ namespace {
         DEBUG_LOG_LEVEL(1) {
             std::cout << __PRETTY_FUNCTION__ << "(0x" << std::hex << offset << ", 0x" << std::hex << static_cast<Ordinal>(value) << ")" << std::endl;
         }
-        switch (offset & 0xFF'FFFF) {
-            case 0x00'0008:
-                std::cout.put(static_cast<char>(value));
-                break;
-            case 0x00'000C: std::cout.flush(); break;
-            default:
-                break;
+        if (auto target = offset & 0xFF'FFFF; target >= 0x10'0000) {
+            getCell(offset).setValue(offset, value, TreatAs<T>{});
+        } else {
+            switch (target) {
+                case 0x00'0008:
+                    std::cout.put(static_cast<char>(value));
+                    break;
+                case 0x00'000C:
+                    std::cout.flush();
+                    break;
+                default:
+                    break;
+            }
         }
     }
     ByteOrdinal
@@ -287,7 +301,7 @@ namespace {
         } else {
             switch (static_cast<uint8_t>(address >> 24)) {
                 case 0xFE: // io space
-                    result = ioLoad<Ordinal>(address & 0xFF'FFFF, TreatAs<Ordinal>{});
+                    result = ioLoad<Ordinal>(address, TreatAs<Ordinal>{});
                     break;
                 case 0xFF: // onboard devices
                     break;
@@ -322,7 +336,7 @@ namespace {
         } else {
             switch (static_cast<uint8_t>(address >> 24)) {
                 case 0xFE: // io space
-                    result = ioLoad<Integer>(address & 0xFF'FFFF, TreatAs<Integer>{});
+                    result = ioLoad<Integer>(address, TreatAs<Integer>{});
                     break;
                 case 0xFF: // onboard devices
                     break;
