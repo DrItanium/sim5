@@ -65,7 +65,7 @@ main(int argc, char** argv) {
             ELFIO::elfio reader;
             if (reader.load(path)) {
                 if (reader.get_machine() != ELFIO::EM_960) {
-                    std::cout << "elf is of the wrong kind!" << std::endl;
+                    std::cout << "provided ELF is not an i960 ELF!" << std::endl;
                     return 1;
                 } 
                 // we need to read each section and look for the important
@@ -76,9 +76,11 @@ main(int argc, char** argv) {
                     std::string name{section->get_name()};
                     auto baseAddress = section->get_address();
                     auto size = section->get_size();
+#if 0
                     std::cout << "section: " << name<< std::endl;
                     std::cout << "\tbase address: 0x" << std::hex << baseAddress << std::endl;
                     std::cout << "\tsize: 0x" << std::hex << size << std::endl;
+#endif
                     if (section->get_flags() & ELFIO::SHF_ALLOC) {
                         switch (section->get_type()) {
                             case ELFIO::SHT_PROGBITS:
@@ -97,7 +99,6 @@ main(int argc, char** argv) {
                 std::cout << "could not open " << path << std::endl;
                 return 1;
             }
-            //inputStream.close();
 
         } else {
             std::cout << "No bootloader provided! Running with memory completely empty!" << std::endl;
