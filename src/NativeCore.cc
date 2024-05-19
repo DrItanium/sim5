@@ -124,8 +124,14 @@ namespace {
                     return static_cast<T>(10 * 1024 * 1024);
                 case 0x00'0004:
                     return static_cast<T>(20 * 1024 * 1024);
-                case 0x00'0008:
-                    return static_cast<T>(std::cin.get());
+                case 0x00'0008: {
+                    auto value = static_cast<T>(std::cin.get());
+                    if (std::cin.fail()) {
+                        return static_cast<T>(-1);
+                    } else {
+                        return value;
+                    }
+                }
                 default:
                     return 0;
             }
