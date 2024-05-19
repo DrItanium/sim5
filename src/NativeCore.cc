@@ -24,6 +24,9 @@
 #include <string>
 #include <iostream>
 #include <stdexcept>
+#include <thread>
+#include <sstream>
+#include <mutex>
 namespace {
     union Cell {
         ByteOrdinal bytes[16];
@@ -57,7 +60,24 @@ namespace {
     };
     Cell* physicalMemory = nullptr;
     bool* tagBits = nullptr;
+    std::thread ioThread;
+    std::stringstream inputStream;
+    std::mutex consoleMutex;
 } // end namespace
+[[noreturn]]
+void
+doConsoleReading(std::stringstream& iStream, std::mutex& theMutex) {
+    std::unique_lock theLock{theMutex, std::defer_lock};
+    while (true) {
+        // we want to make sure that the input and output streams are non blocking by hiding the details of where we are going
+        auto valueRead = static_cast<std::decay_t<decltype(iStream)>::char_type>(std::cin.get());
+        {
+            while (!theLock.try_lock());
+            inputStream.put(valueRead);
+            theLock.unlock();
+        }
+    }
+}
 void
 Core::nonPortableBegin() noexcept {
     if (!physicalMemory) {
@@ -68,6 +88,9 @@ Core::nonPortableBegin() noexcept {
         // tagBits are aligned to 32-bit boundaries
         tagBits = new bool[(0x1'0000'0000) >> 2]();
     }
+    ioThread = std::thread{doConsoleReading, std::ref(inputStream), std::ref(consoleMutex)};
+
+    // setup the
 }
 
 
