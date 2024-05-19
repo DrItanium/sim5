@@ -27,6 +27,7 @@
 #include <thread>
 #include <sstream>
 #include <mutex>
+#include <atomic>
 namespace {
     union Cell {
         ByteOrdinal bytes[16];
@@ -60,24 +61,7 @@ namespace {
     };
     Cell* physicalMemory = nullptr;
     bool* tagBits = nullptr;
-    std::thread ioThread;
-    std::stringstream inputStream;
-    std::mutex consoleMutex;
 } // end namespace
-[[noreturn]]
-void
-doConsoleReading(std::stringstream& iStream, std::mutex& theMutex) {
-    std::unique_lock theLock{theMutex, std::defer_lock};
-    while (true) {
-        // we want to make sure that the input and output streams are non blocking by hiding the details of where we are going
-        auto valueRead = static_cast<std::decay_t<decltype(iStream)>::char_type>(std::cin.get());
-        {
-            while (!theLock.try_lock());
-            inputStream.put(valueRead);
-            theLock.unlock();
-        }
-    }
-}
 void
 Core::nonPortableBegin() noexcept {
     if (!physicalMemory) {
@@ -88,7 +72,6 @@ Core::nonPortableBegin() noexcept {
         // tagBits are aligned to 32-bit boundaries
         tagBits = new bool[(0x1'0000'0000) >> 2]();
     }
-    ioThread = std::thread{doConsoleReading, std::ref(inputStream), std::ref(consoleMutex)};
 
     // setup the
 }
@@ -135,6 +118,15 @@ namespace {
         return physicalMemory[getCellAddress(address)];
     }
     template<typename T>
+    T tryGetFromConsole() {
+        auto value = static_cast<T>(std::cin.get());
+        if (std::cin.fail()) {
+            return static_cast<T>(-1);
+        } else {
+            return value;
+        }
+    }
+    template<typename T>
     T ioLoad(Address offset, TreatAs<T>) {
         DEBUG_LOG_LEVEL(1) {
             std::cout << __PRETTY_FUNCTION__ << "(0x" << std::hex << offset << ")" << std::endl;
@@ -147,15 +139,8 @@ namespace {
                     return static_cast<T>(10 * 1024 * 1024);
                 case 0x00'0004:
                     return static_cast<T>(20 * 1024 * 1024);
-                case 0x00'0008: {
-                    // the assumption is that the device at the address we are accessing perform input buffering
-                    auto value = static_cast<T>(std::cin.get());
-                    if (std::cin.fail()) {
-                        return static_cast<T>(-1);
-                    } else {
-                        return value;
-                    }
-                }
+                case 0x00'0008:
+                    return tryGetFromConsole<T>();
                 default:
                     return 0;
             }
