@@ -125,6 +125,7 @@ namespace {
                 case 0x00'0004:
                     return static_cast<T>(20 * 1024 * 1024);
                 case 0x00'0008: {
+                    // the assumption is that the device at the address we are accessing perform input buffering
                     auto value = static_cast<T>(std::cin.get());
                     if (std::cin.fail()) {
                         return static_cast<T>(-1);
