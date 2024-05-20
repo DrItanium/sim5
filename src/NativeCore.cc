@@ -60,7 +60,7 @@ namespace {
 #undef X
     };
     Cell* physicalMemory = nullptr;
-    bool* tagBits = nullptr;
+    //bool* tagBits = nullptr;
 } // end namespace
 void
 Core::nonPortableBegin() noexcept {
@@ -68,10 +68,10 @@ Core::nonPortableBegin() noexcept {
         // allocate 4 gigabytes of memory
         physicalMemory = new Cell[(0x1'0000'0000) / sizeof(Cell)]();
     }
-    if (!tagBits) {
-        // tagBits are aligned to 32-bit boundaries
-        tagBits = new bool[(0x1'0000'0000) >> 2]();
-    }
+    //if (!tagBits) {
+    //    // tagBits are aligned to 32-bit boundaries
+    //    tagBits = new bool[(0x1'0000'0000) >> 2]();
+    //}
 
     // setup the
 }
