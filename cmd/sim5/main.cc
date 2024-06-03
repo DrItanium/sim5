@@ -35,8 +35,6 @@
 int
 main(int argc, char** argv) {
     Core core;
-    std::cout << "i960 Simulator System" << std::endl;
-    std::cout << "(C) 2022-2023 Joshua Scoggins" << std::endl;
     boost::program_options::options_description desc("Allowed options");
     desc.add_options()
             ("help,h", "produce help message")
@@ -50,6 +48,8 @@ main(int argc, char** argv) {
         std::cout << desc << std::endl;
         return 1;
     }
+    std::cout << "i960 Simulator System" << std::endl;
+    std::cout << "(C) 2022-2023 Joshua Scoggins" << std::endl;
     try {
         core.begin();
         if (vm.count("bootloader")) {
