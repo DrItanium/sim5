@@ -35,9 +35,6 @@ add_library(nativecore
 add_executable(sim5
 		cmd/sim5/main.cc
 		)
-add_executable(memory_pool
-        cmd/memory_pool/main.cc
-)
 add_executable(mmu_test
 		cmd/mmu_test/main.cc)
 target_link_libraries(sim5
@@ -48,12 +45,8 @@ target_link_libraries(mmu_test
 		core960
 		nativecore
 		)
-target_link_libraries(memory_pool
-        Boost::program_options
-)
-install(TARGETS sim5 memory_pool DESTINATION bin)
+install(TARGETS sim5 DESTINATION bin)
 
 target_include_directories(core960 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_include_directories(mmu_test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_include_directories(nativecore PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_include_directories(memory_pool PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
