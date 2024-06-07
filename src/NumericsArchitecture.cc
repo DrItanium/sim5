@@ -38,8 +38,8 @@ Core::processFPInstruction(const REGInstruction &inst ) {
             X(atanrl);
             X(classr);
             X(classrl);
-            //X(cmpr);
-            //X(cmprl);
+            X(cmpr);
+            X(cmprl);
             //X(cmpor);
             //X(cmporl);
             X(cosr);
@@ -578,37 +578,49 @@ Core::cmporl(const REGInstruction &inst) {
     }
 }
 
-void
+#endif
+OptionalFaultRecord
 Core::cmpr(const REGInstruction &inst) {
-    std::visit([this](auto src1, auto src2) {
+    return std::visit([this](auto src1, auto src2) {
                    using K0 = std::decay_t<decltype(src1)>;
                    using K1 = std::decay_t<decltype(src2)>;
                    if constexpr (BothAreReal<K0, K1>) {
                        cmpGeneric<Real>(src1, src2);
+                       return OptionalFaultRecord {};
+                   } else if constexpr (std::is_same_v<K0, FaultRecord>) {
+                       return std::make_optional<FaultRecord>(src1);
+                   } else if constexpr (std::is_same_v<K1, FaultRecord>) {
+                       return std::make_optional<FaultRecord>(src2);
                    } else {
                        cmpGeneric<ExtendedReal>(src1, src2);
+                       return OptionalFaultRecord {};
                    }
                },
                unpackSrc1(inst, TreatAsReal{}),
                unpackSrc2(inst, TreatAsReal{}));
 }
 
-void
+OptionalFaultRecord
 Core::cmprl(const REGInstruction& inst) {
-    std::visit([this](auto src1, auto src2) {
+    return std::visit([this](auto src1, auto src2) {
                    using K0 = std::decay_t<decltype(src1)>;
                    using K1 = std::decay_t<decltype(src2)>;
                    if constexpr (BothAreLongReal<K0, K1>) {
                        cmpGeneric<LongReal>(src1, src2);
+                       return OptionalFaultRecord {};
+                   } else if constexpr (std::is_same_v<K0, FaultRecord>) {
+                       return std::make_optional<FaultRecord>(src1);
+                   } else if constexpr (std::is_same_v<K1, FaultRecord>) {
+                       return std::make_optional<FaultRecord>(src2);
                    } else {
                        cmpGeneric<ExtendedReal>(src1, src2);
+                       return OptionalFaultRecord {};
                    }
                },
                unpackSrc1(inst, TreatAsLongReal{}),
                unpackSrc2(inst, TreatAsLongReal{}));
 }
 // dst <- real(src)
-#endif
 
 OptionalFaultRecord
 Core::mulr(const REGInstruction &inst) {
