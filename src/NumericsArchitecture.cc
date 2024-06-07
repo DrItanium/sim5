@@ -48,7 +48,7 @@ Core::processFPInstruction(const REGInstruction &inst ) {
             X(cpysre);
             //X(cvtri);
             //X(cvtril);
-            //X(cvtzri);
+            X(cvtzri);
             //X(cvtzril);
             //X(cvtilr);
             X(cvtir);
@@ -106,7 +106,14 @@ Core::classrl(const REGInstruction& inst) {
 }
 OptionalFaultRecord
 Core::movr(const REGInstruction &inst) {
-    return std::visit([this, &inst](auto value) { return fpassignment(inst, value, TreatAs<std::decay_t<decltype(value)>>{}); }, unpackSrc1(inst, TreatAsReal{}));
+    return std::visit([this, &inst](auto value) {
+        using K = std::decay_t<decltype(value)>;
+        if constexpr (std::is_same_v<K, ExtendedReal>) {
+            return fpassignment(inst, value, TreatAs<Real>{});
+        } else {
+            return fpassignment(inst, value, TreatAs<K>{});
+        }
+        }, unpackSrc1(inst, TreatAsReal{}));
     /// @todo implement floating point faults
 }
 
@@ -116,7 +123,7 @@ Core::movrl(const REGInstruction &inst) {
             using K = std::decay_t<decltype(value)>;
             if constexpr (std::is_same_v<K, ExtendedReal>) {
                 // convert extended real to a long real according to the manual
-                return fpassignment(inst, static_cast<LongReal>(value), TreatAs<LongReal>{});
+                return fpassignment(inst, value, TreatAs<LongReal>{});
             } else {
                 return fpassignment(inst, value, TreatAs<K>{});
             }
@@ -521,30 +528,114 @@ Core::unpackSrc2(const REGInstruction &inst, TreatAsExtendedReal) const {
     }
 }
 auto faultIdentity = [](FaultRecord&& value) { return std::make_optional(value); };
-#define X(name, routine, kind) \
-OptionalFaultRecord      \
-Core:: name (const REGInstruction& inst) { \
-                         return std::visit(Overload {               \
-                         faultIdentity,                             \
-                         [this, &inst](auto value) {                \
-                            using K = std::decay_t<decltype(value)>;\
-                            return fpassignment(inst, routine ( value ) , TreatAs<K>{});\
-                         }},   \
-                         unpackSrc1(inst, TreatAs< kind > { }));\
-                         }
-    X(cosr, std::cos , Real);
-    X(cosrl, std::cos, LongReal);
-X(sinr, std::sin , Real);
-X(sinrl, std::sin, LongReal);
-X(tanr, std::tan , Real);
-X(tanrl, std::tan, LongReal);
-X(atanr, std::atan , Real);
-X(atanrl, std::atan, LongReal);
-X(sqrtr, std::sqrt, Real);
-X(sqrtrl, std::sqrt, LongReal);
-X(roundr, std::round, Real);
-X(roundrl, std::round, LongReal);
-#undef X
+OptionalFaultRecord
+Core::cosr(const REGInstruction& inst) {
+    using TargetKind = Real;
+    return std::visit(Overload {
+            faultIdentity,
+            [this, &inst](ExtendedReal value) { return fpassignment(inst, std::cos(static_cast<TargetKind>(value)), TreatAs<TargetKind>{}); },
+            [this, &inst] (auto&& value) { return fpassignment(inst, std::cos(value), TreatAs<std::decay_t<decltype(value)>>{}) ; }
+    }, unpackSrc1(inst, TreatAs<TargetKind>{}));
+}
+OptionalFaultRecord
+Core::cosrl(const REGInstruction& inst) {
+    using TargetKind = LongReal;
+    return std::visit(Overload {
+            faultIdentity,
+            [this, &inst](ExtendedReal value) { return fpassignment(inst, std::cos(static_cast<TargetKind>(value)), TreatAs<TargetKind>{}); },
+            [this, &inst] (auto&& value) { return fpassignment(inst, std::cos(value), TreatAs<std::decay_t<decltype(value)>>{}) ; }
+    }, unpackSrc1(inst, TreatAs<TargetKind>{}));
+}
+OptionalFaultRecord
+Core::sinr(const REGInstruction& inst) {
+    using TargetKind = Real;
+    return std::visit(Overload {
+            faultIdentity,
+            [this, &inst](ExtendedReal value) { return fpassignment(inst, std::sin(static_cast<TargetKind>(value)), TreatAs<TargetKind>{}); },
+            [this, &inst] (auto&& value) { return fpassignment(inst, std::sin(value), TreatAs<std::decay_t<decltype(value)>>{}) ; }
+    }, unpackSrc1(inst, TreatAs<TargetKind>{}));
+}
+OptionalFaultRecord
+Core::sinrl(const REGInstruction& inst) {
+    using TargetKind = LongReal;
+    return std::visit(Overload {
+            faultIdentity,
+            [this, &inst](ExtendedReal value) { return fpassignment(inst, std::sin(static_cast<TargetKind>(value)), TreatAs<TargetKind>{}); },
+            [this, &inst] (auto&& value) { return fpassignment(inst, std::sin(value), TreatAs<std::decay_t<decltype(value)>>{}) ; }
+    }, unpackSrc1(inst, TreatAs<TargetKind>{}));
+}
+OptionalFaultRecord
+Core::tanr(const REGInstruction& inst) {
+    using TargetKind = Real;
+    return std::visit(Overload {
+            faultIdentity,
+            [this, &inst](ExtendedReal value) { return fpassignment(inst, std::tan(static_cast<TargetKind>(value)), TreatAs<TargetKind>{}); },
+            [this, &inst] (auto&& value) { return fpassignment(inst, std::tan(value), TreatAs<std::decay_t<decltype(value)>>{}) ; }
+    }, unpackSrc1(inst, TreatAs<TargetKind>{}));
+}
+OptionalFaultRecord
+Core::tanrl(const REGInstruction& inst) {
+    using TargetKind = LongReal;
+    return std::visit(Overload {
+            faultIdentity,
+            [this, &inst](ExtendedReal value) { return fpassignment(inst, std::tan(static_cast<TargetKind>(value)), TreatAs<TargetKind>{}); },
+            [this, &inst] (auto&& value) { return fpassignment(inst, std::tan(value), TreatAs<std::decay_t<decltype(value)>>{}) ; }
+    }, unpackSrc1(inst, TreatAs<TargetKind>{}));
+}
+OptionalFaultRecord
+Core::atanr(const REGInstruction& inst) {
+    using TargetKind = Real;
+    return std::visit(Overload {
+            faultIdentity,
+            [this, &inst](ExtendedReal value) { return fpassignment(inst, std::atan(static_cast<TargetKind>(value)), TreatAs<TargetKind>{}); },
+            [this, &inst] (auto&& value) { return fpassignment(inst, std::atan(value), TreatAs<std::decay_t<decltype(value)>>{}) ; }
+    }, unpackSrc1(inst, TreatAs<TargetKind>{}));
+}
+OptionalFaultRecord
+Core::atanrl(const REGInstruction& inst) {
+    using TargetKind = LongReal;
+    return std::visit(Overload {
+            faultIdentity,
+            [this, &inst](ExtendedReal value) { return fpassignment(inst, std::atan(static_cast<TargetKind>(value)), TreatAs<TargetKind>{}); },
+            [this, &inst] (auto&& value) { return fpassignment(inst, std::atan(value), TreatAs<std::decay_t<decltype(value)>>{}) ; }
+    }, unpackSrc1(inst, TreatAs<TargetKind>{}));
+}
+OptionalFaultRecord
+Core::sqrtr(const REGInstruction& inst) {
+    using TargetKind = Real;
+    return std::visit(Overload {
+            faultIdentity,
+            [this, &inst](ExtendedReal value) { return fpassignment(inst, std::sqrt(static_cast<TargetKind>(value)), TreatAs<TargetKind>{}); },
+            [this, &inst] (auto&& value) { return fpassignment(inst, std::sqrt(value), TreatAs<std::decay_t<decltype(value)>>{}) ; }
+    }, unpackSrc1(inst, TreatAs<TargetKind>{}));
+}
+OptionalFaultRecord
+Core::sqrtrl(const REGInstruction& inst) {
+    using TargetKind = LongReal;
+    return std::visit(Overload {
+            faultIdentity,
+            [this, &inst](ExtendedReal value) { return fpassignment(inst, std::sqrt(static_cast<TargetKind>(value)), TreatAs<TargetKind>{}); },
+            [this, &inst] (auto&& value) { return fpassignment(inst, std::sqrt(value), TreatAs<std::decay_t<decltype(value)>>{}) ; }
+    }, unpackSrc1(inst, TreatAs<TargetKind>{}));
+}
+OptionalFaultRecord
+Core::roundr(const REGInstruction& inst) {
+    using TargetKind = Real;
+    return std::visit(Overload {
+            faultIdentity,
+            [this, &inst](ExtendedReal value) { return fpassignment(inst, std::round(static_cast<TargetKind>(value)), TreatAs<TargetKind>{}); },
+            [this, &inst] (auto&& value) { return fpassignment(inst, std::round(value), TreatAs<std::decay_t<decltype(value)>>{}) ; }
+    }, unpackSrc1(inst, TreatAs<TargetKind>{}));
+}
+OptionalFaultRecord
+Core::roundrl(const REGInstruction& inst) {
+    using TargetKind = LongReal;
+    return std::visit(Overload {
+            faultIdentity,
+            [this, &inst](ExtendedReal value) { return fpassignment(inst, std::round(static_cast<TargetKind>(value)), TreatAs<TargetKind>{}); },
+            [this, &inst] (auto&& value) { return fpassignment(inst, std::round(value), TreatAs<std::decay_t<decltype(value)>>{}) ; }
+    }, unpackSrc1(inst, TreatAs<TargetKind>{}));
+}
 
 #if 0
 
@@ -634,14 +725,12 @@ Core::mulr(const REGInstruction &inst) {
     return std::visit([this, &inst](auto src1, auto src2) {
                    using K0 = std::decay_t<decltype(src1)>;
                    using K1 = std::decay_t<decltype(src2)>;
-                   if constexpr (BothAreReal<K0, K1>) {
-                       return fpassignment(inst, src2 * src1, TreatAsReal{});
-                   } else if constexpr (std::is_same_v<K0, FaultRecord>) {
+                   if constexpr (std::is_same_v<K0, FaultRecord>) {
                        return std::make_optional<FaultRecord>(src1);
                    } else if constexpr (std::is_same_v<K1, FaultRecord>) {
                        return std::make_optional<FaultRecord>(src2);
                    } else {
-                       return fpassignment(inst, src2 * src1, TreatAsExtendedReal{});
+                       return fpassignment(inst, src2 * src1, TreatAsReal{});
                    }
                },
                unpackSrc1(inst, TreatAsReal{}),
@@ -653,14 +742,12 @@ Core::mulrl(const REGInstruction &inst) {
     return std::visit([this, &inst](auto src1, auto src2) {
                    using K0 = std::decay_t<decltype(src1)>;
                    using K1 = std::decay_t<decltype(src2)>;
-                   if constexpr (BothAreLongReal<K0, K1>) {
-                       return fpassignment(inst, src2 * src1, TreatAsLongReal{});
-                   } else if constexpr (std::is_same_v<K0, FaultRecord>) {
+                   if constexpr (std::is_same_v<K0, FaultRecord>) {
                        return std::make_optional<FaultRecord>(src1);
                    } else if constexpr (std::is_same_v<K1, FaultRecord>) {
                        return std::make_optional<FaultRecord>(src2);
                    } else {
-                       return fpassignment(inst, src2 * src1, TreatAsExtendedReal{});
+                       return fpassignment(inst, src2 * src1, TreatAsLongReal{});
                    }
                },
                unpackSrc1(inst, TreatAsLongReal{}),
@@ -671,16 +758,12 @@ Core::addr(const REGInstruction &inst) {
     return std::visit([this, &inst](auto src1, auto src2) {
                    using K0 = std::decay_t<decltype(src1)>;
                    using K1 = std::decay_t<decltype(src2)>;
-                   if constexpr (BothAreReal<K0, K1>) {
-                       // if we get real/real then we assign as real, every other case mixed so treat them as long double/long double
-                       return fpassignment(inst, src2 + src1, TreatAsReal{});
-                   } else if constexpr (std::is_same_v<K0, FaultRecord>) {
+                   if constexpr (std::is_same_v<K0, FaultRecord>) {
                        return std::make_optional<FaultRecord>(src1);
                    } else if constexpr (std::is_same_v<K1, FaultRecord>) {
                        return std::make_optional<FaultRecord>(src2);
                    } else {
-                       // if they are different then it means mixed addition, so we should always do 80-bit operations
-                       return fpassignment(inst, src2 + src1, TreatAsExtendedReal{});
+                       return fpassignment(inst, src2 + src1, TreatAsReal{});
                    }
                },
                unpackSrc1(inst, TreatAsReal{}),
@@ -692,15 +775,12 @@ Core::addrl(const REGInstruction &inst) {
     return std::visit([this, &inst](auto src1, auto src2) {
                    using K0 = std::decay_t<decltype(src1)>;
                    using K1 = std::decay_t<decltype(src2)>;
-                   if constexpr (BothAreLongReal<K0, K1>) {
-                       return fpassignment(inst, src2 + src1, TreatAsLongReal{});
-                   } else if constexpr (std::is_same_v<K0, FaultRecord>) {
+                   if constexpr (std::is_same_v<K0, FaultRecord>) {
                        return std::make_optional<FaultRecord>(src1);
                    } else if constexpr (std::is_same_v<K1, FaultRecord>) {
                        return std::make_optional<FaultRecord>(src2);
                    } else {
-                       // if they are different then it means mixed addition, so we should always do 80-bit operations
-                       return fpassignment(inst, src2 + src1, TreatAsExtendedReal{});
+                       return fpassignment(inst, src2 + src1, TreatAsLongReal{});
                    }
                },
                unpackSrc1(inst, TreatAsLongReal{}),
@@ -711,16 +791,13 @@ Core::subr(const REGInstruction &inst) {
     return std::visit([this, &inst](auto src1, auto src2) {
                    using K0 = std::decay_t<decltype(src1)>;
                    using K1 = std::decay_t<decltype(src2)>;
-                   if constexpr (BothAreReal<K0, K1>) {
-                       // if we get real/real then we assign as real, every other case mixed so treat them as long double/long double
-                       return fpassignment(inst, src2 - src1, TreatAsReal{});
-                   } else if constexpr (std::is_same_v<K0, FaultRecord>) {
+                   if constexpr (std::is_same_v<K0, FaultRecord>) {
                        return std::make_optional<FaultRecord>(src1);
                    } else if constexpr (std::is_same_v<K1, FaultRecord>) {
                        return std::make_optional<FaultRecord>(src2);
                    } else {
-                       // if they are different then it means mixed subtraction, so we should always do 80-bit operations
-                       return fpassignment(inst, src2 - src1, TreatAsExtendedReal{});
+                       // if we get real/real then we assign as real, every other case mixed so treat them as long double/long double
+                       return fpassignment(inst, src2 - src1, TreatAsReal{});
                    }
                },
                unpackSrc1(inst, TreatAsReal{}),
@@ -732,15 +809,12 @@ Core::subrl(const REGInstruction &inst) {
     return std::visit([this, &inst](auto src1, auto src2) {
                    using K0 = std::decay_t<decltype(src1)>;
                    using K1 = std::decay_t<decltype(src2)>;
-                   if constexpr (BothAreLongReal<K0, K1>) {
-                       return fpassignment(inst, src2 - src1, TreatAsLongReal{});
-                   } else if constexpr (std::is_same_v<K0, FaultRecord>) {
+                   if constexpr (std::is_same_v<K0, FaultRecord>) {
                        return std::make_optional<FaultRecord>(src1);
                    } else if constexpr (std::is_same_v<K1, FaultRecord>) {
                        return std::make_optional<FaultRecord>(src2);
                    } else {
-                       // if they are different then it means mixed subtraction, so we should always do 80-bit operations
-                       return fpassignment(inst, src2 - src1, TreatAsExtendedReal{});
+                       return fpassignment(inst, src2 - src1, TreatAsLongReal{});
                    }
                },
                unpackSrc1(inst, TreatAsLongReal{}),
@@ -751,15 +825,12 @@ Core::divr(const REGInstruction &inst) {
     return std::visit([this, &inst](auto denominator, auto numerator) {
                    using K0 = std::decay_t<decltype(numerator)>;
                    using K1 = std::decay_t<decltype(denominator)>;
-                   if constexpr (BothAreReal<K0, K1>) {
-                       // if we get real/real then we assign as real, every other case mixed so treat them as long double/long double
-                       return fpassignment(inst, numerator / denominator, TreatAsReal{});
-                   } else if constexpr (std::is_same_v<K0, FaultRecord>) {
+                   if constexpr (std::is_same_v<K0, FaultRecord>) {
                        return std::make_optional<FaultRecord>(numerator);
                    } else if constexpr (std::is_same_v<K1, FaultRecord>) {
                        return std::make_optional<FaultRecord>(denominator);
                    } else {
-                       return fpassignment(inst, numerator / denominator, TreatAsExtendedReal{});
+                       return fpassignment(inst, numerator / denominator, TreatAsReal{});
                    }
                },
                unpackSrc1(inst, TreatAsReal{}),
@@ -771,15 +842,12 @@ Core::divrl(const REGInstruction &inst) {
     return std::visit([this, &inst](auto denominator, auto numerator) -> OptionalFaultRecord {
                    using K0 = std::decay_t<decltype(numerator)>;
                    using K1 = std::decay_t<decltype(denominator)>;
-                   if constexpr (BothAreLongReal<K0, K1>) {
-                       // if we get real/real then we assign as real, every other case mixed so treat them as long double/long double
-                       return fpassignment(inst, numerator / denominator, TreatAsLongReal{});
-                   } else if constexpr (std::is_same_v<K0, FaultRecord>) {
+                   if constexpr (std::is_same_v<K0, FaultRecord>) {
                        return std::make_optional<FaultRecord>(numerator);
                    } else if constexpr (std::is_same_v<K1, FaultRecord>) {
                        return std::make_optional<FaultRecord>(denominator);
                    } else {
-                       return fpassignment(inst, numerator / denominator, TreatAsExtendedReal{});
+                       return fpassignment(inst, numerator / denominator, TreatAsLongReal{});
                    }
                },
                unpackSrc1(inst, TreatAsLongReal{}),
@@ -945,26 +1013,27 @@ Core::updateRoundingMode() const {
 //X(cvtzril);
 OptionalFaultRecord
 Core::cvtzri(const REGInstruction& inst) {
-    return std::visit([this, &inst](auto src) -> OptionalFaultRecord {
-                          using K0 = std::decay_t<decltype(src)>;
-                          if constexpr (std::is_same_v<K0, FaultRecord>) {
-                              return src;
-                          } else {
-                              {
-                                  auto previousContents = ac_.arith.floatingPointRoundingControl;
-                                  ac_.arith.floatingPointRoundingControl = 0b11; // round to zero
-                                  updateRoundingMode();
-                                  {
-                                      getGPR(inst.getSrcDest()).setValue<Integer>(src);
-                                      /// @todo implement support for checking for overflow!
-                                  }
-                                  ac_.arith.floatingPointRoundingControl = previousContents;
-                                  updateRoundingMode();
-                              }
-                              return std::nullopt;
-                          }
-                      },
-                      unpackSrc1(inst, TreatAsReal{}));
+    return std::visit(
+            [this, &inst](auto src) -> OptionalFaultRecord {
+                using K0 = std::decay_t<decltype(src)>;
+                if constexpr (std::is_same_v<K0, FaultRecord>) {
+                    return src;
+                } else {
+                    {
+                        auto previousContents = ac_.arith.floatingPointRoundingControl;
+                        ac_.arith.floatingPointRoundingControl = 0b11; // round to zero
+                        updateRoundingMode();
+                        {
+                            getGPR(inst.getSrcDest()).setValue<Integer>(src);
+                            /// @todo implement support for checking for overflow!
+                        }
+                        ac_.arith.floatingPointRoundingControl = previousContents;
+                        updateRoundingMode();
+                    }
+                    return std::nullopt;
+                }
+            },
+            unpackSrc1(inst, TreatAsReal{}));
 }
 OptionalFaultRecord
 Core::cvtzril(const REGInstruction& inst) {
