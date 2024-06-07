@@ -53,7 +53,7 @@ Ordinal
 Core::unpackSrc1(const REGInstruction& inst, ByteOrdinal offset, TreatAsOrdinal) noexcept {
     if (auto src1 = inst.getSrc1(); inst.getM1()) {
         // literals should always return zero if offset is greater than zero
-        return offset == 0 ? constants_.getValue<Ordinal>(src1) : 0;
+        return offset == 0 ? src1 : 0;
     } else if (inst.getS1()) {
         return static_cast<Ordinal>(getSFR(src1, offset));
     } else {
