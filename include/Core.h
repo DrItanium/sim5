@@ -1808,59 +1808,60 @@ private:
     template<typename T>
     requires std::floating_point<T>
     FloatingPointFaultServicingResult<T> serviceFloatingPointFault(T value) {
-        auto exceptions = fetestexcept(FE_ALL_EXCEPT);
-        if (exceptions & FE_DIVBYZERO) {
+        if (auto exceptions = std::fetestexcept(FE_ALL_EXCEPT); exceptions != 0) {
             std::feclearexcept(FE_ALL_EXCEPT);
-            return floatingZeroDivideOperationFault();
-        }
-        if (exceptions & FE_INVALID) {
-            std::feclearexcept(FE_ALL_EXCEPT);
-            return floatingInvalidOperationFault();
-        }
-        FaultRecord record((Ordinal) pc_,
-                           (Ordinal) ac_,
-                           0,
-                           (Ordinal) ip_,
-                           true);
-        if (exceptions & FE_OVERFLOW) {
-            if (ac_.arith.floatingOverflowMask == 0) {
-                handleOverflowCondition<T>(value, record);
+            if (exceptions & FE_DIVBYZERO) {
+                return floatingZeroDivideOperationFault();
+            } else if (exceptions & FE_INVALID) {
+                return floatingInvalidOperationFault();
             } else {
-                ac_.arith.floatingOverflowFlag = 1;
-            }
-        }
-        if (exceptions & FE_UNDERFLOW) {
-            if (ac_.arith.floatingUnderflowMask == 0) {
-                handleUnderflowCondition<T>(value, record);
-            } else {
-                ac_.arith.floatingUnderflowFlag= 1;
-            }
-        }
-        if (exceptions & FE_INEXACT) {
-            if (ac_.arith.floatingInexactMask == 0) {
-                record.type |= FloatingPointInexactFault;
-                if (record.type != 0) {
-                    // If set, F0 indicates that the adjusted result has been rounded towards positive infinity
-                    // If clear, F0 indicates that the adjusted result has been rounded toward negative infinity
-                    handleMixedInexactCondition(value, record);
-                } else {
-                    handlePureInexactCondition(value, record);
+                FaultRecord record((Ordinal) pc_,
+                                   (Ordinal) ac_,
+                                   0,
+                                   (Ordinal) ip_,
+                                   true);
+                if (exceptions & FE_OVERFLOW) {
+                    if (ac_.arith.floatingOverflowMask == 0) {
+                        handleOverflowCondition<T>(value, record);
+                    } else {
+                        ac_.arith.floatingOverflowFlag = 1;
+                    }
                 }
-            } else {
-                ac_.arith.floatingInexactFlag = 1;
+                if (exceptions & FE_UNDERFLOW) {
+                    if (ac_.arith.floatingUnderflowMask == 0) {
+                        handleUnderflowCondition<T>(value, record);
+                    } else {
+                        ac_.arith.floatingUnderflowFlag = 1;
+                    }
+                }
+                if (exceptions & FE_INEXACT) {
+                    if (ac_.arith.floatingInexactMask == 0) {
+                        record.type |= FloatingPointInexactFault;
+                        if (record.type != 0) {
+                            // If set, F0 indicates that the adjusted result has been rounded towards positive infinity
+                            // If clear, F0 indicates that the adjusted result has been rounded toward negative infinity
+                            handleMixedInexactCondition(value, record);
+                        } else {
+                            handlePureInexactCondition(value, record);
+                        }
+                    } else {
+                        ac_.arith.floatingInexactFlag = 1;
+                    }
+                } else {
+                    // SET F1 if the adjusted result has been bias adjusted because its exponent was outside the range of the extended-real format
+                    if (record.type == FloatingPointUnderflowFault) {
+                        handleUnderflowCondition<T>(value, record);
+                    }
+                    if (record.type == FloatingPointOverflowFault) {
+                        handleOverflowCondition<T>(value, record);
+                    }
+                }
+                if (record.type != 0) {
+                    return record;
+                } else {
+                    return value;
+                }
             }
-        } else {
-            // SET F1 if the adjusted result has been bias adjusted because its exponent was outside the range of the extended-real format
-            if (record.type == FloatingPointUnderflowFault) {
-                handleUnderflowCondition<T>(value, record);
-            }
-            if (record.type == FloatingPointOverflowFault) {
-                handleOverflowCondition<T>(value, record);
-            }
-        }
-        std::feclearexcept(FE_ALL_EXCEPT);
-        if (record.type != 0) {
-            return record;
         } else {
             return value;
         }
