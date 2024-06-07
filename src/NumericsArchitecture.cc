@@ -51,7 +51,7 @@ Core::processFPInstruction(const REGInstruction &inst ) {
             //X(cvtzri);
             //X(cvtzril);
             //X(cvtilr);
-            //X(cvtir);
+            X(cvtir);
             //X(divr);
             //X(divrl);
             //X(movr);
@@ -852,11 +852,6 @@ Core::logrl(const REGInstruction &inst) {
 }
 
 OptionalFaultRecord
-Core::cvtir(const REGInstruction& inst) {
-    // convert integer to real
-    return fpassignment(inst, serviceFloatingPointFault<Real>(unpackSrc1(inst, TreatAsInteger{})), TreatAsReal{});
-}
-OptionalFaultRecord
 Core::cvtilr(const REGInstruction& inst) {
     //convert long integer to real
     // not a long real!
@@ -865,11 +860,18 @@ Core::cvtilr(const REGInstruction& inst) {
     // movrl fp3, g8 # result stored in g8, g9
     return fpassignment(inst, serviceFloatingPointFault<LongReal>(unpackSrc1(inst, TreatAsLongInteger{})), TreatAsLongReal{});
 }
+#endif
+
 OptionalFaultRecord
 Core::fpassignment(const REGInstruction&, FaultRecord& record, TreatAs<FaultRecord>) {
     return record;
 }
-#endif
+
+OptionalFaultRecord
+Core::cvtir(const REGInstruction& inst) {
+    // convert integer to real
+    return fpassignment(inst, serviceFloatingPointFault<Real>(unpackSrc1(inst, TreatAsInteger{})), TreatAsReal{});
+}
 
 void
 Core::updateRoundingMode() const {

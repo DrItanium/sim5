@@ -1799,12 +1799,15 @@ private:
     void handleMixedInexactCondition(T value, FaultRecord& record) {
         /// @todo fully implement
     }
+    template<typename T>
+    requires std::floating_point<T>
+    using FloatingPointFaultServicingResult = std::variant<OptionalFaultRecord, T>;
     /**
      * @brief Checks the error flags to see if a floating point exeception has taken place and generates one if allowed
      */
     template<typename T>
     requires std::floating_point<T>
-    std::variant<OptionalFaultRecord, T> serviceFloatingPointFault(T value) {
+    FloatingPointFaultServicingResult<T> serviceFloatingPointFault(T value) {
         if (std::fetestexcept(FE_DIVBYZERO)) {
             std::feclearexcept(FE_ALL_EXCEPT);
             return floatingZeroDivideOperationFault();
@@ -1860,6 +1863,12 @@ private:
         } else {
             return value;
         }
+    }
+    inline OptionalFaultRecord fpassignment(const REGInstruction& inst, OptionalFaultRecord value, TreatAs<OptionalFaultRecord>) { return value; }
+    template<typename T>
+    requires std::floating_point<T>
+    OptionalFaultRecord fpassignment(const REGInstruction& inst, FloatingPointFaultServicingResult<T> value, TreatAs<T>) {
+        return std::visit([this, &inst](auto&& value) { return fpassignment(inst, value, TreatAs<std::decay_t<decltype(value)>>{}); }, value);
     }
     void updateRoundingMode() const;
     template<typename T>
