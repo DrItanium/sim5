@@ -57,8 +57,8 @@ Core::processFPInstruction(const REGInstruction &inst ) {
             //X(movr);
             X(movre);
             //X(movrl);
-            //X(mulr);
-            //X(mulrl);
+            X(mulr);
+            X(mulrl);
             //X(remr);
             //X(remrl);
             X(roundr);
@@ -705,36 +705,44 @@ Core::cmprl(const REGInstruction& inst) {
 // dst <- real(src)
 #endif
 
-#if 0
-void
+OptionalFaultRecord
 Core::mulr(const REGInstruction &inst) {
-    std::visit([this, &inst](auto src1, auto src2) {
+    return std::visit([this, &inst](auto src1, auto src2) {
                    using K0 = std::decay_t<decltype(src1)>;
                    using K1 = std::decay_t<decltype(src2)>;
                    if constexpr (BothAreReal<K0, K1>) {
-                       fpassignment(inst, src2 * src1, TreatAsReal{});
+                       return fpassignment(inst, src2 * src1, TreatAsReal{});
+                   } else if constexpr (std::is_same_v<K0, FaultRecord>) {
+                       return std::make_optional<FaultRecord>(src1);
+                   } else if constexpr (std::is_same_v<K1, FaultRecord>) {
+                       return std::make_optional<FaultRecord>(src2);
                    } else {
-                       fpassignment(inst, src2 * src1, TreatAsExtendedReal{});
+                       return fpassignment(inst, src2 * src1, TreatAsExtendedReal{});
                    }
                },
                unpackSrc1(inst, TreatAsReal{}),
                unpackSrc2(inst, TreatAsReal{}));
 }
 
-void
+OptionalFaultRecord
 Core::mulrl(const REGInstruction &inst) {
-    std::visit([this, &inst](auto src1, auto src2) {
+    return std::visit([this, &inst](auto src1, auto src2) {
                    using K0 = std::decay_t<decltype(src1)>;
                    using K1 = std::decay_t<decltype(src2)>;
                    if constexpr (BothAreLongReal<K0, K1>) {
-                       fpassignment(inst, src2 * src1, TreatAsLongReal{});
+                       return fpassignment(inst, src2 * src1, TreatAsLongReal{});
+                   } else if constexpr (std::is_same_v<K0, FaultRecord>) {
+                       return std::make_optional<FaultRecord>(src1);
+                   } else if constexpr (std::is_same_v<K1, FaultRecord>) {
+                       return std::make_optional<FaultRecord>(src2);
                    } else {
-                       fpassignment(inst, src2 * src1, TreatAsExtendedReal{});
+                       return fpassignment(inst, src2 * src1, TreatAsExtendedReal{});
                    }
                },
                unpackSrc1(inst, TreatAsLongReal{}),
                unpackSrc2(inst, TreatAsLongReal{}));
 }
+#if 0
 // arithmetic status bits for remainder operations
 // bit 6: Q1, the next-to-last quotient bit
 // bit 5: Q0, the last quotient bit
