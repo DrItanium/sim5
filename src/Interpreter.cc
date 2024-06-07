@@ -389,8 +389,62 @@ Core::processInstruction(const REGInstruction & inst) {
             receive(static_cast<SegmentSelector>(src1), regDest);
             break;
 #endif
+
+#define X(name) case Opcodes:: name : return name (inst)
+        X(addr);
+        X(addrl);
+        X(atanr);
+        X(atanrl);
+        X(classr);
+        X(classrl);
+        X(cmpr);
+        X(cmprl);
+            //X(cmpor);
+            //X(cmporl);
+        X(cosr);
+        X(cosrl);
+        X(cpyrsre);
+        X(cpysre);
+            //X(cvtri);
+            //X(cvtril);
+        X(cvtzri);
+            //X(cvtzril);
+            //X(cvtilr);
+        X(cvtir);
+        X(divr);
+        X(divrl);
+            //X(movr);
+        X(movre);
+        X(movr);
+        X(movrl);
+        X(mulr);
+        X(mulrl);
+            //X(remr);
+            //X(remrl);
+        X(roundr);
+        X(roundrl);
+        X(subr);
+        X(subrl);
+            //X(scaler);
+            //X(scalerl);
+        X(sinr);
+        X(sinrl);
+        X(sqrtr);
+        X(sqrtrl);
+        X(tanr);
+        X(tanrl);
+            //X(logeprl);
+            //X(logepr);
+            //X(logbnrl);
+            //X(logbnr);
+            //X(logr);
+            //X(logrl);
+
+#undef X
         default:
-            return processFPInstruction(inst);
+            return unimplementedFault();
+        //default:
+        //    return processFPInstruction(inst);
     }
     /// @todo temporary
     return std::nullopt;

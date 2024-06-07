@@ -1504,7 +1504,6 @@ private:
     OptionalFaultRecord processInstruction(const MEMInstruction&);
     OptionalFaultRecord processInstruction(const REGInstruction&);
     OptionalFaultRecord processInstruction(const CTRLInstruction&);
-    OptionalFaultRecord processFPInstruction(const REGInstruction&);
 private:
     OptionalFaultRecord modpc(Register& dest, Ordinal src1o, Ordinal src2o);
     static void modxc(Register& control, Register& dest, Ordinal src1, Ordinal src2);
