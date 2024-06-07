@@ -32,8 +32,8 @@ Core::processFPInstruction(const REGInstruction &inst ) {
     if (auto opcode = inst.getOpcode(); isFloatingPointInstruction(opcode)) {
         switch (opcode) {
 #define X(name) case Opcodes:: name : return name (inst)
-            //X(addr);
-            //X(addrl);
+            X(addr);
+            X(addrl);
             X(atanr);
             X(atanrl);
             X(classr);
@@ -52,8 +52,8 @@ Core::processFPInstruction(const REGInstruction &inst ) {
             //X(cvtzril);
             //X(cvtilr);
             X(cvtir);
-            //X(divr);
-            //X(divrl);
+            X(divr);
+            X(divrl);
             //X(movr);
             X(movre);
             //X(movrl);
@@ -63,8 +63,8 @@ Core::processFPInstruction(const REGInstruction &inst ) {
             //X(remrl);
             X(roundr);
             X(roundrl);
-            //X(subr);
-            //X(subrl);
+            X(subr);
+            X(subrl);
             //X(scaler);
             //X(scalerl);
             X(sinr);
@@ -560,102 +560,7 @@ Core::scalerl(const REGInstruction &inst) {
                },
                unpackSrc2(inst, TreatAsLongReal{}));
 }
-void
-Core::addr(const REGInstruction &inst) {
-    std::visit([this, &inst](auto src1, auto src2) {
-                   using K0 = std::decay_t<decltype(src1)>;
-                   using K1 = std::decay_t<decltype(src2)>;
-                   if constexpr (BothAreReal<K0, K1>) {
-                       // if we get real/real then we assign as real, every other case mixed so treat them as long double/long double
-                       fpassignment(inst, src2 + src1, TreatAsReal{});
-                   } else {
-                       // if they are different then it means mixed addition, so we should always do 80-bit operations
-                       fpassignment(inst, src2 + src1, TreatAsExtendedReal{});
-                   }
-               },
-               unpackSrc1(inst, TreatAsReal{}),
-               unpackSrc2(inst, TreatAsReal{}));
-}
 
-void
-Core::addrl(const REGInstruction &inst) {
-    std::visit([this, &inst](auto src1, auto src2) {
-                   using K0 = std::decay_t<decltype(src1)>;
-                   using K1 = std::decay_t<decltype(src2)>;
-                   if constexpr (BothAreLongReal<K0, K1>) {
-                       fpassignment(inst, src2 + src1, TreatAsLongReal{});
-                   } else {
-                       // if they are different then it means mixed addition, so we should always do 80-bit operations
-                       fpassignment(inst, src2 + src1, TreatAsExtendedReal{});
-                   }
-               },
-               unpackSrc1(inst, TreatAsLongReal{}),
-               unpackSrc2(inst, TreatAsLongReal{}));
-}
-
-void
-Core::subr(const REGInstruction &inst) {
-    std::visit([this, &inst](auto src1, auto src2) {
-                   using K0 = std::decay_t<decltype(src1)>;
-                   using K1 = std::decay_t<decltype(src2)>;
-                   if constexpr (BothAreReal<K0, K1>) {
-                       // if we get real/real then we assign as real, every other case mixed so treat them as long double/long double
-                       fpassignment(inst, src2 - src1, TreatAsReal{});
-                   } else {
-                       // if they are different then it means mixed subtraction, so we should always do 80-bit operations
-                       fpassignment(inst, src2 - src1, TreatAsExtendedReal{});
-                   }
-               },
-               unpackSrc1(inst, TreatAsReal{}),
-               unpackSrc2(inst, TreatAsReal{}));
-}
-
-void
-Core::subrl(const REGInstruction &inst) {
-    std::visit([this, &inst](auto src1, auto src2) {
-                   using K0 = std::decay_t<decltype(src1)>;
-                   using K1 = std::decay_t<decltype(src2)>;
-                   if constexpr (BothAreLongReal<K0, K1>) {
-                       fpassignment(inst, src2 - src1, TreatAsLongReal{});
-                   } else {
-                       // if they are different then it means mixed subtraction, so we should always do 80-bit operations
-                       fpassignment(inst, src2 - src1, TreatAsExtendedReal{});
-                   }
-               },
-               unpackSrc1(inst, TreatAsLongReal{}),
-               unpackSrc2(inst, TreatAsLongReal{}));
-}
-void
-Core::divr(const REGInstruction &inst) {
-    std::visit([this, &inst](auto denominator, auto numerator) {
-                   using K0 = std::decay_t<decltype(numerator)>;
-                   using K1 = std::decay_t<decltype(denominator)>;
-                   if constexpr (BothAreReal<K0, K1>) {
-                       // if we get real/real then we assign as real, every other case mixed so treat them as long double/long double
-                       fpassignment(inst, numerator / denominator, TreatAsReal{});
-                   } else {
-                       fpassignment(inst, numerator / denominator, TreatAsExtendedReal{});
-                   }
-               },
-               unpackSrc1(inst, TreatAsReal{}),
-               unpackSrc2(inst, TreatAsReal{}));
-}
-
-void
-Core::divrl(const REGInstruction &inst) {
-    std::visit([this, &inst](auto denominator, auto numerator) {
-                   using K0 = std::decay_t<decltype(numerator)>;
-                   using K1 = std::decay_t<decltype(denominator)>;
-                   if constexpr (BothAreLongReal<K0, K1>) {
-                       // if we get real/real then we assign as real, every other case mixed so treat them as long double/long double
-                       fpassignment(inst, numerator / denominator, TreatAsLongReal{});
-                   } else {
-                       fpassignment(inst, numerator / denominator, TreatAsExtendedReal{});
-                   }
-               },
-               unpackSrc1(inst, TreatAsLongReal{}),
-               unpackSrc2(inst, TreatAsLongReal{}));
-}
 
 void
 Core::cmpor(const REGInstruction &inst) {
@@ -737,6 +642,125 @@ Core::mulrl(const REGInstruction &inst) {
                        return std::make_optional<FaultRecord>(src2);
                    } else {
                        return fpassignment(inst, src2 * src1, TreatAsExtendedReal{});
+                   }
+               },
+               unpackSrc1(inst, TreatAsLongReal{}),
+               unpackSrc2(inst, TreatAsLongReal{}));
+}
+OptionalFaultRecord
+Core::addr(const REGInstruction &inst) {
+    return std::visit([this, &inst](auto src1, auto src2) {
+                   using K0 = std::decay_t<decltype(src1)>;
+                   using K1 = std::decay_t<decltype(src2)>;
+                   if constexpr (BothAreReal<K0, K1>) {
+                       // if we get real/real then we assign as real, every other case mixed so treat them as long double/long double
+                       return fpassignment(inst, src2 + src1, TreatAsReal{});
+                   } else if constexpr (std::is_same_v<K0, FaultRecord>) {
+                       return std::make_optional<FaultRecord>(src1);
+                   } else if constexpr (std::is_same_v<K1, FaultRecord>) {
+                       return std::make_optional<FaultRecord>(src2);
+                   } else {
+                       // if they are different then it means mixed addition, so we should always do 80-bit operations
+                       return fpassignment(inst, src2 + src1, TreatAsExtendedReal{});
+                   }
+               },
+               unpackSrc1(inst, TreatAsReal{}),
+               unpackSrc2(inst, TreatAsReal{}));
+}
+
+OptionalFaultRecord
+Core::addrl(const REGInstruction &inst) {
+    return std::visit([this, &inst](auto src1, auto src2) {
+                   using K0 = std::decay_t<decltype(src1)>;
+                   using K1 = std::decay_t<decltype(src2)>;
+                   if constexpr (BothAreLongReal<K0, K1>) {
+                       return fpassignment(inst, src2 + src1, TreatAsLongReal{});
+                   } else if constexpr (std::is_same_v<K0, FaultRecord>) {
+                       return std::make_optional<FaultRecord>(src1);
+                   } else if constexpr (std::is_same_v<K1, FaultRecord>) {
+                       return std::make_optional<FaultRecord>(src2);
+                   } else {
+                       // if they are different then it means mixed addition, so we should always do 80-bit operations
+                       return fpassignment(inst, src2 + src1, TreatAsExtendedReal{});
+                   }
+               },
+               unpackSrc1(inst, TreatAsLongReal{}),
+               unpackSrc2(inst, TreatAsLongReal{}));
+}
+OptionalFaultRecord
+Core::subr(const REGInstruction &inst) {
+    return std::visit([this, &inst](auto src1, auto src2) {
+                   using K0 = std::decay_t<decltype(src1)>;
+                   using K1 = std::decay_t<decltype(src2)>;
+                   if constexpr (BothAreReal<K0, K1>) {
+                       // if we get real/real then we assign as real, every other case mixed so treat them as long double/long double
+                       return fpassignment(inst, src2 - src1, TreatAsReal{});
+                   } else if constexpr (std::is_same_v<K0, FaultRecord>) {
+                       return std::make_optional<FaultRecord>(src1);
+                   } else if constexpr (std::is_same_v<K1, FaultRecord>) {
+                       return std::make_optional<FaultRecord>(src2);
+                   } else {
+                       // if they are different then it means mixed subtraction, so we should always do 80-bit operations
+                       return fpassignment(inst, src2 - src1, TreatAsExtendedReal{});
+                   }
+               },
+               unpackSrc1(inst, TreatAsReal{}),
+               unpackSrc2(inst, TreatAsReal{}));
+}
+
+OptionalFaultRecord
+Core::subrl(const REGInstruction &inst) {
+    return std::visit([this, &inst](auto src1, auto src2) {
+                   using K0 = std::decay_t<decltype(src1)>;
+                   using K1 = std::decay_t<decltype(src2)>;
+                   if constexpr (BothAreLongReal<K0, K1>) {
+                       return fpassignment(inst, src2 - src1, TreatAsLongReal{});
+                   } else if constexpr (std::is_same_v<K0, FaultRecord>) {
+                       return std::make_optional<FaultRecord>(src1);
+                   } else if constexpr (std::is_same_v<K1, FaultRecord>) {
+                       return std::make_optional<FaultRecord>(src2);
+                   } else {
+                       // if they are different then it means mixed subtraction, so we should always do 80-bit operations
+                       return fpassignment(inst, src2 - src1, TreatAsExtendedReal{});
+                   }
+               },
+               unpackSrc1(inst, TreatAsLongReal{}),
+               unpackSrc2(inst, TreatAsLongReal{}));
+}
+OptionalFaultRecord
+Core::divr(const REGInstruction &inst) {
+    return std::visit([this, &inst](auto denominator, auto numerator) {
+                   using K0 = std::decay_t<decltype(numerator)>;
+                   using K1 = std::decay_t<decltype(denominator)>;
+                   if constexpr (BothAreReal<K0, K1>) {
+                       // if we get real/real then we assign as real, every other case mixed so treat them as long double/long double
+                       return fpassignment(inst, numerator / denominator, TreatAsReal{});
+                   } else if constexpr (std::is_same_v<K0, FaultRecord>) {
+                       return std::make_optional<FaultRecord>(numerator);
+                   } else if constexpr (std::is_same_v<K1, FaultRecord>) {
+                       return std::make_optional<FaultRecord>(denominator);
+                   } else {
+                       return fpassignment(inst, numerator / denominator, TreatAsExtendedReal{});
+                   }
+               },
+               unpackSrc1(inst, TreatAsReal{}),
+               unpackSrc2(inst, TreatAsReal{}));
+}
+
+OptionalFaultRecord
+Core::divrl(const REGInstruction &inst) {
+    return std::visit([this, &inst](auto denominator, auto numerator) {
+                   using K0 = std::decay_t<decltype(numerator)>;
+                   using K1 = std::decay_t<decltype(denominator)>;
+                   if constexpr (BothAreLongReal<K0, K1>) {
+                       // if we get real/real then we assign as real, every other case mixed so treat them as long double/long double
+                       return fpassignment(inst, numerator / denominator, TreatAsLongReal{});
+                   } else if constexpr (std::is_same_v<K0, FaultRecord>) {
+                       return std::make_optional<FaultRecord>(numerator);
+                   } else if constexpr (std::is_same_v<K1, FaultRecord>) {
+                       return std::make_optional<FaultRecord>(denominator);
+                   } else {
+                       return fpassignment(inst, numerator / denominator, TreatAsExtendedReal{});
                    }
                },
                unpackSrc1(inst, TreatAsLongReal{}),
