@@ -20,6 +20,7 @@
 // ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#define _XOPEN_SOURCE 600
 #include "Core.h"
 #include <string>
 #include <iostream>
@@ -28,6 +29,7 @@
 #include <sstream>
 #include <mutex>
 #include <atomic>
+#include <chrono>
 namespace {
     union Cell {
         ByteOrdinal bytes[16];
@@ -59,19 +61,21 @@ namespace {
         X(QuadOrdinal);
 #undef X
     };
-    Cell* physicalMemory = nullptr;
+    std::unique_ptr<Cell[]> physicalMemory;
+    std::chrono::time_point startup = std::chrono::system_clock::now();
     //bool* tagBits = nullptr;
 } // end namespace
 void
 Core::nonPortableBegin() noexcept {
     if (!physicalMemory) {
         // allocate 4 gigabytes of memory
-        physicalMemory = new Cell[(0x1'0000'0000) / sizeof(Cell)]();
+        physicalMemory = std::make_unique<Cell[]>((0x1'0000'0000 / sizeof(Cell)));
     }
     //if (!tagBits) {
     //    // tagBits are aligned to 32-bit boundaries
     //    tagBits = new bool[(0x1'0000'0000) >> 2]();
     //}
+
 
     // setup the
 }
@@ -126,6 +130,17 @@ namespace {
             return value;
         }
     }
+    decltype(auto) getDurationSinceStartup() noexcept {
+        return std::chrono::system_clock::now() - startup;
+    }
+    template<typename T>
+    T micros() noexcept {
+        return static_cast<T>(std::chrono::duration_cast<std::chrono::microseconds>(getDurationSinceStartup()).count());
+    }
+    template<typename T>
+    T millis() noexcept {
+        return static_cast<T>(std::chrono::duration_cast<std::chrono::milliseconds>(getDurationSinceStartup()).count());
+    }
     template<typename T>
     T ioLoad(Address offset, TreatAs<T>) {
         DEBUG_LOG_LEVEL(1) {
@@ -141,6 +156,10 @@ namespace {
                     return static_cast<T>(20 * 1024 * 1024);
                 case 0x00'0008:
                     return tryGetFromConsole<T>();
+                case 0x00'0040:
+                    return millis<T>();
+                case 0x00'0044:
+                    return micros<T>();
                 default:
                     return 0;
             }
