@@ -48,7 +48,7 @@ Core::processFPInstruction(const REGInstruction &inst ) {
             X(cpysre);
             //X(cvtri);
             //X(cvtril);
-            //X(cvtzri);
+            X(cvtzri);
             //X(cvtzril);
             //X(cvtilr);
             X(cvtir);
@@ -56,7 +56,8 @@ Core::processFPInstruction(const REGInstruction &inst ) {
             X(divrl);
             //X(movr);
             X(movre);
-            //X(movrl);
+            X(movr);
+            X(movrl);
             X(mulr);
             X(mulrl);
             //X(remr);
@@ -103,7 +104,6 @@ OptionalFaultRecord
 Core::classrl(const REGInstruction& inst) {
     return classifyGeneric<LongReal>(inst);
 }
-#if 0
 OptionalFaultRecord
 Core::movr(const REGInstruction &inst) {
     return std::visit([this, &inst](auto value) { return fpassignment(inst, value, TreatAs<std::decay_t<decltype(value)>>{}); }, unpackSrc1(inst, TreatAsReal{}));
@@ -115,7 +115,6 @@ Core::movrl(const REGInstruction &inst) {
     return std::visit([this, &inst](auto value) { return fpassignment(inst, value, TreatAs<std::decay_t<decltype(value)>>{}); }, unpackSrc1(inst, TreatAsLongReal{}));
     /// @todo implement floating point faults
 }
-#endif
 
 OptionalFaultRecord
 Core::movre(const REGInstruction &inst) {
@@ -933,4 +932,33 @@ Core::updateRoundingMode() const {
             std::fesetround(FE_TOWARDZERO);
             break;
     }
+}
+//X(cvtzri);
+//X(cvtzril);
+OptionalFaultRecord
+Core::cvtzri(const REGInstruction& inst) {
+    return std::visit([this, &inst](auto src) -> OptionalFaultRecord {
+                          using K0 = std::decay_t<decltype(src)>;
+                          if constexpr (std::is_same_v<K0, FaultRecord>) {
+                              return src;
+                          } else {
+                              {
+                                  auto backup = ac_;
+                                  ac_.arith.floatingPointRoundingControl = 0b11; // round to zero
+                                  updateRoundingMode();
+                                  {
+                                      getGPR(inst.getSrcDest()).setValue<Integer>(src);
+                                      /// @todo implement support for checking for overflow!
+                                  }
+                                  ac_ = backup;
+                                  updateRoundingMode();
+                              }
+                              return std::nullopt;
+                          }
+                      },
+                      unpackSrc1(inst, TreatAsReal{}));
+}
+OptionalFaultRecord
+Core::cvtzril(const REGInstruction& inst) {
+    return std::nullopt;
 }
