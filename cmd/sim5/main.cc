@@ -49,7 +49,7 @@ main(int argc, char** argv) {
         return 1;
     }
     std::cout << "i960 Simulator System" << std::endl;
-    std::cout << "(C) 2022-2023 Joshua Scoggins" << std::endl;
+    std::cout << "(C) 2022-2024 Joshua Scoggins" << std::endl;
     try {
         core.begin();
         if (vm.count("bootloader")) {

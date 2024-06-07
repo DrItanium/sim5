@@ -1803,7 +1803,7 @@ private:
     using FloatingPointFaultServicingResult = std::variant<OptionalFaultRecord, T>;
     template<typename T>
     requires std::floating_point<T>
-    void handleInexactFloatingPointFault(T value, FaultRecord& record) {
+    [[gnu::noinline]] void handleInexactFloatingPointFault(T value, FaultRecord& record) {
         if (ac_.arith.floatingInexactMask == 0) {
             record.type |= FloatingPointInexactFault;
             if (record.type != 0) {
