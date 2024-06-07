@@ -1801,22 +1801,6 @@ private:
     template<typename T>
     requires std::floating_point<T>
     using FloatingPointFaultServicingResult = std::variant<OptionalFaultRecord, T>;
-    template<typename T>
-    requires std::floating_point<T>
-    [[gnu::noinline]] void handleInexactFloatingPointFault(T value, FaultRecord& record) {
-        if (ac_.arith.floatingInexactMask == 0) {
-            record.type |= FloatingPointInexactFault;
-            if (record.type != 0) {
-                // If set, F0 indicates that the adjusted result has been rounded towards positive infinity
-                // If clear, F0 indicates that the adjusted result has been rounded toward negative infinity
-                handleMixedInexactCondition(value, record);
-            } else {
-                handlePureInexactCondition(value, record);
-            }
-        } else {
-            ac_.arith.floatingInexactFlag = 1;
-        }
-    }
     /**
      * @brief Checks the error flags to see if a floating point exeception has taken place and generates one if allowed
      */
@@ -1850,7 +1834,18 @@ private:
                     }
                 }
                 if (exceptions & FE_INEXACT) {
-                    handleInexactFloatingPointFault<T>(value, record);
+                    if (ac_.arith.floatingInexactMask == 0) {
+                        record.type |= FloatingPointInexactFault;
+                        if (record.type != 0) {
+                            // If set, F0 indicates that the adjusted result has been rounded towards positive infinity
+                            // If clear, F0 indicates that the adjusted result has been rounded toward negative infinity
+                            handleMixedInexactCondition(value, record);
+                        } else {
+                            handlePureInexactCondition(value, record);
+                        }
+                    } else {
+                        ac_.arith.floatingInexactFlag = 1;
+                    }
                 } else {
                     // SET F1 if the adjusted result has been bias adjusted because its exponent was outside the range of the extended-real format
                     if (record.type == FloatingPointUnderflowFault) {
