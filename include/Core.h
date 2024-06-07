@@ -1808,11 +1808,12 @@ private:
     template<typename T>
     requires std::floating_point<T>
     FloatingPointFaultServicingResult<T> serviceFloatingPointFault(T value) {
-        if (std::fetestexcept(FE_DIVBYZERO)) {
+        auto exceptions = fetestexcept(FE_ALL_EXCEPT);
+        if (exceptions & FE_DIVBYZERO) {
             std::feclearexcept(FE_ALL_EXCEPT);
             return floatingZeroDivideOperationFault();
         }
-        if (std::fetestexcept(FE_INVALID)) {
+        if (exceptions & FE_INVALID) {
             std::feclearexcept(FE_ALL_EXCEPT);
             return floatingInvalidOperationFault();
         }
@@ -1821,21 +1822,21 @@ private:
                            0,
                            (Ordinal) ip_,
                            true);
-        if (std::fetestexcept(FE_OVERFLOW)) {
+        if (exceptions & FE_OVERFLOW) {
             if (ac_.arith.floatingOverflowMask == 0) {
                 handleOverflowCondition<T>(value, record);
             } else {
                 ac_.arith.floatingOverflowFlag = 1;
             }
         }
-        if (std::fetestexcept(FE_UNDERFLOW)) {
+        if (exceptions & FE_UNDERFLOW) {
             if (ac_.arith.floatingUnderflowMask == 0) {
                 handleUnderflowCondition<T>(value, record);
             } else {
                 ac_.arith.floatingUnderflowFlag= 1;
             }
         }
-        if (std::fetestexcept(FE_INEXACT)) {
+        if (exceptions & FE_INEXACT) {
             if (ac_.arith.floatingInexactMask == 0) {
                 record.type |= FloatingPointInexactFault;
                 if (record.type != 0) {
