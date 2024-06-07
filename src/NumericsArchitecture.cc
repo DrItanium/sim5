@@ -48,7 +48,7 @@ Core::processFPInstruction(const REGInstruction &inst ) {
             X(cpysre);
             //X(cvtri);
             //X(cvtril);
-            X(cvtzri);
+            //X(cvtzri);
             //X(cvtzril);
             //X(cvtilr);
             X(cvtir);
@@ -112,7 +112,15 @@ Core::movr(const REGInstruction &inst) {
 
 OptionalFaultRecord
 Core::movrl(const REGInstruction &inst) {
-    return std::visit([this, &inst](auto value) { return fpassignment(inst, value, TreatAs<std::decay_t<decltype(value)>>{}); }, unpackSrc1(inst, TreatAsLongReal{}));
+    return std::visit([this, &inst](auto value) {
+            using K = std::decay_t<decltype(value)>;
+            if constexpr (std::is_same_v<K, ExtendedReal>) {
+                // convert extended real to a long real according to the manual
+                return fpassignment(inst, static_cast<LongReal>(value), TreatAs<LongReal>{});
+            } else {
+                return fpassignment(inst, value, TreatAs<K>{});
+            }
+        },unpackSrc1(inst, TreatAsLongReal{}));
     /// @todo implement floating point faults
 }
 
@@ -760,7 +768,7 @@ Core::divr(const REGInstruction &inst) {
 
 OptionalFaultRecord
 Core::divrl(const REGInstruction &inst) {
-    return std::visit([this, &inst](auto denominator, auto numerator) {
+    return std::visit([this, &inst](auto denominator, auto numerator) -> OptionalFaultRecord {
                    using K0 = std::decay_t<decltype(numerator)>;
                    using K1 = std::decay_t<decltype(denominator)>;
                    if constexpr (BothAreLongReal<K0, K1>) {
@@ -943,14 +951,14 @@ Core::cvtzri(const REGInstruction& inst) {
                               return src;
                           } else {
                               {
-                                  auto backup = ac_;
+                                  auto previousContents = ac_.arith.floatingPointRoundingControl;
                                   ac_.arith.floatingPointRoundingControl = 0b11; // round to zero
                                   updateRoundingMode();
                                   {
                                       getGPR(inst.getSrcDest()).setValue<Integer>(src);
                                       /// @todo implement support for checking for overflow!
                                   }
-                                  ac_ = backup;
+                                  ac_.arith.floatingPointRoundingControl = previousContents;
                                   updateRoundingMode();
                               }
                               return std::nullopt;
