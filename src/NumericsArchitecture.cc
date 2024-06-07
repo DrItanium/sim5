@@ -1019,17 +1019,10 @@ Core::cvtzri(const REGInstruction& inst) {
                 if constexpr (std::is_same_v<K0, FaultRecord>) {
                     return src;
                 } else {
-                    {
-                        auto previousContents = ac_.arith.floatingPointRoundingControl;
-                        ac_.arith.floatingPointRoundingControl = 0b11; // round to zero
-                        updateRoundingMode();
-                        {
-                            getGPR(inst.getSrcDest()).setValue<Integer>(src);
-                            /// @todo implement support for checking for overflow!
-                        }
-                        ac_.arith.floatingPointRoundingControl = previousContents;
-                        updateRoundingMode();
-                    }
+                    std::fesetround(FE_TOWARDZERO);
+                    getGPR(inst.getSrcDest()).setValue<Integer>(src);
+                    /// @todo implement support for checking for overflow!
+                    updateRoundingMode();
                     return std::nullopt;
                 }
             },
