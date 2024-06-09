@@ -203,28 +203,6 @@ namespace {
                 return getMemoryReference<T>(address);
         }
     }
-    ByteOrdinal
-    load8(Address address, TreatAsByteOrdinal) noexcept {
-        switch (static_cast<uint8_t>(address >> 24)) {
-            case 0xFE:
-                return ioLoad(address, TreatAsByteOrdinal{});
-            case 0xFF:
-                return 0;
-            default:
-                return getCell(address).getValue(address, TreatAsByteOrdinal{});
-        }
-    }
-    ByteInteger
-    load8(Address address, TreatAsByteInteger) noexcept {
-        switch (static_cast<uint8_t>(address >> 24)) {
-            case 0xFE:
-                return ioLoad(address, TreatAsByteInteger{});
-            case 0xFF:
-                return 0;
-            default:
-                return getCell(address).getValue(address, TreatAsByteInteger{});
-        }
-    }
     template<typename T>
     void store(Address address, T value, TreatAs<T>) {
         switch (static_cast<uint8_t>(address >> 24))  {
@@ -241,34 +219,6 @@ namespace {
     void
     store8(Address address, ByteOrdinal value, TreatAsByteOrdinal) noexcept {
         store(address, value, TreatAsByteOrdinal{});
-    }
-    void
-    store16(Address address, ShortOrdinal value, TreatAsShortOrdinal) noexcept {
-        store(address, value, TreatAsShortOrdinal{});
-    }
-    void
-    store8(Address address, ByteInteger value, TreatAsByteInteger) noexcept {
-        store(address, value, TreatAsByteInteger{});
-    }
-    void
-    store16(Address address, ShortInteger value, TreatAsShortInteger) noexcept {
-        store(address, value, TreatAsShortInteger {});
-    }
-    void
-    store32(Address address, Ordinal value, TreatAsOrdinal) noexcept {
-        store(address, value, TreatAsOrdinal{});
-    }
-    void
-    store32(Address address, Integer value, TreatAsInteger) noexcept {
-        store(address, value, TreatAsInteger{});
-    }
-    Ordinal
-    load32(Address address, TreatAsOrdinal) noexcept {
-        return load<Ordinal>(address, TreatAsOrdinal{});
-    }
-    Integer
-    load32(Address address, TreatAsInteger) noexcept {
-        return load<Integer>(address, TreatAsInteger{});
     }
     void Cell::setValue(Address address, ByteOrdinal value, TreatAsByteOrdinal) noexcept { bytes[getOffset(address, TreatAsByteOrdinal{})] = value; }
     void Cell::setValue(Address address, ByteInteger value, TreatAsByteInteger) noexcept { byteIntegers[getOffset(address, TreatAsByteInteger{})] = value; }
@@ -316,44 +266,44 @@ namespace {
 
 Ordinal
 Core::load(Address address, TreatAsOrdinal) const noexcept {
-    return load32(address, TreatAsOrdinal{});
+    return ::load(address, TreatAsOrdinal{});
 }
 
 Integer
 Core::load(Address address, TreatAsInteger) const noexcept {
-    return load32(address, TreatAsInteger{});
+    return ::load(address, TreatAsInteger{});
 }
 
 
 
 void
 Core::store(Address address, Ordinal value, TreatAsOrdinal) noexcept {
-    store32(address, value, TreatAsOrdinal{});
+    ::store(address, value, TreatAsOrdinal{});
 }
 
 void
 Core::store(Address address, Integer value, TreatAsInteger) noexcept {
-    store32(address, value, TreatAsInteger{});
+    ::store(address, value, TreatAsInteger{});
 }
 
 void
 Core::store(Address address, ShortOrdinal value, TreatAsShortOrdinal) noexcept {
-    store16(address, value, TreatAsShortOrdinal{});
+    ::store(address, value, TreatAsShortOrdinal{});
 }
 
 void
 Core::store(Address address, ShortInteger value, TreatAsShortInteger) noexcept {
-    store16(address, value, TreatAsShortInteger{});
+    ::store(address, value, TreatAsShortInteger{});
 }
 
 void
 Core::store(Address address, ByteOrdinal value, TreatAsByteOrdinal) noexcept {
-    store8(address, value, TreatAsByteOrdinal {});
+    ::store(address, value, TreatAsByteOrdinal {});
 }
 
 void
 Core::store(Address address, ByteInteger value, TreatAsByteInteger) noexcept {
-    store8(address, value, TreatAsByteInteger{});
+    ::store(address, value, TreatAsByteInteger{});
 }
 void
 Core::checksumFail() {
@@ -407,44 +357,20 @@ namespace {
 }
 void
 Core::store(Address address, QuadOrdinal value, TreatAsQuadOrdinal) noexcept {
-    if (isAligned(address, TreatAsQuadOrdinal{})) {
-        getCell(address).setValue(address, value, TreatAsQuadOrdinal {});
-    } else {
-        store(address, static_cast<LongOrdinal>(value), TreatAsLongOrdinal{});
-        store(address + 8, static_cast<LongOrdinal>(value >> 64), TreatAsLongOrdinal {});
-    }
+    ::store(address, value, TreatAsQuadOrdinal {});
 }
 
 QuadOrdinal
 Core::load(Address address, TreatAsQuadOrdinal) const noexcept {
-    if (isAligned(address, TreatAsQuadOrdinal{})) {
-        return getCell(address).getValue(address, TreatAsQuadOrdinal{});
-    } else {
-        // unaligned accesses need to be handled differently to make sure that we do a _wraparound_ instead
-        // of reading into unowned memory.
-        auto lower = static_cast<QuadOrdinal>(load(address, TreatAsLongOrdinal{}));
-        auto upper = static_cast<QuadOrdinal>(load(address + 8, TreatAsLongOrdinal{}));
-        return lower | upper;
-    }
+    return ::load(address, TreatAsQuadOrdinal{});
 }
 
 LongOrdinal
 Core::load(Address address, TreatAs<LongOrdinal>) const noexcept {
-    if (isAligned(address, TreatAsLongOrdinal{})) {
-        return getCell(address).getValue(address, TreatAsLongOrdinal{});
-    } else {
-        auto lower = static_cast<LongOrdinal>(load(address, TreatAsOrdinal{}));
-        auto upper = static_cast<LongOrdinal>(load(address + 4, TreatAsOrdinal{})) << 32;
-        return lower | upper;
-    }
+    return ::load(address, TreatAsLongOrdinal{});
 }
 
 void
 Core::store(Address address, LongOrdinal value, TreatAs<LongOrdinal>) noexcept {
-    if (isAligned(address, TreatAsLongOrdinal{})) {
-        getCell(address).setValue(address, value, TreatAs<LongOrdinal>{});
-    } else {
-        store(address, static_cast<Ordinal>(value), TreatAsOrdinal{});
-        store(address + 4, static_cast<Ordinal>(value >> 32), TreatAsOrdinal{});
-    }
+    ::store(address, value, TreatAsLongOrdinal{});
 }
