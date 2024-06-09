@@ -1067,12 +1067,10 @@ Core::movl(const REGInstruction& inst) {
         // don't corrupt anything as we can't recover if we do!
         nextInstruction();
         return invalidOpcodeFault();
-    } else if (inst.src1IsLiteral()) {
-        setGPR(inst.getSrcDest(), inst.getSrc1(), TreatAsOrdinal{});
-        setGPR(inst.getSrcDest(), 1, 0, TreatAsOrdinal{});
     } else {
-        moveGPR(inst.getSrcDest(), inst.getSrc1(), TreatAsOrdinal{});
-        moveGPR(inst.getSrcDest(), 1, inst.getSrc1(), 1, TreatAsOrdinal{});
+        getGPR(inst.getSrcDest(), TreatAsLongRegister{}).setValue(
+                inst.src1IsLiteral() ? inst.getSrc1() : getGPR(inst.getSrc1(), TreatAsLongRegister{}).getValue(TreatAsLongOrdinal{}),
+        TreatAsLongOrdinal {});
     }
     return std::nullopt;
 }
