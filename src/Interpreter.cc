@@ -61,128 +61,128 @@ Core::cycle() noexcept {
 OptionalFaultRecord
 Core::processInstruction(const REGInstruction & inst) {
     auto& regDest = getGPR(inst.getSrcDest());
-    const auto& src1 = getSrc1Register(inst);
+    //const auto& src1 = getSrc1Register(inst);
     const auto& src2 = getSrc2Register(inst);
     switch (inst.getOpcode()) {
         case Opcodes::notOperation:
-            notOperation(regDest, static_cast<Ordinal>(src1));
+            notOperation(regDest, static_cast<Ordinal>(getSrc1Register(inst)));
             break;
         case Opcodes::andOperation:
-            microcodedBitwiseOperation<AndOperation>(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
+            microcodedBitwiseOperation<AndOperation>(regDest, static_cast<Ordinal>(getSrc1Register(inst)), static_cast<Ordinal>(src2));
             break;
         case Opcodes::orOperation: // or
-            microcodedBitwiseOperation<OrOperation>(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
+            microcodedBitwiseOperation<OrOperation>(regDest, static_cast<Ordinal>(getSrc1Register(inst)), static_cast<Ordinal>(src2));
             break;
         case Opcodes::xorOperation:
-            microcodedBitwiseOperation<XorOperation>(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
+            microcodedBitwiseOperation<XorOperation>(regDest, static_cast<Ordinal>(getSrc1Register(inst)), static_cast<Ordinal>(src2));
             break;
         case Opcodes::notbit:
-            notbit(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
+            notbit(regDest, static_cast<Ordinal>(getSrc1Register(inst)), static_cast<Ordinal>(src2));
             break;
         case Opcodes::andnot:
-            andnot(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
+            andnot(regDest, static_cast<Ordinal>(getSrc1Register(inst)), static_cast<Ordinal>(src2));
             break;
         case Opcodes::setbit:
-            setbit(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
+            setbit(regDest, static_cast<Ordinal>(getSrc1Register(inst)), static_cast<Ordinal>(src2));
             break;
         case Opcodes::notand: // notand
-            notand(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
+            notand(regDest, static_cast<Ordinal>(getSrc1Register(inst)), static_cast<Ordinal>(src2));
             break;
         case Opcodes::nor: // nor
-            nor(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
+            nor(regDest, static_cast<Ordinal>(getSrc1Register(inst)), static_cast<Ordinal>(src2));
             break;
         case Opcodes::xnor:
-            xnor(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
+            xnor(regDest, static_cast<Ordinal>(getSrc1Register(inst)), static_cast<Ordinal>(src2));
             break;
         case Opcodes::ornot: // ornot
-            ornot(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
+            ornot(regDest, static_cast<Ordinal>(getSrc1Register(inst)), static_cast<Ordinal>(src2));
             break;
         case Opcodes::nand: // nand
-            nand(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
+            nand(regDest, static_cast<Ordinal>(getSrc1Register(inst)), static_cast<Ordinal>(src2));
             break;
         case Opcodes::clrbit: // clrbit
-            clrbit(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
+            clrbit(regDest, static_cast<Ordinal>(getSrc1Register(inst)), static_cast<Ordinal>(src2));
             break;
         case Opcodes::notor: // notor
-            notor(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
+            notor(regDest, static_cast<Ordinal>(getSrc1Register(inst)), static_cast<Ordinal>(src2));
             break;
         case Opcodes::alterbit: // alterbit
-            alterbit(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
+            alterbit(regDest, static_cast<Ordinal>(getSrc1Register(inst)), static_cast<Ordinal>(src2));
             break;
             // in some of the opcodeExt values seem to reflect the resultant truth
             // table for the operation :). That's pretty cool
         case Opcodes::addo:
-            addo(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
+            addo(regDest, static_cast<Ordinal>(getSrc1Register(inst)), static_cast<Ordinal>(src2));
             break;
         case Opcodes::addi: // addi
-            addi(regDest, static_cast<Integer>(src1), static_cast<Integer>(src2));
+            addi(regDest, static_cast<Integer>(getSrc1Register(inst)), static_cast<Integer>(src2));
             break;
         case Opcodes::subo: // subo
             // I remember this trick from college, subtraction is just addition
             // with a negative second argument :). I never gave it much thought
             // until now but it seems to be an effective trick to save space.
-            subo(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
+            subo(regDest, static_cast<Ordinal>(getSrc1Register(inst)), static_cast<Ordinal>(src2));
             break;
         case Opcodes::subi: // subi
-            subi(regDest, static_cast<Integer>(src1), static_cast<Integer>(src2));
+            subi(regDest, static_cast<Integer>(getSrc1Register(inst)), static_cast<Integer>(src2));
             break;
         case Opcodes::shro: // shro
-            shro(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
+            shro(regDest, static_cast<Ordinal>(getSrc1Register(inst)), static_cast<Ordinal>(src2));
             break;
         case Opcodes::shrdi: // shrdi
             // according to the manual, equivalent to divi value, 2 so that is what we're going to do for correctness sake
-            regDest.setValue<Integer>( static_cast<Integer>(src1) < 32 && static_cast<Integer>(src1) >= 0 ? static_cast<Integer>(src2) / static_cast<Integer>(computeBitPosition(static_cast<Integer>(src1))) : 0);
+            regDest.setValue<Integer>( static_cast<Integer>(getSrc1Register(inst)) < 32 && static_cast<Integer>(getSrc1Register(inst)) >= 0 ? static_cast<Integer>(src2) / static_cast<Integer>(computeBitPosition(static_cast<Integer>(getSrc1Register(inst)))) : 0);
             break;
         case Opcodes::shri:
-            shri(regDest, static_cast<Integer>(src1), static_cast<Integer>(src2));
+            shri(regDest, static_cast<Integer>(getSrc1Register(inst)), static_cast<Integer>(src2));
             break;
         case Opcodes::shlo:
-            shlo(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
+            shlo(regDest, static_cast<Ordinal>(getSrc1Register(inst)), static_cast<Ordinal>(src2));
             break;
         case Opcodes::rotate:
-            rotate(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
+            rotate(regDest, static_cast<Ordinal>(getSrc1Register(inst)), static_cast<Ordinal>(src2));
             break;
         case Opcodes::shli:
-            shli(regDest, static_cast<Integer>(src1), static_cast<Integer>(src2));
+            shli(regDest, static_cast<Integer>(getSrc1Register(inst)), static_cast<Integer>(src2));
             break;
         case Opcodes::cmpo: // cmpo
-            cmpo(static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
+            cmpo(static_cast<Ordinal>(getSrc1Register(inst)), static_cast<Ordinal>(src2));
             break;
         case Opcodes::cmpi: // cmpi
-            cmpi(static_cast<Integer>(src1), static_cast<Integer>(src2));
+            cmpi(static_cast<Integer>(getSrc1Register(inst)), static_cast<Integer>(src2));
             break;
         case Opcodes::concmpo: // concmpo
-            concmpo(static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
+            concmpo(static_cast<Ordinal>(getSrc1Register(inst)), static_cast<Ordinal>(src2));
             break;
         case Opcodes::concmpi: // concmpi
-            concmpi(static_cast<Integer>(src1), static_cast<Integer>(src2));
+            concmpi(static_cast<Integer>(getSrc1Register(inst)), static_cast<Integer>(src2));
             break;
         case Opcodes::cmpinco: // cmpinco
-            cmpinco(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
+            cmpinco(regDest, static_cast<Ordinal>(getSrc1Register(inst)), static_cast<Ordinal>(src2));
             break;
         case Opcodes::cmpinci: // cmpinci
-            cmpinci(regDest, static_cast<Integer>(src1), static_cast<Integer>(src2));
+            cmpinci(regDest, static_cast<Integer>(getSrc1Register(inst)), static_cast<Integer>(src2));
             break;
         case Opcodes::cmpdeco: // cmpdeco
-            cmpdeco(regDest, static_cast<Integer>(src1), static_cast<Integer>(src2));
+            cmpdeco(regDest, static_cast<Integer>(getSrc1Register(inst)), static_cast<Integer>(src2));
             break;
         case Opcodes::cmpdeci: // cmpdeci
-            cmpdeci(regDest, static_cast<Integer>(src1), static_cast<Integer>(src2));
+            cmpdeci(regDest, static_cast<Integer>(getSrc1Register(inst)), static_cast<Integer>(src2));
             break;
         case Opcodes::scanbyte: // scanbyte
-            scanbyte(static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
+            scanbyte(static_cast<Ordinal>(getSrc1Register(inst)), static_cast<Ordinal>(src2));
             break;
         case Opcodes::chkbit: // chkbit
-            ac_.setConditionResult((static_cast<Ordinal>(src2) & computeBitPosition(static_cast<Ordinal>(src1))) == 0 );
+            ac_.setConditionResult((static_cast<Ordinal>(src2) & computeBitPosition(static_cast<Ordinal>(getSrc1Register(inst)))) == 0 );
             break;
         case Opcodes::addc:
-            addc(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
+            addc(regDest, static_cast<Ordinal>(getSrc1Register(inst)), static_cast<Ordinal>(src2));
             break;
         case Opcodes::subc:
-            subc(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
+            subc(regDest, static_cast<Ordinal>(getSrc1Register(inst)), static_cast<Ordinal>(src2));
             break;
         case Opcodes::mov:
-            regDest.setValue<Ordinal>(static_cast<Ordinal>(src1));
+            regDest.setValue<Ordinal>(static_cast<Ordinal>(getSrc1Register(inst)));
             break;
         case Opcodes::movl:
             movl(inst);
@@ -209,77 +209,77 @@ Core::processInstruction(const REGInstruction & inst) {
             mark();
             break;
         case Opcodes::mulo:
-            mulo(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
+            mulo(regDest, static_cast<Ordinal>(getSrc1Register(inst)), static_cast<Ordinal>(src2));
             break;
         case Opcodes::muli:
-            muli(regDest, static_cast<Integer>(src1), static_cast<Integer>(src2));
+            muli(regDest, static_cast<Integer>(getSrc1Register(inst)), static_cast<Integer>(src2));
             break;
         case Opcodes::divi:
-            divi(regDest, static_cast<Integer>(src1), static_cast<Integer>(src2));
+            divi(regDest, static_cast<Integer>(getSrc1Register(inst)), static_cast<Integer>(src2));
             break;
         case Opcodes::divo:
-            divo(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
+            divo(regDest, static_cast<Ordinal>(getSrc1Register(inst)), static_cast<Ordinal>(src2));
             break;
         case Opcodes::remo:
-            remo(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
+            remo(regDest, static_cast<Ordinal>(getSrc1Register(inst)), static_cast<Ordinal>(src2));
             break;
         case Opcodes::remi:
-            remi(regDest, static_cast<Integer>(src1), static_cast<Integer>(src2));
+            remi(regDest, static_cast<Integer>(getSrc1Register(inst)), static_cast<Integer>(src2));
             break;
         case Opcodes::modi:
-            modi(regDest, static_cast<Integer>(src1), static_cast<Integer>(src2));
+            modi(regDest, static_cast<Integer>(getSrc1Register(inst)), static_cast<Integer>(src2));
             break;
         case Opcodes::modify:
-            modify(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
+            modify(regDest, static_cast<Ordinal>(getSrc1Register(inst)), static_cast<Ordinal>(src2));
             break;
         case Opcodes::extract:
-            extract(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
+            extract(regDest, static_cast<Ordinal>(getSrc1Register(inst)), static_cast<Ordinal>(src2));
             break;
         case Opcodes::modac:
-            modxc(ac_, regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
+            modxc(ac_, regDest, static_cast<Ordinal>(getSrc1Register(inst)), static_cast<Ordinal>(src2));
             // update the rounding mode
             updateRoundingMode();
             break;
         case Opcodes::modtc:
-            modxc(tc_, regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
+            modxc(tc_, regDest, static_cast<Ordinal>(getSrc1Register(inst)), static_cast<Ordinal>(src2));
             break;
         case Opcodes::modpc:
-            modpc(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
+            modpc(regDest, static_cast<Ordinal>(getSrc1Register(inst)), static_cast<Ordinal>(src2));
             break;
         case Opcodes::atadd:
-            atadd(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
+            atadd(regDest, static_cast<Ordinal>(getSrc1Register(inst)), static_cast<Ordinal>(src2));
             break;
         case Opcodes::atmod:
-            atmod(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
+            atmod(regDest, static_cast<Ordinal>(getSrc1Register(inst)), static_cast<Ordinal>(src2));
             break;
         case Opcodes::emul:
-            emul(inst, getGPR(inst.getSrcDest(), TreatAsLongRegister{}), static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
+            emul(inst, getGPR(inst.getSrcDest(), TreatAsLongRegister{}), static_cast<Ordinal>(getSrc1Register(inst)), static_cast<Ordinal>(src2));
             break;
         case Opcodes::ediv:
             ediv(inst,
                  getGPR(inst.getSrcDest(), TreatAsLongRegister{}),
-                 static_cast<Ordinal>(src1),
+                 static_cast<Ordinal>(getSrc1Register(inst)),
                  getGPR(inst.getSrc2(), TreatAsLongRegister{}));
             break;
         case Opcodes::calls:
-            return calls(static_cast<Ordinal>(src1));
+            return calls(static_cast<Ordinal>(getSrc1Register(inst)));
         case Opcodes::spanbit:
-            spanbit(regDest, static_cast<Ordinal>(src1));
+            spanbit(regDest, static_cast<Ordinal>(getSrc1Register(inst)));
             break;
         case Opcodes::scanbit:
-            scanbit(regDest, static_cast<Ordinal>(src1));
+            scanbit(regDest, static_cast<Ordinal>(getSrc1Register(inst)));
             break;
         case Opcodes::synld:
-            synld(regDest, static_cast<Ordinal>(src1));
+            synld(regDest, static_cast<Ordinal>(getSrc1Register(inst)));
             break;
         case Opcodes::synmov:
-            synmov(src1, static_cast<Ordinal>(src2));
+            synmov(getSrc1Register(inst), static_cast<Ordinal>(src2));
             break;
         case Opcodes::synmovl:
-            synmovl(src1, static_cast<Ordinal>(src2));
+            synmovl(getSrc1Register(inst), static_cast<Ordinal>(src2));
             break;
         case Opcodes::synmovq:
-            synmovq(src1, static_cast<Ordinal>(src2));
+            synmovq(getSrc1Register(inst), static_cast<Ordinal>(src2));
             break;
         case Opcodes::selno:
         case Opcodes::sele:
@@ -289,7 +289,7 @@ Core::processInstruction(const REGInstruction & inst) {
         case Opcodes::selne:
         case Opcodes::selle:
         case Opcodes::selo:
-            performSelect(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2));
+            performSelect(regDest, static_cast<Ordinal>(getSrc1Register(inst)), static_cast<Ordinal>(src2));
             break;
         case Opcodes::addono:
         case Opcodes::addoe:
@@ -299,7 +299,7 @@ Core::processInstruction(const REGInstruction & inst) {
         case Opcodes::addone:
         case Opcodes::addole:
         case Opcodes::addoo:
-            performConditionalAdd(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2), TreatAsOrdinal{});
+            performConditionalAdd(regDest, static_cast<Ordinal>(getSrc1Register(inst)), static_cast<Ordinal>(src2), TreatAsOrdinal{});
             break;
 
         case Opcodes::addino:
@@ -310,7 +310,7 @@ Core::processInstruction(const REGInstruction & inst) {
         case Opcodes::addine:
         case Opcodes::addile:
         case Opcodes::addio:
-            performConditionalAdd(regDest, static_cast<Integer>(src1), static_cast<Integer>(src2), TreatAsInteger{});
+            performConditionalAdd(regDest, static_cast<Integer>(getSrc1Register(inst)), static_cast<Integer>(src2), TreatAsInteger{});
             break;
         case Opcodes::subono:
         case Opcodes::suboe:
@@ -320,7 +320,7 @@ Core::processInstruction(const REGInstruction & inst) {
         case Opcodes::subone:
         case Opcodes::subole:
         case Opcodes::suboo:
-            performConditionalSubtract(regDest, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2), TreatAsOrdinal{});
+            performConditionalSubtract(regDest, static_cast<Ordinal>(getSrc1Register(inst)), static_cast<Ordinal>(src2), TreatAsOrdinal{});
             break;
 
         case Opcodes::subino:
@@ -331,62 +331,62 @@ Core::processInstruction(const REGInstruction & inst) {
         case Opcodes::subine:
         case Opcodes::subile:
         case Opcodes::subio:
-            performConditionalSubtract(regDest, static_cast<Integer>(src1), static_cast<Integer>(src2), TreatAsInteger{});
+            performConditionalSubtract(regDest, static_cast<Integer>(getSrc1Register(inst)), static_cast<Integer>(src2), TreatAsInteger{});
             break;
         case Opcodes::dmovt:
-            dmovt(regDest, static_cast<Ordinal>(src1));
+            dmovt(regDest, static_cast<Ordinal>(getSrc1Register(inst)));
             break;
         case Opcodes::cmpstr:
-            cmpstr(static_cast<Ordinal>(src1), static_cast<Ordinal>(src2), static_cast<Ordinal>(regDest));
+            cmpstr(static_cast<Ordinal>(getSrc1Register(inst)), static_cast<Ordinal>(src2), static_cast<Ordinal>(regDest));
             break;
         case Opcodes::movqstr:
-            movqstr(static_cast<Ordinal>(src1), static_cast<Ordinal>(src2), static_cast<Ordinal>(regDest));
+            movqstr(static_cast<Ordinal>(getSrc1Register(inst)), static_cast<Ordinal>(src2), static_cast<Ordinal>(regDest));
             break;
         case Opcodes::movstr:
-            movstr(static_cast<Ordinal>(src1), static_cast<Ordinal>(src2), static_cast<Ordinal>(regDest));
+            movstr(static_cast<Ordinal>(getSrc1Register(inst)), static_cast<Ordinal>(src2), static_cast<Ordinal>(regDest));
             break;
         case Opcodes::fill:
-            fill(static_cast<Ordinal>(src1), static_cast<Ordinal>(src2), static_cast<Ordinal>(regDest));
+            fill(static_cast<Ordinal>(getSrc1Register(inst)), static_cast<Ordinal>(src2), static_cast<Ordinal>(regDest));
             break;
         case Opcodes::ldphy:
-            ldphy(static_cast<Address>(src1), regDest);
+            ldphy(static_cast<Address>(getSrc1Register(inst)), regDest);
             break;
 #if 0
         case Opcodes::ldtime:
             ldtime(getGPR(inst.getSrcDest(), TreatAsLongRegister{}));
             break;
         case Opcodes::condwait:
-            condwait(static_cast<Ordinal>(src1));
+            condwait(static_cast<Ordinal>(getSrc1Register(inst)));
             break;
         case Opcodes::inspacc:
-            inspacc(static_cast<Ordinal>(src1), regDest);
+            inspacc(static_cast<Ordinal>(getSrc1Register(inst)), regDest);
             break;
         case Opcodes::wait:
-            wait(static_cast<SegmentSelector>(src1));
+            wait(static_cast<SegmentSelector>(getSrc1Register(inst)));
             break;
         case Opcodes::condrec:
-            condrec(static_cast<Address>(src1), regDest );
+            condrec(static_cast<Address>(getSrc1Register(inst)), regDest );
             break;
         case Opcodes::saveprcs:
             saveprcs();
             break;
         case Opcodes::resumprcs:
-            resumprcs(static_cast<SegmentSelector>(src1));
+            resumprcs(static_cast<SegmentSelector>(getSrc1Register(inst)));
             break;
         case Opcodes::signal:
-            signal(static_cast<SegmentSelector>(src1));
+            signal(static_cast<SegmentSelector>(getSrc1Register(inst)));
             break;
         case Opcodes::send:
-            send(static_cast<SegmentSelector>(src1), static_cast<Ordinal>(src2), static_cast<SegmentSelector>(regDest));
+            send(static_cast<SegmentSelector>(getSrc1Register(inst)), static_cast<Ordinal>(src2), static_cast<SegmentSelector>(regDest));
             break;
         case Opcodes::sendserv:
-            sendserv(static_cast<SegmentSelector>(src1));
+            sendserv(static_cast<SegmentSelector>(getSrc1Register(inst)));
             break;
         case Opcodes::schedprcs:
-            schedprcs(static_cast<SegmentSelector>(src1));
+            schedprcs(static_cast<SegmentSelector>(getSrc1Register(inst)));
             break;
         case Opcodes::receive:
-            receive(static_cast<SegmentSelector>(src1), regDest);
+            receive(static_cast<SegmentSelector>(getSrc1Register(inst)), regDest);
             break;
 #endif
 
