@@ -60,9 +60,6 @@ Core::cycle() noexcept {
 
 OptionalFaultRecord
 Core::processInstruction(const REGInstruction & inst) {
-    //auto& regDest = getGPR(inst.getSrcDest());
-    //const auto& src1 = getSrc1Register(inst);
-    //const auto& src2 = getSrc2Register(inst);
     switch (inst.getOpcode()) {
         case Opcodes::notOperation:
             notOperation(getGPR(inst.getSrcDest()), static_cast<Ordinal>(getSrc1Register(inst)));
@@ -527,19 +524,17 @@ OptionalFaultRecord
 Core::processInstruction(const COBRInstruction& cobr) {
     auto opcode = cobr.getOpcode();
     auto displacement = static_cast<ShortInteger>(cobr.getDisplacement());
-    auto mask = cobr.getMask();
     // there are two versions of COBR instructions
     // ones where the src1 field is a register and can act as a destination or source
     // the other where src1 is a literal and can only be used as a source
     // thus there are two paths to take here and not all versions are actually accessible in all forms
     if (auto& src2 = getSrc2Register(cobr); cobr.getM1()) {
-        auto src1 = static_cast<uint8_t>(cobr.getSrc1());
         switch(opcode) {
             case Opcodes::bbc:
-                bbc(src1, src2, displacement);
+                bbc(cobr.getSrc1(), src2, displacement);
                 break;
             case Opcodes::bbs:
-                bbs(src1, src2, displacement);
+                bbs(cobr.getSrc1(), src2, displacement);
                 break;
             case Opcodes::cmpobg:
             case Opcodes::cmpobe:
@@ -547,7 +542,7 @@ Core::processInstruction(const COBRInstruction& cobr) {
             case Opcodes::cmpobl:
             case Opcodes::cmpobne:
             case Opcodes::cmpoble:
-                cmpobGeneric(mask, src1, static_cast<Ordinal>(src2), displacement);
+                cmpobGeneric(cobr.getMask(), cobr.getSrc1(), static_cast<Ordinal>(src2), displacement);
                 break;
             case Opcodes::cmpibno: // never branches
             case Opcodes::cmpibg:
@@ -557,7 +552,7 @@ Core::processInstruction(const COBRInstruction& cobr) {
             case Opcodes::cmpibne:
             case Opcodes::cmpible:
             case Opcodes::cmpibo: // always branches
-                cmpibGeneric(mask, src1, static_cast<Integer>(src2), displacement);
+                cmpibGeneric(cobr.getMask(), cobr.getSrc1(), static_cast<Integer>(src2), displacement);
                 break;
             default:
                 // test instructions perform modifications to src1 so we must error out
@@ -581,7 +576,7 @@ Core::processInstruction(const COBRInstruction& cobr) {
             case Opcodes::testne:
             case Opcodes::testle:
             case Opcodes::testo: {
-                src1.setValue<Ordinal>(fullConditionCodeCheck(mask) ? 1 : 0);
+                src1.setValue<Ordinal>(fullConditionCodeCheck(cobr.getMask()) ? 1 : 0);
                 break;
             }
             case Opcodes::cmpobg:
@@ -590,7 +585,7 @@ Core::processInstruction(const COBRInstruction& cobr) {
             case Opcodes::cmpobl:
             case Opcodes::cmpobne:
             case Opcodes::cmpoble:
-                cmpobGeneric(mask, static_cast<Ordinal>(src1), static_cast<Ordinal>(src2), displacement);
+                cmpobGeneric(cobr.getMask(), static_cast<Ordinal>(src1), static_cast<Ordinal>(src2), displacement);
                 break;
             case Opcodes::cmpibno: // never branches
             case Opcodes::cmpibg:
@@ -600,7 +595,7 @@ Core::processInstruction(const COBRInstruction& cobr) {
             case Opcodes::cmpibne:
             case Opcodes::cmpible:
             case Opcodes::cmpibo: // always branches
-                cmpibGeneric(mask, static_cast<Integer>(src1), static_cast<Integer>(src2), displacement);
+                cmpibGeneric(cobr.getMask(), static_cast<Integer>(src1), static_cast<Integer>(src2), displacement);
                 break;
             default:
                 return unimplementedFault();
