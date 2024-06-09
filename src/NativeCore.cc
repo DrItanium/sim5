@@ -339,15 +339,6 @@ clearMainMemory(Address baseAddress, Address size) {
     }
 }
 namespace {
-    constexpr bool isAligned(Address address, TreatAsLongOrdinal) noexcept {
-        return (address & 0b111) == 0;
-    }
-    constexpr bool isAligned(Address address, TreatAsQuadOrdinal) noexcept {
-        return (address & 0b1111) == 0;
-    }
-    constexpr bool isAlignedToQuadBoundaries(Address address) noexcept {
-        return isAligned(address, TreatAsQuadOrdinal{});
-    }
     void
     Cell::setValue(Address, QuadOrdinal value, TreatAs<QuadOrdinal>) noexcept {
         // only works on aligned values so don't check address
