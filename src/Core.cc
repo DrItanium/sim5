@@ -176,7 +176,7 @@ Core::fmark() {
     }
 }
 
-std::optional<Ordinal>
+Ordinal
 Core::computeAddress(const MEMInstruction& inst) noexcept {
     DEBUG_ENTER_FUNCTION;
     Integer displacement = 0;
@@ -207,7 +207,7 @@ Core::computeAddress(const MEMInstruction& inst) noexcept {
                     + inst.scaleValue<Integer>(getGPRValue<Integer>(inst.getIndex()))
                             + displacement);
         default:
-            return std::nullopt;
+            return 0;
     }
 }
 

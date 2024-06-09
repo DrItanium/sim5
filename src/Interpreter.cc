@@ -451,13 +451,13 @@ Core::processInstruction(const REGInstruction & inst) {
 }
 OptionalFaultRecord
 Core::processInstruction(const MEMInstruction & inst) {
-    auto eao = computeAddress(inst);
-    if (!eao) {
+    if (!inst.validAddressingMode()) {
         return invalidOpcodeFault();
     }
+    auto eao = computeAddress(inst);
     switch (inst.getOpcode()) {
         case Opcodes::balx:
-            balx(getGPR(inst.getSrcDest()), *eao);
+            balx(getGPR(inst.getSrcDest()), eao);
             break;
         case Opcodes::bx:
             bx(*eao);
@@ -466,55 +466,55 @@ Core::processInstruction(const MEMInstruction & inst) {
             callx(*eao);
             break;
         case Opcodes::stob:
-            store(*eao, getGPR(inst.getSrcDest()).getValue<Ordinal>(), TreatAs<ByteOrdinal>{});
+            store(eao, getGPR(inst.getSrcDest()).getValue<Ordinal>(), TreatAs<ByteOrdinal>{});
             break;
         case Opcodes::stib:
-            stib(static_cast<Integer>(getGPR(inst.getSrcDest())), *eao);
+            stib(static_cast<Integer>(getGPR(inst.getSrcDest())), eao);
             break;
         case Opcodes::stos:
-            store(*eao, getGPR(inst.getSrcDest()).getValue<Ordinal>(), TreatAs<ShortOrdinal>{});
+            store(eao, getGPR(inst.getSrcDest()).getValue<Ordinal>(), TreatAs<ShortOrdinal>{});
             break;
         case Opcodes::stis:
-            stis(static_cast<Integer>(getGPR(inst.getSrcDest())), *eao);
+            stis(static_cast<Integer>(getGPR(inst.getSrcDest())), eao);
             break;
         case Opcodes::st:
-            store(*eao, getGPR(inst.getSrcDest()).getValue<Ordinal>(), TreatAs<Ordinal>{});
+            store(eao, getGPR(inst.getSrcDest()).getValue<Ordinal>(), TreatAs<Ordinal>{});
             break;
         case Opcodes::stl:
-            stl(inst, *eao, getGPR(inst.getSrcDest(), TreatAsLongRegister{}));
+            stl(inst, eao, getGPR(inst.getSrcDest(), TreatAsLongRegister{}));
             break;
         case Opcodes::stt:
-            stt(inst, *eao, getGPR(inst.getSrcDest(), TreatAsTripleRegister{}));
+            stt(inst, eao, getGPR(inst.getSrcDest(), TreatAsTripleRegister{}));
             break;
         case Opcodes::stq:
-            stq(inst, *eao, getGPR(inst.getSrcDest(), TreatAsQuadRegister{}));
+            stq(inst, eao, getGPR(inst.getSrcDest(), TreatAsQuadRegister{}));
             break;
         case Opcodes::ldob:
-            getGPR(inst.getSrcDest()).setValue<Ordinal>(load(*eao, TreatAs<ByteOrdinal>{}));
+            getGPR(inst.getSrcDest()).setValue<Ordinal>(load(eao, TreatAs<ByteOrdinal>{}));
             break;
         case Opcodes::ldib:
-            ldib(*eao, getGPR(inst.getSrcDest()));
+            ldib(eao, getGPR(inst.getSrcDest()));
             break;
         case Opcodes::ldos:
-            getGPR(inst.getSrcDest()).setValue<Ordinal>(load(*eao, TreatAs<ShortOrdinal>{}));
+            getGPR(inst.getSrcDest()).setValue<Ordinal>(load(eao, TreatAs<ShortOrdinal>{}));
             break;
         case Opcodes::ldis:
-            ldis(*eao, getGPR(inst.getSrcDest()));
+            ldis(eao, getGPR(inst.getSrcDest()));
             break;
         case Opcodes::ld:
-            getGPR(inst.getSrcDest()).setValue<Ordinal>(load(*eao, TreatAsOrdinal{}));
+            getGPR(inst.getSrcDest()).setValue<Ordinal>(load(eao, TreatAsOrdinal{}));
             break;
         case Opcodes::ldl:
-            ldl(inst, *eao, getGPR(inst.getSrcDest(), TreatAsLongRegister{}));
+            ldl(inst, eao, getGPR(inst.getSrcDest(), TreatAsLongRegister{}));
             break;
         case Opcodes::ldt:
-            ldt(inst, *eao, getGPR(inst.getSrcDest(), TreatAsTripleRegister{}));
+            ldt(inst, eao, getGPR(inst.getSrcDest(), TreatAsTripleRegister{}));
             break;
         case Opcodes::ldq:
-            ldq(inst, *eao, getGPR(inst.getSrcDest(), TreatAsQuadRegister{}));
+            ldq(inst, eao, getGPR(inst.getSrcDest(), TreatAsQuadRegister{}));
             break;
         case Opcodes::lda:
-            setGPR(inst.getSrcDest(), *eao, TreatAsOrdinal{});
+            setGPR(inst.getSrcDest(), eao, TreatAsOrdinal{});
             break;
         default:
             return unimplementedFault();

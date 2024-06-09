@@ -726,6 +726,22 @@ public:
         IndexWithDisplacement = 0b1110,
         RegisterIndirectWithIndexAndDisplacement = 0b1111,
     };
+    static constexpr bool valid(AddressingMode mode) noexcept {
+        switch (mode) {
+            case AddressingMode::AbsoluteOffset:
+            case AddressingMode::RegisterIndirect:
+            case AddressingMode::IPWithDisplacement:
+            case AddressingMode::RegisterIndirectWithIndex:
+            case AddressingMode::RegisterIndirectWithOffset:
+            case AddressingMode::AbsoluteDisplacement:
+            case AddressingMode::RegisterIndirectWithDisplacement:
+            case AddressingMode::IndexWithDisplacement:
+            case AddressingMode::RegisterIndirectWithIndexAndDisplacement:
+                return true;
+            default:
+                return false;
+        }
+    }
     static constexpr bool usesOptionalDisplacement(AddressingMode mode) noexcept {
         switch (mode) {
             case AddressingMode::IPWithDisplacement:
@@ -749,6 +765,9 @@ public:
     [[nodiscard]] constexpr ByteOrdinal getSrcDest() const noexcept { return generic.srcDest; }
     [[nodiscard]] constexpr AddressingMode getAddressingMode() const noexcept {
         return static_cast<AddressingMode>(memb.mode & (isMEMA() ? 0b1100 : 0b1111));
+    }
+    [[nodiscard]] constexpr bool validAddressingMode() const noexcept {
+        return valid(getAddressingMode());
     }
     [[nodiscard]] constexpr Ordinal getOffset() const noexcept { return memaOffset; }
     [[nodiscard]] constexpr ByteOrdinal getIndex() const noexcept { return memb.index; }
@@ -1098,7 +1117,7 @@ private:
     [[nodiscard]] bool conditionCodeEqualsMask(uint8_t mask) const noexcept;
     bool fullConditionCodeCheck() noexcept;
     bool fullConditionCodeCheck(uint8_t mask) noexcept;
-    std::optional<Ordinal> computeAddress(const MEMInstruction&) noexcept;
+    Ordinal computeAddress(const MEMInstruction&) noexcept;
 private:
     void sendIAC(const iac::Message& msg) noexcept;
     void dispatchInterrupt(uint8_t vector) noexcept;
