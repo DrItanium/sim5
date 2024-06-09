@@ -35,7 +35,7 @@ Core::doDispatchInternal() noexcept {
         return processInstruction(COBRInstruction{instruction_});
     } else if (instruction_.isMEMFormat()) {
         // always load the next word for simplicity
-        return processInstruction(MEMInstruction{instruction_, 0});
+        return processInstruction(MEMInstruction{instruction_});
     } else if (instruction_.isREGFormat()) {
         return processInstruction(REGInstruction{instruction_});
     } else {

@@ -758,10 +758,9 @@ public:
                 return false;
         }
     }
-    constexpr MEMInstruction(Ordinal base, Integer displacement) : raw_(base), displacement_(displacement) {}
-    constexpr MEMInstruction(const Register& backingStore, Integer displacement) : MEMInstruction(static_cast<Ordinal>(backingStore), displacement) { }
+    constexpr MEMInstruction(Ordinal base) : raw_(base) {}
+    constexpr MEMInstruction(const Register& backingStore) : MEMInstruction(static_cast<Ordinal>(backingStore)) { }
     [[nodiscard]] constexpr Ordinal getValue() const noexcept { return raw_; }
-    [[nodiscard]] constexpr Integer getDisplacement() const noexcept { return displacement_; }
     [[nodiscard]] constexpr Opcodes getOpcode() const noexcept { return static_cast<Opcodes>(generic.opcode); }
     [[nodiscard]] constexpr bool isMEMA() const noexcept { return discriminant.kind == 0; }
     [[nodiscard]] constexpr bool isMEMB() const noexcept { return discriminant.kind == 1; }
@@ -806,7 +805,6 @@ private:
             Ordinal opcode : 8;
         } memb;
     };
-    Integer displacement_;
 };
 // On the i960 this is separated out into two parts, locals and globals
 // The idea is that globals are always available and locals are per function.
