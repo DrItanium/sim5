@@ -29,16 +29,129 @@
 
 OptionalFaultRecord
 Core::doDispatchInternal() noexcept {
-    if (instruction_.isCTRL()) {
-        return processInstruction(CTRLInstruction{instruction_});
-    } else if (instruction_.isCOBR()) {
-        return processInstruction(COBRInstruction{instruction_});
-    } else if (instruction_.isMEMFormat()) {
-        // always load the next word for simplicity
-        if (!_memInstruction.validAddressingMode()) {
-            return invalidOpcodeFault();
+    if (instruction_.isCOBR()) {
+        // there are two versions of COBR instructions
+        // ones where the src1 field is a register and can act as a destination or source
+        // the other where src1 is a literal and can only be used as a source
+        // thus there are two paths to take here and not all versions are actually accessible in all forms
+        if (_cobrInstruction.getM1()) {
+            switch(_cobrInstruction.getOpcode()) {
+                case Opcodes::bbc:
+                    bbc(_cobrInstruction.getSrc1(), getSrc2Register(_cobrInstruction), static_cast<ShortInteger>(_cobrInstruction.getDisplacement()));
+                    break;
+                case Opcodes::bbs:
+                    bbs(_cobrInstruction.getSrc1(), getSrc2Register(_cobrInstruction), static_cast<ShortInteger>(_cobrInstruction.getDisplacement()));
+                    break;
+                case Opcodes::cmpobg:
+                case Opcodes::cmpobe:
+                case Opcodes::cmpobge:
+                case Opcodes::cmpobl:
+                case Opcodes::cmpobne:
+                case Opcodes::cmpoble:
+                    cmpobGeneric(_cobrInstruction.getMask(), _cobrInstruction.getSrc1(), static_cast<Ordinal>(getSrc2Register(_cobrInstruction)), static_cast<ShortInteger>(_cobrInstruction.getDisplacement()));
+                    break;
+                case Opcodes::cmpibno: // never branches
+                case Opcodes::cmpibg:
+                case Opcodes::cmpibe:
+                case Opcodes::cmpibge:
+                case Opcodes::cmpibl:
+                case Opcodes::cmpibne:
+                case Opcodes::cmpible:
+                case Opcodes::cmpibo: // always branches
+                    cmpibGeneric(_cobrInstruction.getMask(), _cobrInstruction.getSrc1(), static_cast<Integer>(getSrc2Register(_cobrInstruction)), static_cast<ShortInteger>(_cobrInstruction.getDisplacement()));
+                    break;
+                default:
+                    // test instructions perform modifications to src1 so we must error out
+                    // in this case!
+                    return unimplementedFault();
+            }
+        } else {
+            switch(_cobrInstruction.getOpcode()) {
+                case Opcodes::bbc:
+                    bbc(getSrc1Register(_cobrInstruction), getSrc2Register(_cobrInstruction), static_cast<ShortInteger>(_cobrInstruction.getDisplacement()));
+                    break;
+                case Opcodes::bbs:
+                    bbs(getSrc1Register(_cobrInstruction), getSrc2Register(_cobrInstruction), static_cast<ShortInteger>(_cobrInstruction.getDisplacement()));
+                    break;
+                case Opcodes::testno:
+                case Opcodes::testg:
+                case Opcodes::teste:
+                case Opcodes::testge:
+                case Opcodes::testl:
+                case Opcodes::testne:
+                case Opcodes::testle:
+                case Opcodes::testo: {
+                    getSrc1Register(_cobrInstruction).setValue<Ordinal>(fullConditionCodeCheck(_cobrInstruction.getMask()) ? 1 : 0);
+                    break;
+                }
+                case Opcodes::cmpobg:
+                case Opcodes::cmpobe:
+                case Opcodes::cmpobge:
+                case Opcodes::cmpobl:
+                case Opcodes::cmpobne:
+                case Opcodes::cmpoble:
+                    cmpobGeneric(_cobrInstruction.getMask(),
+                                 static_cast<Ordinal>(getSrc1Register(_cobrInstruction)),
+                                 static_cast<Ordinal>(getSrc2Register(_cobrInstruction)),
+                                 static_cast<ShortInteger>(_cobrInstruction.getDisplacement()));
+                    break;
+                case Opcodes::cmpibno: // never branches
+                case Opcodes::cmpibg:
+                case Opcodes::cmpibe:
+                case Opcodes::cmpibge:
+                case Opcodes::cmpibl:
+                case Opcodes::cmpibne:
+                case Opcodes::cmpible:
+                case Opcodes::cmpibo: // always branches
+                    cmpibGeneric(_cobrInstruction.getMask(),
+                                 static_cast<Integer>(getSrc1Register(_cobrInstruction)),
+                                 static_cast<Integer>(getSrc2Register(_cobrInstruction)),
+                                 static_cast<ShortInteger>(_cobrInstruction.getDisplacement()));
+                    break;
+                default:
+                    return unimplementedFault();
+            }
         }
-        switch (_memInstruction.getOpcode()) {
+        return std::nullopt;
+    } else {
+        if (instruction_.isMEMFormat()) {
+            if (!_memInstruction.validAddressingMode()) {
+                return invalidOpcodeFault();
+            }
+        }
+        switch (getInstructionOpcode()) {
+            case Opcodes::bal: // bal
+                bal(_ctrlInstruction.getDisplacement());
+                break;
+            case Opcodes::b: // b
+                branch(_ctrlInstruction.getDisplacement());
+                break;
+            case Opcodes::call: // call
+                call(_ctrlInstruction.getDisplacement());
+                break;
+            case Opcodes::ret: // ret
+                return ret();
+            case Opcodes::bno:
+            case Opcodes::be:
+            case Opcodes::bne:
+            case Opcodes::bl:
+            case Opcodes::ble:
+            case Opcodes::bg:
+            case Opcodes::bge:
+            case Opcodes::bo:
+                // the branch instructions have the mask encoded into the opcode
+                // itself so we can just use it and save a ton of space overall
+                branchConditional(fullConditionCodeCheck(), _ctrlInstruction.getDisplacement());
+                break;
+            case Opcodes::faultno:
+            case Opcodes::faulte:
+            case Opcodes::faultne:
+            case Opcodes::faultl:
+            case Opcodes::faultle:
+            case Opcodes::faultg:
+            case Opcodes::faultge:
+            case Opcodes::faulto:
+                return faultGeneric();
             case Opcodes::balx:
                 balx(getGPR(_memInstruction.getSrcDest()), computeAddress(_memInstruction));
                 break;
@@ -99,13 +212,6 @@ Core::doDispatchInternal() noexcept {
             case Opcodes::lda:
                 setGPR(_memInstruction.getSrcDest(), computeAddress(_memInstruction), TreatAsOrdinal{});
                 break;
-            default:
-                return unimplementedFault();
-        }
-        /// @todo temporary
-        return std::nullopt;
-    } else if (instruction_.isREGFormat()) {
-        switch (_regInstruction.getOpcode()) {
             case Opcodes::notOperation:
                 notOperation(getGPR(_regInstruction.getSrcDest()), static_cast<Ordinal>(getSrc1Register(_regInstruction)));
                 break;
@@ -485,12 +591,8 @@ Core::doDispatchInternal() noexcept {
 #undef X
             default:
                 return unimplementedFault();
-                //default:
-                //    return processFPInstruction(inst);
         }
-        /// @todo temporary
         return std::nullopt;
-    } else {
         return unimplementedFault();
     }
 }
@@ -508,134 +610,4 @@ Core::cycle() noexcept {
     // according to the blue book they use a counter modulo 8 as a pseudo-random source
     // let's add it in ours as well for whatever we want!
     ++pseudoRandomSource_;
-}
-
-
-OptionalFaultRecord
-Core::processInstruction(const COBRInstruction& cobr) {
-    auto displacement = static_cast<ShortInteger>(cobr.getDisplacement());
-    // there are two versions of COBR instructions
-    // ones where the src1 field is a register and can act as a destination or source
-    // the other where src1 is a literal and can only be used as a source
-    // thus there are two paths to take here and not all versions are actually accessible in all forms
-    if (cobr.getM1()) {
-        switch(cobr.getOpcode()) {
-            case Opcodes::bbc:
-                bbc(cobr.getSrc1(), getSrc2Register(cobr), displacement);
-                break;
-            case Opcodes::bbs:
-                bbs(cobr.getSrc1(), getSrc2Register(cobr), displacement);
-                break;
-            case Opcodes::cmpobg:
-            case Opcodes::cmpobe:
-            case Opcodes::cmpobge:
-            case Opcodes::cmpobl:
-            case Opcodes::cmpobne:
-            case Opcodes::cmpoble:
-                cmpobGeneric(cobr.getMask(), cobr.getSrc1(), static_cast<Ordinal>(getSrc2Register(cobr)), displacement);
-                break;
-            case Opcodes::cmpibno: // never branches
-            case Opcodes::cmpibg:
-            case Opcodes::cmpibe:
-            case Opcodes::cmpibge:
-            case Opcodes::cmpibl:
-            case Opcodes::cmpibne:
-            case Opcodes::cmpible:
-            case Opcodes::cmpibo: // always branches
-                cmpibGeneric(cobr.getMask(), cobr.getSrc1(), static_cast<Integer>(getSrc2Register(cobr)), displacement);
-                break;
-            default:
-                // test instructions perform modifications to src1 so we must error out
-                // in this case!
-                return unimplementedFault();
-        }
-    } else {
-        switch(cobr.getOpcode()) {
-            case Opcodes::bbc:
-                bbc(getSrc1Register(cobr), getSrc2Register(cobr), displacement);
-                break;
-            case Opcodes::bbs:
-                bbs(getSrc1Register(cobr), getSrc2Register(cobr), displacement);
-                break;
-            case Opcodes::testno:
-            case Opcodes::testg:
-            case Opcodes::teste:
-            case Opcodes::testge:
-            case Opcodes::testl:
-            case Opcodes::testne:
-            case Opcodes::testle:
-            case Opcodes::testo: {
-                getSrc1Register(cobr).setValue<Ordinal>(fullConditionCodeCheck(cobr.getMask()) ? 1 : 0);
-                break;
-            }
-            case Opcodes::cmpobg:
-            case Opcodes::cmpobe:
-            case Opcodes::cmpobge:
-            case Opcodes::cmpobl:
-            case Opcodes::cmpobne:
-            case Opcodes::cmpoble:
-                cmpobGeneric(cobr.getMask(),
-                             static_cast<Ordinal>(getSrc1Register(cobr)),
-                             static_cast<Ordinal>(getSrc2Register(cobr)),
-                             displacement);
-                break;
-            case Opcodes::cmpibno: // never branches
-            case Opcodes::cmpibg:
-            case Opcodes::cmpibe:
-            case Opcodes::cmpibge:
-            case Opcodes::cmpibl:
-            case Opcodes::cmpibne:
-            case Opcodes::cmpible:
-            case Opcodes::cmpibo: // always branches
-                cmpibGeneric(cobr.getMask(),
-                             static_cast<Integer>(getSrc1Register(cobr)),
-                             static_cast<Integer>(getSrc2Register(cobr)),
-                             displacement);
-                break;
-            default:
-                return unimplementedFault();
-        }
-    }
-    return std::nullopt;
-}
-
-OptionalFaultRecord
-Core::processInstruction(const CTRLInstruction &instruction) {
-    switch (instruction.getOpcode()) {
-        case Opcodes::bal: // bal
-            bal(instruction.getDisplacement());
-            break;
-        case Opcodes::b: // b
-            branch(instruction.getDisplacement());
-            break;
-        case Opcodes::call: // call
-            call(instruction.getDisplacement());
-            break;
-        case Opcodes::ret: // ret
-            return ret();
-        case Opcodes::bno:
-        case Opcodes::be:
-        case Opcodes::bne:
-        case Opcodes::bl:
-        case Opcodes::ble:
-        case Opcodes::bg:
-        case Opcodes::bge:
-        case Opcodes::bo:
-            // the branch instructions have the mask encoded into the opcode
-            // itself so we can just use it and save a ton of space overall
-            branchConditional(fullConditionCodeCheck(), instruction.getDisplacement());
-            break;
-        case Opcodes::faultno:
-        case Opcodes::faulte:
-        case Opcodes::faultne:
-        case Opcodes::faultl:
-        case Opcodes::faultle:
-        case Opcodes::faultg:
-        case Opcodes::faultge:
-        case Opcodes::faulto:
-            return faultGeneric();
-        default:
-            return unimplementedFault();
-    }
-    return std::nullopt;
 }

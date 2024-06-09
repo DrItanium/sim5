@@ -321,7 +321,6 @@ union Register {
     [[nodiscard]] constexpr bool isCOBR() const noexcept { return ::isCOBR(o); }
     [[nodiscard]] constexpr bool isMEMFormat() const noexcept { return ::isMEMFormat(o); }
     [[nodiscard]] constexpr auto isREGFormat() const noexcept { return ::isREGFormat(o); }
-    [[nodiscard]] constexpr auto getOpcode() const noexcept;
     [[nodiscard]] constexpr bool getCarryBit() const noexcept { return arith.conditionCode & 0b010; }
     [[nodiscard]] Ordinal modify(Ordinal mask, Ordinal src) noexcept;
     void setValue(Real value, TreatAsReal) noexcept { r = value; }
@@ -1966,6 +1965,14 @@ private:
     OptionalFaultRecord movt(const REGInstruction& inst);
     OptionalFaultRecord movq(const REGInstruction& inst);
 private:
+    Opcodes getInstructionOpcode() const noexcept {
+        if (instruction_.isREGFormat()) {
+            return _regInstruction.getOpcode();
+        } else {
+            return static_cast<Opcodes>(instruction_.getMajorOpcode());
+        }
+    }
+private:
     Ordinal systemAddressTableBase_ = 0;
     Ordinal prcbAddress_ = 0;
     RegisterFrame globals_;
@@ -2006,12 +2013,4 @@ static_assert(computeNextFrame<Core::C*4, Core::NotC>(0xFDED'0000) == 0xFDED'00C
 void installToMainMemory(std::istream& stream, Address baseAddress);
 void installToMainMemory(Address baseAddress, const char* data, Address size);
 void clearMainMemory(Address baseAddress, Address size);
-constexpr auto
-Register::getOpcode() const noexcept {
-    if (isREGFormat()) {
-        return REGInstruction(*this).getOpcode();
-    } else {
-        return static_cast<Opcodes>(getMajorOpcode());
-    }
-}
 #endif // end SIM5_CORE_H__
