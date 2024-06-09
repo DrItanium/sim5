@@ -1528,10 +1528,6 @@ private:
     OptionalFaultRecord subi(Register& dest, Integer src1, Integer src2);
     OptionalFaultRecord faultGeneric();
     void balx(Register& linkRegister, Address ordinal);
-    OptionalFaultRecord processInstruction(const COBRInstruction& instruction);
-    OptionalFaultRecord processInstruction(const MEMInstruction&);
-    OptionalFaultRecord processInstruction(const REGInstruction&);
-    OptionalFaultRecord processInstruction(const CTRLInstruction&);
 private:
     OptionalFaultRecord modpc(Register& dest, Ordinal src1o, Ordinal src2o);
     static void modxc(Register& control, Register& dest, Ordinal src1, Ordinal src2);
