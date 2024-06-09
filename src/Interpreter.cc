@@ -460,10 +460,10 @@ Core::processInstruction(const MEMInstruction & inst) {
             balx(getGPR(inst.getSrcDest()), eao);
             break;
         case Opcodes::bx:
-            bx(*eao);
+            bx(eao);
             break;
         case Opcodes::callx:
-            callx(*eao);
+            callx(eao);
             break;
         case Opcodes::stob:
             store(eao, getGPR(inst.getSrcDest()).getValue<Ordinal>(), TreatAs<ByteOrdinal>{});
