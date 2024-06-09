@@ -739,7 +739,7 @@ public:
         }
     }
     constexpr MEMInstruction(Ordinal base, Integer displacement) : raw_(base), displacement_(displacement) {}
-    MEMInstruction(const Register& backingStore, Integer displacement) : MEMInstruction(static_cast<Ordinal>(backingStore), displacement) { }
+    constexpr MEMInstruction(const Register& backingStore, Integer displacement) : MEMInstruction(static_cast<Ordinal>(backingStore), displacement) { }
     [[nodiscard]] constexpr Ordinal getValue() const noexcept { return raw_; }
     [[nodiscard]] constexpr Integer getDisplacement() const noexcept { return displacement_; }
     [[nodiscard]] constexpr Opcodes getOpcode() const noexcept { return static_cast<Opcodes>(generic.opcode); }

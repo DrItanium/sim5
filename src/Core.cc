@@ -179,8 +179,10 @@ Core::fmark() {
 std::optional<Ordinal>
 Core::computeAddress(const MEMInstruction& inst) noexcept {
     DEBUG_ENTER_FUNCTION;
+    Integer displacement = 0;
     if (inst.usesOptionalDisplacement()) {
         instructionLength_ = 8;
+        displacement = load(ip_.o + 4, TreatAsInteger{});
     }
     using K = MEMInstruction::AddressingMode;
     switch (inst.getAddressingMode()) {
@@ -191,25 +193,22 @@ Core::computeAddress(const MEMInstruction& inst) noexcept {
         case K::RegisterIndirect:
             return getGPRValue<Ordinal>(inst.getABase());
         case K::IPWithDisplacement:
-            return static_cast<Ordinal>(inst.getDisplacement() + ip_.getValue<Integer>() + 8);
+            return static_cast<Ordinal>(displacement + ip_.getValue<Integer>() + 8);
         case K::RegisterIndirectWithIndex:
             return getGPRValue<Ordinal>(inst.getABase()) + inst.scaleValue<Ordinal>(getGPRValue<Ordinal>(inst.getIndex()));
         case K::AbsoluteDisplacement:
-            return static_cast<Ordinal>(inst.getDisplacement());
+            return static_cast<Ordinal>(displacement);
         case K::RegisterIndirectWithDisplacement:
-            return static_cast<Ordinal>(getGPRValue<Integer>(inst.getABase()) + inst.getDisplacement());
+            return static_cast<Ordinal>(getGPRValue<Integer>(inst.getABase()) + displacement);
         case K::IndexWithDisplacement:
-            return static_cast<Ordinal>(
-                    inst.scaleValue<Integer>(getGPRValue<Integer>(inst.getIndex()))
-                            + inst.getDisplacement());
+            return static_cast<Ordinal>(inst.scaleValue<Integer>(getGPRValue<Integer>(inst.getIndex())) + displacement);
         case K::RegisterIndirectWithIndexAndDisplacement:
             return static_cast<Ordinal>(getGPRValue<Integer>(inst.getABase())
                     + inst.scaleValue<Integer>(getGPRValue<Integer>(inst.getIndex()))
-                    + inst.getDisplacement());
+                            + displacement);
         default:
-            break;
+            return std::nullopt;
     }
-    return std::nullopt;
 }
 
 OptionalFaultRecord
