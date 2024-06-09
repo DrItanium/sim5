@@ -1095,6 +1095,14 @@ private:
     void setGPR(ByteOrdinal index, Ordinal value, TreatAsOrdinal) noexcept;
     void setGPR(ByteOrdinal index, ByteOrdinal offset, Ordinal value, TreatAsOrdinal) noexcept;
     void setGPR(ByteOrdinal index, Integer value, TreatAsInteger) noexcept;
+    template<typename T>
+    void setGPRValue(ByteOrdinal index, T value) noexcept {
+        setGPR(index, value, TreatAs<T>{});
+    }
+    template<typename T>
+    void setGPRValue(ByteOrdinal index, ByteOrdinal offset, T value) noexcept {
+        setGPR(index, offset, value, TreatAs<T>{});
+    }
     [[nodiscard]] Register& getSFR(ByteOrdinal index) noexcept;
     [[nodiscard]] Register& getSFR(ByteOrdinal index, ByteOrdinal offset) noexcept;
     [[nodiscard]] const Register& getSFR(ByteOrdinal index) const noexcept;

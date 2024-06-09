@@ -92,10 +92,8 @@ Core::emul(const REGInstruction& inst, LongRegister& dest, Ordinal src1, Ordinal
         /// Since this is unaligned and the destination will always be aligned,
         /// we just do an expensive access of the two unaligned registers
         /// instead. Set the both to 0xFFFF'FFFF
-        auto& lower = getGPR(inst.getSrcDest());
-        auto& upper = getGPR(inst.getSrcDest() + 1);
-        lower.template setValue<Ordinal>(0xFFFF'FFFF);
-        upper.template setValue<Ordinal>(0xFFFF'FFFF);
+        setGPRValue<Ordinal>(inst.getSrcDest(), 0xFFFF'FFFF);
+        setGPRValue<Ordinal>(inst.getSrcDest(), 1, 0xFFFF'FFFF);
         return invalidOpcodeFault();
     }  else {
         dest.template setValue<LongOrdinal>(static_cast<LongOrdinal>(src2) * static_cast<LongOrdinal>(src1));
@@ -110,10 +108,8 @@ Core::ediv(const REGInstruction& inst, LongRegister& dest, Ordinal src1, const L
         /// Since this is unaligned and the destination will always be aligned,
         /// we just do an expensive access of the two unaligned registers
         /// instead. Set the both to 0xFFFF'FFFF
-        auto& lower = getGPR(inst.getSrcDest());
-        auto& upper = getGPR(inst.getSrcDest() + 1);
-        lower.template setValue<Ordinal>(0xFFFF'FFFF);
-        upper.template setValue<Ordinal>(0xFFFF'FFFF);
+        setGPRValue<Ordinal>(inst.getSrcDest(), 0xFFFF'FFFF);
+        setGPRValue<Ordinal>(inst.getSrcDest(), 1, 0xFFFF'FFFF);
         return invalidOpcodeFault();
     } else if (src1 == 0) {
         // divide by zero
