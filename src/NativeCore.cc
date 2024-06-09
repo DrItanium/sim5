@@ -61,7 +61,7 @@ namespace {
         X(QuadOrdinal);
 #undef X
     };
-    std::unique_ptr<Cell[]> physicalMemory;
+    std::unique_ptr<uint8_t[]> physicalMemory;
     std::chrono::time_point startup = std::chrono::system_clock::now();
     //bool* tagBits = nullptr;
 } // end namespace
@@ -69,7 +69,7 @@ void
 Core::nonPortableBegin() noexcept {
     if (!physicalMemory) {
         // allocate 4 gigabytes of memory
-        physicalMemory = std::make_unique<Cell[]>((0x1'0000'0000 / sizeof(Cell)));
+        physicalMemory = std::make_unique<uint8_t[]>((0x1'0000'0000));
     }
     //if (!tagBits) {
     //    // tagBits are aligned to 32-bit boundaries
@@ -116,10 +116,17 @@ namespace {
     constexpr uint8_t getOffset(Address input, TreatAsShortInteger) noexcept { return getOffset16(input); }
     constexpr uint8_t getOffset(Address input, TreatAsByteOrdinal) noexcept { return getOffset8(input); }
     constexpr uint8_t getOffset(Address input, TreatAsByteInteger) noexcept { return getOffset8(input); }
-    constexpr Address getCellAddress(Address input) noexcept { return input >> 4; }
     Cell&
     getCell(Address address) noexcept {
-        return physicalMemory[getCellAddress(address)];
+        return *reinterpret_cast<Cell*>(physicalMemory.get() + (address & 0xFFFF'FFF0));
+    }
+    template<typename T>
+    T* getPointer(Address address) noexcept {
+        return reinterpret_cast<T*>(physicalMemory.get() + address);
+    }
+    template<typename T>
+    T& getMemoryReference(Address address) noexcept {
+        return *(getPointer<T>(address));
     }
     template<typename T>
     T tryGetFromConsole() {
@@ -147,7 +154,7 @@ namespace {
             std::cout << __PRETTY_FUNCTION__ << "(0x" << std::hex << offset << ")" << std::endl;
         }
         if (auto target = offset & 0xFF'FFFF; target >= 0x10'0000) {
-            return getCell(offset).getValue(offset, TreatAs<T>{});
+            return getMemoryReference<T>(offset);
         } else {
             switch (target) {
                 case 0x00'0000:
@@ -171,7 +178,7 @@ namespace {
             std::cout << __PRETTY_FUNCTION__ << "(0x" << std::hex << offset << ", 0x" << std::hex << static_cast<Ordinal>(value) << ")" << std::endl;
         }
         if (auto target = offset & 0xFF'FFFF; target >= 0x10'0000) {
-            getCell(offset).setValue(offset, value, TreatAs<T>{});
+            getMemoryReference<T>(offset) = value;
         } else {
             switch (target) {
                 case 0x00'0008:
@@ -183,6 +190,17 @@ namespace {
                 default:
                     break;
             }
+        }
+    }
+    template<typename T>
+    T load(Address address, TreatAs<T>) {
+        switch (static_cast<uint8_t>(address >> 24))  {
+            case 0xFE:
+                return ioLoad<T>(address, TreatAs<T>{});
+            case 0xFF: // CPU reserved and also fix memory overflow problems
+                return 0;
+            default:
+                return getMemoryReference<T>(address);
         }
     }
     ByteOrdinal
@@ -207,183 +225,50 @@ namespace {
                 return getCell(address).getValue(address, TreatAsByteInteger{});
         }
     }
-    void
-    store8(Address address, ByteOrdinal value, TreatAsByteOrdinal) noexcept {
-        switch (static_cast<uint8_t>(address >> 24)) {
+    template<typename T>
+    void store(Address address, T value, TreatAs<T>) {
+        switch (static_cast<uint8_t>(address >> 24))  {
             case 0xFE:
-                ioStore<ByteOrdinal>(address, value, TreatAsByteOrdinal{});
+                ioStore<T>(address, value, TreatAs<T>{});
                 break;
-            case 0xFF:
+            case 0xFF: // CPU reserved and also fix memory overflow problems
                 break;
             default:
-                getCell(address).setValue(address, value, TreatAsByteOrdinal{});
+                getMemoryReference<T>(address) = value;
                 break;
         }
+    }
+    void
+    store8(Address address, ByteOrdinal value, TreatAsByteOrdinal) noexcept {
+        store(address, value, TreatAsByteOrdinal{});
     }
     void
     store16(Address address, ShortOrdinal value, TreatAsShortOrdinal) noexcept {
-        if ((address & 0b1) != 0) {
-            store8(address, value, TreatAsByteOrdinal{});
-            store8(address+1, static_cast<ByteOrdinal>(value >> 8), TreatAsByteOrdinal{});
-        } else {
-            switch (static_cast<uint8_t>(address >> 24)) {
-                case 0xFE:
-                    ioStore<ShortOrdinal>(address, value, TreatAsShortOrdinal{});
-                    break;
-                case 0xFF:
-                    break;
-                default:
-                    getCell(address).setValue(address, value, TreatAsShortOrdinal{});
-                    break;
-            }
-        }
+        store(address, value, TreatAsShortOrdinal{});
     }
     void
     store8(Address address, ByteInteger value, TreatAsByteInteger) noexcept {
-        switch (static_cast<uint8_t>(address >> 24)) {
-            case 0xFE:
-                ioStore<ByteInteger>(address, value, TreatAsByteInteger{});
-                break;
-            case 0xFF:
-                break;
-            default:
-                getCell(address).setValue(address, value, TreatAsByteInteger{});
-                break;
-        }
+        store(address, value, TreatAsByteInteger{});
     }
     void
     store16(Address address, ShortInteger value, TreatAsShortInteger) noexcept {
-        if ((address & 0b1) != 0) {
-            store8(address, static_cast<ByteInteger>(value), TreatAsByteInteger{});
-            store8(address+1, static_cast<ByteInteger>(value >> 8), TreatAsByteInteger{});
-        } else {
-            switch (static_cast<uint8_t>(address >> 24)) {
-                case 0xFE:
-                    ioStore<ShortInteger>(address, value, TreatAsShortInteger{});
-                    break;
-                case 0xFF:
-                    break;
-                default:
-                    getCell(address).setValue(address, value, TreatAsShortInteger{});
-                    break;
-            }
-        }
+        store(address, value, TreatAsShortInteger {});
     }
     void
     store32(Address address, Ordinal value, TreatAsOrdinal) noexcept {
-        DEBUG_ENTER_FUNCTION;
-        DEBUG_LOG_LEVEL(1) {
-            std::cout << "\t\t" << __PRETTY_FUNCTION__ << "(0x" << std::hex << address << ", 0x" << std::hex << static_cast<Ordinal>(value) << ");" << std::endl;
-        }
-        if ((address & 0b11) != 0) {
-            store16(address, value, TreatAsShortOrdinal{});
-            store16(address+2, static_cast<ShortOrdinal>(value >> 16), TreatAsShortOrdinal{});
-        } else {
-            switch (static_cast<uint8_t>(address >> 24)) {
-                case 0xFE:
-                    ioStore<Ordinal>(address, value, TreatAsOrdinal{});
-                    break;
-                case 0xFF:
-                    break;
-                default:
-                    getCell(address).setValue(address, value, TreatAsOrdinal{});
-                    break;
-            }
-        }
-        DEBUG_LEAVE_FUNCTION;
+        store(address, value, TreatAsOrdinal{});
     }
     void
     store32(Address address, Integer value, TreatAsInteger) noexcept {
-        DEBUG_ENTER_FUNCTION;
-        DEBUG_LOG_LEVEL(1) {
-            std::cout << "\t\t" << __PRETTY_FUNCTION__ << "(0x" << std::hex << address << ", 0x" << std::hex << static_cast<Ordinal>(value) << ");" << std::endl;
-        }
-        if ((address & 0b11) != 0) {
-            store16(address, static_cast<ShortInteger>(value), TreatAsShortInteger{});
-            store16(address+2, static_cast<ShortInteger>(value >> 16), TreatAsShortInteger{});
-        } else {
-            switch (static_cast<uint8_t>(address >> 24)) {
-                case 0xFE:
-                    ioStore<Integer>(address, value, TreatAsInteger{});
-                    break;
-                case 0xFF:
-                    break;
-                default:
-                    getCell(address).setValue(address, value, TreatAsInteger{});
-                    break;
-            }
-        }
-        DEBUG_LEAVE_FUNCTION;
+        store(address, value, TreatAsInteger{});
     }
     Ordinal
     load32(Address address, TreatAsOrdinal) noexcept {
-        DEBUG_ENTER_FUNCTION;
-        Ordinal result = 0;
-        if ((address & 0b11) != 0) {
-            // unaligned 32-bit load so make sure that we break it up into
-            // component pieces by loading each byte individually
-            // this will make sure that we will automatically wrap around on an
-            // unaligned load at the top of memory
-            auto lowest = load8(address, TreatAsByteOrdinal{});
-            auto lower = load8(address + 1, TreatAsByteOrdinal{});
-            auto higher = load8(address + 2, TreatAsByteOrdinal{});
-            auto highest = load8(address + 3, TreatAsByteOrdinal{});
-            result = static_cast<Ordinal>(lowest) |
-                     (static_cast<Ordinal>(lower) << 8) |
-                     (static_cast<Ordinal>(higher) << 16) |
-                     (static_cast<Ordinal>(highest) << 24);
-        } else {
-            switch (static_cast<uint8_t>(address >> 24)) {
-                case 0xFE: // io space
-                    result = ioLoad<Ordinal>(address, TreatAs<Ordinal>{});
-                    break;
-                case 0xFF: // onboard devices
-                    break;
-                default:
-                    result = getCell(address).getValue(address, TreatAs<Ordinal>{});
-                    break;
-            }
-        }
-        DEBUG_LOG_LEVEL(1) {
-            std::cout << "\t\t" << __PRETTY_FUNCTION__ << "(0x" << std::hex << address << ") = 0x"<< std::hex << static_cast<Ordinal>(result) << ";" << std::endl;
-        }
-        DEBUG_LEAVE_FUNCTION;
-        return result;
+        return load<Ordinal>(address, TreatAsOrdinal{});
     }
     Integer
     load32(Address address, TreatAsInteger) noexcept {
-        DEBUG_ENTER_FUNCTION;
-        Integer result = 0;
-        if ((address & 0b11) != 0) {
-            // unaligned 32-bit load so make sure that we break it up into
-            // component pieces by loading each byte individually
-            // this will make sure that we will automatically wrap around on an
-            // unaligned load at the top of memory
-            auto lowest = load8(address, TreatAsByteInteger{});
-            auto lower = load8(address + 1, TreatAsByteInteger{});
-            auto higher = load8(address + 2, TreatAsByteInteger{});
-            auto highest = load8(address + 3, TreatAsByteInteger{});
-            result = static_cast<Integer>(lowest) |
-                     (static_cast<Integer>(lower) << 8) |
-                     (static_cast<Integer>(higher) << 16) |
-                     (static_cast<Integer>(highest) << 24);
-        } else {
-            switch (static_cast<uint8_t>(address >> 24)) {
-                case 0xFE: // io space
-                    result = ioLoad<Integer>(address, TreatAs<Integer>{});
-                    break;
-                case 0xFF: // onboard devices
-                    break;
-                default:
-                    result = getCell(address).getValue(address, TreatAs<Integer>{});
-                    break;
-            }
-        }
-        DEBUG_LOG_LEVEL(1) {
-            std::cout << "\t\t" << __PRETTY_FUNCTION__ << "(0x" << std::hex << address << ") = 0x"<< std::hex << static_cast<Ordinal>(result) << ";" << std::endl;
-        }
-        DEBUG_LEAVE_FUNCTION;
-        return result;
+        return load<Integer>(address, TreatAsInteger{});
     }
     void Cell::setValue(Address address, ByteOrdinal value, TreatAsByteOrdinal) noexcept { bytes[getOffset(address, TreatAsByteOrdinal{})] = value; }
     void Cell::setValue(Address address, ByteInteger value, TreatAsByteInteger) noexcept { byteIntegers[getOffset(address, TreatAsByteInteger{})] = value; }
