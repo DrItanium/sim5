@@ -620,6 +620,9 @@ static_assert(dummyCOBR.getOpcode() == Opcodes::cmpobe);
 static_assert(dummyCOBR.getMask() == 0b010);
 struct REGInstruction {
 public:
+    static constexpr Opcodes computeOpcode(ByteOrdinal opcode, ByteOrdinal opcode2) {
+        return static_cast<Opcodes>((static_cast<ShortOrdinal>(opcode) << 4) | static_cast<ShortOrdinal>(opcode2));
+    }
     constexpr REGInstruction(ByteOrdinal opcodePrimary,
                              ByteOrdinal sd,
                              ByteOrdinal src2r,
@@ -636,14 +639,18 @@ public:
                                                   m3(mf3),
                                                   src2(src2r),
                                                   srcDest(sd),
-                                                  opcode(opcodePrimary) {
+                                                  opcode(opcodePrimary),
+                                                  _decodedOpcode(computeOpcode(opcodePrimary, opcode2))
+                                                  {
 
     }
 
-    explicit constexpr REGInstruction(Ordinal value) : raw_(value) { }
+    explicit constexpr REGInstruction(Ordinal value) : raw_(value) {
+        _decodedOpcode = computeOpcode(opcode, opcodeExt);
+    }
     explicit REGInstruction(const Register& backingStore) : REGInstruction(static_cast<Ordinal>(backingStore)) { }
     [[nodiscard]] constexpr Ordinal getValue() const noexcept { return raw_; }
-    [[nodiscard]] constexpr Opcodes getOpcode() const noexcept { return static_cast<Opcodes>(static_cast<ShortOrdinal>(opcode << 4) | static_cast<ShortOrdinal>(opcodeExt)); }
+    [[nodiscard]] constexpr Opcodes getOpcode() const noexcept { return _decodedOpcode; }
     [[nodiscard]] constexpr ByteOrdinal getPrimaryOpcode() const noexcept { return opcode; }
     [[nodiscard]] constexpr ByteOrdinal getSecondaryOpcode() const noexcept { return opcodeExt; }
     [[nodiscard]] constexpr bool getS1() const noexcept { return s1; }
@@ -699,6 +706,7 @@ private:
             BackingUnionType opcode : 8;
         };
     };
+    Opcodes _decodedOpcode;
 };
 constexpr REGInstruction dummyReg{0x58, 7, 8, false, true, false, 0x2, false, false, 9};
 static_assert(dummyReg.getOpcode() == Opcodes::andnot);
