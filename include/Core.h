@@ -639,18 +639,15 @@ public:
                                                   m3(mf3),
                                                   src2(src2r),
                                                   srcDest(sd),
-                                                  opcode(opcodePrimary),
-                                                  _decodedOpcode(computeOpcode(opcodePrimary, opcode2))
+                                                  opcode(opcodePrimary)
                                                   {
 
     }
 
-    explicit constexpr REGInstruction(Ordinal value) : raw_(value) {
-        _decodedOpcode = computeOpcode(opcode, opcodeExt);
-    }
+    explicit constexpr REGInstruction(Ordinal value) : raw_(value) { }
     explicit REGInstruction(const Register& backingStore) : REGInstruction(static_cast<Ordinal>(backingStore)) { }
     [[nodiscard]] constexpr Ordinal getValue() const noexcept { return raw_; }
-    [[nodiscard]] constexpr Opcodes getOpcode() const noexcept { return _decodedOpcode; }
+    [[nodiscard]] constexpr Opcodes getOpcode() const noexcept { return computeOpcode(opcode, opcodeExt); }
     [[nodiscard]] constexpr ByteOrdinal getPrimaryOpcode() const noexcept { return opcode; }
     [[nodiscard]] constexpr ByteOrdinal getSecondaryOpcode() const noexcept { return opcodeExt; }
     [[nodiscard]] constexpr bool getS1() const noexcept { return s1; }
@@ -706,7 +703,6 @@ private:
             BackingUnionType opcode : 8;
         };
     };
-    Opcodes _decodedOpcode;
 };
 constexpr REGInstruction dummyReg{0x58, 7, 8, false, true, false, 0x2, false, false, 9};
 static_assert(dummyReg.getOpcode() == Opcodes::andnot);
