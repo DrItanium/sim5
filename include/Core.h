@@ -1978,7 +1978,13 @@ private:
     Register ac_;
     Register pc_;
     Register tc_;
-    Register instruction_;
+    union {
+        Register instruction_{0};
+        MEMInstruction _memInstruction;
+        COBRInstruction _cobrInstruction;
+        CTRLInstruction _ctrlInstruction;
+        REGInstruction _regInstruction;
+    };
     Register ictl_;
     ByteOrdinal instructionLength_ = 0;
     bool advanceInstruction_ = false;
