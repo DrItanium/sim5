@@ -27,7 +27,8 @@ add_library(core960
 		include/Disassembly.h
         include/Platform.h
 		src/Interpreter.cc
-	)
+        include/ProcessManagement.h
+)
 add_library(nativecore
 		src/NativeCore.cc)
 

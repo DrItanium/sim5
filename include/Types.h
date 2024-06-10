@@ -622,4 +622,5 @@ template<typename T0, typename T1>
 constexpr bool BothAreReal = BothAreSameAs<T0, T1, Real>;
 template<typename T0, typename T1>
 constexpr bool BothAreLongReal = BothAreSameAs<T0, T1, LongReal>;
+
 #endif // end SIM5_TYPES_H__
