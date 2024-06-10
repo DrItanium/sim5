@@ -54,14 +54,5 @@ namespace SoftFloat {
     private:
         RawType _raw;
     };
-
-    struct LongReal {
-        float64_t _raw;
-    };
-    struct ExtendedReal {
-        extFloat80_t _raw;
-        void doSomething() {
-        }
-    };
-}
+} // end namespace SoftFloat
 #endif //SIM960_SOFTFLOATWRAPPER_H
