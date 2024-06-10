@@ -105,8 +105,42 @@ namespace SoftFloat {
         extF80M_rem(&a, &b, &out);
         return out;
     }
-
 } // end namespace SoftFloat
+inline auto operator+(const SoftFloat::Real_t& a, const SoftFloat::Real_t& b) noexcept { return SoftFloat::add(a, b); }
+inline auto operator-(const SoftFloat::Real_t& a, const SoftFloat::Real_t& b) noexcept { return SoftFloat::subtract(a, b); }
+inline auto operator*(const SoftFloat::Real_t& a, const SoftFloat::Real_t& b) noexcept { return SoftFloat::multiply(a, b); }
+inline auto operator/(const SoftFloat::Real_t& a, const SoftFloat::Real_t& b) noexcept { return SoftFloat::divide(a, b); }
+inline auto operator%(const SoftFloat::Real_t& a, const SoftFloat::Real_t& b) noexcept { return SoftFloat::remainder(a, b); }
+inline auto operator==(const SoftFloat::Real_t& a, const SoftFloat::Real_t& b) noexcept { return SoftFloat::equals(a, b); }
+inline auto operator!=(const SoftFloat::Real_t& a, const SoftFloat::Real_t& b) noexcept { return SoftFloat::notEquals(a, b); }
+inline auto operator<(const SoftFloat::Real_t& a, const SoftFloat::Real_t& b) noexcept { return SoftFloat::lessThan(a, b); }
+inline auto operator<=(const SoftFloat::Real_t& a, const SoftFloat::Real_t& b) noexcept { return SoftFloat::lessThanOrEqual(a, b); }
+inline auto operator>(const SoftFloat::Real_t& a, const SoftFloat::Real_t& b) noexcept { return SoftFloat::greaterThan(a, b); }
+inline auto operator>=(const SoftFloat::Real_t& a, const SoftFloat::Real_t& b) noexcept { return SoftFloat::greaterThanOrEqual(a, b); }
+
+inline auto operator+(const SoftFloat::LongReal_t& a, const SoftFloat::LongReal_t& b) noexcept { return SoftFloat::add(a, b); }
+inline auto operator-(const SoftFloat::LongReal_t& a, const SoftFloat::LongReal_t& b) noexcept { return SoftFloat::subtract(a, b); }
+inline auto operator*(const SoftFloat::LongReal_t& a, const SoftFloat::LongReal_t& b) noexcept { return SoftFloat::multiply(a, b); }
+inline auto operator/(const SoftFloat::LongReal_t& a, const SoftFloat::LongReal_t& b) noexcept { return SoftFloat::divide(a, b); }
+inline auto operator%(const SoftFloat::LongReal_t& a, const SoftFloat::LongReal_t& b) noexcept { return SoftFloat::remainder(a, b); }
+inline auto operator==(const SoftFloat::LongReal_t& a, const SoftFloat::LongReal_t& b) noexcept { return SoftFloat::equals(a, b); }
+inline auto operator!=(const SoftFloat::LongReal_t& a, const SoftFloat::LongReal_t& b) noexcept { return SoftFloat::notEquals(a, b); }
+inline auto operator<(const SoftFloat::LongReal_t& a, const SoftFloat::LongReal_t& b) noexcept { return SoftFloat::lessThan(a, b); }
+inline auto operator<=(const SoftFloat::LongReal_t& a, const SoftFloat::LongReal_t& b) noexcept { return SoftFloat::lessThanOrEqual(a, b); }
+inline auto operator>(const SoftFloat::LongReal_t& a, const SoftFloat::LongReal_t& b) noexcept { return SoftFloat::greaterThan(a, b); }
+inline auto operator>=(const SoftFloat::LongReal_t& a, const SoftFloat::LongReal_t& b) noexcept { return SoftFloat::greaterThanOrEqual(a, b); }
+
+inline auto operator+(const SoftFloat::ExtendedReal_t& a, const SoftFloat::ExtendedReal_t& b) noexcept { return SoftFloat::add(a, b); }
+inline auto operator-(const SoftFloat::ExtendedReal_t& a, const SoftFloat::ExtendedReal_t& b) noexcept { return SoftFloat::subtract(a, b); }
+inline auto operator*(const SoftFloat::ExtendedReal_t& a, const SoftFloat::ExtendedReal_t& b) noexcept { return SoftFloat::multiply(a, b); }
+inline auto operator/(const SoftFloat::ExtendedReal_t& a, const SoftFloat::ExtendedReal_t& b) noexcept { return SoftFloat::divide(a, b); }
+inline auto operator%(const SoftFloat::ExtendedReal_t& a, const SoftFloat::ExtendedReal_t& b) noexcept { return SoftFloat::remainder(a, b); }
+inline auto operator==(const SoftFloat::ExtendedReal_t& a, const SoftFloat::ExtendedReal_t& b) noexcept { return SoftFloat::equals(a, b); }
+inline auto operator!=(const SoftFloat::ExtendedReal_t& a, const SoftFloat::ExtendedReal_t& b) noexcept { return SoftFloat::notEquals(a, b); }
+inline auto operator<(const SoftFloat::ExtendedReal_t& a, const SoftFloat::ExtendedReal_t& b) noexcept { return SoftFloat::lessThan(a, b); }
+inline auto operator<=(const SoftFloat::ExtendedReal_t& a, const SoftFloat::ExtendedReal_t& b) noexcept { return SoftFloat::lessThanOrEqual(a, b); }
+inline auto operator>(const SoftFloat::ExtendedReal_t& a, const SoftFloat::ExtendedReal_t& b) noexcept { return SoftFloat::greaterThan(a, b); }
+inline auto operator>=(const SoftFloat::ExtendedReal_t& a, const SoftFloat::ExtendedReal_t& b) noexcept { return SoftFloat::greaterThanOrEqual(a, b); }
 // keep it out of the namespace for simple use
 
 #endif //SIM960_SOFTFLOATWRAPPER_H
