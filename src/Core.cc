@@ -524,7 +524,7 @@ Core::boot0(Address sat, Address pcb, Address startIP) noexcept {
     // set the frame pointer to the start of the interrupt stack
     setGPR(FPIndex, theStackPointer, TreatAsOrdinal{});
     pc_.setPriority(31);
-    pc_.processControls.state = 1;
+    pc_.processControls.state = Register::ProcessStateKind::Interrupted;
     localRegisterFrameIndex_ = 0;
     for (auto& a : frames_) {
         a.relinquishOwnership();

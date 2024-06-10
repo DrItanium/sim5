@@ -6,7 +6,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 find_package(Boost
 		REQUIRED
 		COMPONENTS program_options)
-
+file(GLOB SOFTFLOAT_SRC_FILES lib/SoftFloat-3e/source/*.c)
+file(GLOB SOFTFLOAT_INCLUDE_FILES lib/SoftFloat-3e/source/include/*.h)
+add_library(softfloat
+        ${SOFTFLOAT_SRC_FILES}
+        ${SOFTFLOAT_INCLUDE_FILES})
 add_library(core960
 		include/Entry255.def
 		include/Opcodes.def
@@ -38,6 +42,7 @@ add_executable(sim5
 add_executable(mmu_test
 		cmd/mmu_test/main.cc)
 target_link_libraries(sim5
+        softfloat
 		core960
 		nativecore
 		Boost::program_options)
