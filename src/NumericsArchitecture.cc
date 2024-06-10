@@ -970,3 +970,7 @@ OptionalFaultRecord
 Core::cvtzril(const REGInstruction& inst) {
     return std::nullopt;
 }
+OptionalFaultRecord
+Core::performClassification(const FaultRecord& record) noexcept {
+    return record;
+}

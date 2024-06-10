@@ -1943,9 +1943,7 @@ private:
             return handleSubnormalCase<T>(std::get<T>(input));
         }
     }
-    OptionalFaultRecord performClassification(const FaultRecord& record) noexcept {
-        return record;
-    }
+    OptionalFaultRecord performClassification(const FaultRecord& record) noexcept;
     template<typename T>
     requires std::floating_point<T>
     OptionalFaultRecord
