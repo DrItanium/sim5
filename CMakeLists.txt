@@ -6,14 +6,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 find_package(Boost
 		REQUIRED
 		COMPONENTS program_options)
-add_definitions(-DSOFTFLOAT_ROUND_ODD
+add_compile_definitions(-DSOFTFLOAT_ROUND_ODD
         -DINLINE_LEVEL=5
         -DSOFTFLOAT_FAST_DIV32TO16
         -DSOFTFLOAT_FAST_DIV64TO32
 )
-file(GLOB SOFTFLOAT_SRC_FILES lib/SoftFloat-3e/source/*.c)
-file(GLOB SOFTFLOAT_SRC_SPECIALIZATION_FILE lib/SoftFloat-3e/source/8086/*.c)
-file(GLOB SOFTFLOAT_INCLUDE_FILES lib/SoftFloat-3e/source/include/*.h)
 add_library(softfloat
         lib/SoftFloat-3e/source/s_compare96M.c
         lib/SoftFloat-3e/source/s_compare128M.c
@@ -286,6 +283,13 @@ add_executable(sim5
 		)
 add_executable(mmu_test
 		cmd/mmu_test/main.cc)
+target_link_libraries(core960
+        softfloat
+)
+target_link_libraries(nativecore
+        core960
+        softfloat
+)
 target_link_libraries(sim5
         softfloat
 		core960
@@ -297,12 +301,8 @@ target_link_libraries(mmu_test
 		)
 install(TARGETS sim5 DESTINATION bin)
 
-target_include_directories(core960 PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/lib/SoftFloat-3e/source/include
-)
+target_include_directories(core960 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include )
 target_include_directories(mmu_test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_include_directories(nativecore PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_include_directories(softfloat PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/lib/SoftFloat-3e/source/include
         ${CMAKE_CURRENT_SOURCE_DIR}/lib/SoftFloat-3e/build/Linux-i960-GCC/

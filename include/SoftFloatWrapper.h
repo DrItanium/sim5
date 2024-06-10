@@ -28,24 +28,27 @@
 #define SIM960_SOFTFLOATWRAPPER_H
 #include <cstdint>
 extern "C" {
-#include "softfloat.h"
 #include "softfloat_types.h"
+#include "softfloat.h"
 }
 namespace SoftFloat {
     struct Real {
         using RawType = float32_t;
+        using BitsType = decltype(float32_t::v);
         constexpr Real(RawType value) noexcept : _raw(value) {}
-        bool operator<(const Real& other) const noexcept { return f32_lt(_raw, other._raw); }
-        bool operator<=(const Real& other) const noexcept { return f32_le(_raw, other._raw); }
-        bool operator>(const Real& other) const noexcept { return !f32_le(_raw, other._raw); }
-        bool operator>=(const Real& other) const noexcept { return !f32_lt(_raw, other._raw); }
-        bool operator==(const Real& other) const noexcept { return f32_eq(_raw, other._raw); }
-        bool operator!=(const Real& other) const noexcept { return !f32_eq(_raw, other._raw); }
-        Real operator+(const Real& other) const noexcept { return f32_add(_raw, other._raw); }
-        Real operator-(const Real& other) const noexcept { return f32_sub(_raw, other._raw); }
-        Real operator*(const Real& other) const noexcept { return f32_mul(_raw, other._raw); }
-        Real operator/(const Real& other) const noexcept { return f32_div(_raw, other._raw); }
-        [[nodiscard]] constexpr auto value() const noexcept { return _raw; }
+        constexpr Real(BitsType value) noexcept : Real(RawType{.v = value}) { }
+        [[nodiscard]] constexpr RawType rawValue() const noexcept { return _raw; }
+        [[nodiscard]] constexpr BitsType bits() const noexcept { return _raw.v; }
+        bool operator<(const Real& other) const noexcept { return f32_lt(rawValue(), other.rawValue()); }
+        bool operator<=(const Real& other) const noexcept { return f32_le(rawValue(), other.rawValue()); }
+        bool operator>(const Real& other) const noexcept { return !f32_le(rawValue(), other.rawValue()); }
+        bool operator>=(const Real& other) const noexcept { return !f32_lt(rawValue(), other.rawValue()); }
+        bool operator==(const Real& other) const noexcept { return f32_eq(rawValue(), other.rawValue()); }
+        bool operator!=(const Real& other) const noexcept { return !f32_eq(rawValue(), other.rawValue()); }
+        Real operator+(const Real& other) const noexcept { return f32_add(rawValue(), other.rawValue()); }
+        Real operator-(const Real& other) const noexcept { return f32_sub(rawValue(), other.rawValue()); }
+        Real operator*(const Real& other) const noexcept { return f32_mul(rawValue(), other.rawValue()); }
+        Real operator/(const Real& other) const noexcept { return f32_div(rawValue(), other.rawValue()); }
 
     private:
         RawType _raw;
@@ -56,6 +59,8 @@ namespace SoftFloat {
     };
     struct ExtendedReal {
         extFloat80_t _raw;
+        void doSomething() {
+        }
     };
 }
 #endif //SIM960_SOFTFLOATWRAPPER_H

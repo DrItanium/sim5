@@ -4,9 +4,7 @@
 
 #ifndef SIM960_PLATFORM_H
 #define SIM960_PLATFORM_H
-#ifdef __ORDER_LITTLE_ENDIAN__
-    #define LITTLEENDIAN 1
-#endif
+#define LITTLEENDIAN 1
 
 #ifdef __GNUC_STDC_INLINE__
 #define INLINE inline
