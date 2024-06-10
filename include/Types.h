@@ -30,7 +30,6 @@
 #include <bitset>
 #include <variant>
 #include <optional>
-#include "Platform.h"
 #include "SoftFloatWrapper.h"
 
 using Address = uint32_t;

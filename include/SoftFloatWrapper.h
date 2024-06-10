@@ -26,7 +26,36 @@
 
 #ifndef SIM960_SOFTFLOATWRAPPER_H
 #define SIM960_SOFTFLOATWRAPPER_H
+#include <cstdint>
+extern "C" {
 #include "softfloat.h"
 #include "softfloat_types.h"
+}
+namespace SoftFloat {
+    struct Real {
+        using RawType = float32_t;
+        constexpr Real(RawType value) noexcept : _raw(value) {}
+        bool operator<(const Real& other) const noexcept { return f32_lt(_raw, other._raw); }
+        bool operator<=(const Real& other) const noexcept { return f32_le(_raw, other._raw); }
+        bool operator>(const Real& other) const noexcept { return !f32_le(_raw, other._raw); }
+        bool operator>=(const Real& other) const noexcept { return !f32_lt(_raw, other._raw); }
+        bool operator==(const Real& other) const noexcept { return f32_eq(_raw, other._raw); }
+        bool operator!=(const Real& other) const noexcept { return !f32_eq(_raw, other._raw); }
+        Real operator+(const Real& other) const noexcept { return f32_add(_raw, other._raw); }
+        Real operator-(const Real& other) const noexcept { return f32_sub(_raw, other._raw); }
+        Real operator*(const Real& other) const noexcept { return f32_mul(_raw, other._raw); }
+        Real operator/(const Real& other) const noexcept { return f32_div(_raw, other._raw); }
+        [[nodiscard]] constexpr auto value() const noexcept { return _raw; }
 
+    private:
+        RawType _raw;
+    };
+
+    struct LongReal {
+        float64_t _raw;
+    };
+    struct ExtendedReal {
+        extFloat80_t _raw;
+    };
+}
 #endif //SIM960_SOFTFLOATWRAPPER_H

@@ -252,6 +252,8 @@ add_library(softfloat
   lib/SoftFloat-3e/source/f128M_eq_signaling.c
   lib/SoftFloat-3e/source/f128M_le_quiet.c
   lib/SoftFloat-3e/source/f128M_lt_quiet.c
+        lib/SoftFloat-3e/source/include/softfloat_types.h
+        lib/SoftFloat-3e/source/include/softfloat.h
         lib/SoftFloat-3e/source/8086/specialize.h
         lib/SoftFloat-3e/build/Linux-i960-GCC/platform.h)
 add_library(core960
@@ -272,8 +274,7 @@ add_library(core960
 		src/CallOperations.cc
 		src/RegisterOperations.cc
 		include/Disassembly.h
-        include/Platform.h
-		src/Interpreter.cc
+        src/Interpreter.cc
         include/ProcessManagement.h
         include/SoftFloatWrapper.h
 )
@@ -296,7 +297,10 @@ target_link_libraries(mmu_test
 		)
 install(TARGETS sim5 DESTINATION bin)
 
-target_include_directories(core960 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_include_directories(core960 PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/lib/SoftFloat-3e/source/include
+)
 target_include_directories(mmu_test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_include_directories(nativecore PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_include_directories(softfloat PUBLIC
