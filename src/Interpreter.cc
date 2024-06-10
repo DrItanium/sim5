@@ -72,10 +72,8 @@ Core::doDispatchInternal() noexcept {
                 case Opcodes::testl:
                 case Opcodes::testne:
                 case Opcodes::testle:
-                case Opcodes::testo: {
-                    getSrc1Register(_cobrInstruction).setValue<Ordinal>(fullConditionCodeCheck(_cobrInstruction.getMask()) ? 1 : 0);
-                    break;
-                }
+                case Opcodes::testo:
+                    return testGeneric();
                 case Opcodes::cmpobg:
                 case Opcodes::cmpobe:
                 case Opcodes::cmpobge:

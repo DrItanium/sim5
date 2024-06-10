@@ -1181,6 +1181,7 @@ private:
     void bbs(Ordinal bitpos, Ordinal against, int16_t displacement);
     void bbs(uint8_t bitpos, const Register& against, int16_t displacement);
     void bbs(const Register& bitpos, const Register& against, int16_t displacement);
+    OptionalFaultRecord testGeneric();
     template<typename Q>
     requires Is960Comparable<Q>
     void cmpGeneric(Q src1, Q src2) noexcept {

@@ -1124,3 +1124,13 @@ Core::movq(const REGInstruction& inst) {
     }
     return std::nullopt;
 }
+
+OptionalFaultRecord
+Core::testGeneric() {
+    if (_cobrInstruction.getM1()) {
+        return unimplementedFault();
+    } else {
+        getSrc1Register(_cobrInstruction).setValue<Ordinal>(fullConditionCodeCheck(_cobrInstruction.getMask()) ? 1 : 0);
+        return std::nullopt;
+    }
+}
