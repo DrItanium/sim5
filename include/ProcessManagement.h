@@ -29,9 +29,29 @@
 
 #include "Types.h"
 
-struct ProcessControlBlock {
-
+struct [[gnu::packed]] ProcessControlBlock {
+    LongOrdinal queueRecord;
+    Ordinal receiveMessage;
+    SegmentSelector dispatchPort;
+    Ordinal residualTimeSlice;
+    Ordinal processControls;
+    Ordinal lock : 8;
+    Ordinal processNotice : 24;
+    Ordinal traceControls;
+    Ordinal _unused0[4];
+    SegmentSelector region0;
+    SegmentSelector region1;
+    SegmentSelector region2;
+    Ordinal arithmeticControls;
+    Ordinal _unused1;
+    Ordinal nextTimeSlice;
+    LongOrdinal executionTime;
+    Ordinal resumptionRecord[12];
+    Ordinal floatingPointRegisters[12];
+    Ordinal globalRegisters[16];
 };
+
+
 
 
 
