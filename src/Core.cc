@@ -686,7 +686,12 @@ void
 Core::rotate(Register& dest, Ordinal src1, Ordinal src2) {
     dest.setValue<Ordinal>(rotateOperation(src2, src1));
 }
-
+void
+Core::shri() {
+    shri(getGPR(_regInstruction.getSrcDest()),
+         static_cast<Integer>(getSrc1Register(_regInstruction)),
+         static_cast<Integer>(getSrc2Register(_regInstruction)));
+}
 void
 Core::shri(Register& dest, Integer src1, Integer src2) {
     /*

@@ -1539,6 +1539,7 @@ private:
     static void shlo(Register& srcDest, Ordinal src1, Ordinal src2) ;
     static void shli(Register& srcDest, Integer src1, Integer src2) ;
     static void rotate(Register& dest, Ordinal src1, Ordinal src2) ;
+    void shri();
     static void shri(Register& dest, Integer src1, Integer src2) ;
     static void shro(Register& dest, Ordinal src1, Ordinal src2) ;
     void mulo(Register& dest, Ordinal src1, Ordinal src2) ;

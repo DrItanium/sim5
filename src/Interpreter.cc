@@ -225,7 +225,7 @@ Core::doDispatchInternal() noexcept {
             getGPR(_regInstruction.getSrcDest()).setValue<Integer>( static_cast<Integer>(getSrc1Register(_regInstruction)) < 32 && static_cast<Integer>(getSrc1Register(_regInstruction)) >= 0 ? static_cast<Integer>(getSrc2Register(_regInstruction)) / static_cast<Integer>(computeBitPosition(static_cast<Integer>(getSrc1Register(_regInstruction)))) : 0);
             break;
         case Opcodes::shri:
-            shri(getGPR(_regInstruction.getSrcDest()), static_cast<Integer>(getSrc1Register(_regInstruction)), static_cast<Integer>(getSrc2Register(_regInstruction)));
+            shri();
             break;
         case Opcodes::shlo:
             shlo(getGPR(_regInstruction.getSrcDest()), static_cast<Ordinal>(getSrc1Register(_regInstruction)), static_cast<Ordinal>(getSrc2Register(_regInstruction)));
