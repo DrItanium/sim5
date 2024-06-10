@@ -275,6 +275,7 @@ add_library(core960
         include/Platform.h
 		src/Interpreter.cc
         include/ProcessManagement.h
+        include/SoftFloatWrapper.h
 )
 add_library(nativecore
 		src/NativeCore.cc)

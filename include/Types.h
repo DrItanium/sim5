@@ -31,6 +31,7 @@
 #include <variant>
 #include <optional>
 #include "Platform.h"
+#include "SoftFloatWrapper.h"
 
 using Address = uint32_t;
 using ByteOrdinal = uint8_t;
