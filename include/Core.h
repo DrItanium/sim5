@@ -1230,6 +1230,7 @@ private:
     void flushreg() ;
     void balx(ByteOrdinal linkRegister, Ordinal branchTo) ;
     OptionalFaultRecord calls(Ordinal value) ;
+    OptionalFaultRecord calls();
     OptionalFaultRecord ldl(const MEMInstruction&, Address address, LongRegister& destination) ;
     OptionalFaultRecord ldq(const MEMInstruction&, Address address, QuadRegister& destination) ;
     OptionalFaultRecord ldt(const MEMInstruction&, Address address, TripleRegister& destination) ;
@@ -1631,8 +1632,8 @@ private:
     void badFault(const FaultRecord& record);
 private: // numerics extensions
     void dmovt(Register& dest, Ordinal src) noexcept;
-    void dsubc(Register& dest, Ordinal src1, Ordinal src2);
-    void daddc(Register& dest, Ordinal src1, Ordinal src2);
+    OptionalFaultRecord dsubc();
+    OptionalFaultRecord daddc();
 private: // protected extensions instructions
     void signal(SegmentSelector sel) ;
     void wait(SegmentSelector src) ;

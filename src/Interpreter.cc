@@ -351,7 +351,7 @@ Core::doDispatchInternal() noexcept {
                  getGPR(_regInstruction.getSrc2(), TreatAsLongRegister{}));
             break;
         case Opcodes::calls:
-            return calls(static_cast<Ordinal>(getSrc1Register(_regInstruction)));
+            return calls();
         case Opcodes::spanbit:
             spanbit(getGPR(_regInstruction.getSrcDest()), static_cast<Ordinal>(getSrc1Register(_regInstruction)));
             break;
@@ -421,9 +421,6 @@ Core::doDispatchInternal() noexcept {
         case Opcodes::subile:
         case Opcodes::subio:
             performConditionalSubtract<Integer>();
-            break;
-        case Opcodes::dmovt:
-            dmovt(getGPR(_regInstruction.getSrcDest()), static_cast<Ordinal>(getSrc1Register(_regInstruction)));
             break;
         case Opcodes::cmpstr:
             cmpstr(static_cast<Ordinal>(getSrc1Register(_regInstruction)), static_cast<Ordinal>(getSrc2Register(_regInstruction)), static_cast<Ordinal>(getGPR(_regInstruction.getSrcDest())));
@@ -530,6 +527,11 @@ Core::doDispatchInternal() noexcept {
             //X(logrl);
 
 #undef X
+        case Opcodes::dmovt:
+            dmovt(getGPR(_regInstruction.getSrcDest()), static_cast<Ordinal>(getSrc1Register(_regInstruction)));
+            break;
+        case Opcodes::dsubc: return dsubc();
+        case Opcodes::daddc: return daddc();
         default:
             return unimplementedFault();
     }

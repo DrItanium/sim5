@@ -1168,3 +1168,11 @@ Core::cmpobGeneric() {
                      static_cast<ShortInteger>(_cobrInstruction.getDisplacement()));
     }
 }
+OptionalFaultRecord
+Core::dsubc() {
+    return unimplementedFault();
+}
+OptionalFaultRecord
+Core::daddc() {
+    return unimplementedFault();
+}

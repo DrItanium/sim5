@@ -82,7 +82,10 @@ Core::call(Integer displacement) {
     branch(displacement);
     return std::nullopt;
 }
-
+OptionalFaultRecord
+Core::calls() {
+    return calls(static_cast<Ordinal>(getSrc1Register(_regInstruction)));
+}
 OptionalFaultRecord
 Core::calls(Ordinal src1) {
     if (auto targ = src1; targ > 259) {
