@@ -252,8 +252,34 @@ Core::bal(Integer displacement) {
     saveReturnAddress(LRIndex);
     branch(displacement);
 }
+void
+Core::bal() {
+    bal(_ctrlInstruction.getDisplacement());
+}
 
 void
 Core::bx(Address effectiveAddress) {
     setIP(effectiveAddress);
+}
+void
+Core::bx() {
+    bx(computeAddress(_memInstruction));
+}
+
+void
+Core::b() {
+    branch(_ctrlInstruction.getDisplacement());
+}
+OptionalFaultRecord
+Core::call() {
+    return call(_ctrlInstruction.getDisplacement());
+}
+void
+Core::balx() {
+    balx(getGPR(_memInstruction.getSrcDest()), computeAddress(_memInstruction));
+}
+
+OptionalFaultRecord
+Core::callx() {
+    return callx(computeAddress(_memInstruction));
 }

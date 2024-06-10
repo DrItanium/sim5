@@ -1238,7 +1238,9 @@ private:
     OptionalFaultRecord stl(const MEMInstruction&, Address address, const LongRegister& src) ;
     OptionalFaultRecord ret() ;
     OptionalFaultRecord call(Integer displacement) ;
+    OptionalFaultRecord call();
     OptionalFaultRecord callx(Address effectiveAddress) ;
+    OptionalFaultRecord callx();
 private:
     void enterCall(Ordinal fp);
     void leaveCall();
@@ -1249,6 +1251,20 @@ private:
     void performConditionalAdd(Register& dest, Integer src1, Integer src2, TreatAsInteger) ;
     void performConditionalAdd(Register& dest, Ordinal src1, Ordinal src2, TreatAsOrdinal) ;
     void performSelect(Register& dest, Ordinal src1, Ordinal src2) ;
+    template<typename T>
+    void performConditionalAdd() {
+        performConditionalAdd(getGPR(_regInstruction.getSrcDest()),
+                              static_cast<T>(getSrc1Register(_regInstruction)),
+                              static_cast<T>(getSrc2Register(_regInstruction)),
+                              TreatAs<T>{});
+    }
+    template<typename T>
+    void performConditionalSubtract() {
+        performConditionalSubtract(getGPR(_regInstruction.getSrcDest()),
+                              static_cast<T>(getSrc1Register(_regInstruction)),
+                              static_cast<T>(getSrc2Register(_regInstruction)),
+                              TreatAs<T>{});
+    }
 protected:
 #define X(type) \
         type load(Address addr, TreatAs< type > ) const noexcept; \
@@ -1533,6 +1549,7 @@ private:
     OptionalFaultRecord subi(Register& dest, Integer src1, Integer src2);
     OptionalFaultRecord faultGeneric();
     void balx(Register& linkRegister, Address ordinal);
+    void balx();
 private:
     OptionalFaultRecord modpc(Register& dest, Ordinal src1o, Ordinal src2o);
     static void modxc(Register& control, Register& dest, Ordinal src1, Ordinal src2);
@@ -1693,8 +1710,12 @@ private:
     [[nodiscard]] inline LocalRegisterSet& getCurrentPack() noexcept { return frames_[localRegisterFrameIndex_]; }
     void boot0(Address sat, Address pcb, Address startIP) noexcept;
 private:
+    void bx();
     void bx(Address effectiveAddress);
+    void bal();
     void bal(Integer displacement);
+    void b();
+
 private: // mmu
     template<uint8_t offset>
     requires (offset <= 232)

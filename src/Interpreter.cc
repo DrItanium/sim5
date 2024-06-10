@@ -36,14 +36,13 @@ Core::doDispatchInternal() noexcept {
     }
     switch (getInstructionOpcode()) {
         case Opcodes::bal: // bal
-            bal(_ctrlInstruction.getDisplacement());
+            bal();
             break;
         case Opcodes::b: // b
-            branch(_ctrlInstruction.getDisplacement());
+            b();
             break;
         case Opcodes::call:
-            call(_ctrlInstruction.getDisplacement());
-            break;
+            return call();
         case Opcodes::ret: return ret();
         case Opcodes::bno:
         case Opcodes::be:
@@ -96,14 +95,13 @@ Core::doDispatchInternal() noexcept {
             cmpibGeneric();
             break;
         case Opcodes::balx:
-            balx(getGPR(_memInstruction.getSrcDest()), computeAddress(_memInstruction));
+            balx();
             break;
         case Opcodes::bx:
-            bx(computeAddress(_memInstruction));
+            bx();
             break;
         case Opcodes::callx:
-            callx(computeAddress(_memInstruction));
-            break;
+            return callx();
         case Opcodes::stob:
             store(computeAddress(_memInstruction), getGPRValue<Ordinal>(_memInstruction.getSrcDest()), TreatAsByteOrdinal {});
             break;
@@ -390,7 +388,7 @@ Core::doDispatchInternal() noexcept {
         case Opcodes::addone:
         case Opcodes::addole:
         case Opcodes::addoo:
-            performConditionalAdd(getGPR(_regInstruction.getSrcDest()), static_cast<Ordinal>(getSrc1Register(_regInstruction)), static_cast<Ordinal>(getSrc2Register(_regInstruction)), TreatAsOrdinal{});
+            performConditionalAdd<Ordinal>();
             break;
 
         case Opcodes::addino:
@@ -401,7 +399,7 @@ Core::doDispatchInternal() noexcept {
         case Opcodes::addine:
         case Opcodes::addile:
         case Opcodes::addio:
-            performConditionalAdd(getGPR(_regInstruction.getSrcDest()), static_cast<Integer>(getSrc1Register(_regInstruction)), static_cast<Integer>(getSrc2Register(_regInstruction)), TreatAsInteger{});
+            performConditionalAdd<Integer>();
             break;
         case Opcodes::subono:
         case Opcodes::suboe:
@@ -411,7 +409,7 @@ Core::doDispatchInternal() noexcept {
         case Opcodes::subone:
         case Opcodes::subole:
         case Opcodes::suboo:
-            performConditionalSubtract(getGPR(_regInstruction.getSrcDest()), static_cast<Ordinal>(getSrc1Register(_regInstruction)), static_cast<Ordinal>(getSrc2Register(_regInstruction)), TreatAsOrdinal{});
+            performConditionalSubtract<Ordinal>();
             break;
 
         case Opcodes::subino:
@@ -422,7 +420,7 @@ Core::doDispatchInternal() noexcept {
         case Opcodes::subine:
         case Opcodes::subile:
         case Opcodes::subio:
-            performConditionalSubtract(getGPR(_regInstruction.getSrcDest()), static_cast<Integer>(getSrc1Register(_regInstruction)), static_cast<Integer>(getSrc2Register(_regInstruction)), TreatAsInteger{});
+            performConditionalSubtract<Integer>();
             break;
         case Opcodes::dmovt:
             dmovt(getGPR(_regInstruction.getSrcDest()), static_cast<Ordinal>(getSrc1Register(_regInstruction)));
