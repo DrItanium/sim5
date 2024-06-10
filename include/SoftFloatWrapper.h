@@ -62,9 +62,9 @@ inline bool operator==(const SoftFloat::Real_t& a, const SoftFloat::Real_t& b) n
 inline bool operator!=(const SoftFloat::Real_t& a, const SoftFloat::Real_t& b) noexcept { return !f32_eq(a, b); }
 inline bool operator<(const SoftFloat::Real_t& a, const SoftFloat::Real_t& b) noexcept { return f32_lt(a, b); }
 inline bool operator<=(const SoftFloat::Real_t& a, const SoftFloat::Real_t& b) noexcept { return f32_le(a, b); }
-// according to the docs, the gt is the same as the lt but with the args reversed!
 inline bool operator>(const SoftFloat::Real_t& a, const SoftFloat::Real_t& b) noexcept { return f32_lt(b, a); }
 inline bool operator>=(const SoftFloat::Real_t& a, const SoftFloat::Real_t& b) noexcept { return f32_le(b, a); }
+
 inline SoftFloat::LongReal_t operator+(const SoftFloat::LongReal_t& a, const SoftFloat::LongReal_t& b) noexcept { return f64_add(a, b); }
 inline SoftFloat::LongReal_t operator-(const SoftFloat::LongReal_t& a, const SoftFloat::LongReal_t& b) noexcept { return f64_sub(a, b); }
 inline SoftFloat::LongReal_t operator*(const SoftFloat::LongReal_t& a, const SoftFloat::LongReal_t& b) noexcept { return f64_mul(a, b); }
@@ -74,7 +74,35 @@ inline bool operator==(const SoftFloat::LongReal_t& a, const SoftFloat::LongReal
 inline bool operator!=(const SoftFloat::LongReal_t& a, const SoftFloat::LongReal_t& b) noexcept { return !f64_eq(a, b); }
 inline bool operator<(const SoftFloat::LongReal_t& a, const SoftFloat::LongReal_t& b) noexcept { return f64_lt(a, b); }
 inline bool operator<=(const SoftFloat::LongReal_t& a, const SoftFloat::LongReal_t& b) noexcept { return f64_le(a, b); }
-// according to the docs, the gt is the same as the lt but with the args reversed!
 inline bool operator>(const SoftFloat::LongReal_t& a, const SoftFloat::LongReal_t& b) noexcept { return f64_lt(b, a); }
 inline bool operator>=(const SoftFloat::LongReal_t& a, const SoftFloat::LongReal_t& b) noexcept { return f64_le(b, a); }
+inline SoftFloat::ExtendedReal_t operator+(const SoftFloat::ExtendedReal_t& a, const SoftFloat::ExtendedReal_t& b) noexcept {
+    SoftFloat::ExtendedReal_t result;
+    extF80M_add(&a, &b, &result);
+    return result;
+}
+inline SoftFloat::ExtendedReal_t operator-(const SoftFloat::ExtendedReal_t& a, const SoftFloat::ExtendedReal_t& b) noexcept {
+    SoftFloat::ExtendedReal_t result;
+    extF80M_sub(&a, &b, &result);
+    return result;
+}
+
+inline SoftFloat::ExtendedReal_t operator*(const SoftFloat::ExtendedReal_t& a, const SoftFloat::ExtendedReal_t& b) noexcept {
+    SoftFloat::ExtendedReal_t result;
+    extF80M_mul(&a, &b, &result);
+    return result;
+}
+
+inline SoftFloat::ExtendedReal_t operator/(const SoftFloat::ExtendedReal_t& a, const SoftFloat::ExtendedReal_t& b) noexcept {
+    SoftFloat::ExtendedReal_t result;
+    extF80M_div(&a, &b, &result);
+    return result;
+}
+
+inline SoftFloat::ExtendedReal_t operator%(const SoftFloat::ExtendedReal_t& a, const SoftFloat::ExtendedReal_t& b) noexcept {
+    SoftFloat::ExtendedReal_t result;
+    extF80M_rem(&a, &b, &result);
+    return result;
+}
+
 #endif //SIM960_SOFTFLOATWRAPPER_H
