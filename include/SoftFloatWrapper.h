@@ -105,4 +105,11 @@ inline SoftFloat::ExtendedReal_t operator%(const SoftFloat::ExtendedReal_t& a, c
     return result;
 }
 
+inline bool operator==(const SoftFloat::ExtendedReal_t& a, const SoftFloat::ExtendedReal_t& b) noexcept { return extF80M_eq(&a, &b); }
+inline bool operator!=(const SoftFloat::ExtendedReal_t& a, const SoftFloat::ExtendedReal_t& b) noexcept { return !extF80M_eq(&a, &b); }
+inline bool operator<(const SoftFloat::ExtendedReal_t& a, const SoftFloat::ExtendedReal_t& b) noexcept { return extF80M_lt(&a, &b); }
+inline bool operator<=(const SoftFloat::ExtendedReal_t& a, const SoftFloat::ExtendedReal_t& b) noexcept { return extF80M_le(&a, &b); }
+inline bool operator>(const SoftFloat::ExtendedReal_t& a, const SoftFloat::ExtendedReal_t& b) noexcept { return extF80M_lt(&b, &a); }
+inline bool operator>=(const SoftFloat::ExtendedReal_t& a, const SoftFloat::ExtendedReal_t& b) noexcept { return extF80M_le(&b, &a); }
+
 #endif //SIM960_SOFTFLOATWRAPPER_H
