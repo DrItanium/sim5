@@ -1173,6 +1173,7 @@ private:
     OptionalFaultRecord ediv(const REGInstruction& inst, LongRegister& dest, Ordinal src1, const LongRegister& src2) ;
     void arithmeticWithCarryGeneric(Ordinal result, bool src2MSB, bool src1MSB, bool destMSB) ;
     void advanceCOBRDisplacement(Integer displacement) noexcept;
+    void bbc();
     void bbc(Ordinal bitpos, Ordinal against, int16_t displacement);
     void bbc(uint8_t bitpos, const Register& against, int16_t displacement);
     void bbc(const Register& bitpos, const Register& against, int16_t displacement);

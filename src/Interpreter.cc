@@ -37,7 +37,7 @@ Core::doDispatchInternal() noexcept {
         if (_cobrInstruction.getM1()) {
             switch(_cobrInstruction.getOpcode()) {
                 case Opcodes::bbc:
-                    bbc(_cobrInstruction.getSrc1(), getSrc2Register(_cobrInstruction), static_cast<ShortInteger>(_cobrInstruction.getDisplacement()));
+                    bbc();
                     break;
                 case Opcodes::bbs:
                     bbs(_cobrInstruction.getSrc1(), getSrc2Register(_cobrInstruction), static_cast<ShortInteger>(_cobrInstruction.getDisplacement()));
@@ -68,7 +68,7 @@ Core::doDispatchInternal() noexcept {
         } else {
             switch(_cobrInstruction.getOpcode()) {
                 case Opcodes::bbc:
-                    bbc(getSrc1Register(_cobrInstruction), getSrc2Register(_cobrInstruction), static_cast<ShortInteger>(_cobrInstruction.getDisplacement()));
+                    bbc();
                     break;
                 case Opcodes::bbs:
                     bbs(getSrc1Register(_cobrInstruction), getSrc2Register(_cobrInstruction), static_cast<ShortInteger>(_cobrInstruction.getDisplacement()));
