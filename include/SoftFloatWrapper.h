@@ -32,27 +32,21 @@ extern "C" {
 #include "softfloat_types.h"
 #include "softfloat.h"
 }
-namespace SoftFloat {
-    struct Real {
-        using RawType = float32_t;
-        using BitsType = decltype(float32_t::v);
-        constexpr Real(RawType value) noexcept : _raw(value) {}
-        constexpr Real(BitsType value) noexcept : Real(RawType{.v = value}) { }
-        [[nodiscard]] constexpr RawType rawValue() const noexcept { return _raw; }
-        [[nodiscard]] constexpr BitsType bits() const noexcept { return _raw.v; }
-        bool operator<(const Real& other) const noexcept { return f32_lt(rawValue(), other.rawValue()); }
-        bool operator<=(const Real& other) const noexcept { return f32_le(rawValue(), other.rawValue()); }
-        bool operator>(const Real& other) const noexcept { return !f32_le(rawValue(), other.rawValue()); }
-        bool operator>=(const Real& other) const noexcept { return !f32_lt(rawValue(), other.rawValue()); }
-        bool operator==(const Real& other) const noexcept { return f32_eq(rawValue(), other.rawValue()); }
-        bool operator!=(const Real& other) const noexcept { return !f32_eq(rawValue(), other.rawValue()); }
-        Real operator+(const Real& other) const noexcept { return f32_add(rawValue(), other.rawValue()); }
-        Real operator-(const Real& other) const noexcept { return f32_sub(rawValue(), other.rawValue()); }
-        Real operator*(const Real& other) const noexcept { return f32_mul(rawValue(), other.rawValue()); }
-        Real operator/(const Real& other) const noexcept { return f32_div(rawValue(), other.rawValue()); }
 
-    private:
-        RawType _raw;
-    };
+namespace SoftFloat {
+    using Real_t = float32_t;
+    using LongReal_t = float64_t;
+    using ExtendedReal_t = extFloat80_t;
+    Real_t operator+(const Real_t& a, const Real_t& b);
+    Real_t operator-(const Real_t& a, const Real_t& b);
+    Real_t operator*(const Real_t& a, const Real_t& b);
+    Real_t operator/(const Real_t& a, const Real_t& b);
+    Real_t operator%(const Real_t& a, const Real_t& b);
+    bool operator==(const Real_t& a, const Real_t& b);
+    bool operator!=(const Real_t& a, const Real_t& b);
+    bool operator<(const Real_t& a, const Real_t& b);
+    bool operator>(const Real_t& a, const Real_t& b);
+    bool operator<=(const Real_t& a, const Real_t& b);
+    bool operator>=(const Real_t& a, const Real_t& b);
 } // end namespace SoftFloat
 #endif //SIM960_SOFTFLOATWRAPPER_H
