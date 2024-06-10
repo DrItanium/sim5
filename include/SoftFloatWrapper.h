@@ -28,6 +28,7 @@
 #define SIM960_SOFTFLOATWRAPPER_H
 #include <cstdint>
 extern "C" {
+#include "platform.h"
 #include "softfloat_types.h"
 #include "softfloat.h"
 }
