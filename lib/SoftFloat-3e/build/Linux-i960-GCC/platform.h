@@ -15,7 +15,6 @@
 #endif
 
 #define THREAD_LOCAL _Thread_local
-#ifdef __HAVE_BUILTIN_CLZ
-    #warning "donuts"
-#endif
+#define SOFTFLOAT_BUILTIN_CLZ 1
+#define SOFTFLOAT_INTRINSIC_INT128 1
 #endif //SIM960_PLATFORM_H
