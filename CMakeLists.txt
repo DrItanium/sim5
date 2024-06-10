@@ -7,10 +7,15 @@ find_package(Boost
 		REQUIRED
 		COMPONENTS program_options)
 file(GLOB SOFTFLOAT_SRC_FILES lib/SoftFloat-3e/source/*.c)
+file(GLOB SOFTFLOAT_SRC_SPECIALIZATION_FILE lib/SoftFloat-3e/source/8086/*.c)
 file(GLOB SOFTFLOAT_INCLUDE_FILES lib/SoftFloat-3e/source/include/*.h)
+file(GLOB SOFTFLOAT_INCLUDE_SPECIALIZATION_FILES lib/SoftFloat-3e/source/8086/*.h)
 add_library(softfloat
         ${SOFTFLOAT_SRC_FILES}
-        ${SOFTFLOAT_INCLUDE_FILES})
+        ${SOFTFLOAT_SRC_SPECIALIZATION_FILES}
+        ${SOFTFLOAT_INCLUDE_FILES}
+        ${SOFTFLOAT_INCLUDE_SPECIALIZATION_FILES}
+        lib/SoftFloat-3e/build/Linux-i960-GCC/platform.h)
 add_library(core960
 		include/Entry255.def
 		include/Opcodes.def
@@ -55,3 +60,8 @@ install(TARGETS sim5 DESTINATION bin)
 target_include_directories(core960 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_include_directories(mmu_test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_include_directories(nativecore PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_include_directories(softfloat PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/lib/SoftFloat-3e/source/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/lib/SoftFloat-3e/source/build/Linux-i960-GCC/
+        ${CMAKE_CURRENT_SOURCE_DIR}/lib/SoftFloat-3e/source/8086
+)
