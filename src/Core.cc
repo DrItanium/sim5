@@ -1134,3 +1134,32 @@ Core::testGeneric() {
         return std::nullopt;
     }
 }
+
+void
+Core::cmpibGeneric() {
+   if (_cobrInstruction.getM1())  {
+       cmpibGeneric(_cobrInstruction.getMask(),
+                    _cobrInstruction.getSrc1(),
+                    static_cast<Integer>(getSrc2Register(_cobrInstruction)),
+                    static_cast<ShortInteger>(_cobrInstruction.getDisplacement()));
+   } else {
+       cmpibGeneric(_cobrInstruction.getMask(),
+                    static_cast<Integer>(getSrc1Register(_cobrInstruction)),
+                    static_cast<Integer>(getSrc2Register(_cobrInstruction)),
+                    static_cast<ShortInteger>(_cobrInstruction.getDisplacement()));
+   }
+}
+void
+Core::cmpobGeneric() {
+    if (_cobrInstruction.getM1()) {
+        cmpobGeneric(_cobrInstruction.getMask(),
+                     _cobrInstruction.getSrc1(),
+                     static_cast<Ordinal>(getSrc2Register(_cobrInstruction)),
+                     static_cast<ShortInteger>(_cobrInstruction.getDisplacement()));
+    } else {
+        cmpobGeneric(_cobrInstruction.getMask(),
+                     static_cast<Ordinal>(getSrc1Register(_cobrInstruction)),
+                     static_cast<Ordinal>(getSrc2Register(_cobrInstruction)),
+                     static_cast<ShortInteger>(_cobrInstruction.getDisplacement()));
+    }
+}

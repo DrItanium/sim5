@@ -44,7 +44,7 @@ Core::doDispatchInternal() noexcept {
                 case Opcodes::cmpobl:
                 case Opcodes::cmpobne:
                 case Opcodes::cmpoble:
-                    cmpobGeneric(_cobrInstruction.getMask(), _cobrInstruction.getSrc1(), static_cast<Ordinal>(getSrc2Register(_cobrInstruction)), static_cast<ShortInteger>(_cobrInstruction.getDisplacement()));
+                    cmpobGeneric();
                     break;
                 case Opcodes::cmpibno: // never branches
                 case Opcodes::cmpibg:
@@ -54,7 +54,7 @@ Core::doDispatchInternal() noexcept {
                 case Opcodes::cmpibne:
                 case Opcodes::cmpible:
                 case Opcodes::cmpibo: // always branches
-                    cmpibGeneric(_cobrInstruction.getMask(), _cobrInstruction.getSrc1(), static_cast<Integer>(getSrc2Register(_cobrInstruction)), static_cast<ShortInteger>(_cobrInstruction.getDisplacement()));
+                    cmpibGeneric();
                     break;
                 default:
                     // test instructions perform modifications to src1 so we must error out
@@ -80,10 +80,7 @@ Core::doDispatchInternal() noexcept {
                 case Opcodes::cmpobl:
                 case Opcodes::cmpobne:
                 case Opcodes::cmpoble:
-                    cmpobGeneric(_cobrInstruction.getMask(),
-                                 static_cast<Ordinal>(getSrc1Register(_cobrInstruction)),
-                                 static_cast<Ordinal>(getSrc2Register(_cobrInstruction)),
-                                 static_cast<ShortInteger>(_cobrInstruction.getDisplacement()));
+                    cmpobGeneric();
                     break;
                 case Opcodes::cmpibno: // never branches
                 case Opcodes::cmpibg:
@@ -93,10 +90,7 @@ Core::doDispatchInternal() noexcept {
                 case Opcodes::cmpibne:
                 case Opcodes::cmpible:
                 case Opcodes::cmpibo: // always branches
-                    cmpibGeneric(_cobrInstruction.getMask(),
-                                 static_cast<Integer>(getSrc1Register(_cobrInstruction)),
-                                 static_cast<Integer>(getSrc2Register(_cobrInstruction)),
-                                 static_cast<ShortInteger>(_cobrInstruction.getDisplacement()));
+                    cmpibGeneric();
                     break;
                 default:
                     return unimplementedFault();
