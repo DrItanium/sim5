@@ -883,6 +883,14 @@ Core::bbc(const Register& bitpos, const Register& against, int16_t displacement)
     bbc(bitpos.asBitPosition(), static_cast<Ordinal>(against), displacement);
 }
 void
+Core::bbs() {
+    if (_cobrInstruction.getM1()) {
+        bbs(_cobrInstruction.getSrc1(), getSrc2Register(_cobrInstruction), static_cast<ShortInteger>(_cobrInstruction.getDisplacement()));
+    } else {
+        bbs(getSrc1Register(_cobrInstruction), getSrc2Register(_cobrInstruction), static_cast<ShortInteger>(_cobrInstruction.getDisplacement()));
+    }
+}
+void
 Core::bbs(uint8_t bitpos, const Register& against, int16_t displacement) {
     bbs(computeBitPosition(bitpos), static_cast<Ordinal>(against), displacement);
 }

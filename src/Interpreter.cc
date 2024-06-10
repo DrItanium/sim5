@@ -36,12 +36,8 @@ Core::doDispatchInternal() noexcept {
         // thus there are two paths to take here and not all versions are actually accessible in all forms
         if (_cobrInstruction.getM1()) {
             switch(_cobrInstruction.getOpcode()) {
-                case Opcodes::bbc:
-                    bbc();
-                    break;
-                case Opcodes::bbs:
-                    bbs(_cobrInstruction.getSrc1(), getSrc2Register(_cobrInstruction), static_cast<ShortInteger>(_cobrInstruction.getDisplacement()));
-                    break;
+                case Opcodes::bbc: bbc(); break;
+                case Opcodes::bbs: bbs(); break;
                 case Opcodes::cmpobg:
                 case Opcodes::cmpobe:
                 case Opcodes::cmpobge:
@@ -67,12 +63,8 @@ Core::doDispatchInternal() noexcept {
             }
         } else {
             switch(_cobrInstruction.getOpcode()) {
-                case Opcodes::bbc:
-                    bbc();
-                    break;
-                case Opcodes::bbs:
-                    bbs(getSrc1Register(_cobrInstruction), getSrc2Register(_cobrInstruction), static_cast<ShortInteger>(_cobrInstruction.getDisplacement()));
-                    break;
+                case Opcodes::bbc: bbc(); break;
+                case Opcodes::bbs: bbs(); break;
                 case Opcodes::testno:
                 case Opcodes::testg:
                 case Opcodes::teste:
