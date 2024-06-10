@@ -37,16 +37,17 @@ namespace SoftFloat {
     using Real_t = float32_t;
     using LongReal_t = float64_t;
     using ExtendedReal_t = extFloat80_t;
-    Real_t operator+(const Real_t& a, const Real_t& b);
-    Real_t operator-(const Real_t& a, const Real_t& b);
-    Real_t operator*(const Real_t& a, const Real_t& b);
-    Real_t operator/(const Real_t& a, const Real_t& b);
-    Real_t operator%(const Real_t& a, const Real_t& b);
-    bool operator==(const Real_t& a, const Real_t& b);
-    bool operator!=(const Real_t& a, const Real_t& b);
-    bool operator<(const Real_t& a, const Real_t& b);
-    bool operator>(const Real_t& a, const Real_t& b);
-    bool operator<=(const Real_t& a, const Real_t& b);
-    bool operator>=(const Real_t& a, const Real_t& b);
+    inline Real_t operator+(const Real_t& a, const Real_t& b) noexcept { return f32_add(a, b); }
+    inline Real_t operator-(const Real_t& a, const Real_t& b) noexcept { return f32_sub(a, b); }
+    inline Real_t operator*(const Real_t& a, const Real_t& b) noexcept { return f32_mul(a, b); }
+    inline Real_t operator/(const Real_t& a, const Real_t& b) noexcept { return f32_div(a, b); }
+    inline Real_t operator%(const Real_t& a, const Real_t& b) noexcept { return f32_rem(a, b); }
+    inline bool operator==(const Real_t& a, const Real_t& b) noexcept { return f32_eq(a, b); }
+    inline bool operator!=(const Real_t& a, const Real_t& b) noexcept { return !f32_eq(a, b); }
+    inline bool operator<(const Real_t& a, const Real_t& b) noexcept { return f32_lt(a, b); }
+    inline bool operator<=(const Real_t& a, const Real_t& b) noexcept { return f32_le(a, b); }
+    // according to the docs, the gt is the same as the lt but with the args reversed!
+    inline bool operator>(const Real_t& a, const Real_t& b) noexcept { return f32_lt(b, a); }
+    inline bool operator>=(const Real_t& a, const Real_t& b) noexcept { return f32_le(b, a); }
 } // end namespace SoftFloat
 #endif //SIM960_SOFTFLOATWRAPPER_H
