@@ -37,6 +37,20 @@ namespace SoftFloat {
     using Real_t = float32_t;
     using LongReal_t = float64_t;
     using ExtendedReal_t = extFloat80_t;
+    inline LongReal_t toLongReal(Real_t value) noexcept { return f32_to_f64(value); }
+    inline ExtendedReal_t toExtendedReal(Real_t value) noexcept {
+        ExtendedReal_t storage;
+        f32_to_extF80M(value, &storage);
+        return storage;
+    }
+    inline Real_t toReal(LongReal_t value) noexcept { return f64_to_f32(value); }
+    inline ExtendedReal_t toExtendedReal(LongReal_t value) noexcept {
+        ExtendedReal_t storage;
+        f64_to_extF80M(value, &storage);
+        return storage;
+    }
+    inline Real_t toReal(const ExtendedReal_t& value) noexcept { return extF80M_to_f32(&value); }
+    inline LongReal_t toLongReal(const ExtendedReal_t& value) noexcept { return extF80M_to_f64(&value); }
 } // end namespace SoftFloat
 // keep it out of the namespace for simple use
 inline SoftFloat::Real_t operator+(const SoftFloat::Real_t& a, const SoftFloat::Real_t& b) noexcept { return f32_add(a, b); }
@@ -51,4 +65,16 @@ inline bool operator<=(const SoftFloat::Real_t& a, const SoftFloat::Real_t& b) n
 // according to the docs, the gt is the same as the lt but with the args reversed!
 inline bool operator>(const SoftFloat::Real_t& a, const SoftFloat::Real_t& b) noexcept { return f32_lt(b, a); }
 inline bool operator>=(const SoftFloat::Real_t& a, const SoftFloat::Real_t& b) noexcept { return f32_le(b, a); }
+inline SoftFloat::LongReal_t operator+(const SoftFloat::LongReal_t& a, const SoftFloat::LongReal_t& b) noexcept { return f64_add(a, b); }
+inline SoftFloat::LongReal_t operator-(const SoftFloat::LongReal_t& a, const SoftFloat::LongReal_t& b) noexcept { return f64_sub(a, b); }
+inline SoftFloat::LongReal_t operator*(const SoftFloat::LongReal_t& a, const SoftFloat::LongReal_t& b) noexcept { return f64_mul(a, b); }
+inline SoftFloat::LongReal_t operator/(const SoftFloat::LongReal_t& a, const SoftFloat::LongReal_t& b) noexcept { return f64_div(a, b); }
+inline SoftFloat::LongReal_t operator%(const SoftFloat::LongReal_t& a, const SoftFloat::LongReal_t& b) noexcept { return f64_rem(a, b); }
+inline bool operator==(const SoftFloat::LongReal_t& a, const SoftFloat::LongReal_t& b) noexcept { return f64_eq(a, b); }
+inline bool operator!=(const SoftFloat::LongReal_t& a, const SoftFloat::LongReal_t& b) noexcept { return !f64_eq(a, b); }
+inline bool operator<(const SoftFloat::LongReal_t& a, const SoftFloat::LongReal_t& b) noexcept { return f64_lt(a, b); }
+inline bool operator<=(const SoftFloat::LongReal_t& a, const SoftFloat::LongReal_t& b) noexcept { return f64_le(a, b); }
+// according to the docs, the gt is the same as the lt but with the args reversed!
+inline bool operator>(const SoftFloat::LongReal_t& a, const SoftFloat::LongReal_t& b) noexcept { return f64_lt(b, a); }
+inline bool operator>=(const SoftFloat::LongReal_t& a, const SoftFloat::LongReal_t& b) noexcept { return f64_le(b, a); }
 #endif //SIM960_SOFTFLOATWRAPPER_H
