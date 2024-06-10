@@ -41,11 +41,10 @@ Core::doDispatchInternal() noexcept {
         case Opcodes::b: // b
             branch(_ctrlInstruction.getDisplacement());
             break;
-        case Opcodes::call: // call
+        case Opcodes::call:
             call(_ctrlInstruction.getDisplacement());
             break;
-        case Opcodes::ret: // ret
-            return ret();
+        case Opcodes::ret: return ret();
         case Opcodes::bno:
         case Opcodes::be:
         case Opcodes::bne:
