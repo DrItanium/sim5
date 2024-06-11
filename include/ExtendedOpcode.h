@@ -27,17 +27,30 @@
 #ifndef SIM960_EXTENDEDOPCODE_H
 #define SIM960_EXTENDEDOPCODE_H
 #include <cstdint>
+#include "Types.h"
 constexpr bool isREGFormatOpcode(uint8_t value) noexcept {
     return (value >= 0x40) && (value < 0x80);
+}
+constexpr bool isREGFormatOpcode(Ordinal value) noexcept {
+    return isREGFormatOpcode(static_cast<uint8_t>(value >> 24));
 }
 constexpr bool isMEMFormatOpcode(uint8_t value) noexcept {
     return (value >= 0x80);
 }
+constexpr bool isMEMFormatOpcode(Ordinal value) noexcept {
+    return isMEMFormatOpcode(static_cast<uint8_t>(value >> 24));
+}
 constexpr bool isCOBRFormatOpcode(uint8_t value) noexcept {
     return (value >= 0x20) && (value < 0x40);
 }
+constexpr bool isCOBRFormatOpcode(Ordinal value) noexcept {
+    return isCOBRFormatOpcode(static_cast<uint8_t>(value >> 24));
+}
 constexpr bool isCTRLFormatOpcode(uint8_t value) noexcept {
     return (value < 0x20);
+}
+constexpr bool isCTRLFormatOpcode(Ordinal value) noexcept {
+    return isCTRLFormatOpcode(static_cast<uint8_t>(value >> 24));
 }
 
 constexpr uint32_t constructInplaceMask(uint8_t major, uint8_t minor) noexcept {
@@ -110,7 +123,8 @@ enum class ExtendedOpcode : uint32_t {
 
 #define CTRL(name, opcode, str, level, privileged, flt, minor)  \
     name ## _Type0 = constructInplaceMask(opcode, minor),                 \
-    name ## _Type1 = constructInplaceMask(opcode, minor) | 0b10,
+    name ## _Type1 = constructInplaceMask(opcode, minor) | 0b10,\
+    name = name ## _Type0,
 
 #define REG(name, opcode, str, level, privileged, flt, minor) \
     name ## _Type0 = constructInplaceMask(opcode, minor) | generateRegBits(0),               \
@@ -174,4 +188,16 @@ enum class ExtendedOpcode : uint32_t {
 #undef COBR
 #undef CTRL
 };
+constexpr ExtendedOpcode convertToExtendedOpcode(Ordinal value) noexcept {
+    if (isREGFormatOpcode(value)) {
+        return static_cast<ExtendedOpcode>(0xFF00'3FE0 & value);
+    } else if (isCOBRFormatOpcode(value)) {
+        return static_cast<ExtendedOpcode>(0xFF00'2003 & value);
+    } else if (isCTRLFormatOpcode(value)) {
+        return static_cast<ExtendedOpcode>( 0xFF00'0002 & value);
+    } else {
+        return static_cast<ExtendedOpcode>(0xFF00'3C00 & value);
+    }
+}
+static_assert(convertToExtendedOpcode(0x0800'0000) == ExtendedOpcode::b);
 #endif //SIM960_EXTENDEDOPCODE_H
