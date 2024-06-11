@@ -169,5 +169,16 @@ inline auto operator>=(const SoftFloat::ExtendedReal_t& a, const SoftFloat::Exte
  *  addr fp0, fp1, fp2  # 80-bit operands and being stored into an 80-bit register
  *  addrl r8, fp0, fp0  # add long real in r8 to extended real in fp0 and store in fp0, what does this operation look like?
  *
+ *
+ * According to the microarchitectural details from the book, the FPU converts all types into 80-bit floating point values internally
+ * Then microcode will perform conversion back to the supported widths after the fact. So the algorithm is this:
+ *
+ * 1. If the two operands are the same type then perform no conversion
+ * 2. If the two operands are different types (one is ExtendedReal and one is not) then convert both to extended real
+ * 3. Perform the operation
+ * 4. If the result is being stored into a floating-point register then upconvert to fp80
+ * 5. If the result is not being stored in a floating-point register then convert the result to the width corresponding with the operation
+ *
+ * We want to only perform conversions when neecessary as well. It also may make sense to perform hardware floating point conversion for reals and long reals. The only one that needs to be emulated is extended real.
  */
 #endif //SIM960_SOFTFLOATWRAPPER_H
