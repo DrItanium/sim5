@@ -699,53 +699,12 @@ static_assert(dummyReg.getPrimaryOpcode() == 0x58);
 static_assert(dummyReg.getSecondaryOpcode() == 0x2);
 struct MEMInstruction {
 public:
-    enum class AddressingMode : uint8_t {
-        // MEMA
-        AbsoluteOffset = 0b0000,
-        // these are not real but for the sake of simplicity we are describing it this way
-        Reserved0 = 0b0001,
-        Reserved1 = 0b0010,
-        Reserved2 = 0b0011,
-        RegisterIndirect = 0b0100,
-        IPWithDisplacement = 0b0101,
-        Reserved3 = 0b0110,
-        RegisterIndirectWithIndex = 0b0111,
-        RegisterIndirectWithOffset = 0b1000,
-        Reserved4 = 0b1001,
-        Reserved5 = 0b1010,
-        Reserved6 = 0b1011,
-        AbsoluteDisplacement = 0b1100,
-        RegisterIndirectWithDisplacement = 0b1101,
-        IndexWithDisplacement = 0b1110,
-        RegisterIndirectWithIndexAndDisplacement = 0b1111,
-    };
+    using AddressingMode = MEMFormatAddressingMode;
     static constexpr bool valid(AddressingMode mode) noexcept {
-        switch (mode) {
-            case AddressingMode::AbsoluteOffset:
-            case AddressingMode::RegisterIndirect:
-            case AddressingMode::IPWithDisplacement:
-            case AddressingMode::RegisterIndirectWithIndex:
-            case AddressingMode::RegisterIndirectWithOffset:
-            case AddressingMode::AbsoluteDisplacement:
-            case AddressingMode::RegisterIndirectWithDisplacement:
-            case AddressingMode::IndexWithDisplacement:
-            case AddressingMode::RegisterIndirectWithIndexAndDisplacement:
-                return true;
-            default:
-                return false;
-        }
+        return ::valid(mode);
     }
     static constexpr bool usesOptionalDisplacement(AddressingMode mode) noexcept {
-        switch (mode) {
-            case AddressingMode::IPWithDisplacement:
-            case AddressingMode::AbsoluteDisplacement:
-            case AddressingMode::RegisterIndirectWithDisplacement:
-            case AddressingMode::IndexWithDisplacement:
-            case AddressingMode::RegisterIndirectWithIndexAndDisplacement:
-                return true;
-            default:
-                return false;
-        }
+        return ::usesOptionalDisplacement(mode);
     }
     constexpr MEMInstruction(Ordinal base) : raw_(base) {}
     constexpr MEMInstruction(const Register& backingStore) : MEMInstruction(static_cast<Ordinal>(backingStore)) { }

@@ -219,4 +219,109 @@ constexpr ExtendedOpcode convertToExtendedOpcode(Ordinal value) noexcept {
     }
 }
 static_assert(convertToExtendedOpcode(0x0800'0000) == ExtendedOpcode::b);
+enum class MEMFormatAddressingMode : uint8_t {
+    // MEMA
+    AbsoluteOffset = 0b0000,
+    // these are not real but for the sake of simplicity we are describing it this way
+    Reserved0 = 0b0001,
+    Reserved1 = 0b0010,
+    Reserved2 = 0b0011,
+    RegisterIndirect = 0b0100,
+    IPWithDisplacement = 0b0101,
+    Reserved3 = 0b0110,
+    RegisterIndirectWithIndex = 0b0111,
+    RegisterIndirectWithOffset = 0b1000,
+    Reserved4 = 0b1001,
+    Reserved5 = 0b1010,
+    Reserved6 = 0b1011,
+    AbsoluteDisplacement = 0b1100,
+    RegisterIndirectWithDisplacement = 0b1101,
+    IndexWithDisplacement = 0b1110,
+    RegisterIndirectWithIndexAndDisplacement = 0b1111,
+};
+constexpr MEMFormatAddressingMode getAddressingMode(ExtendedOpcode opcode) noexcept {
+    if (isMEMA(opcode))  {
+        return static_cast<MEMFormatAddressingMode>((static_cast<Ordinal>(opcode) >> 10) & 0b1100);
+    } else {
+        return static_cast<MEMFormatAddressingMode>((static_cast<Ordinal>(opcode) >> 10) & 0b1111);
+    }
+}
+constexpr bool valid(MEMFormatAddressingMode mode) noexcept {
+    using K = MEMFormatAddressingMode;
+    switch (mode) {
+        case K::AbsoluteOffset:
+        case K::RegisterIndirect:
+        case K::IPWithDisplacement:
+        case K::RegisterIndirectWithIndex:
+        case K::RegisterIndirectWithOffset:
+        case K::AbsoluteDisplacement:
+        case K::RegisterIndirectWithDisplacement:
+        case K::IndexWithDisplacement:
+        case K::RegisterIndirectWithIndexAndDisplacement:
+            return true;
+        default:
+            return false;
+    }
+}
+constexpr bool usesOptionalDisplacement(MEMFormatAddressingMode mode) noexcept {
+    using AddressingMode = MEMFormatAddressingMode;
+    switch (mode) {
+        case AddressingMode::IPWithDisplacement:
+        case AddressingMode::AbsoluteDisplacement:
+        case AddressingMode::RegisterIndirectWithDisplacement:
+        case AddressingMode::IndexWithDisplacement:
+        case AddressingMode::RegisterIndirectWithIndexAndDisplacement:
+            return true;
+        default:
+            return false;
+    }
+}
+static_assert(getAddressingMode(ExtendedOpcode{generateMemBits(0b0000)}) == MEMFormatAddressingMode::AbsoluteOffset);
+static_assert(getAddressingMode(ExtendedOpcode{generateMemBits(0b0001)}) == MEMFormatAddressingMode::AbsoluteOffset);
+static_assert(getAddressingMode(ExtendedOpcode{generateMemBits(0b0010)}) == MEMFormatAddressingMode::AbsoluteOffset);
+static_assert(getAddressingMode(ExtendedOpcode{generateMemBits(0b0011)}) == MEMFormatAddressingMode::AbsoluteOffset);
+static_assert(getAddressingMode(ExtendedOpcode{generateMemBits(0b0100)}) == MEMFormatAddressingMode::RegisterIndirect);
+static_assert(getAddressingMode(ExtendedOpcode{generateMemBits(0b0101)}) == MEMFormatAddressingMode::IPWithDisplacement);
+static_assert(getAddressingMode(ExtendedOpcode{generateMemBits(0b0110)}) == MEMFormatAddressingMode::Reserved3);
+static_assert(getAddressingMode(ExtendedOpcode{generateMemBits(0b0111)}) == MEMFormatAddressingMode::RegisterIndirectWithIndex);
+static_assert(getAddressingMode(ExtendedOpcode{generateMemBits(0b1000)}) == MEMFormatAddressingMode::RegisterIndirectWithOffset);
+static_assert(getAddressingMode(ExtendedOpcode{generateMemBits(0b1001)}) == MEMFormatAddressingMode::RegisterIndirectWithOffset);
+static_assert(getAddressingMode(ExtendedOpcode{generateMemBits(0b1010)}) == MEMFormatAddressingMode::RegisterIndirectWithOffset);
+static_assert(getAddressingMode(ExtendedOpcode{generateMemBits(0b1011)}) == MEMFormatAddressingMode::RegisterIndirectWithOffset);
+static_assert(getAddressingMode(ExtendedOpcode{generateMemBits(0b1100)}) == MEMFormatAddressingMode::AbsoluteDisplacement);
+static_assert(getAddressingMode(ExtendedOpcode{generateMemBits(0b1101)}) == MEMFormatAddressingMode::RegisterIndirectWithDisplacement);
+static_assert(getAddressingMode(ExtendedOpcode{generateMemBits(0b1110)}) == MEMFormatAddressingMode::IndexWithDisplacement);
+static_assert(getAddressingMode(ExtendedOpcode{generateMemBits(0b1111)}) == MEMFormatAddressingMode::RegisterIndirectWithIndexAndDisplacement);
+static_assert(valid(getAddressingMode(ExtendedOpcode{generateMemBits(0b0000)})) );
+static_assert(valid(getAddressingMode(ExtendedOpcode{generateMemBits(0b0001)})) );
+static_assert(valid(getAddressingMode(ExtendedOpcode{generateMemBits(0b0010)})) );
+static_assert(valid(getAddressingMode(ExtendedOpcode{generateMemBits(0b0011)})) );
+static_assert(valid(getAddressingMode(ExtendedOpcode{generateMemBits(0b0100)})) );
+static_assert(valid(getAddressingMode(ExtendedOpcode{generateMemBits(0b0101)})) );
+static_assert(!valid(getAddressingMode(ExtendedOpcode{generateMemBits(0b0110)})) );
+static_assert(valid(getAddressingMode(ExtendedOpcode{generateMemBits(0b0111)})) );
+static_assert(valid(getAddressingMode(ExtendedOpcode{generateMemBits(0b1000)})) );
+static_assert(valid(getAddressingMode(ExtendedOpcode{generateMemBits(0b1001)})) );
+static_assert(valid(getAddressingMode(ExtendedOpcode{generateMemBits(0b1010)})) );
+static_assert(valid(getAddressingMode(ExtendedOpcode{generateMemBits(0b1011)})) );
+static_assert(valid(getAddressingMode(ExtendedOpcode{generateMemBits(0b1100)})) );
+static_assert(valid(getAddressingMode(ExtendedOpcode{generateMemBits(0b1101)})) );
+static_assert(valid(getAddressingMode(ExtendedOpcode{generateMemBits(0b1110)})) );
+static_assert(valid(getAddressingMode(ExtendedOpcode{generateMemBits(0b1111)})) );
+static_assert(!usesOptionalDisplacement(getAddressingMode(ExtendedOpcode{generateMemBits(0b0000)})) );
+static_assert(!usesOptionalDisplacement(getAddressingMode(ExtendedOpcode{generateMemBits(0b0001)})) );
+static_assert(!usesOptionalDisplacement(getAddressingMode(ExtendedOpcode{generateMemBits(0b0010)})) );
+static_assert(!usesOptionalDisplacement(getAddressingMode(ExtendedOpcode{generateMemBits(0b0011)})) );
+static_assert(!usesOptionalDisplacement(getAddressingMode(ExtendedOpcode{generateMemBits(0b0100)})) );
+static_assert(usesOptionalDisplacement(getAddressingMode(ExtendedOpcode{generateMemBits(0b0101)})) );
+static_assert(!usesOptionalDisplacement(getAddressingMode(ExtendedOpcode{generateMemBits(0b0110)})) );
+static_assert(!usesOptionalDisplacement(getAddressingMode(ExtendedOpcode{generateMemBits(0b0111)})) );
+static_assert(!usesOptionalDisplacement(getAddressingMode(ExtendedOpcode{generateMemBits(0b1000)})) );
+static_assert(!usesOptionalDisplacement(getAddressingMode(ExtendedOpcode{generateMemBits(0b1001)})) );
+static_assert(!usesOptionalDisplacement(getAddressingMode(ExtendedOpcode{generateMemBits(0b1010)})) );
+static_assert(!usesOptionalDisplacement(getAddressingMode(ExtendedOpcode{generateMemBits(0b1011)})) );
+static_assert(usesOptionalDisplacement(getAddressingMode(ExtendedOpcode{generateMemBits(0b1100)})) );
+static_assert(usesOptionalDisplacement(getAddressingMode(ExtendedOpcode{generateMemBits(0b1101)})) );
+static_assert(usesOptionalDisplacement(getAddressingMode(ExtendedOpcode{generateMemBits(0b1110)})) );
+static_assert(usesOptionalDisplacement(getAddressingMode(ExtendedOpcode{generateMemBits(0b1111)})) );
 #endif //SIM960_EXTENDEDOPCODE_H
