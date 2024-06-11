@@ -274,6 +274,7 @@ add_library(core960
         src/Interpreter.cc
         include/ProcessManagement.h
         include/SoftFloatWrapper.h
+        include/ExtendedOpcode.h
 )
 add_library(nativecore
 		src/NativeCore.cc)
