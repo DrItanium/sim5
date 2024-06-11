@@ -188,6 +188,25 @@ enum class ExtendedOpcode : uint32_t {
 #undef COBR
 #undef CTRL
 };
+constexpr bool isMEMA(ExtendedOpcode opcode) noexcept { return (static_cast<Ordinal>(opcode) & 0x0000'1000) == 0; }
+constexpr bool isMEMB(ExtendedOpcode opcode) noexcept { return (static_cast<Ordinal>(opcode) & 0x0000'1000) != 0; }
+static_assert(isMEMA(static_cast<ExtendedOpcode>(generateMemBits(0b0000))));
+static_assert(isMEMA(static_cast<ExtendedOpcode>(generateMemBits(0b0001))));
+static_assert(isMEMA(static_cast<ExtendedOpcode>(generateMemBits(0b0010))));
+static_assert(isMEMA(static_cast<ExtendedOpcode>(generateMemBits(0b0011))));
+static_assert(isMEMA(static_cast<ExtendedOpcode>(generateMemBits(0b1000))));
+static_assert(isMEMA(static_cast<ExtendedOpcode>(generateMemBits(0b1001))));
+static_assert(isMEMA(static_cast<ExtendedOpcode>(generateMemBits(0b1010))));
+static_assert(isMEMA(static_cast<ExtendedOpcode>(generateMemBits(0b1011))));
+static_assert(isMEMB(static_cast<ExtendedOpcode>(generateMemBits(0b0100))));
+static_assert(isMEMB(static_cast<ExtendedOpcode>(generateMemBits(0b0101))));
+static_assert(isMEMB(static_cast<ExtendedOpcode>(generateMemBits(0b0110))));
+static_assert(isMEMB(static_cast<ExtendedOpcode>(generateMemBits(0b0111))));
+static_assert(isMEMB(static_cast<ExtendedOpcode>(generateMemBits(0b1100))));
+static_assert(isMEMB(static_cast<ExtendedOpcode>(generateMemBits(0b1101))));
+static_assert(isMEMB(static_cast<ExtendedOpcode>(generateMemBits(0b1110))));
+static_assert(isMEMB(static_cast<ExtendedOpcode>(generateMemBits(0b1111))));
+
 constexpr ExtendedOpcode convertToExtendedOpcode(Ordinal value) noexcept {
     if (isREGFormatOpcode(value)) {
         return static_cast<ExtendedOpcode>(0xFF00'3FE0 & value);
