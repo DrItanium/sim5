@@ -982,6 +982,7 @@ public:
     void cycle() noexcept;
 private:
     OptionalFaultRecord doDispatchInternal() noexcept;
+    OptionalFaultRecord doDispatchInternal2() noexcept;
     void lockBus() noexcept;
     void unlockBus() noexcept;
     /// @todo insert iac dispatch here
