@@ -143,4 +143,31 @@ inline auto operator>(const SoftFloat::ExtendedReal_t& a, const SoftFloat::Exten
 inline auto operator>=(const SoftFloat::ExtendedReal_t& a, const SoftFloat::ExtendedReal_t& b) noexcept { return SoftFloat::greaterThanOrEqual(a, b); }
 // keep it out of the namespace for simple use
 
+/**
+ * The following comes from "The 80960 Microprocessor Architecture" by Glenford J. Myers and David L. Budde on page 81
+ *
+ * A secondary purpose of the floating-point registers is providing the mechanism for mixed-length arithmetic.
+ * This is accomplished by the following rule -
+ *  if an operand of an instruction is a floating-point register (fp0-3), the operand is interpreted as an extended-real operand,
+ *  regardless of the length specified by the instruction's opcode.
+ *
+ *  -----
+ *  Later on, the book states that while mixed 80/32 or 80/64 are permitted 32/64 mixes are not permitted.
+ *  In fact, the instruction set pretty much prevents that
+ *
+ *  What I need to figure out is the best way to handle these mixes. We have several of them to be denoted:
+ *  (op ExtendedReal ExtendedReal) -> ExtendedReal (if destination is a floating-point register)
+ *  (op Real Real) -> Real (we are saving to a GPR)
+ *  (op LongReal LongReal) -> LongReal
+ *  (op ExtendedReal Real) -> Depends on destination
+ *  (op Real ExtendedReal) -> Depends on destination
+ *  (op ExtendedReal LongReal) -> Depends on destination
+ *  (op LongReal ExtendedReal) -> Depends on destination
+ *
+ *  addr r8, r9, r9 # 32-bit operands, result is 32-bits as well
+ *  addr r8, r9, fp0 # 32-bit operands, result is 80 bits (add the two reals and then convert the result to 80-bit format)
+ *  addr fp0, fp1, fp2  # 80-bit operands and being stored into an 80-bit register
+ *  addrl r8, fp0, fp0  # add long real in r8 to extended real in fp0 and store in fp0, what does this operation look like?
+ *
+ */
 #endif //SIM960_SOFTFLOATWRAPPER_H
