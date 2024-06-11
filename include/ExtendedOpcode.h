@@ -71,15 +71,6 @@ constexpr uint32_t constructInplaceMask(uint8_t major, uint8_t minor) noexcept {
 //    flt        : "is it a float operation?",
 //    minor      : "minor opcode",
 // )
-constexpr uint32_t generateRegBits(bool s1, bool s2, bool m1, bool m2, bool m3) noexcept {
-    uint32_t result = 0;
-    result |= s1 ? 0b000'0000'01'00000 : 0;
-    result |= s2 ? 0b000'0000'01'00000 : 0;
-    result |= m1 ? 0b001'0000'00'00000 : 0;
-    result |= m2 ? 0b010'0000'00'00000 : 0;
-    result |= m3 ? 0b100'0000'00'00000 : 0;
-    return result;
-}
 constexpr uint32_t generateCobrBits(bool m1, bool s2, bool t) noexcept {
     uint32_t result = 0;
     result |= m1 ? 0b10'0000000000'00 : 0;
@@ -99,13 +90,13 @@ constexpr uint32_t generateCobrBits(uint8_t value) noexcept {
     );
 }
 constexpr uint32_t generateRegBits(uint8_t value) noexcept {
-    return generateRegBits(
-            value & 0b00001,
-            value & 0b00010,
-            value & 0b00100,
-            value & 0b01000,
-            value & 0b10000
-    );
+    uint32_t result = 0;
+    result |= (value & 0b00001) ? 0b000'0000'01'00000 : 0;
+    result |= (value & 0b00010) ? 0b000'0000'10'00000 : 0;
+    result |= (value & 0b00100) ? 0b001'0000'00'00000 : 0;
+    result |= (value & 0b01000) ? 0b010'0000'00'00000 : 0;
+    result |= (value & 0b10000) ? 0b100'0000'00'00000 : 0;
+    return result;
 }
 enum class ExtendedOpcode : uint32_t {
 #define COBR(name, opcode, str, level, privileged, flt, minor) \
@@ -219,6 +210,11 @@ constexpr ExtendedOpcode convertToExtendedOpcode(Ordinal value) noexcept {
     }
 }
 static_assert(convertToExtendedOpcode(0x0800'0000) == ExtendedOpcode::b);
+static_assert(ExtendedOpcode::b == ExtendedOpcode::b_Type0);
+static_assert(ExtendedOpcode::b != ExtendedOpcode::b_Type1);
+static_assert(ExtendedOpcode::subine != ExtendedOpcode::subine_Type6);
+static_assert(ExtendedOpcode::subile_Type14 != ExtendedOpcode::subile_Type13);
+static_assert(ExtendedOpcode::subole_Type2 != ExtendedOpcode::subole_Type1);
 enum class MEMFormatAddressingMode : uint8_t {
     // MEMA
     AbsoluteOffset = 0b0000,

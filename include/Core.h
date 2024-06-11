@@ -1975,6 +1975,67 @@ private:
      * @brief A 64-bit counter of the number of instructions executed since startup; Used as a pseudo random number source as well
      */
     LongOrdinal pseudoRandomSource_ = 0;
+private:
+    template<ExtendedOpcode code>
+    OptionalFaultRecord addo() noexcept {
+        return unimplementedFault();
+    }
+    template<ExtendedOpcode code>
+    OptionalFaultRecord addi() noexcept {
+        return unimplementedFault();
+    }
+    template<ExtendedOpcode code>
+    OptionalFaultRecord conditionalAddi() noexcept {
+        return unimplementedFault();
+    }
+    template<ExtendedOpcode code>
+    OptionalFaultRecord conditionalAddo() noexcept {
+        return unimplementedFault();
+    }
+    template<ExtendedOpcode code>
+    OptionalFaultRecord conditionalSubi() noexcept {
+        return unimplementedFault();
+    }
+    template<ExtendedOpcode code>
+    OptionalFaultRecord conditionalSubo() noexcept {
+        return unimplementedFault();
+    }
+    template<ExtendedOpcode code>
+    OptionalFaultRecord select() noexcept {
+        return unimplementedFault();
+    }
+    template<ExtendedOpcode code> OptionalFaultRecord addio() noexcept { return conditionalAddi<code>(); }
+    template<ExtendedOpcode code> OptionalFaultRecord addil() noexcept { return conditionalAddi<code>(); }
+    template<ExtendedOpcode code> OptionalFaultRecord addile() noexcept { return conditionalAddi<code>(); }
+    template<ExtendedOpcode code> OptionalFaultRecord addig() noexcept { return conditionalAddi<code>(); }
+    template<ExtendedOpcode code> OptionalFaultRecord addige() noexcept { return conditionalAddi<code>(); }
+    template<ExtendedOpcode code> OptionalFaultRecord addine() noexcept { return conditionalAddi<code>(); }
+    template<ExtendedOpcode code> OptionalFaultRecord addie() noexcept { return conditionalAddi<code>(); }
+    template<ExtendedOpcode code> OptionalFaultRecord subio() noexcept { return conditionalSubi<code>(); }
+    template<ExtendedOpcode code> OptionalFaultRecord subil() noexcept { return conditionalSubi<code>(); }
+    template<ExtendedOpcode code> OptionalFaultRecord subile() noexcept { return conditionalSubi<code>(); }
+    template<ExtendedOpcode code> OptionalFaultRecord subig() noexcept { return conditionalSubi<code>(); }
+    template<ExtendedOpcode code> OptionalFaultRecord subige() noexcept { return conditionalSubi<code>(); }
+    template<ExtendedOpcode code> OptionalFaultRecord subine() noexcept { return conditionalSubi<code>(); }
+    template<ExtendedOpcode code> OptionalFaultRecord subie() noexcept { return conditionalSubi<code>(); }
+    template<ExtendedOpcode code> OptionalFaultRecord subino() noexcept { return conditionalSubi<code>(); }
+    template<ExtendedOpcode code> OptionalFaultRecord suboo() noexcept { return conditionalSubo<code>(); }
+    template<ExtendedOpcode code> OptionalFaultRecord subol() noexcept { return conditionalSubo<code>(); }
+    template<ExtendedOpcode code> OptionalFaultRecord subole() noexcept { return conditionalSubo<code>(); }
+    template<ExtendedOpcode code> OptionalFaultRecord subog() noexcept { return conditionalSubo<code>(); }
+    template<ExtendedOpcode code> OptionalFaultRecord suboge() noexcept { return conditionalSubo<code>(); }
+    template<ExtendedOpcode code> OptionalFaultRecord subone() noexcept { return conditionalSubo<code>(); }
+    template<ExtendedOpcode code> OptionalFaultRecord suboe() noexcept { return conditionalSubo<code>(); }
+    template<ExtendedOpcode code> OptionalFaultRecord subono() noexcept { return conditionalSubo<code>(); }
+
+    template<ExtendedOpcode code> OptionalFaultRecord selo() noexcept { return select<code>(); }
+    template<ExtendedOpcode code> OptionalFaultRecord sell() noexcept { return select<code>(); }
+    template<ExtendedOpcode code> OptionalFaultRecord selle() noexcept { return select<code>(); }
+    template<ExtendedOpcode code> OptionalFaultRecord selg() noexcept { return select<code>(); }
+    template<ExtendedOpcode code> OptionalFaultRecord selge() noexcept { return select<code>(); }
+    template<ExtendedOpcode code> OptionalFaultRecord selne() noexcept { return select<code>(); }
+    template<ExtendedOpcode code> OptionalFaultRecord sele() noexcept { return select<code>(); }
+    template<ExtendedOpcode code> OptionalFaultRecord selno() noexcept { return select<code>(); }
 };
 
 static_assert(computeNextFrame<Core::C, Core::NotC>(0xFDED'0000) == 0xFDED'0000);
