@@ -552,3 +552,17 @@ Core::cycle() noexcept {
     // let's add it in ours as well for whatever we want!
     ++pseudoRandomSource_;
 }
+
+OptionalFaultRecord
+Core::doDispatchInternal2() noexcept {
+    if (instruction_.isMEMFormat()) {
+        if (!_memInstruction.validAddressingMode()) {
+            return invalidOpcodeFault();
+        }
+    }
+    switch (convertToExtendedOpcode(instruction_.getValue<Ordinal>())) {
+
+        default:
+            return unimplementedFault();
+    }
+}
