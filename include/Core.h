@@ -1977,10 +1977,40 @@ private:
     LongOrdinal pseudoRandomSource_ = 0;
 private:
 #define DefExtendedBody(name) template<ExtendedOpcode code> OptionalFaultRecord name () noexcept
+    DefExtendedBody(ret) {
+        return unimplementedFault();
+    }
     DefExtendedBody(b) {
         return unimplementedFault();
     }
+    DefExtendedBody(condb) {
+        return unimplementedFault();
+    }
+    DefExtendedBody(faultGeneric) {
+       return unimplementedFault();
+    }
+    DefExtendedBody(testGeneric) {
+        return unimplementedFault();
+    }
+    DefExtendedBody(bbc) {
+        return unimplementedFault();
+    }
+    DefExtendedBody(bbs) {
+        return unimplementedFault();
+    }
+    DefExtendedBody(cmpob) {
+        return unimplementedFault();
+    }
+    DefExtendedBody(cmpib) {
+        return unimplementedFault();
+    }
     DefExtendedBody(bx) {
+        return unimplementedFault();
+    }
+    DefExtendedBody(bal) {
+        return unimplementedFault();
+    }
+    DefExtendedBody(balx) {
         return unimplementedFault();
     }
     DefExtendedBody(call) {
@@ -2141,6 +2171,46 @@ private:
     DefExtendedBody(selne) { return select<code>(); }
     DefExtendedBody(sele) { return select<code>(); }
     DefExtendedBody(selno) { return select<code>(); }
+    DefExtendedBody(bno) { return condb<code>(); }
+    DefExtendedBody(bo) { return condb<code>(); }
+    DefExtendedBody(be) { return condb<code>(); }
+    DefExtendedBody(bne) { return condb<code>(); }
+    DefExtendedBody(bg) { return condb<code>(); }
+    DefExtendedBody(bl) { return condb<code>(); }
+    DefExtendedBody(ble) { return condb<code>(); }
+    DefExtendedBody(bge) { return condb<code>(); }
+    DefExtendedBody(cmpobno) { return cmpob<code>(); }
+    DefExtendedBody(cmpobo) { return cmpob<code>(); }
+    DefExtendedBody(cmpobe) { return cmpob<code>(); }
+    DefExtendedBody(cmpobne) { return cmpob<code>(); }
+    DefExtendedBody(cmpobg) { return cmpob<code>(); }
+    DefExtendedBody(cmpobl) { return cmpob<code>(); }
+    DefExtendedBody(cmpoble) { return cmpob<code>(); }
+    DefExtendedBody(cmpobge) { return cmpob<code>(); }
+    DefExtendedBody(cmpibno) { return cmpib<code>(); }
+    DefExtendedBody(cmpibo) { return cmpib<code>(); }
+    DefExtendedBody(cmpibe) { return cmpib<code>(); }
+    DefExtendedBody(cmpibne) { return cmpib<code>(); }
+    DefExtendedBody(cmpibg) { return cmpib<code>(); }
+    DefExtendedBody(cmpibl) { return cmpib<code>(); }
+    DefExtendedBody(cmpible) { return cmpib<code>(); }
+    DefExtendedBody(cmpibge) { return cmpib<code>(); }
+    DefExtendedBody(faultno) { return faultGeneric<code>(); }
+    DefExtendedBody(faulto) { return faultGeneric<code>(); }
+    DefExtendedBody(faulte) { return faultGeneric<code>(); }
+    DefExtendedBody(faultne) { return faultGeneric<code>(); }
+    DefExtendedBody(faultg) { return faultGeneric<code>(); }
+    DefExtendedBody(faultl) { return faultGeneric<code>(); }
+    DefExtendedBody(faultle) { return faultGeneric<code>(); }
+    DefExtendedBody(faultge) { return faultGeneric<code>(); }
+    DefExtendedBody(testno) { return testGeneric<code>(); }
+    DefExtendedBody(testo) { return testGeneric<code>(); }
+    DefExtendedBody(teste) { return testGeneric<code>(); }
+    DefExtendedBody(testne) { return testGeneric<code>(); }
+    DefExtendedBody(testg) { return testGeneric<code>(); }
+    DefExtendedBody(testl) { return testGeneric<code>(); }
+    DefExtendedBody(testle) { return testGeneric<code>(); }
+    DefExtendedBody(testge) { return testGeneric<code>(); }
 
 #undef DefExtendedBody
 };

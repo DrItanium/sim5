@@ -576,7 +576,7 @@ Core::doDispatchInternal2() noexcept {
     Q(name, name ## _Type0)                                                            \
     Q(name, name ## _Type1)
 
-#if 1
+#if 0
 #define REG(name, opcode, str, level, privileged, flt, minor) \
     Q(name, name ## _Type0)                                                            \
     Q(name, name ## _Type1)                                                            \
@@ -611,29 +611,31 @@ Core::doDispatchInternal2() noexcept {
     Q(name, name ## _Type30)                                                            \
     Q(name, name ## _Type31)
 #else
+    #warning "REG Is Disabled"
     #define REG(name, opcode, str, level, privileged, flt, minor)
 #endif
 
 
-#if 1
+#if 0
 #define MEM(name, opcode, str, level, privileged, flt, minor) \
-    case ExtendedOpcode :: name ## _Type0 : return name < ExtendedOpcode :: name ## _Type0 > (); \
-    case ExtendedOpcode :: name ## _Type1 : return name < ExtendedOpcode :: name ## _Type1 > (); \
-    case ExtendedOpcode :: name ## _Type2 : return name < ExtendedOpcode :: name ## _Type2 > (); \
-    case ExtendedOpcode :: name ## _Type3 : return name < ExtendedOpcode :: name ## _Type3 > (); \
-    case ExtendedOpcode :: name ## _Type4 : return name < ExtendedOpcode :: name ## _Type4 > (); \
-    case ExtendedOpcode :: name ## _Type5 : return name < ExtendedOpcode :: name ## _Type5 > (); \
-    case ExtendedOpcode :: name ## _Type6 : return name < ExtendedOpcode :: name ## _Type6 > (); \
-    case ExtendedOpcode :: name ## _Type7 : return name < ExtendedOpcode :: name ## _Type7 > (); \
-    case ExtendedOpcode :: name ## _Type8 : return name < ExtendedOpcode :: name ## _Type8 > (); \
-    case ExtendedOpcode :: name ## _Type9 : return name < ExtendedOpcode :: name ## _Type9 > (); \
-    case ExtendedOpcode :: name ## _Type10 : return name < ExtendedOpcode :: name ## _Type10 > (); \
-    case ExtendedOpcode :: name ## _Type11 : return name < ExtendedOpcode :: name ## _Type11 > (); \
-    case ExtendedOpcode :: name ## _Type12 : return name < ExtendedOpcode :: name ## _Type12 > (); \
-    case ExtendedOpcode :: name ## _Type13 : return name < ExtendedOpcode :: name ## _Type13 > (); \
-    case ExtendedOpcode :: name ## _Type14 : return name < ExtendedOpcode :: name ## _Type14 > (); \
-    case ExtendedOpcode :: name ## _Type15 : return name < ExtendedOpcode :: name ## _Type15 > ();
+    Q(name, name ## _Type0)                                                            \
+    Q(name, name ## _Type1)                                                            \
+    Q(name, name ## _Type2)                                                            \
+    Q(name, name ## _Type3)                                                            \
+    Q(name, name ## _Type4)                                                            \
+    Q(name, name ## _Type5)                                                            \
+    Q(name, name ## _Type6)                                                            \
+    Q(name, name ## _Type7) \
+    Q(name, name ## _Type8)                                                            \
+    Q(name, name ## _Type9)                                                            \
+    Q(name, name ## _Type10)                                                            \
+    Q(name, name ## _Type11)                                                            \
+    Q(name, name ## _Type12)                                                            \
+    Q(name, name ## _Type13)                                                            \
+    Q(name, name ## _Type14)                                                            \
+    Q(name, name ## _Type15)
 #else
+    #warning "MEM Is Disabled"
 #define MEM(name, opcode, str, level, privileged, flt, minor)
 #endif
 
