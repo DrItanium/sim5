@@ -74,6 +74,10 @@ constexpr uint32_t generateCobrBits(bool m1, bool s2, bool t) noexcept {
     result |= t  ? 0b00'0000000000'10 : 0;
     return result;
 }
+constexpr uint32_t generateMemBits(uint8_t value) noexcept {
+    return static_cast<uint32_t>(value& 0b1111) << 10;
+}
+static_assert(generateMemBits(0b1111) == 0b11'11'000'00'00000);
 constexpr uint32_t generateCobrBits(uint8_t value) noexcept {
     return generateCobrBits(
             value & 0b001,
@@ -143,9 +147,27 @@ enum class ExtendedOpcode : uint32_t {
     name ## _Type31 = constructInplaceMask(opcode, minor) | generateRegBits(31),               \
     name = name ## _Type0,
 
-#define MEM(name, opcode, str, level, privileged, flt, minor)
+#define MEM(name, opcode, str, level, privileged, flt, minor) \
+    name ## _Type0 = constructInplaceMask(opcode, minor) | generateMemBits(0),               \
+    name ## _Type1 = constructInplaceMask(opcode, minor) | generateMemBits(1),               \
+    name ## _Type2 = constructInplaceMask(opcode, minor) | generateMemBits(2),               \
+    name ## _Type3 = constructInplaceMask(opcode, minor) | generateMemBits(3),               \
+    name ## _Type4 = constructInplaceMask(opcode, minor) | generateMemBits(4),               \
+    name ## _Type5 = constructInplaceMask(opcode, minor) | generateMemBits(5),               \
+    name ## _Type6 = constructInplaceMask(opcode, minor) | generateMemBits(6),               \
+    name ## _Type7 = constructInplaceMask(opcode, minor) | generateMemBits(7),               \
+    name ## _Type8 = constructInplaceMask(opcode, minor) | generateMemBits(8),               \
+    name ## _Type9 = constructInplaceMask(opcode, minor) | generateMemBits(9),               \
+    name ## _Type10 = constructInplaceMask(opcode, minor) | generateMemBits(10),               \
+    name ## _Type11 = constructInplaceMask(opcode, minor) | generateMemBits(11),               \
+    name ## _Type12 = constructInplaceMask(opcode, minor) | generateMemBits(12),               \
+    name ## _Type13 = constructInplaceMask(opcode, minor) | generateMemBits(13),               \
+    name ## _Type14 = constructInplaceMask(opcode, minor) | generateMemBits(14),               \
+    name ## _Type15 = constructInplaceMask(opcode, minor) | generateMemBits(15),               \
+    name = name ## _Type0,
 
 #define X(name, opcode, str, level, privileged, fmt, flt, minor) fmt(name, opcode, str, level, privileged, flt, minor)
+#include "Opcodes.def"
 #undef X
 #undef REG
 #undef MEM
