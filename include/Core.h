@@ -1976,66 +1976,141 @@ private:
      */
     LongOrdinal pseudoRandomSource_ = 0;
 private:
-    template<ExtendedOpcode code>
-    OptionalFaultRecord addo() noexcept {
-        return unimplementedFault();
-    }
-    template<ExtendedOpcode code>
-    OptionalFaultRecord addi() noexcept {
-        return unimplementedFault();
-    }
-    template<ExtendedOpcode code>
-    OptionalFaultRecord conditionalAddi() noexcept {
-        return unimplementedFault();
-    }
-    template<ExtendedOpcode code>
-    OptionalFaultRecord conditionalAddo() noexcept {
-        return unimplementedFault();
-    }
-    template<ExtendedOpcode code>
-    OptionalFaultRecord conditionalSubi() noexcept {
-        return unimplementedFault();
-    }
-    template<ExtendedOpcode code>
-    OptionalFaultRecord conditionalSubo() noexcept {
-        return unimplementedFault();
-    }
-    template<ExtendedOpcode code>
-    OptionalFaultRecord select() noexcept {
-        return unimplementedFault();
-    }
-    template<ExtendedOpcode code> OptionalFaultRecord addio() noexcept { return conditionalAddi<code>(); }
-    template<ExtendedOpcode code> OptionalFaultRecord addil() noexcept { return conditionalAddi<code>(); }
-    template<ExtendedOpcode code> OptionalFaultRecord addile() noexcept { return conditionalAddi<code>(); }
-    template<ExtendedOpcode code> OptionalFaultRecord addig() noexcept { return conditionalAddi<code>(); }
-    template<ExtendedOpcode code> OptionalFaultRecord addige() noexcept { return conditionalAddi<code>(); }
-    template<ExtendedOpcode code> OptionalFaultRecord addine() noexcept { return conditionalAddi<code>(); }
-    template<ExtendedOpcode code> OptionalFaultRecord addie() noexcept { return conditionalAddi<code>(); }
-    template<ExtendedOpcode code> OptionalFaultRecord subio() noexcept { return conditionalSubi<code>(); }
-    template<ExtendedOpcode code> OptionalFaultRecord subil() noexcept { return conditionalSubi<code>(); }
-    template<ExtendedOpcode code> OptionalFaultRecord subile() noexcept { return conditionalSubi<code>(); }
-    template<ExtendedOpcode code> OptionalFaultRecord subig() noexcept { return conditionalSubi<code>(); }
-    template<ExtendedOpcode code> OptionalFaultRecord subige() noexcept { return conditionalSubi<code>(); }
-    template<ExtendedOpcode code> OptionalFaultRecord subine() noexcept { return conditionalSubi<code>(); }
-    template<ExtendedOpcode code> OptionalFaultRecord subie() noexcept { return conditionalSubi<code>(); }
-    template<ExtendedOpcode code> OptionalFaultRecord subino() noexcept { return conditionalSubi<code>(); }
-    template<ExtendedOpcode code> OptionalFaultRecord suboo() noexcept { return conditionalSubo<code>(); }
-    template<ExtendedOpcode code> OptionalFaultRecord subol() noexcept { return conditionalSubo<code>(); }
-    template<ExtendedOpcode code> OptionalFaultRecord subole() noexcept { return conditionalSubo<code>(); }
-    template<ExtendedOpcode code> OptionalFaultRecord subog() noexcept { return conditionalSubo<code>(); }
-    template<ExtendedOpcode code> OptionalFaultRecord suboge() noexcept { return conditionalSubo<code>(); }
-    template<ExtendedOpcode code> OptionalFaultRecord subone() noexcept { return conditionalSubo<code>(); }
-    template<ExtendedOpcode code> OptionalFaultRecord suboe() noexcept { return conditionalSubo<code>(); }
-    template<ExtendedOpcode code> OptionalFaultRecord subono() noexcept { return conditionalSubo<code>(); }
+#define DefExtendedBody(name) template<ExtendedOpcode code> OptionalFaultRecord name () noexcept
 
-    template<ExtendedOpcode code> OptionalFaultRecord selo() noexcept { return select<code>(); }
-    template<ExtendedOpcode code> OptionalFaultRecord sell() noexcept { return select<code>(); }
-    template<ExtendedOpcode code> OptionalFaultRecord selle() noexcept { return select<code>(); }
-    template<ExtendedOpcode code> OptionalFaultRecord selg() noexcept { return select<code>(); }
-    template<ExtendedOpcode code> OptionalFaultRecord selge() noexcept { return select<code>(); }
-    template<ExtendedOpcode code> OptionalFaultRecord selne() noexcept { return select<code>(); }
-    template<ExtendedOpcode code> OptionalFaultRecord sele() noexcept { return select<code>(); }
-    template<ExtendedOpcode code> OptionalFaultRecord selno() noexcept { return select<code>(); }
+    DefExtendedBody(conaddi) {
+        return unimplementedFault();
+    }
+    DefExtendedBody(conaddo) {
+        return unimplementedFault();
+    }
+    DefExtendedBody(consubi) {
+        return unimplementedFault();
+    }
+    DefExtendedBody(consubo) {
+        return unimplementedFault();
+    }
+    DefExtendedBody(select) {
+        return unimplementedFault();
+    }
+    DefExtendedBody(addo) {
+        return unimplementedFault();
+    }
+    DefExtendedBody(addi) {
+        return unimplementedFault();
+    }
+    DefExtendedBody(addr) {
+        return unimplementedFault();
+    }
+    DefExtendedBody(addrl) {
+        return unimplementedFault();
+    }
+    DefExtendedBody(subo) {
+        return unimplementedFault();
+    }
+    DefExtendedBody(subi) {
+        return unimplementedFault();
+    }
+    DefExtendedBody(subr) {
+        return unimplementedFault();
+    }
+    DefExtendedBody(subrl) {
+        return unimplementedFault();
+    }
+
+    DefExtendedBody(mulo) {
+        return unimplementedFault();
+    }
+    DefExtendedBody(muli) {
+        return unimplementedFault();
+    }
+    DefExtendedBody(mulr) {
+        return unimplementedFault();
+    }
+    DefExtendedBody(mulrl) {
+        return unimplementedFault();
+    }
+    DefExtendedBody(divo) {
+        return unimplementedFault();
+    }
+    DefExtendedBody(divi) {
+        return unimplementedFault();
+    }
+    DefExtendedBody(divr) {
+        return unimplementedFault();
+    }
+    DefExtendedBody(divrl) {
+        return unimplementedFault();
+    }
+    DefExtendedBody(remo) {
+        return unimplementedFault();
+    }
+    DefExtendedBody(remi) {
+        return unimplementedFault();
+    }
+    DefExtendedBody(remr) {
+        return unimplementedFault();
+    }
+    DefExtendedBody(remrl) {
+        return unimplementedFault();
+    }
+    DefExtendedBody(cmprl) {
+        return unimplementedFault();
+    }
+    DefExtendedBody(cmpr) {
+        return unimplementedFault();
+    }
+    DefExtendedBody(cmporl) {
+        return unimplementedFault();
+    }
+    DefExtendedBody(cmpor) {
+        return unimplementedFault();
+    }
+    DefExtendedBody(modi) {
+        return unimplementedFault();
+    }
+    DefExtendedBody(addio) { return conaddi<code>(); }
+    DefExtendedBody(addil) { return conaddi<code>(); }
+    DefExtendedBody(addile) { return conaddi<code>(); }
+    DefExtendedBody(addig) { return conaddi<code>(); }
+    DefExtendedBody(addige) { return conaddi<code>(); }
+    DefExtendedBody(addine) { return conaddi<code>(); }
+    DefExtendedBody(addie) { return conaddi<code>(); }
+    DefExtendedBody(addino) { return conaddi<code>(); }
+    DefExtendedBody(addoo) { return conaddo<code>(); }
+    DefExtendedBody(addol) { return conaddo<code>(); }
+    DefExtendedBody(addole) { return conaddo<code>(); }
+    DefExtendedBody(addog) { return conaddo<code>(); }
+    DefExtendedBody(addoge) { return conaddo<code>(); }
+    DefExtendedBody(addone) { return conaddo<code>(); }
+    DefExtendedBody(addoe) { return conaddo<code>(); }
+    DefExtendedBody(addono) { return conaddo<code>(); }
+    DefExtendedBody(subio) { return consubi<code>(); }
+    DefExtendedBody(subil) { return consubi<code>(); }
+    DefExtendedBody(subile) { return consubi<code>(); }
+    DefExtendedBody(subig) { return consubi<code>(); }
+    DefExtendedBody(subige) { return consubi<code>(); }
+    DefExtendedBody(subine) { return consubi<code>(); }
+    DefExtendedBody(subie) { return consubi<code>(); }
+    DefExtendedBody(subino) { return consubi<code>(); }
+    DefExtendedBody(suboo) { return consubo<code>(); }
+    DefExtendedBody(subol) { return consubo<code>(); }
+    DefExtendedBody(subole) { return consubo<code>(); }
+    DefExtendedBody(subog) { return consubo<code>(); }
+    DefExtendedBody(suboge) { return consubo<code>(); }
+    DefExtendedBody(subone) { return consubo<code>(); }
+    DefExtendedBody(suboe) { return consubo<code>(); }
+    DefExtendedBody(subono) { return consubo<code>(); }
+    DefExtendedBody(selo) { return select<code>(); }
+    DefExtendedBody(sell) { return select<code>(); }
+    DefExtendedBody(selle) { return select<code>(); }
+    DefExtendedBody(selg) { return select<code>(); }
+    DefExtendedBody(selge) { return select<code>(); }
+    DefExtendedBody(selne) { return select<code>(); }
+    DefExtendedBody(sele) { return select<code>(); }
+    DefExtendedBody(selno) { return select<code>(); }
+
+#undef DefExtendedBody
 };
 
 static_assert(computeNextFrame<Core::C, Core::NotC>(0xFDED'0000) == 0xFDED'0000);
