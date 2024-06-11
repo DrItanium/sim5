@@ -1977,7 +1977,39 @@ private:
     LongOrdinal pseudoRandomSource_ = 0;
 private:
 #define DefExtendedBody(name) template<ExtendedOpcode code> OptionalFaultRecord name () noexcept
-
+    DefExtendedBody(b) {
+        return unimplementedFault();
+    }
+    DefExtendedBody(bx) {
+        return unimplementedFault();
+    }
+    DefExtendedBody(call) {
+        return unimplementedFault();
+    }
+    DefExtendedBody(callx) {
+        return unimplementedFault();
+    }
+    DefExtendedBody(mov) {
+        return unimplementedFault();
+    }
+    DefExtendedBody(movl) {
+        return unimplementedFault();
+    }
+    DefExtendedBody(movt) {
+        return unimplementedFault();
+    }
+    DefExtendedBody(movq) {
+        return unimplementedFault();
+    }
+    DefExtendedBody(movr) {
+        return unimplementedFault();
+    }
+    DefExtendedBody(movrl) {
+        return unimplementedFault();
+    }
+    DefExtendedBody(movre) {
+        return unimplementedFault();
+    }
     DefExtendedBody(conaddi) {
         return unimplementedFault();
     }
