@@ -590,7 +590,6 @@ public:
     explicit constexpr COBRInstruction(Ordinal value) : raw_(value) { }
     explicit COBRInstruction(const Register& backingStore) : COBRInstruction((Ordinal)backingStore) {}
     [[nodiscard]] constexpr Integer getDisplacement() const noexcept { return alignTo4ByteBoundaries(displacement, TreatAsInteger{}); }
-    [[nodiscard]] constexpr bool getS2() const noexcept { return (displacement & 0b1); }
     [[nodiscard]] constexpr bool getT() const noexcept { return (displacement & 0b10); }
     [[nodiscard]] constexpr bool getM1() const noexcept { return m1; }
     [[nodiscard]] constexpr ByteOrdinal getSrc2() const noexcept { return src2; }
@@ -612,7 +611,6 @@ private:
 };
 constexpr COBRInstruction dummyCOBR { 0x32, 4, 5, false, 0xFF };
 static_assert(dummyCOBR.getDisplacement() == 0xFC);
-static_assert(dummyCOBR.getS2() == 1);
 static_assert(dummyCOBR.getT());
 static_assert(dummyCOBR.getSrc1() == 4);
 static_assert(dummyCOBR.getSrc2() == 5);
@@ -628,11 +626,9 @@ public:
                              ByteOrdinal src2r,
                              bool mf3, bool mf2, bool mf1,
                              ByteOrdinal opcode2,
-                             bool sf2,
-                             bool sf1,
                              ByteOrdinal src1r) : src1(src1r),
-                                                  s1(sf1),
-                                                  s2(sf2),
+                                                  s1(false),
+                                                  s2(false),
                                                   opcodeExt(opcode2),
                                                   m1(mf1),
                                                   m2(mf2),
@@ -650,8 +646,6 @@ public:
     [[nodiscard]] constexpr Opcodes getOpcode() const noexcept { return computeOpcode(opcode, opcodeExt); }
     [[nodiscard]] constexpr ByteOrdinal getPrimaryOpcode() const noexcept { return opcode; }
     [[nodiscard]] constexpr ByteOrdinal getSecondaryOpcode() const noexcept { return opcodeExt; }
-    [[nodiscard]] constexpr bool getS1() const noexcept { return s1; }
-    [[nodiscard]] constexpr bool getS2() const noexcept { return s2; }
     [[nodiscard]] constexpr bool getM1() const noexcept { return m1; }
     [[nodiscard]] constexpr bool getM2() const noexcept { return m2; }
     [[nodiscard]] constexpr bool getM3() const noexcept { return m3; }
@@ -704,7 +698,7 @@ private:
         };
     };
 };
-constexpr REGInstruction dummyReg{0x58, 7, 8, false, true, false, 0x2, false, false, 9};
+constexpr REGInstruction dummyReg{0x58, 7, 8, false, true, false, 0x2, 9};
 static_assert(dummyReg.getOpcode() == Opcodes::andnot);
 static_assert(dummyReg.getPrimaryOpcode() == 0x58);
 static_assert(dummyReg.getSecondaryOpcode() == 0x2);
