@@ -29,8 +29,6 @@ Core::getSrc1Register(const REGInstruction& inst) const noexcept {
     if (auto src1 = inst.getSrc1(); inst.getM1()) {
         /// @todo what to do if s1 is also set?
         return constants_.get(src1);
-    } else if (inst.getS1()) {
-        return getSFR(src1);
     } else {
         return getGPR(src1);
     }
@@ -41,8 +39,6 @@ Core::getSrc2Register(const REGInstruction& inst) const noexcept {
     if (auto src2 = inst.getSrc2(); inst.getM2()) {
         /// @todo what to do if s2 is also set?
         return constants_.get(src2);
-    } else if (inst.getS2()) {
-        return getSFR(src2);
     } else {
         return getGPR(src2);
     }
@@ -54,8 +50,6 @@ Core::unpackSrc1(const REGInstruction& inst, ByteOrdinal offset, TreatAsOrdinal)
     if (auto src1 = inst.getSrc1(); inst.getM1()) {
         // literals should always return zero if offset is greater than zero
         return offset == 0 ? src1 : 0;
-    } else if (inst.getS1()) {
-        return static_cast<Ordinal>(getSFR(src1, offset));
     } else {
         return getGPRValue(src1, offset, TreatAsOrdinal{});
     }

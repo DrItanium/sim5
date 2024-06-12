@@ -1097,9 +1097,6 @@ private:
     void setGPRValue(ByteOrdinal index, ByteOrdinal offset, T value) noexcept {
         setGPR(index, offset, value, TreatAs<T>{});
     }
-    [[nodiscard]] Register& getSFR(ByteOrdinal index) noexcept;
-    [[nodiscard]] Register& getSFR(ByteOrdinal index, ByteOrdinal offset) noexcept;
-    [[nodiscard]] const Register& getSFR(ByteOrdinal index) const noexcept;
     [[nodiscard]] const Register& getSrc1Register(const REGInstruction&) const noexcept;
     [[nodiscard]] const Register& getSrc2Register(const REGInstruction&) const noexcept;
     [[nodiscard]] Register& getSrc1Register(const COBRInstruction&) noexcept;
@@ -2001,7 +1998,6 @@ private:
     RegisterFrame globals_;
     std::array<LocalRegisterSet, NumberOfLocalRegisterFrames> frames_;
     uint8_t localRegisterFrameIndex_ = 0;
-    RegisterBlock32 sfrs_;
     RegisterBlock32 constants_;
     RegisterFrame fp;
     Register ip_;

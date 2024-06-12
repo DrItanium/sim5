@@ -135,21 +135,6 @@ Core::getSupervisorStackPointer() const noexcept {
     return load((getSystemProcedureTableBase() + 12), TreatAsOrdinal{});
 }
 
-Register&
-Core::getSFR(ByteOrdinal index) noexcept {
-    return sfrs_.get(index);
-}
-
-Register&
-Core::getSFR(ByteOrdinal index, ByteOrdinal offset) noexcept {
-    return getSFR((index + offset) & 0b11111);
-}
-
-const Register&
-Core::getSFR(ByteOrdinal index) const noexcept {
-    return sfrs_.get(index);
-}
-
 OptionalFaultRecord
 Core::mark() {
     nextInstruction();
@@ -379,11 +364,7 @@ Core::getSrc1Register(const COBRInstruction& inst) noexcept {
 }
 const Register&
 Core::getSrc2Register(const COBRInstruction& inst) const noexcept {
-    if (inst.getS2()) {
-        return getSFR(inst.getSrc2());
-    } else {
-        return getGPR(inst.getSrc2());
-    }
+    return getGPR(inst.getSrc2());
 }
 
 
