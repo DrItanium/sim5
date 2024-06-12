@@ -103,55 +103,55 @@ Core::doDispatchInternal() noexcept {
         case Opcodes::callx:
             return callx();
         case Opcodes::stob:
-            store(computeAddress(_memInstruction), getGPRValue<Ordinal>(_memInstruction.getSrcDest()), TreatAsByteOrdinal {});
+            store(computeAddress(), getGPRValue<Ordinal>(_memInstruction.getSrcDest()), TreatAsByteOrdinal {});
             break;
         case Opcodes::stib:
-            stib(static_cast<Integer>(getGPR(_memInstruction.getSrcDest())), computeAddress(_memInstruction));
+            stib(static_cast<Integer>(getGPR(_memInstruction.getSrcDest())), computeAddress());
             break;
         case Opcodes::stos:
-            store(computeAddress(_memInstruction), getGPR(_memInstruction.getSrcDest()).getValue<Ordinal>(), TreatAs<ShortOrdinal>{});
+            store(computeAddress(), getGPR(_memInstruction.getSrcDest()).getValue<Ordinal>(), TreatAs<ShortOrdinal>{});
             break;
         case Opcodes::stis:
-            stis(static_cast<Integer>(getGPR(_memInstruction.getSrcDest())), computeAddress(_memInstruction));
+            stis(static_cast<Integer>(getGPR(_memInstruction.getSrcDest())), computeAddress());
             break;
         case Opcodes::st:
-            store(computeAddress(_memInstruction), getGPR(_memInstruction.getSrcDest()).getValue<Ordinal>(), TreatAs<Ordinal>{});
+            store(computeAddress(), getGPR(_memInstruction.getSrcDest()).getValue<Ordinal>(), TreatAs<Ordinal>{});
             break;
         case Opcodes::stl:
-            stl(_memInstruction, computeAddress(_memInstruction), getGPR(_memInstruction.getSrcDest(), TreatAsLongRegister{}));
+            stl(_memInstruction, computeAddress(), getGPR(_memInstruction.getSrcDest(), TreatAsLongRegister{}));
             break;
         case Opcodes::stt:
-            stt(_memInstruction, computeAddress(_memInstruction), getGPR(_memInstruction.getSrcDest(), TreatAsTripleRegister{}));
+            stt(_memInstruction, computeAddress(), getGPR(_memInstruction.getSrcDest(), TreatAsTripleRegister{}));
             break;
         case Opcodes::stq:
-            stq(_memInstruction, computeAddress(_memInstruction), getGPR(_memInstruction.getSrcDest(), TreatAsQuadRegister{}));
+            stq(_memInstruction, computeAddress(), getGPR(_memInstruction.getSrcDest(), TreatAsQuadRegister{}));
             break;
         case Opcodes::ldob:
-            getGPR(_memInstruction.getSrcDest()).setValue<Ordinal>(load(computeAddress(_memInstruction), TreatAs<ByteOrdinal>{}));
+            getGPR(_memInstruction.getSrcDest()).setValue<Ordinal>(load(computeAddress(), TreatAs<ByteOrdinal>{}));
             break;
         case Opcodes::ldib:
-            ldib(computeAddress(_memInstruction), getGPR(_memInstruction.getSrcDest()));
+            ldib(computeAddress(), getGPR(_memInstruction.getSrcDest()));
             break;
         case Opcodes::ldos:
-            getGPR(_memInstruction.getSrcDest()).setValue<Ordinal>(load(computeAddress(_memInstruction), TreatAs<ShortOrdinal>{}));
+            getGPR(_memInstruction.getSrcDest()).setValue<Ordinal>(load(computeAddress(), TreatAs<ShortOrdinal>{}));
             break;
         case Opcodes::ldis:
-            ldis(computeAddress(_memInstruction), getGPR(_memInstruction.getSrcDest()));
+            ldis(computeAddress(), getGPR(_memInstruction.getSrcDest()));
             break;
         case Opcodes::ld:
-            getGPR(_memInstruction.getSrcDest()).setValue<Ordinal>(load(computeAddress(_memInstruction), TreatAsOrdinal{}));
+            getGPR(_memInstruction.getSrcDest()).setValue<Ordinal>(load(computeAddress(), TreatAsOrdinal{}));
             break;
         case Opcodes::ldl:
-            ldl(_memInstruction, computeAddress(_memInstruction), getGPR(_memInstruction.getSrcDest(), TreatAsLongRegister{}));
+            ldl(_memInstruction, computeAddress(), getGPR(_memInstruction.getSrcDest(), TreatAsLongRegister{}));
             break;
         case Opcodes::ldt:
-            ldt(_memInstruction, computeAddress(_memInstruction), getGPR(_memInstruction.getSrcDest(), TreatAsTripleRegister{}));
+            ldt(_memInstruction, computeAddress(), getGPR(_memInstruction.getSrcDest(), TreatAsTripleRegister{}));
             break;
         case Opcodes::ldq:
-            ldq(_memInstruction, computeAddress(_memInstruction), getGPR(_memInstruction.getSrcDest(), TreatAsQuadRegister{}));
+            ldq(_memInstruction, computeAddress(), getGPR(_memInstruction.getSrcDest(), TreatAsQuadRegister{}));
             break;
         case Opcodes::lda:
-            setGPR(_memInstruction.getSrcDest(), computeAddress(_memInstruction), TreatAsOrdinal{});
+            setGPR(_memInstruction.getSrcDest(), computeAddress(), TreatAsOrdinal{});
             break;
         case Opcodes::notOperation:
             notOperation(getGPR(_regInstruction.getSrcDest()), static_cast<Ordinal>(getSrc1Register(_regInstruction)));

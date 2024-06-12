@@ -266,7 +266,7 @@ Core::bx(Address effectiveAddress) {
 }
 void
 Core::bx() {
-    bx(computeAddress(_memInstruction));
+    bx(computeAddress());
 }
 
 void
@@ -279,10 +279,10 @@ Core::call() {
 }
 void
 Core::balx() {
-    balx(getGPR(_memInstruction.getSrcDest()), computeAddress(_memInstruction));
+    balx(getGPR(_memInstruction.getSrcDest()), computeAddress());
 }
 
 OptionalFaultRecord
 Core::callx() {
-    return callx(computeAddress(_memInstruction));
+    return callx(computeAddress());
 }

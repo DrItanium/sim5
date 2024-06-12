@@ -1119,6 +1119,7 @@ private:
     bool fullConditionCodeCheck() noexcept;
     bool fullConditionCodeCheck(uint8_t mask) noexcept;
     Ordinal computeAddress(const MEMInstruction&) noexcept;
+    inline Ordinal computeAddress() noexcept  { return computeAddress(_memInstruction); }
 private:
     void sendIAC(const iac::Message& msg) noexcept;
     void dispatchInterrupt(uint8_t vector) noexcept;
