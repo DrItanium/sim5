@@ -84,15 +84,20 @@ main(int argc, char** argv) {
                     if (section->get_flags() & ELFIO::SHF_ALLOC) {
                         switch (section->get_type()) {
                             case ELFIO::SHT_PROGBITS:
+                                //std::cout << "\t\tinstall to memory" << std::endl;
                                 installToMainMemory(baseAddress, section->get_data(), size);
                                 break;
                             case ELFIO::SHT_NOBITS:
+                                //std::cout << "\t\t clear memory " << std::endl;
                                 clearMainMemory(baseAddress, size);
                                 break;
                             default:
+                                //std::cout << "\t\tdo nothing" << std::endl;
                                 break;
 
                         }
+                    } else {
+                        //std::cout << "\t\tnot sure what to do with it" << std::endl;
                     }
                 }
             } else {
