@@ -34,7 +34,7 @@
 
 uint32_t _capacity = 0;
 uint32_t _debugLevel = 0;
-
+Core core;
 uint32_t getDebugLoggingLevel() noexcept {
     return _debugLevel;
 }
@@ -49,7 +49,6 @@ uint64_t getMemoryCapacity() noexcept {
 
 int
 main(int argc, char** argv) {
-    Core core;
     boost::program_options::options_description desc("Allowed options");
     desc.add_options()
             ("help,h", "produce help message")
