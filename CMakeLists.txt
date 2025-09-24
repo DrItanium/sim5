@@ -16,6 +16,13 @@ add_compile_options(-fexperimental-library)
 endif()
 
 add_subdirectory(ELFIO)
+add_subdirectory(microshell/src)
+build_ush(microshell)
+target_compile_definitions(
+        microshell
+        PUBLIC
+        USH_CONFIG_PLATFORM_POSIX
+)
 
 add_library(core960
 		include/Entry255.def
@@ -51,14 +58,14 @@ target_link_libraries(sim5
 		core960
 		nativecore
 		elfio
+        microshell
 		Boost::program_options)
 target_link_libraries(mmu_test
 		core960
-		nativecore
-		elfio
-		)
+		nativecore)
 install(TARGETS sim5 DESTINATION bin)
 
 target_include_directories(core960 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_include_directories(mmu_test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_include_directories(nativecore PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
