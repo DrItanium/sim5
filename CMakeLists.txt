@@ -51,10 +51,12 @@ add_executable(mmu_test
 target_link_libraries(sim5
 		core960
 		nativecore
+		elfio
 		Boost::program_options)
 target_link_libraries(mmu_test
 		core960
 		nativecore
+		elfio
 		)
 install(TARGETS sim5 DESTINATION bin)
 
