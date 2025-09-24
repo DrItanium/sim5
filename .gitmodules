@@ -1,0 +1,6 @@
+[submodule "config"]
+	path = config
+	url = https://github.com/taocpp/config
+[submodule "json"]
+	path = json
+	url = https://github.com/taocpp/json
