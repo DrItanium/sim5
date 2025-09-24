@@ -36,10 +36,9 @@
 #include "IAC.h"
 #include "BinaryOperations.h"
 #include "ProcessManagement.h"
-constexpr uint8_t getDebugLoggingLevel() noexcept {
-    return 0;
-}
-#define DEBUG_LOG_LEVEL(lvl) if constexpr (getDebugLoggingLevel() >= lvl)
+uint32_t getDebugLoggingLevel() noexcept;
+uint64_t getMemoryCapacity() noexcept;
+#define DEBUG_LOG_LEVEL(lvl) if (getDebugLoggingLevel() >= lvl)
 #define DEBUG_ENTER_FUNCTION DEBUG_LOG_LEVEL(6) std::cout << "Entering Function: " << __PRETTY_FUNCTION__ << std::endl
 #define DEBUG_LEAVE_FUNCTION DEBUG_LOG_LEVEL(6) std::cout << "Leaving Function: " << __PRETTY_FUNCTION__ << std::endl
 

@@ -31,6 +31,20 @@
 #include <fstream>
 #include <elfio/elfio.hpp>
 
+uint32_t _capacity = 0;
+uint32_t _debugLevel = 0;
+
+uint32_t getDebugLoggingLevel() noexcept {
+    return _debugLevel;
+}
+uint64_t getMemoryCapacity() noexcept {
+    switch (_capacity) {
+        case 0:
+            return 0x1'0000'0000;
+        default:
+            return _capacity;
+    }
+}
 
 int
 main(int argc, char** argv) {
@@ -38,7 +52,12 @@ main(int argc, char** argv) {
     boost::program_options::options_description desc("Allowed options");
     desc.add_options()
             ("help,h", "produce help message")
-            ("bootloader", boost::program_options::value<std::filesystem::path>(), "bootstrap elf program")
+            ("bootloader", boost::program_options::value<std::filesystem::path>(), 
+             "the boostrapping elf executable to load into memory")
+            ("memory-capacity", boost::program_options::value<uint32_t>(&_capacity)->default_value(0), 
+             "How much memory to allocate. 0 means 4G of ram.")
+            ("debug-level", boost::program_options::value<uint32_t>(&_debugLevel)->default_value(0),
+             "What level of debugging to enable. 0 turns it off")
             ;
     boost::program_options::variables_map vm;
     boost::program_options::store(boost::program_options::parse_command_line(argc, argv, desc), vm);
@@ -49,7 +68,11 @@ main(int argc, char** argv) {
         return 1;
     }
     std::cout << "i960 Simulator System" << std::endl;
-    std::cout << "(C) 2022-2024 Joshua Scoggins" << std::endl;
+    std::cout << "(C) 2022-2025 Joshua Scoggins" << std::endl;
+    if (_debugLevel > 0) {
+        std::cout << "Debugging Enabled @ level " << std::dec << _debugLevel << std::endl;
+    }
+    std::cout << "Allocated RAM capacity: " << std::dec << getMemoryCapacity() << " bytes" << std::endl;
     try {
         core.begin();
         if (vm.count("bootloader")) {
@@ -76,28 +99,32 @@ main(int argc, char** argv) {
                     std::string name{section->get_name()};
                     auto baseAddress = section->get_address();
                     auto size = section->get_size();
-#if 0
-                    std::cout << "section: " << name<< std::endl;
-                    std::cout << "\tbase address: 0x" << std::hex << baseAddress << std::endl;
-                    std::cout << "\tsize: 0x" << std::hex << size << std::endl;
-#endif
+                    DEBUG_LOG_LEVEL(5) {
+                        std::cerr << "section: " << name<< std::endl;
+                        std::cerr << "\tbase address: 0x" << std::hex << baseAddress << std::endl;
+                        std::cerr << "\tsize: 0x" << std::hex << size << std::endl;
+                    }
                     if (section->get_flags() & ELFIO::SHF_ALLOC) {
                         switch (section->get_type()) {
                             case ELFIO::SHT_PROGBITS:
-                                //std::cout << "\t\tinstall to memory" << std::endl;
+                                DEBUG_LOG_LEVEL(5) 
+                                    std::cerr << "\t\tinstall to memory" << std::endl;
                                 installToMainMemory(baseAddress, section->get_data(), size);
                                 break;
                             case ELFIO::SHT_NOBITS:
-                                //std::cout << "\t\t clear memory " << std::endl;
+                                DEBUG_LOG_LEVEL(5) 
+                                    std::cerr << "\t\t clear memory " << std::endl;
                                 clearMainMemory(baseAddress, size);
                                 break;
                             default:
-                                //std::cout << "\t\tdo nothing" << std::endl;
+                                DEBUG_LOG_LEVEL(5) 
+                                    std::cerr << "\t\tdo nothing" << std::endl;
                                 break;
 
                         }
                     } else {
-                        //std::cout << "\t\tnot sure what to do with it" << std::endl;
+                        DEBUG_LOG_LEVEL(5) 
+                            std::cerr << "\t\tnot sure what to do with it" << std::endl;
                     }
                 }
             } else {
