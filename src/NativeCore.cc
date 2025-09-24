@@ -31,36 +31,6 @@
 #include <atomic>
 #include <chrono>
 namespace {
-    union Cell {
-        ByteOrdinal bytes[16];
-        ByteInteger byteIntegers[16];
-        ShortOrdinal shortOrdinals[8];
-        ShortInteger shortIntegers[8];
-        Ordinal ordinals[4];
-        Integer integers[4];
-        LongOrdinal longOrdinals[2];
-        LongInteger longIntegers[2];
-        float reals[4];
-        double realLongs[2];
-        long double extendedReal;
-        QuadOrdinal quadOrdinal;
-#define X(type) \
-        void setValue(Address address, type value , TreatAs < type > ) noexcept; \
-        type getValue(Address address, TreatAs < type > ) const noexcept
-        X(ByteOrdinal);
-        X(ByteInteger);
-        X(ShortOrdinal);
-        X(ShortInteger);
-        X(Ordinal);
-        X(Integer);
-        X(LongOrdinal);
-        X(LongInteger);
-        X(float);
-        X(double);
-        X(long double);
-        X(QuadOrdinal);
-#undef X
-    };
     std::unique_ptr<uint8_t[]> physicalMemory;
     std::chrono::time_point startup = std::chrono::system_clock::now();
     //bool* tagBits = nullptr;
@@ -108,10 +78,6 @@ namespace {
     constexpr uint8_t getOffset(Address input, TreatAsShortInteger) noexcept { return getOffset16(input); }
     constexpr uint8_t getOffset(Address input, TreatAsByteOrdinal) noexcept { return getOffset8(input); }
     constexpr uint8_t getOffset(Address input, TreatAsByteInteger) noexcept { return getOffset8(input); }
-    Cell&
-    getCell(Address address) noexcept {
-        return *reinterpret_cast<Cell*>(physicalMemory.get() + (address & 0xFFFF'FFF0));
-    }
     template<typename T>
     T* getPointer(Address address) noexcept {
         return reinterpret_cast<T*>(physicalMemory.get() + address);
@@ -211,48 +177,6 @@ namespace {
     store8(Address address, ByteOrdinal value, TreatAsByteOrdinal) noexcept {
         store(address, value, TreatAsByteOrdinal{});
     }
-    void Cell::setValue(Address address, ByteOrdinal value, TreatAsByteOrdinal) noexcept { bytes[getOffset(address, TreatAsByteOrdinal{})] = value; }
-    void Cell::setValue(Address address, ByteInteger value, TreatAsByteInteger) noexcept { byteIntegers[getOffset(address, TreatAsByteInteger{})] = value; }
-    void Cell::setValue(Address address, ShortOrdinal value, TreatAsShortOrdinal) noexcept { shortOrdinals[getOffset(address, TreatAsShortOrdinal{})] = value; }
-    void Cell::setValue(Address address, ShortInteger value, TreatAsShortInteger) noexcept { shortIntegers[getOffset(address, TreatAsShortInteger{})] = value; }
-    void Cell::setValue(Address address, Ordinal value, TreatAsOrdinal) noexcept { ordinals[getOffset(address, TreatAsOrdinal{})] = value; }
-    void Cell::setValue(Address address, Integer value, TreatAsInteger) noexcept { integers[getOffset(address, TreatAsInteger{})] = value; }
-    void Cell::setValue(Address address, LongOrdinal value, TreatAsLongOrdinal) noexcept { longOrdinals[getOffset(address, TreatAsLongOrdinal{})] = value; }
-    ByteOrdinal
-    Cell::getValue(Address address, TreatAsByteOrdinal) const noexcept {
-        return bytes[getOffset(address, TreatAsByteOrdinal{})];
-    }
-
-    ByteInteger
-    Cell::getValue(Address address, TreatAsByteInteger) const noexcept {
-        return byteIntegers[getOffset(address, TreatAsByteInteger{})];
-    }
-
-    ShortOrdinal
-    Cell::getValue(Address address, TreatAsShortOrdinal) const noexcept {
-        return shortOrdinals[getOffset(address, TreatAsShortOrdinal{})];
-    }
-
-    ShortInteger
-    Cell::getValue(Address address, TreatAsShortInteger) const noexcept {
-        return shortIntegers[getOffset(address, TreatAsShortInteger{})];
-
-    }
-    Ordinal
-    Cell::getValue(Address address, TreatAsOrdinal) const noexcept {
-        return ordinals[getOffset(address, TreatAsOrdinal{})];
-    }
-
-    Integer
-    Cell::getValue(Address address, TreatAsInteger) const noexcept {
-        return integers[getOffset(address, TreatAsInteger{})];
-    }
-
-    LongOrdinal
-    Cell::getValue(Address address, TreatAsLongOrdinal) const noexcept {
-        return longOrdinals[getOffset(address, TreatAsLongOrdinal{})];
-    }
-
 }
 
 Ordinal
@@ -328,14 +252,6 @@ clearMainMemory(Address baseAddress, Address size) {
     for (auto addr = 0; addr < size; ++addr) {
         store8(baseAddress + addr, 0, TreatAsByteOrdinal{});
     }
-}
-namespace {
-    void
-    Cell::setValue(Address, QuadOrdinal value, TreatAs<QuadOrdinal>) noexcept {
-        // only works on aligned values so don't check address
-        quadOrdinal = value;
-    }
-    QuadOrdinal Cell::getValue(Address, TreatAs<QuadOrdinal>) const noexcept { return quadOrdinal; }
 }
 void
 Core::store(Address address, QuadOrdinal value, TreatAsQuadOrdinal) noexcept {
