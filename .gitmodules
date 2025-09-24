@@ -1,3 +1,6 @@
 [submodule "ELFIO"]
 	path = ELFIO
 	url = https://github.com/serge1/ELFIO
+[submodule "microshell"]
+	path = microshell
+	url = https://github.com/marcinbor85/microshell
