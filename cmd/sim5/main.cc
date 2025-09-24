@@ -30,6 +30,7 @@
 #include <filesystem>
 #include <fstream>
 #include <elfio/elfio.hpp>
+#include <microshell.h>
 
 uint32_t _capacity = 0;
 uint32_t _debugLevel = 0;
