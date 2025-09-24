@@ -184,7 +184,11 @@ namespace {
             case 0xFF: // CPU reserved and also fix memory overflow problems
                 return 0;
             default:
-                return getMemoryReference<T>(address);
+                if (address < getMemoryCapacity()) {
+                    return getMemoryReference<T>(address);
+                } else {
+                    return 0; // unmapped memory returns zero
+                }
         }
     }
     template<typename T>
@@ -196,7 +200,10 @@ namespace {
             case 0xFF: // CPU reserved and also fix memory overflow problems
                 break;
             default:
-                getMemoryReference<T>(address) = value;
+                if (address < getMemoryCapacity()) {
+                    getMemoryReference<T>(address) = value;
+                } 
+                // if writing to unmapped memory then don't do anything
                 break;
         }
     }
