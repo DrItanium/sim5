@@ -16,7 +16,6 @@ add_compile_options(-fexperimental-library)
 endif()
 
 add_subdirectory(ELFIO)
-add_subdirectory(config)
 
 add_library(core960
 		include/Entry255.def
