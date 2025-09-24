@@ -108,7 +108,7 @@ namespace {
     }
     template<typename T>
     T ioLoad(Address offset, TreatAs<T>) {
-        DEBUG_LOG_LEVEL(1) {
+        DEBUG_LOG_LEVEL(2) {
             std::cout << __PRETTY_FUNCTION__ << "(0x" << std::hex << offset << ")" << std::endl;
         }
         switch (offset & 0xFF'FFFF) {
@@ -128,7 +128,7 @@ namespace {
     }
     template<typename T>
     void ioStore(Address offset, T value, TreatAs<T>) {
-        DEBUG_LOG_LEVEL(1) {
+        DEBUG_LOG_LEVEL(2) {
             std::cout << __PRETTY_FUNCTION__ << "(0x" << std::hex << offset << ", 0x" << std::hex << static_cast<Ordinal>(value) << ")" << std::endl;
         }
         switch (offset & 0xFF'FFFF) {
