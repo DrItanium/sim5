@@ -68,16 +68,8 @@ namespace {
 void
 Core::nonPortableBegin() noexcept {
     if (!physicalMemory) {
-        // allocate 4 gigabytes of memory
-        physicalMemory = std::make_unique<uint8_t[]>((0x1'0000'0000));
+        physicalMemory = std::make_unique<uint8_t[]>((getMemoryCapacity()));
     }
-    //if (!tagBits) {
-    //    // tagBits are aligned to 32-bit boundaries
-    //    tagBits = new bool[(0x1'0000'0000) >> 2]();
-    //}
-
-
-    // setup the
 }
 
 
@@ -153,23 +145,19 @@ namespace {
         DEBUG_LOG_LEVEL(1) {
             std::cout << __PRETTY_FUNCTION__ << "(0x" << std::hex << offset << ")" << std::endl;
         }
-        if (auto target = offset & 0xFF'FFFF; target >= 0x10'0000) {
-            return getMemoryReference<T>(offset);
-        } else {
-            switch (target) {
-                case 0x00'0000:
-                    return static_cast<T>(10 * 1024 * 1024);
-                case 0x00'0004:
-                    return static_cast<T>(20 * 1024 * 1024);
-                case 0x00'0008:
-                    return tryGetFromConsole<T>();
-                case 0x00'0040:
-                    return millis<T>();
-                case 0x00'0044:
-                    return micros<T>();
-                default:
-                    return 0;
-            }
+        switch (offset & 0xFF'FFFF) {
+            case 0x00'0000:
+                return static_cast<T>(10 * 1024 * 1024);
+            case 0x00'0004:
+                return static_cast<T>(20 * 1024 * 1024);
+            case 0x00'0008:
+                return tryGetFromConsole<T>();
+            case 0x00'0040:
+                return millis<T>();
+            case 0x00'0044:
+                return micros<T>();
+            default:
+                return 0;
         }
     }
     template<typename T>
@@ -177,19 +165,15 @@ namespace {
         DEBUG_LOG_LEVEL(1) {
             std::cout << __PRETTY_FUNCTION__ << "(0x" << std::hex << offset << ", 0x" << std::hex << static_cast<Ordinal>(value) << ")" << std::endl;
         }
-        if (auto target = offset & 0xFF'FFFF; target >= 0x10'0000) {
-            getMemoryReference<T>(offset) = value;
-        } else {
-            switch (target) {
-                case 0x00'0008:
-                    std::cout.put(static_cast<char>(value));
-                    break;
-                case 0x00'000C:
-                    std::cout.flush();
-                    break;
-                default:
-                    break;
-            }
+        switch (offset & 0xFF'FFFF) {
+            case 0x00'0008:
+                std::cout.put(static_cast<char>(value));
+                break;
+            case 0x00'000C:
+                std::cout.flush();
+                break;
+            default:
+                break;
         }
     }
     template<typename T>
