@@ -6,10 +6,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 find_package(Boost CONFIG)
 find_package(boost_regex REQUIRED)
 find_package(boost_filesystem REQUIRED)
-find_package(boost_system REQUIRED)
 find_package(boost_program_options REQUIRED)
 if(Boost_FOUND)
 	include_directories(${Boost_INCLUDE_DIRS})
+endif()
+find_package(elfio REQUIRED)
+if(elfio_FOUND)
+	include_directories(${elfio_INCLUDE_DIRS})
 endif()
 if (APPLE)
 add_compile_options(-fexperimental-library)
@@ -33,9 +36,9 @@ add_library(core960
 		src/CallOperations.cc
 		src/RegisterOperations.cc
 		include/Disassembly.h
-        include/Platform.h
+		include/Platform.h
 		src/Interpreter.cc
-        include/ProcessManagement.h
+		include/ProcessManagement.h
 )
 add_library(nativecore
 		src/NativeCore.cc)
