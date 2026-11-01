@@ -255,6 +255,7 @@ union Register {
         BackingUnionType preempt : 1;
         BackingUnionType refault : 1;
         BackingUnionType state : 2;
+        BackingUnionType unused2 : 1;
         BackingUnionType priority : 5;
         BackingUnionType internalState : 11;
     } processControls;
@@ -996,6 +997,8 @@ public:
     static constexpr Ordinal NotC = ~C;
     static constexpr uint8_t NumberOfLocalRegisterFrames = 4;
 
+    Core() = default;
+
     struct LocalRegisterSet {
     public:
         using SaveRegistersFunction = std::function<void(const RegisterFrame&, Address)>;
@@ -1026,6 +1029,7 @@ public:
     void begin() noexcept;
     BootResult start() noexcept;
     void cycle() noexcept;
+    void dispatchExternalInterrupt(uint8_t intr) noexcept;
 private:
     OptionalFaultRecord doDispatchInternal() noexcept;
     void lockBus() noexcept;

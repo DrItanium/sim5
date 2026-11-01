@@ -358,6 +358,7 @@ Core::faultGeneric() {
         return std::nullopt;
     }
 }
+
 Register&
 Core::getSrc1Register(const COBRInstruction& inst) noexcept {
     return getGPR(inst.getSrc1());
@@ -506,6 +507,7 @@ Core::boot0(Address sat, Address pcb, Address startIP) noexcept {
     setGPR(FPIndex, theStackPointer, TreatAsOrdinal{});
     pc_.setPriority(31);
     pc_.processControls.state = 1;
+    pc_.processControls.executionMode = 1;
     localRegisterFrameIndex_ = 0;
     for (auto& a : frames_) {
         a.relinquishOwnership();
@@ -633,11 +635,11 @@ Core::subo(Register& dest, Ordinal src1, Ordinal src2) {
 
 OptionalFaultRecord
 Core::modpc(Register& regDest, Ordinal src1o, Ordinal src2o) {
-    if (auto mask = src1o; mask != 0) {
+    if (auto mask = src2o; mask != 0) {
         if (!pc_.inSupervisorMode()) {
             return typeMismatchFault();
         } else {
-            regDest.setValue<Ordinal>(pc_.modify(mask, src2o));
+            regDest.setValue<Ordinal>(pc_.modify(mask, src1o));
             if (regDest.getPriority() > pc_.getPriority()) {
                 checkForPendingInterrupts();
             }
