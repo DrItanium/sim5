@@ -249,7 +249,7 @@ Core::serviceInterrupt(InterruptVector vector) {
     const auto procedureAddress = getInterruptVectorAddress(vector);
 
     const auto pc = pc_.getValue<Ordinal>();
-    const auto ac = pc_.getValue<Ordinal>();
+    const auto ac = ac_.getValue<Ordinal>();
 
     const auto fp = getFramePointerAddress();
     const auto state = pc_.processControls.state;
