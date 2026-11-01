@@ -254,8 +254,8 @@ union Register {
         BackingUnionType traceFaultPending : 1;
         BackingUnionType preempt : 1;
         BackingUnionType refault : 1;
-        BackingUnionType state : 1;
-        BackingUnionType unused2 : 2;
+        BackingUnionType state : 2;
+        BackingUnionType unused2 : 1;
         BackingUnionType priority : 5;
         BackingUnionType internalState : 11;
     } processControls;
@@ -1124,12 +1124,12 @@ private:
     inline Ordinal computeAddress() noexcept  { return computeAddress(_memInstruction); }
 private:
     void sendIAC(const iac::Message& msg) noexcept;
+    void dispatchInterrupt(uint8_t vector) noexcept;
     void purgeInstructionCache() noexcept;
     void reinitializeProcessor(Ordinal satBase, Ordinal prcbBase, Ordinal startIP) noexcept;
     void setBreakpointRegister(Ordinal breakpointIp0, Ordinal breakpointIp1) noexcept;
     void storeSystemBase(Ordinal destinationAddress) noexcept;
     void testPendingInterrupts();
-    void dispatchInterrupt(uint8_t vector) noexcept;
 #if 0
     // Kx related IACs
         void freeze() noexcept;
