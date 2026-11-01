@@ -254,7 +254,8 @@ union Register {
         BackingUnionType traceFaultPending : 1;
         BackingUnionType preempt : 1;
         BackingUnionType refault : 1;
-        BackingUnionType state : 2;
+        BackingUnionType state : 1;
+        BackingUnionType unused2 : 2;
         BackingUnionType priority : 5;
         BackingUnionType internalState : 11;
     } processControls;
@@ -996,6 +997,8 @@ public:
     static constexpr Ordinal NotC = ~C;
     static constexpr uint8_t NumberOfLocalRegisterFrames = 4;
 
+    Core() {}
+
     struct LocalRegisterSet {
     public:
         using SaveRegistersFunction = std::function<void(const RegisterFrame&, Address)>;
@@ -1026,6 +1029,7 @@ public:
     void begin() noexcept;
     BootResult start() noexcept;
     void cycle() noexcept;
+    void dispatchExternalInterrupt(uint8_t intr) noexcept;
 private:
     OptionalFaultRecord doDispatchInternal() noexcept;
     void lockBus() noexcept;
@@ -1122,12 +1126,12 @@ private:
     inline Ordinal computeAddress() noexcept  { return computeAddress(_memInstruction); }
 private:
     void sendIAC(const iac::Message& msg) noexcept;
-    void dispatchInterrupt(uint8_t vector) noexcept;
     void purgeInstructionCache() noexcept;
     void reinitializeProcessor(Ordinal satBase, Ordinal prcbBase, Ordinal startIP) noexcept;
     void setBreakpointRegister(Ordinal breakpointIp0, Ordinal breakpointIp1) noexcept;
     void storeSystemBase(Ordinal destinationAddress) noexcept;
     void testPendingInterrupts();
+    void dispatchInterrupt(uint8_t vector) noexcept;
 #if 0
     // Kx related IACs
         void freeze() noexcept;

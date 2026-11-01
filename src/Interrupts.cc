@@ -206,8 +206,12 @@ InterruptVector
 Core::highestPostedInterruptVector() const {
     // find the highest posted priority
     auto pendingPriorities = getInterruptPendingPriorities();
+    if(pendingPriorities == 0) return static_cast<InterruptVector>(0);
+
     auto targetPriority = highestOne(pendingPriorities);
     auto vectorOffset = getHighestPostedInterruptVectorForPriority(targetPriority);
+    if(vectorOffset < 0) return static_cast<InterruptVector>(0);
+
     return static_cast<InterruptVector>((targetPriority << 3) | vectorOffset);
 }
 ByteOrdinal
@@ -243,7 +247,21 @@ void
 Core::serviceInterrupt(InterruptVector vector) {
     /// @todo implement
 }
+
 void
 Core::dispatchInterrupt(uint8_t vector) noexcept {
+    receiveInterrupt(static_cast<InterruptVector>(vector));
+}
+
+void
+Core::dispatchExternalInterrupt(uint8_t intr) noexcept {
+    uint8_t vector;
+    
+    if(intr > 3) return;
+
+    vector = ((ictl_.getValue<Ordinal>()) >> (intr * 8)) & 0xff;
+
+    if(vector == 0xff) return;
+
     receiveInterrupt(static_cast<InterruptVector>(vector));
 }
