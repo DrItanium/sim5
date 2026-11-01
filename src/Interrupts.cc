@@ -244,7 +244,54 @@ Core::testPendingInterrupts() {
 
 void
 Core::serviceInterrupt(InterruptVector vector) {
-    /// @todo implement
+    syncf();
+
+    const auto procedureAddress = getInterruptVectorAddress(vector);
+
+    const auto pc = pc_.getValue<Ordinal>();
+    const auto ac = ac_.getValue<Ordinal>();
+
+    const auto fp = getFramePointerAddress();
+    const auto state = pc_.processControls.state;
+
+    Ordinal nsp;
+
+    // TODO: remove the mask since i960 has four states in protected and extended mode and handle those states
+    switch(state & 0b01) {
+        case 0b00:
+            nsp = getInterruptStackAddress();
+            break;
+
+        case 0b01:
+            nsp = getStackPointer();
+            break;
+    }
+
+    const auto nfp = computeNextFrame<C, NotC>(nsp + 16);
+
+    store<Ordinal>(nfp - 16, pc);
+    store<Ordinal>(nfp - 12, ac);
+    store<Ordinal>(nfp - 8, static_cast<ByteOrdinal>(vector));
+    store<Ordinal>(nfp - 4, 0);
+
+    Register copy(fp);
+    copy.pfp.rt = 0b111;
+
+    setGPR(RIPIndex, ip_.getValue<Ordinal>(), TreatAsOrdinal{});
+
+    pc_.processControls.state = 0b01;
+    pc_.processControls.executionMode = 1;
+    pc_.processControls.priority = computeInterruptPriority(vector);
+
+    pc_.processControls.traceFaultPending = 0;
+    pc_.processControls.timing = 0;
+    pc_.processControls.traceEnable = 0;
+    pc_.processControls.timeSlice = 0;
+
+    enterCall(fp);
+    setupNewFrameInternals(copy.getValue<Ordinal>(), nfp);
+
+    setIP(procedureAddress);
 }
 
 void
