@@ -210,7 +210,6 @@ Core::highestPostedInterruptVector() const {
 
     auto targetPriority = highestOne(pendingPriorities);
     auto vectorOffset = getHighestPostedInterruptVectorForPriority(targetPriority);
-    if(vectorOffset < 0) return static_cast<InterruptVector>(0);
 
     return static_cast<InterruptVector>((targetPriority << 3) | vectorOffset);
 }
