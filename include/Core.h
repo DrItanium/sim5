@@ -997,8 +997,6 @@ public:
     static constexpr Ordinal NotC = ~C;
     static constexpr uint8_t NumberOfLocalRegisterFrames = 4;
 
-    Core() {}
-
     struct LocalRegisterSet {
     public:
         using SaveRegistersFunction = std::function<void(const RegisterFrame&, Address)>;
