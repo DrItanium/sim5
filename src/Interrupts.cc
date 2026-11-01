@@ -256,7 +256,8 @@ Core::serviceInterrupt(InterruptVector vector) {
 
     Ordinal nsp;
 
-    switch(state){
+    // TODO: remove the mask since i960 has four states in protected and extended mode and handle those states
+    switch(state & 0b01) {
         case 0b00:
             nsp = getInterruptStackAddress();
             break;
