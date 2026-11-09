@@ -208,7 +208,7 @@ Core::restoreRIPToIP() {
 void
 Core::flushreg() {
     if constexpr (NumberOfLocalRegisterFrames > 1) {
-        for (auto curr = static_cast<uint8_t>((localRegisterFrameIndex_ + 1) % NumberOfLocalRegisterFrames); curr != localRegisterFrameIndex_; curr = static_cast<uint8_t>((curr + 1) % NumberOfLocalRegisterFrames)) {
+        for (auto curr = (localRegisterFrameIndex_ + 1) % NumberOfLocalRegisterFrames; curr != localRegisterFrameIndex_; curr = ((curr + 1) % NumberOfLocalRegisterFrames)) {
             frames_[curr].relinquishOwnership([this](const RegisterFrame& frame, Address dest) noexcept { saveRegisterFrame(frame, dest); });
         }
     }
