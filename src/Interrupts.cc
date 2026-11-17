@@ -46,7 +46,7 @@ Core::getInterruptVectorAddress(uint8_t vector) const {
 void
 Core::receiveInterrupt(InterruptVector vector) {
     if (valid(vector)) {
-        if (canDispatchVector(vector, pc_.getPriority())) {
+        if (!instructionInProgress_ && canDispatchVector(vector, pc_.getPriority())) {
             serviceInterrupt(vector);
         } else {
             postInterrupt(vector);
@@ -288,7 +288,7 @@ Core::serviceInterrupt(InterruptVector vector) {
     pc_.processControls.traceEnable = 0;
     pc_.processControls.timeSlice = 0;
 
-    enterCall(fp);
+    enterCall(fp, nfp);
     setupNewFrameInternals(copy.getValue<Ordinal>(), nfp);
 
     setIP(procedureAddress);

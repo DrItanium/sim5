@@ -1240,7 +1240,7 @@ private:
     OptionalFaultRecord callx(Address effectiveAddress) ;
     OptionalFaultRecord callx();
 private:
-    void enterCall(Ordinal fp);
+    void enterCall(Ordinal previousFP, Ordinal newFP);
     void leaveCall();
     void restoreStandardFrame() noexcept;
 private:
@@ -2013,6 +2013,7 @@ private:
     Register ictl_;
     ByteOrdinal instructionLength_ = 0;
     bool advanceInstruction_ = false;
+    bool instructionInProgress_ = false;
     /// @todo implement breakpoint support
     /// @todo implement backing structures for the protected architecture
     // protected architecture extensions

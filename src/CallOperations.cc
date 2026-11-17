@@ -24,12 +24,12 @@
 #include "Core.h"
 
 void
-Core::enterCall(Ordinal fp) {
+Core::enterCall(Ordinal previousFP, Ordinal newFP) {
     // make sure that we synchronize the frame pointer at the time of entering the call
     // this makes sure that the key we tie the set to is properly synchronized with system state
     // if you don't do this, then the old key will be used to save registers
-    currentLocalRegisterSet().synchronizeOwnership(fp);
-    getNextPack().takeOwnership(fp, [this](const RegisterFrame& frame, Address address) { saveRegisterFrame(frame, address); });
+    currentLocalRegisterSet().synchronizeOwnership(previousFP);
+    getNextPack().takeOwnership(newFP, [this](const RegisterFrame& frame, Address address) { saveRegisterFrame(frame, address); });
     ++localRegisterFrameIndex_;
     localRegisterFrameIndex_ %= NumberOfLocalRegisterFrames;
 }
@@ -65,7 +65,7 @@ Core::callx(Address effectiveAddress) {
     auto temp = getNextFrameBase(); // round stack pointer to next boundary
     auto fp = getFramePointerAddress();
     balx(RIPIndex, effectiveAddress);
-    enterCall(fp);
+    enterCall(fp, temp);
     setupNewFrameInternals(fp, temp);
     return std::nullopt;
 }
@@ -77,7 +77,7 @@ Core::call(Integer displacement) {
     auto temp = getNextFrameBase(); // round stack pointer to next boundary
     auto fp = getFramePointerAddress();
     saveReturnAddress(RIPIndex);
-    enterCall(fp);
+    enterCall(fp, temp);
     setupNewFrameInternals(fp, temp);
     branch(displacement);
     return std::nullopt;
@@ -115,7 +115,7 @@ Core::calls(Ordinal src1) {
             // offset
         }
         // make a copy of the frame pointer and then modify it
-        enterCall(fp);
+        enterCall(fp, temp);
         setupNewFrameInternals(copy.getValue<Ordinal>(), temp);
     }
     return std::nullopt;
