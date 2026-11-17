@@ -230,6 +230,8 @@ Core::serviceNextInterrupt() {
 
 void
 Core::checkForPendingInterrupts() {
+    if (instructionInProgress_) return;
+
     // okay so we are checking for pending interrupts, we need to keep servicing valid interrupts until we are done
     if (auto vector = serviceNextInterrupt(); valid(vector)) {
         serviceInterrupt(vector);
