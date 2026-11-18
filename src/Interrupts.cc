@@ -46,7 +46,7 @@ Core::getInterruptVectorAddress(uint8_t vector) const {
 void
 Core::receiveInterrupt(InterruptVector vector) {
     if (valid(vector)) {
-        if (canDispatchVector(vector, pc_.getPriority())) {
+        if (!instructionInProgress_ && canDispatchVector(vector, pc_.getPriority())) {
             serviceInterrupt(vector);
         } else {
             postInterrupt(vector);
@@ -230,6 +230,8 @@ Core::serviceNextInterrupt() {
 
 void
 Core::checkForPendingInterrupts() {
+    if (instructionInProgress_) return;
+
     // okay so we are checking for pending interrupts, we need to keep servicing valid interrupts until we are done
     if (auto vector = serviceNextInterrupt(); valid(vector)) {
         serviceInterrupt(vector);
@@ -288,7 +290,7 @@ Core::serviceInterrupt(InterruptVector vector) {
     pc_.processControls.traceEnable = 0;
     pc_.processControls.timeSlice = 0;
 
-    enterCall(fp);
+    enterCall(fp, nfp);
     setupNewFrameInternals(copy.getValue<Ordinal>(), nfp);
 
     setIP(procedureAddress);

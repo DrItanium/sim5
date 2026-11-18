@@ -539,6 +539,7 @@ Core::doDispatchInternal() noexcept {
 }
 void
 Core::cycle() noexcept {
+    instructionInProgress_ = true;
     instruction_.setValue(load(ip_.a, TreatAsOrdinal{}), TreatAsOrdinal{});
     instructionLength_ = 4;
     advanceInstruction_ = true;
@@ -548,6 +549,10 @@ Core::cycle() noexcept {
     if (advanceInstruction_) {
         nextInstruction();
     }
+    instructionInProgress_ = false;
+
+    checkForPendingInterrupts();
+
     // according to the blue book they use a counter modulo 8 as a pseudo-random source
     // let's add it in ours as well for whatever we want!
     ++pseudoRandomSource_;

@@ -90,7 +90,7 @@ Core::faultCallGeneric(const FaultRecord& record, Address address, Address stack
     auto nextFrame = computeNextFrame<C*3, NotC>(stackPointer);
     auto fp = getGPRValue<Ordinal>(FPIndex);
     // save the current registers to the stack
-    enterCall(fp);
+    enterCall(fp, nextFrame);
     // manually setup the stack frame as needed
     auto& pfp = getGPR(PFPIndex);
     // clear the p bit as well to make sure
