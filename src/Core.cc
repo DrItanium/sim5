@@ -639,7 +639,7 @@ Core::modpc(Register& regDest, Ordinal src1o, Ordinal src2o) {
         if (!pc_.inSupervisorMode()) {
             return typeMismatchFault();
         } else {
-            regDest.setValue<Ordinal>(pc_.modify(mask, src1o));
+            regDest.setValue<Ordinal>(pc_.modify(mask, regDest.getValue<Ordinal>()));
             if (regDest.getPriority() > pc_.getPriority()) {
                 checkForPendingInterrupts();
             }
