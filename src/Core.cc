@@ -1063,7 +1063,7 @@ constexpr bool aligned(uint8_t value) noexcept {
 
 OptionalFaultRecord
 Core::movl(const REGInstruction& inst) {
-    if ((!aligned<0b1>(inst.getSrcDest())) || (!aligned<0b1>(inst.getSrc1()))) {
+    if ((!aligned<0b1>(inst.getSrcDest())) || (!inst.src1IsLiteral() && !aligned<0b1>(inst.getSrc1()))) {
         // don't corrupt anything as we can't recover if we do!
         nextInstruction();
         return invalidOpcodeFault();
@@ -1077,7 +1077,7 @@ Core::movl(const REGInstruction& inst) {
 
 OptionalFaultRecord
 Core::movt(const REGInstruction& inst) {
-    if ((!aligned<0b11>(inst.getSrcDest())) || (!aligned<0b11>(inst.getSrc1()))) {
+    if ((!aligned<0b11>(inst.getSrcDest())) || (!inst.src1IsLiteral() && !aligned<0b11>(inst.getSrc1()))) {
         // don't corrupt anything as we can't recover if we do!
         nextInstruction();
         return invalidOpcodeFault();
@@ -1095,7 +1095,7 @@ Core::movt(const REGInstruction& inst) {
 
 OptionalFaultRecord
 Core::movq(const REGInstruction& inst) {
-    if ((!aligned<0b11>(inst.getSrcDest())) || (!aligned<0b11>(inst.getSrc1()))) {
+    if ((!aligned<0b11>(inst.getSrcDest())) || (!inst.src1IsLiteral() && !aligned<0b11>(inst.getSrc1()))) {
         // don't corrupt anything as we can't recover if we do!
         nextInstruction();
         return invalidOpcodeFault();
