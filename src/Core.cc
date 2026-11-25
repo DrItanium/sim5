@@ -126,7 +126,7 @@ Core::ediv(const REGInstruction& inst, LongRegister& dest, Ordinal src1, const L
 
 Ordinal
 Core::getSystemProcedureTableBase() const noexcept {
-    return load(getSystemAddressTableBase() + 120, TreatAsOrdinal{});
+    return load(getSystemAddressTableBase() + 152, TreatAsOrdinal{});
 }
 
 
